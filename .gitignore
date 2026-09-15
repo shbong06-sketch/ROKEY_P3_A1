@@ -49,3 +49,13 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+
+# ── ROS 2 / colcon ──────────────────────────────
+# colcon 이 빌드할 때마다 새로 만드는 것들. 커밋하면 팀원끼리 계속 충돌난다
+install/
+log/
+
+# ── Python ──────────────────────────────────────
+__pycache__/
+*.egg-info/
+.pytest_cache/
