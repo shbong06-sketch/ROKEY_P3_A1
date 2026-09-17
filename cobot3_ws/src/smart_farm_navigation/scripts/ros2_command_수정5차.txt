@@ -1,0 +1,74 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정5차]
+=================================================================================
+
+1. Action Graph 사전 준비 관련 사실 확인
+---------------------------------------------------------------------------------
+Q1. Action Graph 생성 사전 준비는 실행 단계 이전에 하는 것이 맞는지?
+-> 맞음. Nav2가 토픽을 구독하기 전에 USD 파일 자체에 Action Graph가 저장되어 있어야 하므로,
+   본 주행 실행 단계 이전에 최초 1회 완료되어야 함.
+
+Q2. 그냥 아이작 심을 단순 실행해서 하는 조치인지?
+-> 맞음. 터미널에서 아이작 심을 일반 실행(isaac)한 후, GUI 상단 메뉴 클릭으로 생성하고
+   Ctrl + S 로 저장하면 종료됨. 스크립트 에디터나 외부 주입 코드는 일체 불필요함.
+
+[Action Graph 생성 절차 (단 1회, 약 20초 소요)]:
+1) 터미널 1에서 아이작 심 단순 실행:
+   isaac
+2) 상단 메뉴: File -> Open
+   -> 경로: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/Collected_260916_AMR_test/260916_AMR_test.usd
+3) 상단 메뉴: Isaac Utils -> Common Omnigraphs -> ROS2 Differential Base 클릭
+4) 팝업 창 Target Prim 항목에 `/World/mir100` 입력 확인 후 [OK] 클릭
+5) 키보드 Ctrl + S 를 눌러 스테이지 저장 후 아이작 심 종료 (영구 보존 완료)
+
+
+=================================================================================
+2. 랙 통로 진입 및 P&P 대비 네비게이션 튜닝 사항
+---------------------------------------------------------------------------------
+1) 목표 지점 좌표 설정 (nav_to_pose.py):
+   - 좌측 랙(X: -2.17 ~ -1.62)과 우측 랙(X: -0.12 ~ 0.43) 사이 통로 폭은 1.50m임.
+   - 통로 중심선 X = -0.87m, 랙 깊이 중앙 Y = 0.88m, 진입 각도 Yaw = 90.0° 로 기본 목표값 수정하였음.
+2) 저속 감속 및 정밀 정지 제어 (mir100_navigation_params.yaml):
+   - 최고 선속도 0.5 m/s, 정지 허용 오차 xy_goal_tolerance 0.08m, yaw_goal_tolerance 0.08 rad로 강화.
+   - RotateToGoal slowing_factor 8.0, 감속 한계 decel_lim_x -1.0 m/s² 적용하여 목표 도달 전 부드럽게 감속 정지함.
+3) 통로 통과를 위한 인플레이션 반경 최적화:
+   - 기존 0.55m 반경은 1.5m 통로 양쪽에서 겹쳐 진입 불가 현상 유발.
+   - inflation_radius를 0.38m로 축소하고 cost_scaling_factor를 5.0으로 상향하여,
+     향후 M0609 로봇암 탑재 상태에서도 랙 사이 통로를 안전하게 자율 통과하도록 설정함.
+4) AMCL TF 브로드캐스트 강제 확정:
+   - `always_reset_initial_pose: true` 적용으로 Nav2 기동 즉시 초기 위치(-2.0, -1.0)를 확정하고
+     `map -> odom` TF를 즉시 발행하도록 조치함.
+
+
+=================================================================================
+3. 정석 실행 절차 (고사양 PC 기준)
+=================================================================================
+
+[1단계: 코드 동기화 및 빌드]
+    cd ~/ROKEY_P3_A1 && git pull origin feature/lwh
+    ros_set && cd ~/ROKEY_P3_A1/cobot3_ws
+    colcon build --symlink-install --packages-select mir100_navigation nav_to_goal
+
+[2단계: 터미널 1 - Isaac Sim 실행 및 재생]
+    export ROS_DISTRO=jazzy
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
+    isaac_ros
+    isaac
+    -> Collected_260916_AMR_test.usd 오픈 후 Play(▶) 클릭
+
+[3단계: 터미널 2 - Nav2 & RViz2 실행]
+    ros_set
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+    ros2 launch mir100_navigation mir_navigation.launch.py \
+        map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+    -> AMCL 자동 초기화로 RViz2 상에 맵과 로봇이 즉시 정상 표시됨.
+
+[4단계: 터미널 3 - 두 랙 사이 통로 자율 주행 실행]
+    ros_set
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+    ros2 run nav_to_goal nav_to_pose
+    -> MiR100이 두 랙 사이 통로(X=-0.87, Y=0.88, Yaw=90°)로 진입하여 감속 후 정밀 정지함.
+=================================================================================

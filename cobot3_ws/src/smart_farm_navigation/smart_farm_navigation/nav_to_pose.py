@@ -93,19 +93,19 @@ def main():
     init_y = float(sys.argv[2]) if len(sys.argv) >= 5 else -1.0
     init_yaw = float(sys.argv[3]) if len(sys.argv) >= 5 else 0.0
 
-    goal_x = float(sys.argv[4]) if len(sys.argv) >= 5 else (float(sys.argv[1]) if len(sys.argv) == 3 or len(sys.argv) == 4 else 0.0)
-    goal_y = float(sys.argv[5]) if len(sys.argv) >= 5 else (float(sys.argv[2]) if len(sys.argv) == 3 or len(sys.argv) == 4 else 3.0)
+    # 2. 목표 지점 설정: 두 랙 사이 통로(X=-0.87m) 중심, 가장 깊은 랙 중앙(Y=0.88m), 진입 각도(Yaw=90.0°)
+    goal_x = float(sys.argv[4]) if len(sys.argv) >= 5 else (float(sys.argv[1]) if len(sys.argv) in (3, 4) else -0.87)
+    goal_y = float(sys.argv[5]) if len(sys.argv) >= 5 else (float(sys.argv[2]) if len(sys.argv) in (3, 4) else 0.88)
     goal_yaw = float(sys.argv[3]) if len(sys.argv) == 4 else 90.0
 
     init_pose = create_pose(nav, init_x, init_y, init_yaw)
     nav.setInitialPose(init_pose)
     nav.waitUntilNav2Active()
 
-    # 2. 목표 지점 설정 (스마트팜 통로 내 안전 좌표)
-    goal_pose = create_pose(nav, goal_x, goal_y, goal_yaw)
-    print(f"🎯 목표 지점으로 이동 시작: X={goal_x:.2f} m, Y={goal_y:.2f} m, Yaw={goal_yaw:.1f}°")
-
     # 3. Task 실행
+    goal_pose = create_pose(nav, goal_x, goal_y, goal_yaw)
+    print(f"🎯 목표 지점으로 이동 시작: 랙 사이 통로 X={goal_x:.2f} m, Y={goal_y:.2f} m, Yaw={goal_yaw:.1f}°")
+
     nav.goToPose(goal_pose)
     
     last_pose = None
