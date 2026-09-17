@@ -10,7 +10,11 @@ from launch_ros.descriptions import ParameterValue
 
 
 def generate_launch_description():
-    pkg_mir100_navigation = get_package_share_directory('mir100_navigation')
+    try:
+        pkg_nav_dir = get_package_share_directory('mir100_navigation')
+    except Exception:
+        pkg_nav_dir = get_package_share_directory('smart_farm_navigation')
+
     pkg_nav2_bringup = get_package_share_directory('nav2_bringup')
 
     # Flexible default paths resolving to either ~/ROKEY_P3_A1/... or ~/cobot3_ws/...
@@ -29,8 +33,8 @@ def generate_launch_description():
     ]
     default_urdf = next((p for p in possible_urdf_paths if os.path.exists(p)), possible_urdf_paths[0])
 
-    default_params = os.path.join(pkg_mir100_navigation, 'params', 'mir100_navigation_params.yaml')
-    default_rviz_config = os.path.join(pkg_mir100_navigation, 'rviz2', 'mir100_navigation.rviz')
+    default_params = os.path.join(pkg_nav_dir, 'params', 'mir100_navigation_params.yaml')
+    default_rviz_config = os.path.join(pkg_nav_dir, 'rviz2', 'mir100_navigation.rviz')
 
     # Declare launch arguments
     declare_map_cmd = DeclareLaunchArgument(

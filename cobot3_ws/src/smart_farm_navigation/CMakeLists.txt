@@ -7,8 +7,13 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-install(DIRECTORY launch params rviz2
+install(DIRECTORY launch params rviz2 maps
   DESTINATION share/${PROJECT_NAME}
+)
+
+# Also install for smart_farm_navigation so both package names are valid in ros2 launch
+install(DIRECTORY launch params rviz2 maps
+  DESTINATION share/smart_farm_navigation
 )
 
 ament_package()
