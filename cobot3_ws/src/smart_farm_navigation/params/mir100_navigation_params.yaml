@@ -40,7 +40,7 @@ amcl:
     scan_topic: /scan
     map_topic: /map
     set_initial_pose: true
-    always_reset_initial_pose: false
+    always_reset_initial_pose: true
     first_map_only: false
     initial_pose:
       x: -2.0

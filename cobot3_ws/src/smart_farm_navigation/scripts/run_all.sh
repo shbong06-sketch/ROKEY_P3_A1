@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# 🚀 Smart Farm MiR100 올인원 실행 스크립트 [안정화 3차]
+# 🚀 Smart Farm MiR100 올인원 실행 스크립트 [안정화 4차]
 # ==============================================================================
 set -e
 
@@ -12,31 +12,31 @@ if [ ! -f "$USD_PATH" ]; then
     USD_PATH="$HOME_DIR/cobot3_ws/src/smart_farm_navigation/Collected_260916_AMR_test/260916_AMR_test.usd"
 fi
 
-# 1. ROS 2 및 통신 환경 (현재 환경의 ROS_DOMAIN_ID 보존)
+# [중요] 기존 환경에 설정된 ROS_DOMAIN_ID를 절대 변경하지 않고 100% 보존
+echo "=================================================================="
+echo "🌱 [1/3] 통신 환경 확인 (현재 ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-설정안됨})..."
+echo "=================================================================="
 export ROS_DISTRO=jazzy
-export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-101}"
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 export FASTRTPS_DEFAULT_PROFILES_FILE="$HOME_DIR/.ros/fastdds_whitelist.xml"
 
 ISAAC_ROS_LIB="$HOME_DIR/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib"
 
-echo "=================================================================="
-echo "🌱 [1/3] Isaac Sim 실행 (USD 자동 로드: --/app/file/open 적용)..."
-echo "=================================================================="
-echo "  - 로드할 USD: $USD_PATH"
-echo "  - ROS_DOMAIN_ID: $ROS_DOMAIN_ID"
-
-# Omniverse Kit 전용 파일 오픈 플래그(--/app/file/open) 적용 및 환경 격리
-env -u PYTHONPATH -u AMENT_PREFIX_PATH -u COLCON_PREFIX_PATH -u CMAKE_PREFIX_PATH \
-    ROS_DISTRO=jazzy \
-    ROS_DOMAIN_ID="$ROS_DOMAIN_ID" \
-    RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
-    FASTRTPS_DEFAULT_PROFILES_FILE="$HOME_DIR/.ros/fastdds_whitelist.xml" \
-    LD_LIBRARY_PATH="$ISAAC_ROS_LIB:$LD_LIBRARY_PATH" \
-    "$ISAAC_SH" --/app/file/open="$USD_PATH" &
-
-ISAAC_PID=$!
-echo "  - Isaac Sim 구동 시작 (PID: $ISAAC_PID)"
+# 이미 실행 중인 Isaac Sim이 있는지 확인
+if pgrep -f "isaac-sim" > /dev/null 2>&1; then
+    echo "  - 이미 실행 중인 Isaac Sim 프로세스를 감지했습니다. 기존 창을 그대로 사용합니다."
+else
+    echo "  - Isaac Sim 구동 중 (USD: $USD_PATH)..."
+    env -u PYTHONPATH -u AMENT_PREFIX_PATH -u COLCON_PREFIX_PATH -u CMAKE_PREFIX_PATH \
+        ROS_DISTRO=jazzy \
+        ROS_DOMAIN_ID="$ROS_DOMAIN_ID" \
+        RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+        FASTRTPS_DEFAULT_PROFILES_FILE="$HOME_DIR/.ros/fastdds_whitelist.xml" \
+        LD_LIBRARY_PATH="$ISAAC_ROS_LIB:$LD_LIBRARY_PATH" \
+        "$ISAAC_SH" --/app/file/open="$USD_PATH" &
+    ISAAC_PID=$!
+    echo "  - Isaac Sim PID: $ISAAC_PID"
+fi
 
 cleanup() {
     echo -e "\n🛑 종료 신호 수신. 프로세스를 정리합니다..."
@@ -50,7 +50,7 @@ trap cleanup SIGINT SIGTERM
 echo "=================================================================="
 echo "⏳ [2/3] 아이작 심 시뮬레이션 활성화 대기 중..."
 echo "=================================================================="
-echo "👉 아이작 심 창에서 스테이지가 열리면 Play(▶) 버튼을 눌러주세요."
+echo "👉 아이작 심 창에서 Play(▶) 버튼을 눌러주세요."
 
 # ROS 2 환경 소싱 (Nav2 실행용)
 source /opt/ros/jazzy/setup.bash
@@ -61,7 +61,7 @@ if [ ! -f "$WS_SETUP" ]; then
 fi
 source "$WS_SETUP"
 
-# /clock 또는 활성 토픽 대기 (최대 60초)
+# /clock 토픽 유입 대기 (최대 60초)
 MAX_WAIT=60
 WAIT_COUNT=0
 READY=0

@@ -1,0 +1,55 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정4차]
+=================================================================================
+
+1. [핵심 진단 결과: RViz2 에러의 진짜 원인과 해결]
+---------------------------------------------------------------------------------
+- 오류 로그 확인 결과, map_server는 정상 기동되어 /map 토픽을 퍼블리시하고 있었습니다.
+- RViz2에서 'Frame [map] does not exist'가 떴던 진짜 이유는:
+  "AMCL이 초기 위치를 확정받기 전까지는 map -> odom TF를 쏘지 않기 때문"이었습니다.
+- [조치 완료]:
+  mir100_navigation_params.yaml 에서 `always_reset_initial_pose: true` 로 수정하여
+  Nav2 기동 즉시 AMCL이 초기 위치(-2.0, -1.0)를 확정하고 map -> odom TF를 자동 브로드캐스트하도록 수정했습니다.
+  (이제 RViz2에서 2D Pose Estimate를 수동으로 찍지 않아도 맵과 로봇이 즉시 연결됩니다.)
+
+- [ROS_DOMAIN_ID 보존 원칙]:
+  팀 공용 PC의 ROS_DOMAIN_ID(101 또는 103)를 절대 임의 변경하지 않고 기존 환경 설정을 100% 그대로 유지합니다.
+
+
+=================================================================================
+2. [아이작 심 Action Graph 1회 생성 (10초 소요, 공식 메뉴 사용)]
+=================================================================================
+* 오류가 잦은 스크립트 에디터 대신, 아이작 심의 100% 검증된 공식 내장 메뉴를 사용합니다.
+
+1) 아이작 심에서 Collected_260916_AMR_test/260916_AMR_test.usd 를 엽니다.
+2) 상단 메뉴: Isaac Utils -> Common Omnigraphs -> ROS2 Differential Base 클릭
+3) 팝업 창에서 Target Prim에 `/World/mir100` 지정 후 [OK] 클릭
+4) 키보드 Ctrl + S 를 눌러 스테이지를 저장합니다 (영구 보존).
+
+
+=================================================================================
+3. [가장 안정적인 실행 방법 (추천)]
+=================================================================================
+
+[터미널 1 - Isaac Sim]:
+    export ROS_DISTRO=jazzy
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
+    isaac_ros
+    isaac
+    -> 아이작 심이 열리면 화면 좌측의 Play(▶) 버튼을 누릅니다.
+
+[터미널 2 - Nav2 & RViz2]:
+    ros_set
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+    ros2 launch mir100_navigation mir_navigation.launch.py \
+        map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+    -> AMCL 자동 초기화로 맵과 로봇이 RViz2에 즉시 정상 표시됩니다.
+
+[터미널 3 - 자율 주행]:
+    ros_set
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+    ros2 run nav_to_goal nav_to_pose
+=================================================================================
