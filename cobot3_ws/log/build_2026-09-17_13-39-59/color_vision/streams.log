@@ -1,0 +1,26 @@
+[3.168s] Invoking command in '/home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision/build --no-deps symlink_data
+[3.723s] running develop
+[4.056s] running egg_info
+[4.056s] creating color_vision.egg-info
+[4.090s] writing color_vision.egg-info/PKG-INFO
+[4.090s] writing dependency_links to color_vision.egg-info/dependency_links.txt
+[4.091s] writing entry points to color_vision.egg-info/entry_points.txt
+[4.091s] writing requirements to color_vision.egg-info/requires.txt
+[4.091s] writing top-level names to color_vision.egg-info/top_level.txt
+[4.092s] writing manifest file 'color_vision.egg-info/SOURCES.txt'
+[4.156s] reading manifest file 'color_vision.egg-info/SOURCES.txt'
+[4.157s] writing manifest file 'color_vision.egg-info/SOURCES.txt'
+[4.192s] running build_ext
+[4.192s] Creating /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/lib/python3.12/site-packages/color-vision.egg-link (link to .)
+[4.193s] Installing color_detector script to /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/lib/color_vision
+[4.194s] 
+[4.194s] Installed /home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision
+[4.195s] running symlink_data
+[4.195s] creating /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/share/ament_index
+[4.195s] creating /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/share/ament_index/resource_index
+[4.196s] creating /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/share/ament_index/resource_index/packages
+[4.196s] symbolically linking /home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision/resource/color_vision -> /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/share/ament_index/resource_index/packages
+[4.196s] symbolically linking /home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision/package.xml -> /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/share/color_vision
+[4.196s] creating /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/share/color_vision/config
+[4.197s] symbolically linking /home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision/config/color_detector.yaml -> /home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/share/color_vision/config
+[4.287s] Invoked command in '/home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/rokey/ROKEY_P3_A1/cobot3_ws/install/color_vision/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/rokey/ROKEY_P3_A1/cobot3_ws/build/color_vision/build --no-deps symlink_data

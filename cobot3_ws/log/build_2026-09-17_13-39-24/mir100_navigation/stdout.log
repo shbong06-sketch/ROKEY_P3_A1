@@ -1,0 +1,38 @@
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Configuring done (1.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/launch/mir_navigation.launch.py
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/params/mir100_navigation_params.yaml
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/rviz2/mir100_navigation.rviz
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/package_run_dependencies/mir100_navigation
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/parent_prefix_path/mir100_navigation
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/ament_prefix_path.sh
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/ament_prefix_path.dsv
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/path.sh
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/path.dsv
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.bash
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.sh
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.zsh
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.dsv
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/package.dsv
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/packages/mir100_navigation
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/cmake/mir100_navigationConfig.cmake
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/cmake/mir100_navigationConfig-version.cmake
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/package.xml
