@@ -354,3 +354,24 @@ waypoint_follower:
       plugin: "nav2_waypoint_follower::WaitAtWaypoint"
       enabled: True
       waypoint_pause_duration: 200
+
+collision_monitor:
+  ros__parameters:
+    use_sim_time: True
+    base_frame_id: "base_footprint"
+    odom_frame_id: "odom"
+    cmd_vel_in_topic: "cmd_vel_raw"
+    cmd_vel_out_topic: "cmd_vel"
+    transform_tolerance: 0.5
+    source_timeout: 5.0
+    stop_pub_timeout: 2.0
+    polygons: ["FootprintApproach"]
+    FootprintApproach:
+      type: "polygon"
+      points: "[[0.48, 0.33], [0.48, -0.33], [-0.48, -0.33], [-0.48, 0.33]]"
+      action_type: "slowdown"
+      slowdown_ratio: 0.5
+    observation_sources: ["scan"]
+    scan:
+      type: "scan"
+      topic: "/scan"

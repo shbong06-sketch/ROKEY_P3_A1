@@ -99,13 +99,16 @@ def main():
     goal_yaw = float(sys.argv[3]) if len(sys.argv) == 4 else 90.0
 
     init_pose = create_pose(nav, init_x, init_y, init_yaw)
-    nav.setInitialPose(init_pose)
-    nav.waitUntilNav2Active()
+    # 1. Nav2 활성화 대기 (AMCL은 always_reset_initial_pose로 이미 자동 초기화됨)
+    print("⏳ Nav2 스택 활성화 대기 중...")
+    nav.waitUntilNav2Active(navigator='bt_navigator', localizer='amcl')
+    print("✅ Nav2 스택 활성화 확인 완료!")
 
-    # 3. Task 실행
+    # 2. 목표 지점 설정: 두 랙 사이 통로(X=-0.87m) 중심, 가장 깊은 랙 중앙(Y=0.88m), 진입 각도(Yaw=90.0°)
     goal_pose = create_pose(nav, goal_x, goal_y, goal_yaw)
     print(f"🎯 목표 지점으로 이동 시작: 랙 사이 통로 X={goal_x:.2f} m, Y={goal_y:.2f} m, Yaw={goal_yaw:.1f}°")
 
+    # 3. Task 실행
     nav.goToPose(goal_pose)
     
     last_pose = None
