@@ -13,31 +13,27 @@
   * 맵 설정     : .../smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
   * 맵 이미지   : .../smart_farm_navigation/maps/260916_AMR_test.png (Free Space 254 정합)
 
-- Script Editor 방식 배제:
-  Isaac Sim 5.x의 확장 모듈 미로드(OmniGraphError) 및 잦은 UI 오류로 인해,
-  Script Editor를 쓰지 않고 "터미널 1회 실행 주입" 및 "올인원 실행 스크립트"로 전면 개편.
+- [17:29 오류 수정 완료]:
+  1) Isaac Sim 실행 시 스테이지가 빈 화면(New Stage)으로 뜨던 문제 해결:
+     -> Omniverse Kit 전용 스테이지 비동기 로더(open_and_setup_stage.py)를 적용하여
+        스테이지 오픈 + ActionGraph 확인 + 자동 Play까지 100% 자동화.
+  2) Package 'mir100_navigation' not found 에러 해결:
+     -> 워크스페이스 setup.bash 소싱을 ~/ROKEY_P3_A1/cobot3_ws 로 확정 및 심볼릭 링크 정리.
 
 
 =================================================================================
-2. [사전 준비 - 고사양 PC 최초 1회만 실행]
+2. [사전 준비 - 고사양 PC 최초 1회 빌드]
 =================================================================================
 
-(1) 깃 코드 최신화 및 빌드:
+고사양 PC 터미널에서 최신 코드를 pull하고 빌드합니다:
+
     cd ~/ROKEY_P3_A1
     git pull origin feature/lwh
     ln -sfn ~/ROKEY_P3_A1/cobot3_ws ~/cobot3_ws
-    
+
     ros_set
     cd ~/ROKEY_P3_A1/cobot3_ws
     colcon build --symlink-install --packages-select mir100_navigation nav_to_goal
-
-(2) USD 파일에 Action Graph (ROS 2 Bridge) 영구 주입:
-    * 스크립트 에디터 대신 아래 명령어 단 1회 실행으로 USD 파일 자체에 브릿지를 저장합니다.
-    
-    isaac_python ~/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/inject_action_graph.py
-
-    -> 실행 완료 시 260916_AMR_test.usd 에 /clock, /cmd_vel, /odom, TF 노드가 영구 저장되어
-       이후 아이작 심을 열고 Play(▶)만 누르면 토픽이 100% 자동 발행됩니다.
 
 
 =================================================================================
@@ -45,45 +41,55 @@
 =================================================================================
 
 터미널 1에서 아이작 심 열고, 메뉴 찾고, 터미널 2에서 런치하는 번거로운 과정 없이
-아래의 [방법 A] 또는 [방법 B] 중 편한 방식으로 "코드 한 줄" 실행합니다.
+아래의 [방법 A]로 "코드 한 줄" 실행합니다.
 
 ---------------------------------------------------------------------------------
-[방법 A] 올인원 쉘 스크립트 (가장 추천 - FastDDS 환경변수 자동 적용)
+[방법 A] 올인원 쉘 스크립트 (강력 추천 - 환경변수, USD오픈, 자동Play, Nav2까지 올인원)
 ---------------------------------------------------------------------------------
 터미널 1:
     bash ~/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/run_all.sh
 
-* 자동 수행 내용:
-  1) ROS_DISTRO=jazzy, RMW_IMPLEMENTATION=rmw_fastrtps_cpp, FastDDS 화이트리스트 자동 설정
-  2) Isaac Sim 백그라운드 자동 실행 (Collected_260916_AMR_test.usd 자동 로드 & Play 시작)
-  3) 7초 대기 후 Nav2 Navigation 및 RViz2 자동 실행
-  4) 작업 완료 후 터미널에서 Ctrl + C 를 누르면 Isaac Sim과 Nav2 모두 일괄 종료됨
+* 스크립트 내부 자동 동작:
+  1) FastDDS, ROS_DISTRO, FASTRTPS 화이트리스트, isaac_ros 라이브러리 자동 구성
+  2) ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash 자동 소싱 (패키지 미발견 원천 방지)
+  3) Isaac Sim 구동 -> Collected_260916_AMR_test.usd 자동 로드 -> ActionGraph 확인 -> 자동 Play(▶)
+  4) /clock 토픽 유입을 감지한 직후 Nav2 및 RViz2 자동 실행
+  5) Ctrl + C 입력 시 Isaac Sim과 Nav2 프로세스 일괄 정상 종료
 
 ---------------------------------------------------------------------------------
-[방법 B] ROS 2 통합 런치 방식
+[방법 B] 수동 분할 실행을 원할 경우
 ---------------------------------------------------------------------------------
-터미널 1:
+* 터미널 1 (Isaac Sim):
+    export ROS_DISTRO=jazzy
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
+    isaac_ros
+    "$HOME/isaacsim/isaac-sim.sh" \
+        --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge \
+        --exec "$HOME/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/open_and_setup_stage.py --path $HOME/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/Collected_260916_AMR_test/260916_AMR_test.usd --start-on-play"
+
+* 터미널 2 (Nav2 & RViz2):
     export ROS_DISTRO=jazzy
     export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
     ros_set
-    source ~/cobot3_ws/install/setup.bash
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 
-    ros2 launch mir100_navigation smart_farm_all.launch.py
+    ros2 launch mir100_navigation mir_navigation.launch.py \
+        map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
 
 
 =================================================================================
-4. [로봇 주행 실행 - 터미널 2]
+4. [로봇 주행 실행 - 터미널 2 (또는 터미널 3)]
 =================================================================================
 
-환경이 모두 켜진 상태에서 새 터미널을 열고 주행 스크립트를 실행합니다:
+아이작 심과 RViz2가 켜져 맵이 정상 표시된 상태에서 주행 스크립트를 실행합니다:
 
-터미널 2:
     export ROS_DISTRO=jazzy
     export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
     ros_set
-    source ~/cobot3_ws/install/setup.bash
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 
     # 스마트팜 통로 안전 좌표(X=0.0m, Y=3.0m, Yaw=90.0°)로 자동 자율 주행
     ros2 run nav_to_goal nav_to_pose
@@ -94,15 +100,13 @@
 
 
 =================================================================================
-5. 트러블슈팅 및 주의사항
+5. 트러블슈팅 체크리스트
 =================================================================================
-1. RViz2에서 'No map received' / 'Frame [map] does not exist' 에러 발생 시:
-   -> 아이작 심이 정지(Pause) 상태이거나 /clock 토픽이 안 들어오는 것입니다.
-   -> 아이작 심 화면 좌측의 Play(▶) 버튼이 눌려 있는지 확인하세요.
-   -> 터미널 1, 2 간에 FastDDS 환경변수(화이트리스트)가 일치하는지 확인하세요.
+1. 'Package mir100_navigation not found' 발생 시:
+   -> 소싱 경로가 ~/cobot3_ws 가 아닌 '~/ROKEY_P3_A1/cobot3_ws/install/setup.bash' 이어야 합니다.
+   -> 'ros2 pkg prefix mir100_navigation' 으로 정상 등록 여부를 확인하세요.
 
-2. 패키지 빌드 시 주의:
-   -> 런치 파일 이름은 mir_navigation.launch.py 이지만,
-      ROS 2 패키지 이름은 반드시 'mir100_navigation' 입니다.
-      (colcon build 시 --packages-select mir100_navigation 사용)
+2. RViz2에서 'No map received' / 'Frame [map] does not exist' 에러 발생 시:
+   -> 아이작 심의 시계(/clock)가 멈춰있어 Nav2 라이프사이클이 정지된 상태입니다.
+   -> run_all.sh 를 실행하면 /clock 감지 후에 Nav2가 기동되므로 에러가 발생하지 않습니다.
 =================================================================================

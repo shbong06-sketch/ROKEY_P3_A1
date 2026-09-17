@@ -29,13 +29,15 @@ def generate_launch_description():
     )
 
     isaac_sh = os.path.join(home_dir, 'isaacsim/isaac-sim.sh')
+    stage_loader = os.path.join(pkg_nav_dir, 'scripts', 'open_and_setup_stage.py')
 
-    # 1. Execute Isaac Sim Process with the given USD and autoplay
+    # 1. Execute Isaac Sim Process with open_and_setup_stage.py
     isaac_process = ExecuteProcess(
         cmd=[
             isaac_sh,
-            LaunchConfiguration('usd_path'),
-            '--play-sim-on-start'
+            '--/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge',
+            '--exec',
+            [stage_loader, ' --path ', LaunchConfiguration('usd_path'), ' --start-on-play']
         ],
         output='screen'
     )
