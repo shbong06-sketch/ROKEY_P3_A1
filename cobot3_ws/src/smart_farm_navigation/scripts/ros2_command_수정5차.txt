@@ -72,3 +72,19 @@ Q2. 그냥 아이작 심을 단순 실행해서 하는 조치인지?
     ros2 run nav_to_goal nav_to_pose
     -> MiR100이 두 랙 사이 통로(X=-0.87, Y=0.88, Yaw=90°)로 진입하여 감속 후 정밀 정지함.
 =================================================================================
+
+
+
+
+bash -c "
+echo '=== 1. ENV ==='
+echo ROS_DISTRO=\$ROS_DISTRO
+echo ROS_DOMAIN_ID=\$ROS_DOMAIN_ID
+echo RMW_IMPLEMENTATION=\$RMW_IMPLEMENTATION
+echo '=== 2. TOPIC LIST ==='
+ros2 topic list
+echo '=== 3. CLOCK HZ ==='
+timeout 2 ros2 topic hz /clock || echo 'No /clock'
+echo '=== 4. ODOM INFO ==='
+ros2 topic info /odom || echo 'No /odom'
+" > ~/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/errored/diag_info.txt
