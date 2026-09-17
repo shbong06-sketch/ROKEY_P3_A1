@@ -88,25 +88,28 @@ def main():
     rclpy.init()
     nav = BasicNavigator()
 
-    # 1. 출발점 설정 (스마트팜 260916_AMR_test 맵 기준 안전 좌표: x=-2.0, y=-1.0, yaw=0.0)
-    init_x = float(sys.argv[1]) if len(sys.argv) >= 5 else -2.0
-    init_y = float(sys.argv[2]) if len(sys.argv) >= 5 else -1.0
-    init_yaw = float(sys.argv[3]) if len(sys.argv) >= 5 else 0.0
+    # 1. 목표 좌표 파라미터화 (인자 개수에 따라 자동 매핑)
+    # 기본값: 가장 먼저 마주하는 랙의 중앙 앞 (X=0.30m, Y=-0.50m, Yaw=-90.0°)
+    init_x, init_y, init_yaw = -2.0, -1.0, 0.0
+    if len(sys.argv) == 1:
+        goal_x, goal_y, goal_yaw = 0.30, -0.50, -90.0
+    elif len(sys.argv) == 3:
+        goal_x, goal_y, goal_yaw = float(sys.argv[1]), float(sys.argv[2]), 0.0
+    elif len(sys.argv) == 4:
+        goal_x, goal_y, goal_yaw = float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])
+    elif len(sys.argv) >= 6:
+        init_x, init_y, init_yaw = float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])
+        goal_x, goal_y, goal_yaw = float(sys.argv[4]), float(sys.argv[5]), 0.0
+    else:
+        goal_x, goal_y, goal_yaw = float(sys.argv[1]), float(sys.argv[2]), 0.0
 
-    # 2. 목표 지점 설정: 두 랙 사이 통로(X=-0.87m) 중심, 가장 깊은 랙 중앙(Y=0.88m), 진입 각도(Yaw=90.0°)
-    goal_x = float(sys.argv[4]) if len(sys.argv) >= 5 else (float(sys.argv[1]) if len(sys.argv) in (3, 4) else -0.87)
-    goal_y = float(sys.argv[5]) if len(sys.argv) >= 5 else (float(sys.argv[2]) if len(sys.argv) in (3, 4) else 0.88)
-    goal_yaw = float(sys.argv[3]) if len(sys.argv) == 4 else 90.0
-
-    init_pose = create_pose(nav, init_x, init_y, init_yaw)
-    # 1. Nav2 활성화 대기 (AMCL은 always_reset_initial_pose로 이미 자동 초기화됨)
     print("⏳ Nav2 스택 활성화 대기 중...")
     nav.waitUntilNav2Active(navigator='bt_navigator', localizer='amcl')
     print("✅ Nav2 스택 활성화 확인 완료!")
 
-    # 2. 목표 지점 설정: 두 랙 사이 통로(X=-0.87m) 중심, 가장 깊은 랙 중앙(Y=0.88m), 진입 각도(Yaw=90.0°)
+    # 2. 목표 지점 전송
     goal_pose = create_pose(nav, goal_x, goal_y, goal_yaw)
-    print(f"🎯 목표 지점으로 이동 시작: 랙 사이 통로 X={goal_x:.2f} m, Y={goal_y:.2f} m, Yaw={goal_yaw:.1f}°")
+    print(f"🎯 목표 지점으로 이동 시작: X={goal_x:.2f} m, Y={goal_y:.2f} m, Yaw={goal_yaw:.1f}°")
 
     # 3. Task 실행
     nav.goToPose(goal_pose)
