@@ -27,6 +27,9 @@ def generate_launch_description():
     default_map = next((p for p in possible_map_paths if os.path.exists(p)), possible_map_paths[0])
 
     possible_urdf_paths = [
+        os.path.join(home_dir, 'ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/Collected_260916_AMR_test/mir100.urdf'),
+        os.path.join(home_dir, 'cobot3_ws/src/smart_farm_navigation/Collected_260916_AMR_test/mir100.urdf'),
+        '/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/Collected_260916_AMR_test/mir100.urdf',
         os.path.join(home_dir, 'ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/260916_AMR_test/mir100.urdf'),
         os.path.join(home_dir, 'cobot3_ws/src/smart_farm_navigation/260916_AMR_test/mir100.urdf'),
         '/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/260916_AMR_test/mir100.urdf',
