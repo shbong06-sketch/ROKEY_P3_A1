@@ -1,0 +1,57 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정7차]
+=================================================================================
+
+1. [diag_info.txt 및 error_260917_1957.txt 분석 사실]
+---------------------------------------------------------------------------------
+1) 아이작 심 통신 연결 성공 확인:
+   - diag_info.txt 확인 결과, 도메인 ID 101 동기화 후 `/clock`이 60Hz로 정상 발행되고,
+     `/cmd_vel`, `/odom` 토픽이 활성화되었음을 확인함. (아이작 심 측 통신 문제 완전 해결됨)
+
+2) Nav2 실행 실패의 결정적 원인 2건 규명 및 조치 완료:
+   [원인 A: Global Planner 플러그인 로드 실패로 Bringup 전체 중단]
+   - 로그: `Failed to create global planner... nav2_navfn_planner/NavfnPlanner does not exist`
+   - 사실: ROS 2 Jazzy 규격에서는 슬래시(/)가 아닌 C++ 완전 한정자(::)를 요구함.
+   - 조치: `mir100_navigation_params.yaml`의 planner 및 behavior 플러그인을
+     `nav2_navfn_planner::NavfnPlanner` 및 `nav2_behaviors::*`로 전면 수정 완료함.
+
+   [원인 B: map_server 맵 파일 미로드]
+   - 로그: `yaml-filename parameter is empty, set map through 'load_map'-service`
+   - 사실: 파라미터 파일의 `yaml_filename: ""` 빈 문자열이 런치 인자를 덮어씀.
+   - 조치: 파라미터 파일 내 `yaml_filename`에 스마트팜 맵 경로를 직접 바인딩하여
+     부팅 즉시 맵을 강제 로드하도록 수정 완료함.
+
+
+=================================================================================
+2. [고사양 PC 실행 절차]
+=================================================================================
+
+[1단계: 최신 수정 코드 Pull 및 빌드]
+    cd ~/ROKEY_P3_A1 && git pull origin feature/lwh
+    ros_set && cd ~/ROKEY_P3_A1/cobot3_ws
+    colcon build --symlink-install --packages-select mir100_navigation nav_to_goal
+
+[2단계: 터미널 1 - Isaac Sim 실행 및 Play]
+    export ROS_DISTRO=jazzy
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
+    isaac_ros
+    isaac
+    -> Collected_260916_AMR_test.usd 오픈 상태에서 Play(▶) 클릭
+
+[3단계: 터미널 2 - Nav2 & RViz2 실행]
+    ros_set
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+    ros2 launch mir100_navigation mir_navigation.launch.py \
+        map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+    -> 플러그인 오류 및 맵 파라미터가 해결되어 모든 Nav2 노드가 Active 상태로 올라가며,
+       RViz2에 스마트팜 맵과 로봇 모델이 에러 없이 정상 표시됨.
+
+[4단계: 터미널 3 - 랙 통로 정밀 진입 주행]
+    ros_set
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+    ros2 run nav_to_goal nav_to_pose
+    -> MiR100이 두 랙 사이 통로(X=-0.87, Y=0.88, Yaw=90°)로 진입하여 감속 후 정밀 정지함.
+=================================================================================
