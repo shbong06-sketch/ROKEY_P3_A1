@@ -40,7 +40,7 @@ amcl:
     scan_topic: /scan
     map_topic: /map
     set_initial_pose: true
-    always_reset_initial_pose: false
+    always_reset_initial_pose: true
     first_map_only: false
     initial_pose:
       x: -2.0
@@ -119,8 +119,8 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: false
     feedback: "OPEN_LOOP"
-    max_velocity: [0.8, 0.0, 1.0]
-    min_velocity: [-0.3, 0.0, -1.0]
+    max_velocity: [0.5, 0.0, 0.8]
+    min_velocity: [-0.2, 0.0, -0.8]
     velocity_timeout: 1.0
     odom_topic: "/odom"
     odom_duration: 0.1
@@ -139,13 +139,13 @@ controller_server:
 
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.3
+      required_movement_radius: 0.2
       movement_time_allowance: 10.0
 
     stopped_goal_checker:
       plugin: "nav2_controller::StoppedGoalChecker"
-      xy_goal_tolerance: 0.20
-      yaw_goal_tolerance: 0.20
+      xy_goal_tolerance: 0.08
+      yaw_goal_tolerance: 0.08
       stateful: True
 
     FollowPath:
@@ -153,18 +153,18 @@ controller_server:
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
-      max_vel_x: 0.8
+      max_vel_x: 0.5
       max_vel_y: 0.0
-      max_vel_theta: 1.0
+      max_vel_theta: 0.8
       min_speed_xy: 0.0
-      max_speed_xy: 0.8
+      max_speed_xy: 0.5
       min_speed_theta: 0.0
-      acc_lim_x: 1.5
+      acc_lim_x: 1.0
       acc_lim_y: 0.0
-      acc_lim_theta: 2.5
-      decel_lim_x: -1.5
+      acc_lim_theta: 2.0
+      decel_lim_x: -1.0
       decel_lim_y: 0.0
-      decel_lim_theta: -2.5
+      decel_lim_theta: -2.0
       vx_samples: 20
       vy_samples: 5
       vtheta_samples: 20
@@ -172,8 +172,8 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.3
-      xy_goal_tolerance: 0.20
-      trans_stopped_velocity: 0.20
+      xy_goal_tolerance: 0.08
+      trans_stopped_velocity: 0.05
       short_circuit_trajectory_evaluation: True
       stateful: True
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
@@ -185,7 +185,7 @@ controller_server:
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
-      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.slowing_factor: 8.0
       RotateToGoal.lookahead_time: -1.0
 
 controller_server_rclcpp_node:
@@ -225,8 +225,8 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: True
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.38
 
   local_costmap_client:
     ros__parameters:
@@ -268,8 +268,8 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: True
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.38
       always_send_full_costmap: True
 
   global_costmap_client:
