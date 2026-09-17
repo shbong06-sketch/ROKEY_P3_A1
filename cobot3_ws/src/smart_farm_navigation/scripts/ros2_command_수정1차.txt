@@ -110,3 +110,17 @@
    -> 아이작 심의 시계(/clock)가 멈춰있어 Nav2 라이프사이클이 정지된 상태입니다.
    -> run_all.sh 를 실행하면 /clock 감지 후에 Nav2가 기동되므로 에러가 발생하지 않습니다.
 =================================================================================
+
+
+bash -c "
+echo '=== 1. ENV ==='
+echo ROS_DISTRO=\$ROS_DISTRO
+echo ROS_DOMAIN_ID=\$ROS_DOMAIN_ID
+echo RMW_IMPLEMENTATION=\$RMW_IMPLEMENTATION
+echo '=== 2. TOPIC LIST ==='
+ros2 topic list
+echo '=== 3. CLOCK HZ ==='
+timeout 2 ros2 topic hz /clock || echo 'No /clock'
+echo '=== 4. ODOM INFO ==='
+ros2 topic info /odom || echo 'No /odom'
+" > ~/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/errored/diag_info.txt

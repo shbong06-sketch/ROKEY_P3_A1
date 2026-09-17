@@ -9,8 +9,8 @@ RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 /parameter_events
 /rosout
 === 3. CLOCK HZ ===
-average rate: 60.008
-	min: 0.016s max: 0.018s std dev: 0.00058s window: 62
+average rate: 59.994
+	min: 0.016s max: 0.018s std dev: 0.00048s window: 62
 No /clock
 === 4. ODOM INFO ===
 Type: nav_msgs/msg/Odometry

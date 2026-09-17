@@ -40,17 +40,15 @@
     -> Collected_260916_AMR_test.usd 오픈 상태에서 Play(▶) 클릭
 
 [3단계: 터미널 2 - Nav2 & RViz2 실행]
-    ros_set
-    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
-
-    ros2 launch mir100_navigation mir_navigation.launch.py \
-        map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+ros_set
+source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+ros2 launch mir100_navigation mir_navigation.launch.py \map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
     -> 플러그인 오류 및 맵 파라미터가 해결되어 모든 Nav2 노드가 Active 상태로 올라가며,
        RViz2에 스마트팜 맵과 로봇 모델이 에러 없이 정상 표시됨.
 
 [4단계: 터미널 3 - 랙 통로 정밀 진입 주행]
-    ros_set
-    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+ros_set
+source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 
     ros2 run nav_to_goal nav_to_pose
     -> MiR100이 두 랙 사이 통로(X=-0.87, Y=0.88, Yaw=90°)로 진입하여 감속 후 정밀 정지함.
