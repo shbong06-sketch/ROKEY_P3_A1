@@ -125,9 +125,7 @@
      source ~/cobot3_ws/install/setup.bash                                      
                                                                                 
      # 내비게이션 실행                                                          
-     ros2 launch mir100_navigation mir_navigation.launch.py \                   
-         map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/      
-     maps/260916_AMR_test_yaml.yaml                                             
+     ros2 launch mir100_navigation mir_navigation.launch.py \map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml                                             
                                                                                 
      터미널 3: 목표 지점 자율 주행 실행                                                                                
      # ros 패키지 소싱                                                          
