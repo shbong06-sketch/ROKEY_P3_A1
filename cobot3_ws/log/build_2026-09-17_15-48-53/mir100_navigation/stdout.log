@@ -1,0 +1,34 @@
+-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation
+-- Install configuration: ""
+-- Execute custom install script
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/launch/mir_navigation.launch.py
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/params/mir100_navigation_params.yaml
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/rviz2/mir100_navigation.rviz
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/maps/260916_AMR_test.png
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/maps/260916_AMR_test_yaml.yaml
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/maps/260916_AMR_test_yaml.yaml.png
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/launch/mir_navigation.launch.py
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/params/mir100_navigation_params.yaml
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/rviz2/mir100_navigation.rviz
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/maps/260916_AMR_test.png
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml.png
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/package_run_dependencies/mir100_navigation
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/parent_prefix_path/mir100_navigation
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/ament_prefix_path.sh
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/ament_prefix_path.dsv
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/path.sh
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/path.dsv
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.bash
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.sh
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.zsh
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.dsv
+-- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/package.dsv
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/packages/mir100_navigation
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/cmake/mir100_navigationConfig.cmake
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/cmake/mir100_navigationConfig-version.cmake
+-- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/package.xml

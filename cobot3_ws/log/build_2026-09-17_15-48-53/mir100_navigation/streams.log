@@ -1,0 +1,38 @@
+[0.030s] Invoking command in '/home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation -- -j8 -l8
+[0.483s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.492s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.692s] -- Configuring done (0.6s)
+[0.705s] -- Generating done (0.0s)
+[0.708s] -- Build files have been written to: /home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation
+[0.736s] Invoked command in '/home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation -- -j8 -l8
+[0.748s] Invoking command in '/home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation
+[0.757s] -- Install configuration: ""
+[0.757s] -- Execute custom install script
+[0.758s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/launch/mir_navigation.launch.py
+[0.758s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/params/mir100_navigation_params.yaml
+[0.758s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/rviz2/mir100_navigation.rviz
+[0.759s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/maps/260916_AMR_test.png
+[0.759s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/maps/260916_AMR_test_yaml.yaml
+[0.759s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/maps/260916_AMR_test_yaml.yaml.png
+[0.760s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/launch/mir_navigation.launch.py
+[0.760s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/params/mir100_navigation_params.yaml
+[0.760s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/rviz2/mir100_navigation.rviz
+[0.761s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/maps/260916_AMR_test.png
+[0.761s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+[0.761s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml.png
+[0.762s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/package_run_dependencies/mir100_navigation
+[0.762s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/parent_prefix_path/mir100_navigation
+[0.762s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/ament_prefix_path.sh
+[0.762s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/ament_prefix_path.dsv
+[0.763s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/path.sh
+[0.763s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/environment/path.dsv
+[0.763s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.bash
+[0.763s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.sh
+[0.763s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.zsh
+[0.764s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/local_setup.dsv
+[0.764s] -- Symlinking: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/package.dsv
+[0.772s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/ament_index/resource_index/packages/mir100_navigation
+[0.773s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/cmake/mir100_navigationConfig.cmake
+[0.773s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/cmake/mir100_navigationConfig-version.cmake
+[0.773s] -- Up-to-date symlink: /home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation/share/mir100_navigation/package.xml
+[0.775s] Invoked command in '/home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/rokey/ROKEY_P3_A1/cobot3_ws/build/mir100_navigation
