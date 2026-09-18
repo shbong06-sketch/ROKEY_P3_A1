@@ -38,7 +38,8 @@ class MotionConfig:
     position_tolerance_m: float = 0.006
     orientation_tolerance_deg: float = 3.0
     goal_hold_seconds: float = 0.25
-    reach_timeout_seconds: float = 10.0
+    # 계획된 TCP 이동시간이 끝난 뒤 실제 TCP가 도달할 때까지 추가로 기다리는 시간
+    reach_timeout_seconds: float = 20.0
     joint_limit_margin_rad: float = 0.002
 
     # 물리 PICK 성공 판정 기준
