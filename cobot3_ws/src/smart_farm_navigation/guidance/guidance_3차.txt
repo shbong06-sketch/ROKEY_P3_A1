@@ -30,6 +30,155 @@ ros2 topic echo /chassis/odom --once
 - /cmd_vel의 Subscription count가 1 이상이다.
 - /chassis/odom에서 frame_id: odom, child_frame_id: base_link인 메시지를 받는다.
 
+
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 topic list
+/back_stereo_imu/imu
+/chassis/imu
+/chassis/odom
+/cmd_vel
+/front_3d_lidar/lidar_points
+/front_stereo_camera/left/camera_info
+/front_stereo_camera/left/image_raw
+/front_stereo_camera/right/camera_info
+/front_stereo_camera/right/image_raw
+/front_stereo_imu/imu
+/left_stereo_imu/imu
+/parameter_events
+/right_stereo_imu/imu
+/rosout
+/tf
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 topic info /cmd_vel -v
+Type: geometry_msgs/msg/Twist
+
+Publisher count: 0
+
+Subscription count: 1
+
+Node name: _World_nova_carter_ROS_differential_drive_ros2_subscribe_twist
+Node namespace: /
+Topic type: geometry_msgs/msg/Twist
+Topic type hash: RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.2a.82.c6.e2.97.7d.02.00.00.00.00.00.03.04
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 topic echo /chassis/odom --once
+header:
+  stamp:
+    sec: 36
+    nanosec: 166668552
+  frame_id: odom
+child_frame_id: base_link
+pose:
+  pose:
+    position:
+      x: 0.03996384269926224
+      y: -7.161640503435874e-06
+      z: -4.7768554374114086e-05
+    orientation:
+      x: -2.14812409684394e-07
+      y: -7.860801070996585e-05
+      z: -0.00013737125807444293
+      w: 0.9999999874749359
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+twist:
+  twist:
+    linear:
+      x: 0.0007356933201663196
+      y: -0.00011393714521545917
+      z: -1.9628945665317588e-05
+    angular:
+      x: -9.045778278959915e-05
+      y: -9.02197789400816e-05
+      z: 0.0007049913401715457
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/escape_controller.yaml"
+Package not found
+Package 'smart_farm_navigation' not found
+rokey@IsaacSim03:~/ROKEY_P3_A1$ 
+---
+
 3. 제어 노드를 대기 상태로 실행한다.
 
 ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/escape_controller.yaml"
