@@ -1,0 +1,14 @@
+escape_controller:
+  ros__parameters:
+    cmd_vel_topic: /cmd_vel
+    odom_topic: /chassis/odom
+    auto_start: false
+    # The six values below must be measured in smart_farm_nav2_01.usd before use.
+    reverse_speed_mps: 0.0
+    reverse_duration_s: 0.0
+    ccw_angular_speed_radps: 0.0
+    turn_duration_s: 0.0
+    forward_speed_mps: 0.0
+    forward_duration_s: 0.0
+    settle_duration_s: 0.5
+    odom_timeout_s: 1.0
