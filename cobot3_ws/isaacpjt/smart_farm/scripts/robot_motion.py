@@ -41,7 +41,7 @@ LEGACY_DEMO_SLOT = SlotPose(
         orientation=np.array([1.0, 0.0, 0.0, 0.0]),
     ),
     insertion_axis_world=np.array([-1.0, 0.0, 0.0]),
-    slot_id="RACK_L1",
+    slot_id="simple_rack",
 )
 
 
@@ -128,7 +128,7 @@ def main(slot: SlotPose = LEGACY_DEMO_SLOT):
     robot = world.scene.add(
         SingleManipulator(
             prim_path=ROBOT_PATH,
-            name="m0609_fork",
+            name="m0609_with_fork",
             end_effector_prim_path=f"{ROBOT_PATH}/link_6",
         )
     )
