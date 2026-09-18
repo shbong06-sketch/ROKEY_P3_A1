@@ -16,7 +16,7 @@ class ForkTcp:
 
     parent_frame: str = "tool0"
     offset_m: np.ndarray = field(
-        default_factory=lambda: np.array([0.0, 0.0, 0.245], dtype=float)
+        default_factory=lambda: np.array([0.0, 0.0, 0.2695], dtype=float)
     )
 
 

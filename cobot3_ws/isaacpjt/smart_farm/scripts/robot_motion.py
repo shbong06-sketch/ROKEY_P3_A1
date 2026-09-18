@@ -40,7 +40,7 @@ LEGACY_DEMO_SLOT = SlotPose(
         position=np.array([-1.000, -0.040, 1.072]),
         # 기존 APPROACH 정기구학과 같은 방향이다. 포크 진행축(local +Z)은
         # world -X, 두 갈래 간격축(local +X)은 world -Y를 향한다.
-        orientation=np.array([0.5, 0.5, -0.5, -0.5]),
+        orientation=np.array([0.7071, 0, 0, -0.7071]),
     ),
     insertion_axis_world=np.array([-1.0, 0.0, 0.0]),
     slot_id="simple_rack",
