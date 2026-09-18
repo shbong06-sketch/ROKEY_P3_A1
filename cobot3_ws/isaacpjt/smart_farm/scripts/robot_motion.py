@@ -38,9 +38,9 @@ PHYSICS_DT = 1.0 / 60.0
 LEGACY_DEMO_SLOT = SlotPose(
     tcp_at_channel_entrance=Pose(
         position=np.array([-1.000, -0.040, 1.072]),
-        # 포크 진행축(local +Z)은 world -X, 두 갈래 간격축(local +X)은
-        # world +Y를 향한다. 즉 진행축을 유지한 채 포크를 90도 눕힌 자세다.
-        orientation=np.array([0.5, -0.5, -0.5, 0.5]),
+        # 기존 APPROACH 정기구학과 같은 방향이다. 포크 진행축(local +Z)은
+        # world -X, 두 갈래 간격축(local +X)은 world -Y를 향한다.
+        orientation=np.array([0.5, 0.5, -0.5, -0.5]),
     ),
     insertion_axis_world=np.array([-1.0, 0.0, 0.0]),
     slot_id="simple_rack",
