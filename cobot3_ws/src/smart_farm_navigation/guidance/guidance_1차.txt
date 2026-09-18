@@ -1,0 +1,56 @@
+[1차] ADR 기본 점검용 고피 실행 가이드
+
+목적
+- 현재 장면의 ROS 2 Bridge, Nova Carter Topic, TF, 센서 연결 상태를 사실값으로 수집한다.
+- 현재 launch 파일은 이전 Carter 다중 로봇 예제 설정을 참조하므로, 이 단계에서는 실행하지 않는다.
+
+1. 고피 터미널에서 작업 경로와 ROS 2 환경을 확인한다.
+
+cd /home/rokey/cobot3_ws
+pwd
+readlink -f /home/rokey/cobot3_ws
+ros_set
+isaac_ros
+echo "$ROS_DOMAIN_ID"
+echo "$RMW_IMPLEMENTATION"
+echo "$FASTRTPS_DEFAULT_PROFILES_FILE"
+
+기대값
+- pwd 및 readlink 결과가 /home/rokey/ROKEY_P3_A1/cobot3_ws 이어야 한다.
+- ROS_DOMAIN_ID는 101 이어야 한다.
+
+2. Isaac Sim에서 아래 장면을 직접 연다.
+
+/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smart_farm_nav2_01.usd
+
+3. Isaac Sim에서 Play를 누른 뒤, 별도 터미널에서 20초 이내에 아래 명령을 실행한다.
+
+ros_set
+isaac_ros
+export ROS_DOMAIN_ID=101
+ros2 topic list -t | sort
+ros2 node list
+ros2 topic info /clock -v
+timeout 5s ros2 topic echo /clock --once
+timeout 5s ros2 topic hz /clock
+ros2 run tf2_tools view_frames
+
+4. 3단계 출력에서 다음을 확인하여 통째로 저장한다.
+- /clock 존재 및 값 증가
+- /clock Publisher가 1개 이상인지. Publisher가 0이면 아래 Nav2 시험을 시작하지 않는다.
+- /tf, /tf_static 존재
+- Nova Carter의 속도 명령 Topic, Odometry Topic, LaserScan 또는 PointCloud2 Topic의 실제 이름
+- TF 트리의 map -> odom -> base_link 또는 장면에서 사용하는 동등 프레임 연결
+
+5. 실제 Topic 이름을 확인한 뒤에만 다음 명령을 사용한다. <...>는 3단계에서 확인한 이름으로 교체한다.
+
+ros2 topic info <속도_명령_Topic> -v
+ros2 topic echo <Odometry_Topic> --once
+ros2 topic echo <LaserScan_또는_PointCloud2_Topic> --once
+
+주의
+- 현 시점에는 /cmd_vel을 수동 발행하지 않는다. 로봇 방향, 회전 부호, 안전 거리, 선속도 및 각속도 제한이 확정되지 않았다.
+- carter_farm_nav2_260918.launch.py는 carter1/carter2 및 carter_warehouse_navigation 설정을 참조하므로 이 장면의 검증용으로 사용하지 않는다.
+- 이전 MiR100 참고 코드의 ROS Domain ID 103, 정적 map -> odom TF, odom_to_tf.py는 복사하거나 실행하지 않는다. 현재 ADR 기준 ROS_DOMAIN_ID는 101이며, AMCL을 사용할 경우 map -> odom은 AMCL이 발행해야 한다.
+- /clock이 없거나 Publisher가 0이면 use_sim_time=true Nav2 노드는 시뮬레이션 시간을 받지 못한다. 해당 명령의 원문 출력을 errored/에 저장하고 다음 단계로 진행하지 않는다.
+- 위 명령의 출력과 Isaac Sim Console 오류가 발생하면 errored/ 디렉터리에 원문 그대로 저장한다.
