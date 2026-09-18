@@ -392,3 +392,41 @@ is_dense: true
 - 이전 MiR100 참고 코드의 ROS Domain ID 103, 정적 map -> odom TF, odom_to_tf.py는 복사하거나 실행하지 않는다. 현재 ADR 기준 ROS_DOMAIN_ID는 101이며, AMCL을 사용할 경우 map -> odom은 AMCL이 발행해야 한다.
 - /clock이 없거나 Publisher가 0이면 use_sim_time=true Nav2 노드는 시뮬레이션 시간을 받지 못한다. 해당 명령의 원문 출력을 errored/에 저장하고 다음 단계로 진행하지 않는다.
 - 위 명령의 출력과 Isaac Sim Console 오류가 발생하면 errored/ 디렉터리에 원문 그대로 저장한다.
+
+6. 2026-09-18 고피 점검 결과 판정
+
+- 정상 확인: ROS_DOMAIN_ID=101, /cmd_vel(Twist) 구독자 1개, /chassis/odom(Odometry), odom -> base_link TF, /front_3d_lidar/lidar_points(PointCloud2).
+- 보류: /clock과 /tf_static은 발행되지 않았다. 이는 현재의 /cmd_vel 개루프 탈출 시험을 막지는 않지만, use_sim_time=true Nav2 연동 전에는 Isaac Sim Action Graph에 Clock publisher를 추가해야 한다.
+- 보류: /cmd_vel publisher는 0개다. 이는 외부 제어 노드가 아직 없다는 뜻이며 Isaac Sim 구독 문제는 아니다.
+
+7. 탈출 제어 구현 전 사용자 확인이 필요한 물리값
+
+- 로봇 전방이 /chassis/odom의 +x인지 여부
+- 허용 가능한 최대 선속도(m/s)와 각속도(rad/s)
+- cube 두 개의 간격, 로봇 외곽과 cube 사이의 최소 여유 거리, 통로를 벗어났다고 판단할 목표 위치 또는 기준
+- 후진, 반시계 회전, 전진 각각의 목표 거리 또는 목표 yaw
+
+위 값은 현재 토픽 목록만으로 결정할 수 없다. 값이 확정되기 전에는 /cmd_vel을 발행하지 않는다. 값 또는 장면 치수와 초기 pose 캡처를 전달하면 이를 ROS 2 파라미터로 구성하여 smart_farm_navigation 패키지와 탈출 제어 노드를 구현한다.
+
+8. smart_farm_nav2_01.usd 탈출 제어 노드 빌드 및 대기 실행
+
+아래 절차는 smart_farm_nav2_01.usd가 Isaac Sim에서 Play 상태이고 /chassis/odom이 발행되는 상태에서 실행한다.
+
+cd /home/rokey/cobot3_ws
+ros_set
+colcon build --packages-select smart_farm_navigation --symlink-install
+source install/setup.bash
+ros2 run smart_farm_navigation escape_controller --ros-args --params-file /home/rokey/cobot3_ws/src/smart_farm_navigation/config/escape_controller.yaml
+
+기대 동작
+- auto_start: false 및 이동값 0.0 설정이므로 이 실행만으로는 로봇이 움직이지 않는다.
+- /chassis/odom 수신 확인 뒤, 물리값이 입력된 실행 명령을 기다린다.
+- Ctrl+C, Odometry 수신 중단, 시퀀스 완료 시 /cmd_vel에 linear.x=0.0, angular.z=0.0을 발행한다.
+
+구현 파일
+- smart_farm_navigation/escape_controller.py: 후진 -> 정지 -> z축 반시계 회전 -> 정지 -> 전진 -> 정지 순서 제어
+- config/escape_controller.yaml: 실측 후 확정할 속도 및 시간 파라미터
+
+주의
+- 실측값을 전달받기 전에는 auto_start:=true를 넣어 실행하지 않는다.
+- /clock 부재는 이 노드의 현재 벽시계 기반 순차 제어에는 영향이 없으나, 이후 Nav2 단계 전에는 별도로 해결한다.
