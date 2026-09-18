@@ -31,3 +31,25 @@ ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros
 중단 조건
 - 1단계 또는 2단계의 test 명령이 실패하면 실행하지 않는다.
 - 실패한 명령의 출력 전체를 errored/에 새 txt 파일로 저장한다.
+
+---
+rokey@IsaacSim03:~/cobot3_ws$ ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/escape_controller.yaml"
+[INFO] [1789731712.010224286] [escape_controller]: Prepared for /cmd_vel; waiting for /chassis/odom. Set auto_start:=true and all six motion parameters to run.
+^C[INFO] [1789731766.712547167] [escape_controller]: Interrupted; publishing zero Twist.
+Failed to publish log message to rosout: publisher's context is invalid, at ./src/rcl/publisher.c:423
+Traceback (most recent call last):
+  File "/home/rokey/cobot3_ws/install/smart_farm_navigation/lib/smart_farm_navigation/escape_controller", line 33, in <module>
+    sys.exit(load_entry_point('smart-farm-navigation', 'console_scripts', 'escape_controller')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rokey/cobot3_ws/build/smart_farm_navigation/smart_farm_navigation/escape_controller.py", line 190, in main
+    node.destroy_node()
+  File "/home/rokey/cobot3_ws/build/smart_farm_navigation/smart_farm_navigation/escape_controller.py", line 178, in destroy_node
+    self._publish()
+  File "/home/rokey/cobot3_ws/build/smart_farm_navigation/smart_farm_navigation/escape_controller.py", line 109, in _publish
+    self.command_publisher.publish(message)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/publisher.py", line 70, in publish
+    self.__publisher.publish(msg)
+rclpy._rclpy_pybind11.RCLError: Failed to publish: publisher's context is invalid, at ./src/rcl/publisher.c:423
+[ros2run]: Process exited with failure 1
+rokey@IsaacSim03:~/cobot3_ws$ 
+---
