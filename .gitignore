@@ -55,8 +55,6 @@ CATKIN_IGNORE
 
 # --- USD 물리 파이프라인 추가 (ROKEY_P3_A1/cabbage) ---
 *.bak_*
-*_physics.usd
-*_physics.usda
 venv/
 __pycache__/
 .DS_Store
