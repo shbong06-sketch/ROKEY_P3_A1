@@ -60,3 +60,6 @@ CATKIN_IGNORE
 venv/
 __pycache__/
 .DS_Store
+
+# overweight
+nova_carter_sim_optimized.usdCollected_smart_farm_nav2/
