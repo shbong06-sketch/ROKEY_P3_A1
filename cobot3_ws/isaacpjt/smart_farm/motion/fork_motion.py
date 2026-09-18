@@ -153,6 +153,7 @@ class ForkMotion:
         self.base_pose_at_start = None
         self._start_tcp = None
         self._goal_tcp = None
+        self._path_duration = 0.0
         self._elapsed = 0.0
         self._hold_elapsed = 0.0
         self._pallet_start = None
@@ -202,7 +203,7 @@ class ForkMotion:
             ArticulationAction(joint_positions=joint_solution, joint_indices=self.joint_indices)
         )
 
-        if self._elapsed > self.config.reach_timeout_seconds:
+        if self._elapsed > self._path_duration + self.config.reach_timeout_seconds:
             return self._fail(f"{self.state}: TCP 도달 시간 초과")
 
         if path_finished and self._tcp_reached_goal():
@@ -221,6 +222,8 @@ class ForkMotion:
         self.state = state
         self._start_tcp = Pose(np.asarray(position, dtype=float), np.asarray(orientation, dtype=float))
         self._goal_tcp = goal_tcp
+        distance = np.linalg.norm(self._goal_tcp.position - self._start_tcp.position)
+        self._path_duration = max(distance / self.config.tcp_speed_m_s, 1e-6)
         self._elapsed = 0.0
         self._hold_elapsed = 0.0
 
@@ -236,9 +239,7 @@ class ForkMotion:
         TCP 위치를 보간하므로 포크 높이와 방향을 유지한 직선 목표가 된다.
         """
 
-        distance = np.linalg.norm(self._goal_tcp.position - self._start_tcp.position)
-        duration = max(distance / self.config.tcp_speed_m_s, 1e-6)
-        alpha = min(1.0, self._elapsed / duration)
+        alpha = min(1.0, self._elapsed / self._path_duration)
         position = self._start_tcp.position + alpha * (
             self._goal_tcp.position - self._start_tcp.position
         )
