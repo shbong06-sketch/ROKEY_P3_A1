@@ -12,8 +12,8 @@ from typing import Optional
 import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from rclpy.exceptions import RCLError
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
 
 
 class Phase(Enum):
@@ -176,20 +176,21 @@ class EscapeController(Node):
                 self._enter(Phase.COMPLETE, now)
 
     def destroy_node(self) -> bool:
-        # SIGINT can invalidate the ROS context before this method runs.
-        # The timer has already been publishing zero Twist while waiting or
-        # after completion, so only make this final best-effort stop publish
-        # when the context remains valid.
+        # Publish one final zero command while the context is still available.
         if rclpy.ok(context=self.context):
             try:
                 self._publish()
-            except RCLError:
+            except Exception:
+                # Teardown must not turn a successful Ctrl+C stop into an
+                # application failure if middleware has already closed.
                 pass
         return super().destroy_node()
 
 
 def main() -> None:
-    rclpy.init()
+    # Let Python raise KeyboardInterrupt before rclpy shuts down its context,
+    # so the finally block can publish the stop Twist deterministically.
+    rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
     node = EscapeController()
     try:
         rclpy.spin(node)
