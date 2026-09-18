@@ -3,16 +3,89 @@ ROS_DISTRO=jazzy
 ROS_DOMAIN_ID=101
 RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 === 2. TOPIC LIST ===
+/amcl/transition_event
+/amcl_pose
+/behavior_server/transition_event
+/bond
+/bt_navigator/transition_event
+/clicked_point
 /clock
 /cmd_vel
+/cmd_vel_nav
+/cmd_vel_raw
+/cmd_vel_smoothed
+/collision_monitor/collision_points_marker
+/collision_monitor/transition_event
+/controller_server/transition_event
+/cost_cloud
+/diagnostics
+/docking_server/transition_event
+/downsampled_costmap
+/downsampled_costmap_updates
+/evaluation
+/front_3d_lidar/lidar_points
+/front_stereo_camera/left/image_raw
+/global_costmap/costmap
+/global_costmap/costmap_raw
+/global_costmap/costmap_raw_updates
+/global_costmap/costmap_updates
+/global_costmap/footprint
+/global_costmap/global_costmap/transition_event
+/global_costmap/obstacle_layer
+/global_costmap/obstacle_layer_raw
+/global_costmap/obstacle_layer_raw_updates
+/global_costmap/obstacle_layer_updates
+/global_costmap/published_footprint
+/global_costmap/static_layer
+/global_costmap/static_layer_raw
+/global_costmap/static_layer_raw_updates
+/global_costmap/static_layer_updates
+/global_costmap/voxel_marked_cloud
+/goal_pose
+/initialpose
+/joint_states
+/local_costmap/costmap
+/local_costmap/costmap_raw
+/local_costmap/costmap_raw_updates
+/local_costmap/costmap_updates
+/local_costmap/footprint
+/local_costmap/local_costmap/transition_event
+/local_costmap/obstacle_layer
+/local_costmap/obstacle_layer_raw
+/local_costmap/obstacle_layer_raw_updates
+/local_costmap/obstacle_layer_updates
+/local_costmap/published_footprint
+/local_costmap/voxel_marked_cloud
+/local_plan
+/map
+/map_server/transition_event
+/map_updates
+/marker
+/mobile_base/sensors/bumper_pointcloud
 /odom
 /parameter_events
+/particle_cloud
+/particlecloud
+/plan
+/plan_smoothed
+/planner_server/transition_event
+/received_global_plan
+/robot_description
 /rosout
+/route_graph
+/route_server/transition_event
+/scan
+/smoother_server/transition_event
+/speed_limit
+/tf
+/tf_static
+/transformed_global_plan
+/velocity_smoother/transition_event
+/waypoint_follower/transition_event
+/waypoints
 === 3. CLOCK HZ ===
-average rate: 59.994
-	min: 0.016s max: 0.018s std dev: 0.00048s window: 62
 No /clock
 === 4. ODOM INFO ===
 Type: nav_msgs/msg/Odometry
-Publisher count: 1
-Subscription count: 0
+Publisher count: 0
+Subscription count: 2
