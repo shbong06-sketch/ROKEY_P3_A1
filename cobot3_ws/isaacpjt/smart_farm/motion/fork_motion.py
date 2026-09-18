@@ -71,7 +71,7 @@ class LulaTool0IK:
             urdf_path=str(urdf_path),
         )
 
-    def solve(self, world_tcp_target: Pose, base_pose, _seed: np.ndarray) -> np.ndarray | None:
+    def solve(self, world_tcp_target: Pose, base_pose, seed: np.ndarray) -> np.ndarray | None:
         """월드 TCP 목표의 IK 관절 해를 반환하고, 해가 없으면 None을 반환한다."""
 
         base_position, base_orientation = base_pose
@@ -88,12 +88,15 @@ class LulaTool0IK:
         )
         local_orientation = self._multiply(inverse_base, world_tcp_target.orientation)
 
-        action, success = self.solver.compute_inverse_kinematics(
-            "tool0", tool0_local, local_orientation
+        joint_positions, success = self.solver.compute_inverse_kinematics(
+            "tool0",
+            tool0_local,
+            local_orientation,
+            warm_start=seed,
         )
-        if not success or action.joint_positions is None:
+        if not success or joint_positions is None:
             return None
-        return np.asarray(action.joint_positions, dtype=float)
+        return np.asarray(joint_positions, dtype=float)
 
     @staticmethod
     def _multiply(left: np.ndarray, right: np.ndarray) -> np.ndarray:
