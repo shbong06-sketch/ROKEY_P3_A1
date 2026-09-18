@@ -62,4 +62,6 @@ __pycache__/
 .DS_Store
 
 # overweight
-nova_carter_sim_optimized.usdCollected_smart_farm_nav2/
+nova_carter_sim_optimized.usd
+Collected_smart_farm_nav2/
+omniverse-content-production.s3-us-west-2.amazonaws.com-20260918T083303Z-1-001/
