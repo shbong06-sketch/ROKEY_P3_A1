@@ -84,16 +84,21 @@ def make_tcp_pose_reader(robot, config):
     return read_tcp_pose
 
 
-def find_physics_scene_path(stage) -> str:
-    """장면 구성에 상관없이 실제 UsdPhysics.Scene prim 경로를 찾는다."""
+def find_or_create_physics_scene_path(stage) -> str:
+    """기존 물리 scene을 사용하고, 없으면 하나 생성한다."""
 
     scene_paths = [str(prim.GetPath()) for prim in stage.Traverse() if prim.IsA(UsdPhysics.Scene)]
-    if len(scene_paths) != 1:
+    if len(scene_paths) > 1:
         raise RuntimeError(
-            "UsdPhysics.Scene prim이 정확히 하나여야 합니다. 발견한 경로: "
+            "UsdPhysics.Scene prim이 둘 이상입니다. 발견한 경로: "
             f"{scene_paths}"
         )
-    return scene_paths[0]
+    if scene_paths:
+        return scene_paths[0]
+
+    physics_scene_path = "/World/physicsScene"
+    UsdPhysics.Scene.Define(stage, physics_scene_path)
+    return physics_scene_path
 
 
 def main(slot: SlotPose = LEGACY_DEMO_SLOT):
@@ -112,7 +117,7 @@ def main(slot: SlotPose = LEGACY_DEMO_SLOT):
         if not stage.GetPrimAtPath(prim_path).IsValid():
             raise RuntimeError(f"필수 prim이 없습니다: {prim_path}")
 
-    physics_scene_path = find_physics_scene_path(stage)
+    physics_scene_path = find_or_create_physics_scene_path(stage)
     print(f"물리 scene: {physics_scene_path}")
     world = World(
         stage_units_in_meters=1.0,
