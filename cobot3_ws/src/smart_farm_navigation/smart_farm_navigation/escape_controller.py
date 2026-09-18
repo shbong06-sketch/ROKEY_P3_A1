@@ -12,6 +12,7 @@ from typing import Optional
 import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from rclpy.exceptions import RCLError
 from rclpy.node import Node
 
 
@@ -175,7 +176,15 @@ class EscapeController(Node):
                 self._enter(Phase.COMPLETE, now)
 
     def destroy_node(self) -> bool:
-        self._publish()
+        # SIGINT can invalidate the ROS context before this method runs.
+        # The timer has already been publishing zero Twist while waiting or
+        # after completion, so only make this final best-effort stop publish
+        # when the context remains valid.
+        if rclpy.ok(context=self.context):
+            try:
+                self._publish()
+            except RCLError:
+                pass
         return super().destroy_node()
 
 
