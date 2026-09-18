@@ -41,7 +41,7 @@ LEGACY_DEMO_SLOT = SlotPose(
         orientation=np.array([1.0, 0.0, 0.0, 0.0]),
     ),
     insertion_axis_world=np.array([-1.0, 0.0, 0.0]),
-    slot_id="LEGACY_DEMO_UNCALIBRATED",
+    slot_id="RACK_L1",
 )
 
 
@@ -84,6 +84,18 @@ def make_tcp_pose_reader(robot, config):
     return read_tcp_pose
 
 
+def find_physics_scene_path(stage) -> str:
+    """장면 구성에 상관없이 실제 UsdPhysics.Scene prim 경로를 찾는다."""
+
+    scene_paths = [str(prim.GetPath()) for prim in stage.Traverse() if prim.IsA(UsdPhysics.Scene)]
+    if len(scene_paths) != 1:
+        raise RuntimeError(
+            "UsdPhysics.Scene prim이 정확히 하나여야 합니다. 발견한 경로: "
+            f"{scene_paths}"
+        )
+    return scene_paths[0]
+
+
 def main(slot: SlotPose = LEGACY_DEMO_SLOT):
     """선택한 단일 슬롯에서 PICK 상태 기계를 실행한다."""
 
@@ -100,11 +112,13 @@ def main(slot: SlotPose = LEGACY_DEMO_SLOT):
         if not stage.GetPrimAtPath(prim_path).IsValid():
             raise RuntimeError(f"필수 prim이 없습니다: {prim_path}")
 
+    physics_scene_path = find_physics_scene_path(stage)
+    print(f"물리 scene: {physics_scene_path}")
     world = World(
         stage_units_in_meters=1.0,
         physics_dt=PHYSICS_DT,
         rendering_dt=PHYSICS_DT,
-        physics_prim_path="/physicsScene",
+        physics_prim_path=physics_scene_path,
     )
     robot = world.scene.add(
         SingleManipulator(

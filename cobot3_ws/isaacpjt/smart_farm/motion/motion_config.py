@@ -38,7 +38,7 @@ class MotionConfig:
     position_tolerance_m: float = 0.006
     orientation_tolerance_deg: float = 3.0
     goal_hold_seconds: float = 0.25
-    reach_timeout_seconds: float = 8.0
+    reach_timeout_seconds: float = 10.0
     joint_limit_margin_rad: float = 0.002
 
     # 물리 PICK 성공 판정 기준
