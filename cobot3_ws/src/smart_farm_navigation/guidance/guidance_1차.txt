@@ -15,6 +15,23 @@ echo "$ROS_DOMAIN_ID"
 echo "$RMW_IMPLEMENTATION"
 echo "$FASTRTPS_DEFAULT_PROFILES_FILE"
 
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ cd /home/rokey/cobot3_ws
+pwd
+readlink -f /home/rokey/cobot3_ws
+ros_set
+isaac_ros
+echo "$ROS_DOMAIN_ID"
+echo "$RMW_IMPLEMENTATION"
+echo "$FASTRTPS_DEFAULT_PROFILES_FILE"
+/home/rokey/cobot3_ws
+/home/rokey/cobot3_ws
+등록 완료: /home/rokey/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib
+101
+rmw_fastrtps_cpp
+/home/rokey/.ros/fastdds_whitelist.xml
+---
+
 기대값
 - pwd 및 readlink 결과가 /home/rokey/ROKEY_P3_A1/cobot3_ws 이어야 한다.
 - ROS_DOMAIN_ID는 101 이어야 한다.
@@ -35,6 +52,42 @@ timeout 5s ros2 topic echo /clock --once
 timeout 5s ros2 topic hz /clock
 ros2 run tf2_tools view_frames
 
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros_set 
+isaac_ros
+export ROS_DOMAIN_ID=101
+ros2 topic list -t | sort
+ros2 node list
+ros2 topic info /clock -v
+timeout 5s ros2 topic echo /clock --once
+timeout 5s ros2 topic hz /clock
+ros2 run tf2_tools view_frames
+등록 완료: /home/rokey/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib
+/back_stereo_imu/imu [sensor_msgs/msg/Imu]
+/chassis/imu [sensor_msgs/msg/Imu]
+/chassis/odom [nav_msgs/msg/Odometry]
+/cmd_vel [geometry_msgs/msg/Twist]
+/front_3d_lidar/lidar_points [sensor_msgs/msg/PointCloud2]
+/front_stereo_camera/left/camera_info [sensor_msgs/msg/CameraInfo]
+/front_stereo_camera/left/image_raw [sensor_msgs/msg/Image]
+/front_stereo_camera/right/camera_info [sensor_msgs/msg/CameraInfo]
+/front_stereo_camera/right/image_raw [sensor_msgs/msg/Image]
+/front_stereo_imu/imu [sensor_msgs/msg/Imu]
+/left_stereo_imu/imu [sensor_msgs/msg/Imu]
+/parameter_events [rcl_interfaces/msg/ParameterEvent]
+/right_stereo_imu/imu [sensor_msgs/msg/Imu]
+/rosout [rcl_interfaces/msg/Log]
+/tf [tf2_msgs/msg/TFMessage]
+Unknown topic '/clock'
+WARNING: topic [/clock] does not appear to be published yet
+Could not determine the type for the passed topic
+WARNING: topic [/clock] does not appear to be published yet
+[INFO] [1789729358.404883221] [view_frames]: Listening to tf data for 5.0 seconds...
+[INFO] [1789729363.430622007] [view_frames]: Generating graph...
+[INFO] [1789729363.433151663] [view_frames]: Result:tf2_msgs.srv.FrameGraph_Response(frame_yaml="base_link: \n  parent: 'odom'\n  broadcaster: 'default_authority'\n  rate: 60.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\nnova_carter: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\nnova_carter_caster_frame_base: \n  parent: 'nova_carter'\n  broadcaster: 'default_authority'\n  rate: 60.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\nwheel_left: \n  parent: 'nova_carter'\n  broadcaster: 'default_authority'\n  rate: 60.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\nwheel_right: \n  parent: 'nova_carter'\n  broadcaster: 'default_authority'\n  rate: 60.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\ncaster_swivel_left: \n  parent: 'nova_carter_caster_frame_base'\n  broadcaster: 'default_authority'\n  rate: 120.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\ncaster_swivel_right: \n  parent: 'nova_carter_caster_frame_base'\n  broadcaster: 'default_authority'\n  rate: 120.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\ncaster_wheel_left: \n  parent: 'caster_swivel_left'\n  broadcaster: 'default_authority'\n  rate: 120.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\ncaster_wheel_right: \n  parent: 'caster_swivel_right'\n  broadcaster: 'default_authority'\n  rate: 120.380\n  most_recent_transform: 8.800000\n  oldest_transform: 6.166667\n  buffer_length: 2.633\nfront_stereo_camera_right_rgb: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nfront_stereo_camera_left_rgb: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nfront_stereo_camera_imu: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nleft_stereo_camera_right_rgb: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nleft_stereo_camera_left_rgb: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nleft_stereo_camera_imu: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nright_stereo_camera_right_rgb: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nright_stereo_camera_left_rgb: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nright_stereo_camera_imu: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nrear_stereo_camera_right_rgb: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nrear_stereo_camera_left_rgb: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nback_stereo_camera_imu: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nfront_2d_lidar: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nback_2d_lidar: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nfront_3d_lidar: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nfront_hawk: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nleft: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nright: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nleft_hawk: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_left_hawk_left: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_left_hawk_right: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nright_hawk: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_right_hawk_left: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_right_hawk_right: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nback_hawk: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_back_hawk_left: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_back_hawk_right: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nfront_owl: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nfront_fisheye_camera: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nleft_owl: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nleft_fisheye_camera: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nright_owl: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nright_fisheye_camera: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nback_owl: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nrear_fisheye_camera: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nchassis_imu: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nmount: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_left_hawk_mount: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_right_hawk_mount: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\nWorld_nova_carter_ROS_chassis_link_sensors_back_hawk_mount: \n  parent: 'base_link'\n  broadcaster: 'default_authority'\n  rate: 60.382\n  most_recent_transform: 8.783334\n  oldest_transform: 6.166667\n  buffer_length: 2.617\n")
+[INFO] [1789729363.444927376] [view_frames]: Exporting graph in frames_2026-09-18_20.02.43.pdf file...
+---
+
 4. 3단계 출력에서 다음을 확인하여 통째로 저장한다.
 - /clock 존재 및 값 증가
 - /clock Publisher가 1개 이상인지. Publisher가 0이면 아래 Nav2 시험을 시작하지 않는다.
@@ -44,9 +97,294 @@ ros2 run tf2_tools view_frames
 
 5. 실제 Topic 이름을 확인한 뒤에만 다음 명령을 사용한다. <...>는 3단계에서 확인한 이름으로 교체한다.
 
-ros2 topic info <속도_명령_Topic> -v
-ros2 topic echo <Odometry_Topic> --once
-ros2 topic echo <LaserScan_또는_PointCloud2_Topic> --once
+ros2 topic info /cmd_vel -v
+ros2 topic echo /chassis/odom --once
+ros2 topic echo /front_3d_lidar/lidar_points --once
+
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 topic info /cmd_vel -v
+Type: geometry_msgs/msg/Twist
+
+Publisher count: 0
+
+Subscription count: 1
+
+Node name: _World_nova_carter_ROS_differential_drive_ros2_subscribe_twist
+Node namespace: /
+Topic type: geometry_msgs/msg/Twist
+Topic type hash: RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.2a.82.64.c9.9d.b4.03.00.01.00.00.00.03.04
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 topic echo /chassis/odom --once
+header:
+  stamp:
+    sec: 52
+    nanosec: 950002761
+  frame_id: odom
+child_frame_id: base_link
+pose:
+  pose:
+    position:
+      x: 0.058538298196626086
+      y: -1.6108319112157318e-05
+      z: -6.999924823477126e-05
+    orientation:
+      x: -4.901580281642065e-07
+      y: -5.231461647020032e-05
+      z: -0.00023165559657248135
+      w: 0.9999999717993122
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+twist:
+  twist:
+    linear:
+      x: 0.0007423902861773968
+      y: -0.00012004611926386133
+      z: -1.0825986464624293e-05
+    angular:
+      x: 0.00027206476079300046
+      y: -0.00010116735938936472
+      z: 0.0006762780831195414
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 topic echo /front_3d_lidar/lidar_points --once
+header:
+  stamp:
+    sec: 56
+    nanosec: 516669614
+  frame_id: front_3d_lidar
+height: 1
+width: 2437
+fields:
+- name: x
+  offset: 0
+  datatype: 7
+  count: 1
+- name: y
+  offset: 4
+  datatype: 7
+  count: 1
+- name: z
+  offset: 8
+  datatype: 7
+  count: 1
+is_bigendian: false
+point_step: 12
+row_step: 29244
+data:
+- 249
+- 181
+- 27
+- 193
+- 90
+- 92
+- 22
+- 59
+- 62
+- 145
+- 2
+- 191
+- 185
+- 60
+- 235
+- 192
+- 161
+- 61
+- 204
+- 57
+- 88
+- 152
+- 3
+- 191
+- 128
+- 229
+- 188
+- 192
+- 227
+- 220
+- 76
+- 186
+- 220
+- 53
+- 4
+- 191
+- 141
+- 181
+- 157
+- 192
+- 229
+- 124
+- 104
+- 186
+- 115
+- 155
+- 4
+- 191
+- 16
+- 124
+- 39
+- 192
+- 102
+- 231
+- 30
+- 58
+- 38
+- 132
+- 164
+- 190
+- 139
+- 162
+- 18
+- 192
+- 164
+- 145
+- 194
+- 57
+- 151
+- 221
+- 164
+- 190
+- 159
+- 144
+- 27
+- 193
+- 1
+- 130
+- 6
+- 61
+- 29
+- 114
+- 2
+- 191
+- 166
+- 34
+- 235
+- 192
+- 115
+- 78
+- 192
+- 60
+- 238
+- 137
+- 3
+- 191
+- 118
+- 249
+- 188
+- 192
+- 208
+- 149
+- 145
+- 60
+- 252
+- 67
+- 4
+- 191
+- 92
+- 160
+- 157
+- 192
+- 242
+- 7
+- 111
+- 60
+- 200
+- 137
+- 4
+- 191
+- 77
+- 143
+- 39
+- 192
+- 206
+- 179
+- 16
+- 60
+- '...'
+is_dense: true
+---
+
+---
 
 주의
 - 현 시점에는 /cmd_vel을 수동 발행하지 않는다. 로봇 방향, 회전 부호, 안전 거리, 선속도 및 각속도 제한이 확정되지 않았다.
