@@ -133,6 +133,16 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Static Transform Publisher (map -> odom 연결 보장)
+    static_tf_map_to_odom = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='static_tf_map_to_odom',
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
+        parameters=[{'use_sim_time': True}],
+        output='screen'
+    )
+
     ld = LaunchDescription()
     ld.add_action(declare_map_cmd)
     ld.add_action(declare_params_file_cmd)
@@ -144,6 +154,7 @@ def generate_launch_description():
 
     ld.add_action(robot_state_publisher_node)
     ld.add_action(odom_to_tf_process)
+    ld.add_action(static_tf_map_to_odom)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
 
