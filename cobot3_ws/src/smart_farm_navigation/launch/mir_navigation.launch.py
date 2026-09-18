@@ -1,7 +1,7 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration
@@ -126,6 +126,13 @@ def generate_launch_description():
         }.items()
     )
 
+    # Odom to TF Broadcaster (Isaac Sim /odom -> /tf odom->base_footprint 브로드캐스터)
+    odom_to_tf_script = os.path.join(pkg_nav_dir, 'scripts', 'odom_to_tf.py')
+    odom_to_tf_process = ExecuteProcess(
+        cmd=['python3', odom_to_tf_script, '--ros-args', '-p', 'use_sim_time:=true'],
+        output='screen'
+    )
+
     ld = LaunchDescription()
     ld.add_action(declare_map_cmd)
     ld.add_action(declare_params_file_cmd)
@@ -136,6 +143,7 @@ def generate_launch_description():
     ld.add_action(declare_urdf_cmd)
 
     ld.add_action(robot_state_publisher_node)
+    ld.add_action(odom_to_tf_process)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
 
