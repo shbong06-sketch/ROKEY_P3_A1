@@ -33,17 +33,18 @@ from isaacsim.robot.manipulators.manipulators import SingleManipulator
 # ── 파일·로봇 경로 ───────────────────────────────────────
 SCENE_PATH = (
     Path(__file__).resolve().parent.parent
-    / "scenes/rack_pick_test/rack_pick_test.usd"
+    / "scenes/demo_test/demo_test.usd"
 )
 
-ROBOT_PATH = "/World/m0609"
-PALLET_PATH = "/World/RecycledWoodPallet_A08_PR_NVD_01"
+
+ROBOT_PATH = "/World/m0609_with_fork"
+PALLET_PATH = "/World/simple_pallet1"
 JOINT_NAMES = [f"joint_{i}" for i in range(1, 7)]
 
 
 # ── 자세 표의 기준 배치 ──────────────────────────────────
 # 이 값은 USD를 이동시키지 않습니다. 현재 배치가 맞는지만 검사합니다.
-ROBOT_BASE_POSITION = np.array([-0.75, 0.0, 0.15])
+ROBOT_BASE_POSITION = np.array([-0.75, 0.0, 0.40])
 BASE_POSITION_TOL = 0.005
 BASE_ROTATION_TOL_DEG = 1.0
 
@@ -96,7 +97,6 @@ def command_joints_deg(robot, indices, target):
             joint_indices=indices,
         )
     )
-    'ddd'
 
 
 def check_base(robot):
