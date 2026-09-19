@@ -1,0 +1,26 @@
+stateDiagram-v2
+    [*] --> WAITING : 노드 시작, zero Twist 발행
+    WAITING --> WAITING : auto_start=false 또는 파라미터 미설정 또는 odom 없음
+    WAITING --> ARC_REVERSE : auto_start=true 이고 신선한 odom 수신, 시작 자세·중앙선 기록
+    ARC_REVERSE --> ARC_STOP : 누적 yaw 변화가 turn_angle_rad 도달
+    ARC_REVERSE --> ABORTED : 경로가 reverse_max_distance_m 초과, 또는 stall_timeout_s 동안 yaw 정체, 또는 단계 제한시간 초과
+    ARC_STOP --> FORWARD : settle_duration_s 경과
+    FORWARD --> COMPLETE : 중앙선 방향 진행거리가 forward_distance_m 도달
+    FORWARD --> ABORTED : stall_timeout_s 동안 거리 정체, 또는 단계 제한시간 초과
+    ARC_REVERSE --> ABORTED : odom_timeout_s 동안 odom 없음
+    FORWARD --> ABORTED : odom_timeout_s 동안 odom 없음
+    COMPLETE --> [*] : zero Twist 를 stop_hold_duration_s 유지 후 종료 코드 0
+    ABORTED --> [*] : zero Twist 를 stop_hold_duration_s 유지 후 종료 코드 2
+
+    note right of ARC_REVERSE
+        linear.x = -drive_direction_sign × reverse_speed_mps
+        angular.z = sign(turn_angle_rad) × turn_speed_radps
+        회전반경 = reverse_speed / turn_speed = 0.4 m
+    end note
+    note right of FORWARD
+        linear.x = drive_direction_sign × forward_speed_mps
+        angular.z = _follow_line():
+          횡오차 e → 접근각 atan(cross_track_gain × e)
+          → 진행방향 오차 × heading_hold_gain (상한 heading_hold_max_radps)
+    end note
+
