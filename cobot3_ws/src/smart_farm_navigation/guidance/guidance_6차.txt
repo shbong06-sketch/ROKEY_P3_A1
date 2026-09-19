@@ -12,9 +12,23 @@ A. 점검 실행 (로봇 이동 없음)
 
 cd /home/rokey/ROKEY_P3_A1 && git pull --ff-only origin feature/navigation && bash cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh
 
+---
+^Crokey@IsaacSim03:~/ROKEY_P3_A1$ bash cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh
+== gopi_run.sh 20260919_101412  args:   host: IsaacSim03  commit: 967aca3 ==
+/opt/ros/jazzy/setup.bash: line 8: AMENT_TRACE_SETUP_FILES: unbound variable
+rokey@IsaacSim03:~/ROKEY_P3_A1$ 
+---
+
 B. 탈출 동작 실행 (A가 rc=0 이고, 아래 이동값을 승인한 경우)
 
 cd /home/rokey/ROKEY_P3_A1 && git pull --ff-only origin feature/navigation && bash cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh --escape
+
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ bash cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh --escape
+== gopi_run.sh 20260919_101459  args: --escape  host: IsaacSim03  commit: 967aca3 ==
+/opt/ros/jazzy/setup.bash: line 8: AMENT_TRACE_SETUP_FILES: unbound variable
+rokey@IsaacSim03:~/ROKEY_P3_A1$ 
+---
 
 스크립트가 하는 일 (scripts/gopi_run.sh)
 1. ROS 2 Jazzy 환경 설정 (ROS_DOMAIN_ID=101, Isaac ROS2 bridge lib 경로).
