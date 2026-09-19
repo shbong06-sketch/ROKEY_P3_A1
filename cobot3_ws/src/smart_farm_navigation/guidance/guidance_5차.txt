@@ -57,6 +57,22 @@ du -h /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smart_farm_na
 기대 결과
 - scenes/ 안에 smart_farm_nav2.usd가 있으면 크기와 git status 표시(?? 또는 !!)를 기록한다.
 - 없으면 "없음"으로 기록한다. 이 경우 터미널1의 Isaac Sim 창에서 File > Open Recent 목록에 보이는 경로를 기록한다.
+---
+그런 수동 작업 요청은 신속하지 않음. 내가 물리적 공간에서 코드로만 모든 작업을 수행할 수 있도록 내게 요청할 것. 커맨드 수행 결과를 이렇게 옮겨 붙이는 작업도 시간을 낭비하는것임. 이번 요청의 결과값은 일단 다음과 같음:
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ls -la /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/
+total 48
+drwxrwxr-x 4 rokey rokey  4096 Sep 19 09:28 .
+drwxrwxr-x 7 rokey rokey  4096 Sep 19 09:28 ..
+drwxrwxr-x 3 rokey rokey  4096 Sep 18 17:33 demo_test
+-rw-rw-r-- 1 rokey rokey  3020 Sep 18 10:50 m0617_fixed_base.usda
+-rw-rw-r-- 1 rokey rokey  3142 Sep 18 10:50 mobile_manipulator.usda
+drwxrwxr-x 3 rokey rokey  4096 Sep 19 09:28 rack_pick_test
+-rw-rw-r-- 1 rokey rokey 12781 Sep 19 09:28 smart_farm_nav2_01.usd
+-rw-rw-r-- 1 rokey rokey  8034 Sep 18 17:33 test_1.usd
+rokey@IsaacSim03:~/ROKEY_P3_A1$ git -C /home/rokey/ROKEY_P3_A1 status --short --ignored -- cobot3_ws/isaacpjt/smart_farm/scenes/
+rokey@IsaacSim03:~/ROKEY_P3_A1$ du -h /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smart_farm_nav2.usd 2>/dev/null
+rokey@IsaacSim03:~/ROKEY_P3_A1$ 
+---
 
 4. [터미널2] ROS 2 환경을 설정하고 올바른 위치에서 빌드한다.
 
