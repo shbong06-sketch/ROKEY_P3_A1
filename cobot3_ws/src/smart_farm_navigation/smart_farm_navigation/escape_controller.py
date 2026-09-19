@@ -62,7 +62,7 @@ class EscapeController(Node):
         self.declare_parameter("settle_duration_s", 0.5)
         self.declare_parameter("odom_timeout_s", 1.0)
         self.declare_parameter("phase_timeout_factor", 10.0)
-        self.declare_parameter("phase_timeout_min_s", 30.0)
+        self.declare_parameter("phase_timeout_min_s", 10.0)
         self.declare_parameter("stall_timeout_s", 4.0)
         self.declare_parameter("stall_min_progress", 0.01)
         self.declare_parameter("stop_hold_duration_s", 1.0)

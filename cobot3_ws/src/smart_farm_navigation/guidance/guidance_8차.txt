@@ -13,7 +13,8 @@
 
 [터미널 1] Isaac Sim 실행
 
-ros_set
+ros_set <--버전 충돌 오류 가능성으로 실행 안함
+
 isaac_ros
 echo "$ROS_DOMAIN_ID $RMW_IMPLEMENTATION $ROS_DISTRO"
 isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/launch_scene.py
@@ -24,8 +25,9 @@ isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts
 
 [터미널 2] 빌드 및 장면 통신 점검
 
+isaac_ros <--버전 충돌 오류 가능성으로 실행 안함
+
 ros_set
-isaac_ros
 cd /home/rokey/ROKEY_P3_A1/cobot3_ws
 rm -rf build/smart_farm_navigation install/smart_farm_navigation
 colcon build --packages-select smart_farm_navigation
@@ -37,8 +39,9 @@ ros2 run smart_farm_navigation scene_check 2>&1 | tee -a /home/rokey/ROKEY_P3_A1
 
 [터미널 3] 탈출 동작 실행
 
+isaac_ros <--버전 충돌 오류 가능성으로 실행 안함
+
 ros_set
-isaac_ros
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 ros2 launch smart_farm_navigation escape.launch.py auto_start:=true 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/escape_$(date +%Y%m%d_%H%M).txt
 
@@ -56,3 +59,50 @@ ros2 launch smart_farm_navigation escape.launch.py auto_start:=true 2>&1 | tee -
 
 참고
 - scripts/gopi_run.sh 는 위 3 개 터미널 절차를 한 번에 수행하는 선택 사항이며 이 가이드에서는 사용하지 않는다.
+
+---
+1.
+터미널 3까지 ros2관련 환경세팅 커맨드를 상기 언급한대로 수정해서 실행 후, 카터는 생각했던대로 잘 빠져나감.
+
+2.
+터미널 각 1,2,3에서 ros_set, isaac_ros의 사용에 대해 오류점이 발견돼서 지적과 동시에 고피의 '~/.bashrc'의 툴관련 추가된 설정 정보를 알려주겠음. 현재 고피에 설치되어있는 ros2와 아이작 심의 ros2 환경이 서로 다름. 설치되어있는 ros2는 jazzy고 isaac_ros의 경우엔 humble임. 이는 본 프로젝트 종료까지 고칠 수 없음. 당신이 고려해서 작업할 것. 다음은 고피의 .bashrc 중 일부 내용:
+
+export ROS_DISTRO=jazzy
+echo "ROS_DISTRO="$ROS_DISTRO
+
+# ==================================================
+# Jazzy + Isaac Sim 환경 설정
+# ===================================================
+
+# ---------- ROS2 환경 변수 ----------
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE="$HOME/.ros/fastdds_whitelist.xml"
+
+echo "ROS_DOMAIN_ID=$ROS_DOMAIN_ID"
+echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"
+echo "FASTRTPS_DEFAULT_PROFILES_FILE=$FASTRTPS_DEFAULT_PROFILES_FILE"
+
+# ---------- ROS2 소싱 (필요할 때만 실행) ----------
+alias ros_set='source /opt/ros/jazzy/setup.bash'
+
+# ---------- Isaac Sim ----------
+alias isaac='"$HOME/isaacsim/isaac-sim.sh"'
+alias isaac_python="~/isaacsim/python.sh"
+
+# ---------- Isaac Sim ROS2 Bridge 경로 (중복 추가 방지) ----------
+isaac_ros() {
+    ISAAC_ROS_LIB="$HOME/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib"
+
+    if [[ ":$LD_LIBRARY_PATH:" == *":$ISAAC_ROS_LIB:"* ]]; then
+        echo "이미 등록됨: $ISAAC_ROS_LIB"
+    else
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$ISAAC_ROS_LIB"
+        echo "등록 완료: $ISAAC_ROS_LIB"
+    fi
+}
+
+# >>> Codex installer >>>
+export PATH="/home/rokey/.local/bin:$PATH"
+# <<< Codex installer <<<
+alias usdcat='/home/rokey/isaacsim/python.sh -m pxr.UsdUtils.usdcat'
