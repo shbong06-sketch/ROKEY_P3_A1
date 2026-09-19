@@ -1,0 +1,8 @@
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-19-16-55-10-815474-IsaacSim03-315786
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [escape_controller-1]: process started with pid [315791]
+[escape_controller-1] [0m[INFO] [1789804511.123068836] [escape_controller]: Prepared for /cmd_vel; waiting for /chassis/odom. auto_start=true: sequence starts on first fresh odometry.[0m
+[escape_controller-1] [0m[INFO] [1789804511.266794382] [escape_controller]: Start pose x=-0.028 y=-0.000 yaw=0.1deg; target heading after arc 90.1deg; corridor line through (-0.03, -0.00) dir -89.9deg[0m
+[escape_controller-1] [0m[INFO] [1789804511.267010537] [escape_controller]: Phase ARC_REVERSE at x=-0.028 y=-0.000 yaw=0.1deg (timeout 31.4s)[0m
+[escape_controller-1] [31m[ERROR] [1789804520.666974820] [escape_controller]: Escape sequence ABORTED at x=0.330 y=0.129 yaw=41.3deg: ARC_REVERSE stalled: heading unchanged for 4.0s[0m
+[ERROR] [escape_controller-1]: process has died [pid 315791, exit code 2, cmd '/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/lib/smart_farm_navigation/escape_controller --ros-args -r __node:=escape_controller --params-file /home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/share/smart_farm_navigation/config/escape_controller.yaml --params-file /tmp/launch_params_2waooli4'].
