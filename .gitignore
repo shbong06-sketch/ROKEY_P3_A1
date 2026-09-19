@@ -1,8 +1,6 @@
 devel/
 logs/
-log/
 build/
-install/
 bin/
 lib/
 msg_gen/
@@ -51,10 +49,3 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
-.agent
-
-# --- USD 물리 파이프라인 추가 (ROKEY_P3_A1/cabbage) ---
-*.bak_*
-venv/
-__pycache__/
-.DS_Store
