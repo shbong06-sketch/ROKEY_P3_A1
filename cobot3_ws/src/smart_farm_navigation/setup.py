@@ -13,6 +13,7 @@ setup(
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
         ("share/" + package_name + "/config", glob("config/*.yaml")),
+        ("share/" + package_name + "/launch", glob("launch/*.launch.py")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -23,6 +24,7 @@ setup(
     entry_points={
         "console_scripts": [
             "escape_controller = smart_farm_navigation.escape_controller:main",
+            "scene_check = smart_farm_navigation.scene_check:main",
         ],
     },
 )
