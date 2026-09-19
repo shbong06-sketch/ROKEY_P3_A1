@@ -63,9 +63,10 @@ ros2 launch smart_farm_navigation escape.launch.py auto_start:=true 2>&1 | tee -
 ---
 1.
 터미널 3까지 ros2관련 환경세팅 커맨드를 상기 언급한대로 수정해서 실행 후, 카터는 생각했던대로 잘 빠져나감.
+다만, cube 벽 통로를 따라서 나갈 때 한 쪽 벽에 점점 붙으려는게 눈에 보였음. +y축 쪽으로 모니터링하고 있는 중, 카터가 통로를거의 다 빠져나왔을때 쯤에는 오른쪽 cube 벽에 닿을 정도 수준이었음. 내가 알기로 카터 처음 위치가 사실상 cube 벽 사이 간격의 한가운데인걸로 알고 있는데 원래 동작 중 후진해서 전진 할 때 빠르게 통로 중앙 위치로 x값을 복귀한다음 y축을 따라 전진하는 식으로 경로를 설계하면 좋겠음. 나중에는 vision까지 고려해  amcl로 로봇 본인 위치값 파악을 구현할 수도 있지만, 지금은 당장 이틀 뒤 26.09.21 오전 10시에 1차 시연이 있어서 이 또한 미룸. 이러한 동작을 구현하는 이유는 "/home/rokey/ROKEY_P3_A1/docs/reference"에 옮겨놓은 시스템 아키텍처와 중간 보고 md문서를 통해 파악할 것. 다만 시스템 아키텍처는 마지막 작성일이 좀 예전이라 지금의 프로세스와는 다른 점이 있음. AMR로 MiR100대신 nova_carter_ros를 쓰게된 점, manipulator도 m0609를 쓰게된 점 등... 그러한 것은 중간보고 md문서에서 힌트를 얻을 것.
 
 2.
-터미널 각 1,2,3에서 ros_set, isaac_ros의 사용에 대해 오류점이 발견돼서 지적과 동시에 고피의 '~/.bashrc'의 툴관련 추가된 설정 정보를 알려주겠음. 현재 고피에 설치되어있는 ros2와 아이작 심의 ros2 환경이 서로 다름. 설치되어있는 ros2는 jazzy고 isaac_ros의 경우엔 humble임. 이는 본 프로젝트 종료까지 고칠 수 없음. 당신이 고려해서 작업할 것. 다음은 고피의 .bashrc 중 일부 내용:
+터미널 각 1,2,3에서 ros_set, isaac_ros의 사용에 대해 오류점이 발견돼서 지적과 동시에 고피의 '~/.bashrc'의 툴관련 추가된 설정 정보를 알려주겠음. 현재 고피에 설치되어있는 ros2와 아이작 심의 ros2 환경이 서로 다름. 설치되어있는 ros2는 jazzy고 isaac_ros의 경우엔 humble임. 큰일날 뻔 함. 이는 본 프로젝트 종료까지 고칠 수 없음. 당신이 고려해서 작업하고 이렇게 충돌이 발생할지도 모르는 환경 변수가 예상될 때는 사전에 파악되도록 실행 파일을 만들어줄 것. 내가 고피에서 실행시키면 되니까. 다음은 고피의 .bashrc 중 일부 내용:
 
 export ROS_DISTRO=jazzy
 echo "ROS_DISTRO="$ROS_DISTRO
@@ -106,3 +107,5 @@ isaac_ros() {
 export PATH="/home/rokey/.local/bin:$PATH"
 # <<< Codex installer <<<
 alias usdcat='/home/rokey/isaacsim/python.sh -m pxr.UsdUtils.usdcat'
+
+3. 이제는 다른 팀원이 실제 로봇시스템을 구현할 디지털 트윈 환경을 받으면 거기서 카터 로봇이 자율주행하는 경로 설계를 할 것임. 다만, 아직 디지털 트윈 세팅이 덜 끝나서 대기 중임. 대기할 것.
