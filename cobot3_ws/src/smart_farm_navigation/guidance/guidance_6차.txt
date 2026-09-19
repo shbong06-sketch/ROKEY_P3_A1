@@ -2,42 +2,29 @@
 
 목적
 - 5차 4단계 colcon 오류(File exists)를 해결하고, 빌드·Isaac Sim 실행·통신 점검·escape_controller 실행·결과 기록·커밋·푸시를 스크립트 1개로 자동화한다.
-- 장면 실측값(로봇 초기 자세, 벽 위치, 휠 파라미터, 속도 상한)은 내피에서 USD를 직접 판독해 이미 config/escape_controller.yaml 에 반영하였다. 고피에서 수동으로 읽을 값은 없다.
+- 장면 실측값은 내피에서 USD를 직접 판독해 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/config/escape_controller.yaml 에 반영하였다. 고피에서 수동으로 읽을 값은 없다.
 
 사전 조건
+- 이 문서를 읽는 시점에 feature/navigation 최신 상태이다. git 명령은 스크립트가 결과 커밋·푸시 시에만 실행한다.
 - Isaac Sim GUI가 떠 있지 않아야 한다. 떠 있으면 스크립트가 그 인스턴스를 쓰려 하며, Play 상태가 아니면 종료 코드 3으로 멈춘다.
-- 터미널 1개만 사용한다.
+- 터미널 1개, 어느 디렉터리에서 실행해도 된다.
 
 A. 점검 실행 (로봇 이동 없음)
 
-cd /home/rokey/ROKEY_P3_A1 && git pull --ff-only origin feature/navigation && bash cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh
-
----
-^Crokey@IsaacSim03:~/ROKEY_P3_A1$ bash cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh
-== gopi_run.sh 20260919_101412  args:   host: IsaacSim03  commit: 967aca3 ==
-/opt/ros/jazzy/setup.bash: line 8: AMENT_TRACE_SETUP_FILES: unbound variable
-rokey@IsaacSim03:~/ROKEY_P3_A1$ 
----
+bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh
 
 B. 탈출 동작 실행 (A가 rc=0 이고, 아래 이동값을 승인한 경우)
 
-cd /home/rokey/ROKEY_P3_A1 && git pull --ff-only origin feature/navigation && bash cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh --escape
+bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh --escape
 
----
-rokey@IsaacSim03:~/ROKEY_P3_A1$ bash cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh --escape
-== gopi_run.sh 20260919_101459  args: --escape  host: IsaacSim03  commit: 967aca3 ==
-/opt/ros/jazzy/setup.bash: line 8: AMENT_TRACE_SETUP_FILES: unbound variable
-rokey@IsaacSim03:~/ROKEY_P3_A1$ 
----
-
-스크립트가 하는 일 (scripts/gopi_run.sh)
+스크립트가 하는 일 (/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/gopi_run.sh)
 1. ROS 2 Jazzy 환경 설정 (ROS_DOMAIN_ID=101, Isaac ROS2 bridge lib 경로).
 2. /home/rokey/ROKEY_P3_A1/cobot3_ws 에서 smart_farm_navigation 의 build/install 산출물을 지우고 다시 빌드. --symlink-install 은 사용하지 않는다.
 3. /chassis/odom 이 없으면 Isaac Sim 을 자동 실행하여 smart_farm_nav2_01.usd 를 열고 ROS2 bridge 활성화 후 Play (scripts/launch_scene.py, 최대 300 s 대기).
 4. Topic 목록, /cmd_vel 구독자, 15 s 정지 드리프트 기록.
 5. A: escape_controller 대기 실행 10 s 후 SIGINT → 종료 코드 0 기대.
    B: auto_start:=true 로 후진 0.3 m → 정지 → 회전 -90도(시계) → 정지 → 전진 9.0 m → 정지 → 자동 종료. 상한 180 s.
-6. 스크립트가 띄운 Isaac Sim 종료, 결과를 results/run_<시각>.txt 에 저장, feature/navigation 에 자동 커밋·푸시.
+6. 스크립트가 띄운 Isaac Sim 종료, 결과를 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/run_<시각>.txt 에 저장, feature/navigation 에 자동 커밋·푸시.
 
 이동값 (config/escape_controller.yaml)
 - 초기: 로봇 (0, 0) yaw 0 → +x 방향의 /World/Cube_01 (안쪽 면 x=+2.0) 을 정면 주시. 후방 벽 /World/Cube 안쪽 면 x=-2.0.
@@ -49,5 +36,6 @@ rokey@IsaacSim03:~/ROKEY_P3_A1$
 - B 의 로그에 "Escape sequence COMPLETE at x≈-0.3 y≈-9.0 yaw≈-90deg" 가 있다.
 
 중단 조건
-- rc 가 0 이 아니면 추가 조작 없이 종료한다. 로그는 이미 푸시되었으므로 내피에서 분석한다.
+- rc 가 0 이 아니면 추가 조작 없이 종료한다. 로그는 자동 푸시되므로 내피에서 분석한다.
 - rc=3 은 Isaac Sim 이 odom 을 내지 못한 경우다. results/isaac_<시각>.txt 에 Isaac 로그가 있다.
+- 환경 설정 단계에서 스크립트가 죽어 자동 푸시가 안 된 경우에만 터미널 출력을 이 파일 하단에 붙여 넣는다.

@@ -56,8 +56,11 @@ finish() {
 have_odom() { timeout 6 ros2 topic echo /chassis/odom --once --field header.stamp >/dev/null 2>&1; }
 
 # ---------- 1. ROS 2 환경 ----------
+# ROS setup 스크립트는 미정의 변수를 참조하므로 source 동안만 -u 해제
+set +u
 # shellcheck disable=SC1091
 source /opt/ros/jazzy/setup.bash
+set -u
 export ROS_DOMAIN_ID=101
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 [[ -f "$HOME/.ros/fastdds_whitelist.xml" ]] && export FASTRTPS_DEFAULT_PROFILES_FILE="$HOME/.ros/fastdds_whitelist.xml"
@@ -71,8 +74,10 @@ cd "$WS" || finish 1
 rm -rf "$WS/build/smart_farm_navigation" "$WS/install/smart_farm_navigation"
 echo "== colcon build =="
 colcon build --packages-select smart_farm_navigation || finish 1
+set +u
 # shellcheck disable=SC1091
 source "$WS/install/setup.bash"
+set -u
 PREFIX=$(ros2 pkg prefix smart_farm_navigation) || finish 1
 PARAMS="$PREFIX/share/smart_farm_navigation/config/escape_controller.yaml"
 echo "pkg prefix: $PREFIX"
