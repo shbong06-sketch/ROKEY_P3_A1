@@ -3,6 +3,7 @@
 Sequence: ARC_REVERSE (reverse while rotating turn_angle_rad, +CCW, so the
 rear swings to the right and the robot ends parallel to the corridor)
 -> stop -> FORWARD (forward_distance_m, heading held) -> stop -> exit.
+drive_direction_sign maps "visible forward" onto the sign of linear.x.
 
 Each phase ends when /chassis/odom shows the requested angle or distance,
 not after a fixed time, so the result does not depend on the simulator's
@@ -53,6 +54,7 @@ class EscapeController(Node):
         self.declare_parameter("turn_speed_radps", 0.0)
         self.declare_parameter("turn_angle_rad", 0.0)
         self.declare_parameter("reverse_max_distance_m", 1.0)
+        self.declare_parameter("drive_direction_sign", -1.0)
         self.declare_parameter("forward_distance_m", 0.0)
         self.declare_parameter("forward_speed_mps", 0.0)
         self.declare_parameter("heading_hold_gain", 1.0)
@@ -73,6 +75,9 @@ class EscapeController(Node):
         self.turn_speed = float(p("turn_speed_radps").value)
         self.turn_angle = float(p("turn_angle_rad").value)
         self.reverse_max_distance = float(p("reverse_max_distance_m").value)
+        # +1: linear.x > 0 drives the visible front forward.  -1: this scene's
+        # carter moves visibly forward on linear.x < 0 (observed 2026-09-19).
+        self.drive_sign = 1.0 if float(p("drive_direction_sign").value) >= 0.0 else -1.0
         self.forward_distance = float(p("forward_distance_m").value)
         self.forward_speed = float(p("forward_speed_mps").value)
         self.hold_gain = float(p("heading_hold_gain").value)
@@ -225,7 +230,8 @@ class EscapeController(Node):
         elapsed = now - (self.phase_started_at or now)
 
         if self.phase is Phase.ARC_REVERSE:
-            self._publish(-self.reverse_speed, math.copysign(self.turn_speed, self.turn_angle))
+            self._publish(-self.drive_sign * self.reverse_speed,
+                          math.copysign(self.turn_speed, self.turn_angle))
             if abs(self.turn_accum) >= abs(self.turn_angle):
                 self._enter(Phase.ARC_STOP, now)
             elif self._distance_from_phase_start() > self.reverse_max_distance:
@@ -241,7 +247,7 @@ class EscapeController(Node):
                 self._enter(Phase.FORWARD, now, self.forward_distance / self.forward_speed)
 
         elif self.phase is Phase.FORWARD:
-            self._publish(self.forward_speed, self._hold_heading(self.target_yaw))
+            self._publish(self.drive_sign * self.forward_speed, self._hold_heading(self.target_yaw))
             distance = self._distance_from_phase_start()
             if distance >= self.forward_distance:
                 self._publish()

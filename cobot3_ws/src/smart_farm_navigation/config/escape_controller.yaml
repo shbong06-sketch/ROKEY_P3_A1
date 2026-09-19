@@ -16,6 +16,9 @@ escape_controller:
     turn_speed_radps: 0.50
     turn_angle_rad: 1.5708          # + = 반시계. 후단이 우측으로 돌아 나가며 90도 회전
     reverse_max_distance_m: 1.00    # 원호 경로 공칭 0.63 m. 초과 시 안전 중단 (후방 벽 여유 1.39 m)
+    # 7차 실측: 이 장면의 carter 는 linear.x < 0 일 때 눈에 보이는 정면 방향으로 움직였다.
+    # -1.0 = 보이는 정면이 chassis -x. 후진은 linear.x > 0, 직진은 linear.x < 0 으로 발행한다.
+    drive_direction_sign: -1.0
     forward_distance_m: 9.00
     forward_speed_mps: 0.50
 

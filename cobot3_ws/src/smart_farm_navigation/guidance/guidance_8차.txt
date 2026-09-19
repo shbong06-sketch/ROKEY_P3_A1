@@ -1,0 +1,58 @@
+[8차] smart_farm_nav2_01.usd 탈출 동작 단계별 실행 가이드 (터미널 3개, 수동 진행)
+
+목적
+- 7차에서 원호 회전 방향과 탈출 방향은 맞았으나 원호 구간이 후진이 아닌 전진이었다. 이 장면의 carter 는 linear.x < 0 일 때 보이는 정면으로 움직이므로 부호를 뒤집었다(drive_direction_sign: -1.0).
+- 일괄 스크립트(gopi_run.sh) 대신, 배운 절차대로 터미널 1 Isaac Sim / 터미널 2 빌드·점검 / 터미널 3 탈출 실행으로 나누어 각 단계를 눈으로 확인한다.
+
+사전 조건
+- 이 문서를 읽는 시점에 feature/navigation 최신 상태이다.
+- 고정 경로
+  워크스페이스: /home/rokey/ROKEY_P3_A1/cobot3_ws
+  장면: /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smart_farm_nav2_01.usd
+  결과: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results
+
+[터미널 1] Isaac Sim 실행
+
+ros_set
+isaac_ros
+echo "$ROS_DOMAIN_ID $RMW_IMPLEMENTATION $ROS_DISTRO"
+isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/launch_scene.py
+
+- 기대: ROS_DOMAIN_ID 101, jazzy. Isaac Sim 창이 열리고 장면이 로드된 뒤 터미널에 "[launch_scene] PLAY" 가 출력되며 Play 상태가 된다.
+- 대체 (GUI 로 직접 할 때): isaac 실행 → File > Open 으로 위 장면 → Play. 결과는 같다.
+- 이 터미널은 Isaac Sim 이 살아 있는 동안 그대로 둔다. Ctrl+C 로 종료한다.
+
+[터미널 2] 빌드 및 장면 통신 점검
+
+ros_set
+isaac_ros
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws
+rm -rf build/smart_farm_navigation install/smart_farm_navigation
+colcon build --packages-select smart_farm_navigation
+source install/setup.bash
+ros2 run smart_farm_navigation scene_check 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/check_$(date +%Y%m%d_%H%M).txt
+
+- scene_check 가 하는 일: [1] /cmd_vel 구독자 수, [2] /chassis/odom 샘플(프레임·자세·타임스탬프), [3] /tf 의 odom→base_link 존재, [4] 15 s 무명령 드리프트. 마지막 줄 "RESULT: OK" 이면 통과.
+- rm -rf 는 경로 문자열 변경으로 생긴 심볼릭 링크 충돌(5차 오류) 재발 방지용이다. build/, install/ 의 다른 패키지는 건드리지 않는다.
+
+[터미널 3] 탈출 동작 실행
+
+ros_set
+isaac_ros
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+ros2 launch smart_farm_navigation escape.launch.py auto_start:=true 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/escape_$(date +%Y%m%d_%H%M).txt
+
+- 동작: 후진 0.20 m/s + 반시계 0.50 rad/s 원호 후진(후단이 우측으로) → yaw +90도에서 정지 → 보이는 정면으로 9.0 m 직진 → 정지 → 노드 자동 종료(launch 는 Ctrl+C 로 닫는다).
+- 기대 로그 순서: Phase ARC_REVERSE → Phase ARC_STOP (yaw≈90) → Phase FORWARD → Escape sequence COMPLETE.
+- 이동 없이 대기만 시키려면 auto_start:=true 를 뺀다.
+- 재실행 전에는 터미널 1 에서 Isaac Sim 을 Ctrl+C 로 닫고 다시 띄워 초기 자세로 되돌린다. GUI 사용 시 Stop → Play.
+
+기록
+- results/ 의 check_*.txt, escape_*.txt 를 커밋·푸시한다. 스크립트가 자동으로 하지 않는다.
+
+확인 요청
+- 원호 구간에서 로봇이 보이는 정면 기준으로 뒤로 물러났는지.
+- 직진 방향. 부호를 뒤집었으므로 이번에는 7차와 반대쪽(ADR 의 -y) 으로 나간다. 7차 쪽(+y) 이 맞다면 그 사실만 알려 준다. turn_angle_rad 의 부호로 조정한다.
+
+참고
+- scripts/gopi_run.sh 는 위 3 개 터미널 절차를 한 번에 수행하는 선택 사항이며 이 가이드에서는 사용하지 않는다.
