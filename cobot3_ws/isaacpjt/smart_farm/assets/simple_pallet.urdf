@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<!--
+  Simplified pallet for rack pick/place trials. Dimensions are ASSUMPTIONS:
+  the attached rack_pick_test(1).usd only references an external pallet mesh.
+  Origin is at the bottom center of the pallet; X is the fork insertion axis.
+  Size: X 0.40 m, Y 0.60 m, total height 0.08 m.
+  Top and bottom decks: 0.005 m each; three runners: 0.07 m high.
+  Two fork channels, each 0.24 m wide x 0.07 m high, along X.
+  Set pose to the shelf top (e.g. rack shelf 2: z=1.0129 m in revised scene).
+  The old scene's pallet prim is at (-1.5246739, -0.0410043, 0.7404787) m
+  with +90 degrees yaw, but its prim origin is NOT verified as its bottom.
+  This URDF deliberately does not bake the scene placement into its geometry.
+  Isaac Sim's URDF importer can override base behavior; choose Mobile/Free
+  (fix_base=False) and inspect the resulting USD's physics APIs after import.
+  For a ready-to-use dynamic rigid body, use pallet_simplified_physics.usd.
+-->
+<robot name="pallet_simplified">
+  <material name="wood"><color rgba="0.59 0.37 0.19 1"/></material>
+  <link name="pallet_link">
+    <!-- Upper deck: lower face Z=0.075 m, upper face Z=0.08 m. -->
+    <visual name="deck_visual">
+      <origin xyz="0 0 0.0775" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.60 0.005"/></geometry>
+      <material name="wood"/>
+    </visual>
+    <collision name="deck_collision">
+      <origin xyz="0 0 0.0775" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.60 0.005"/></geometry>
+    </collision>
+    <!-- Bottom deck: upper face Z=0.005 m; supports the pallet on a shelf. -->
+    <visual name="bottom_deck_visual">
+      <origin xyz="0 0 0.0025" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.60 0.005"/></geometry>
+      <material name="wood"/>
+    </visual>
+    <collision name="bottom_deck_collision">
+      <origin xyz="0 0 0.0025" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.60 0.005"/></geometry>
+    </collision>
+    <!-- Side and center runners connect the decks; two fork channels remain. -->
+    <visual name="left_runner_visual">
+      <origin xyz="0 -0.28 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.04 0.07"/></geometry>
+      <material name="wood"/>
+    </visual>
+    <collision name="left_runner_collision">
+      <origin xyz="0 -0.28 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.04 0.07"/></geometry>
+    </collision>
+    <visual name="center_runner_visual">
+      <origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.04 0.07"/></geometry>
+      <material name="wood"/>
+    </visual>
+    <collision name="center_runner_collision">
+      <origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.04 0.07"/></geometry>
+    </collision>
+    <visual name="right_runner_visual">
+      <origin xyz="0 0.28 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.04 0.07"/></geometry>
+      <material name="wood"/>
+    </visual>
+    <collision name="right_runner_collision">
+      <origin xyz="0 0.28 0.04" rpy="0 0 0"/>
+      <geometry><box size="0.40 0.04 0.07"/></geometry>
+    </collision>
+    <!-- Mass/inertia of the five boxes at uniform density, total mass 1 kg. -->
+    <inertial>
+      <origin xyz="0 0 0.04" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.0438161458" ixy="0" ixz="0"
+               iyy="0.0140828125" iyz="0" izz="0.0564000000"/>
+    </inertial>
+  </link>
+</robot>
