@@ -60,3 +60,4 @@ orientation:
 ---
 == stopping Isaac Sim launched by this script (pgid 272517) ==
 == RESULT rc=2  log: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/run_20260919_102651.txt ==
+   60c1865..6252c0e  feature/navigation -> feature/navigation
