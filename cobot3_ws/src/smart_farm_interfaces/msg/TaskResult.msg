@@ -9,5 +9,8 @@ string phase
 string reason
 
 bool safe_to_navigate
+string reached_station
+
 string[] completed_units
-string[] result_slots
+string[] defect_slots
+string[] unknown_slots
