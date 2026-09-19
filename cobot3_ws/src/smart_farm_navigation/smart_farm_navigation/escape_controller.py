@@ -2,7 +2,10 @@
 
 Sequence: ARC_REVERSE (reverse while rotating turn_angle_rad, +CCW, so the
 rear swings to the right and the robot ends parallel to the corridor)
--> stop -> FORWARD (forward_distance_m, heading held) -> stop -> exit.
+-> stop -> FORWARD (forward_distance_m along the corridor centre line, which
+is the line through the start pose in the post-turn travel direction; a
+Stanley-style cross-track term steers back to the centre, then holds it)
+-> stop -> exit.
 drive_direction_sign maps "visible forward" onto the sign of linear.x.
 
 Each phase ends when /chassis/odom shows the requested angle or distance,
@@ -59,6 +62,8 @@ class EscapeController(Node):
         self.declare_parameter("forward_speed_mps", 0.0)
         self.declare_parameter("heading_hold_gain", 1.0)
         self.declare_parameter("heading_hold_max_radps", 0.3)
+        self.declare_parameter("cross_track_gain", 1.5)
+        self.declare_parameter("cross_track_max_angle_rad", 0.7)
         self.declare_parameter("settle_duration_s", 0.5)
         self.declare_parameter("odom_timeout_s", 1.0)
         self.declare_parameter("phase_timeout_factor", 10.0)
@@ -82,6 +87,8 @@ class EscapeController(Node):
         self.forward_speed = float(p("forward_speed_mps").value)
         self.hold_gain = float(p("heading_hold_gain").value)
         self.hold_max = float(p("heading_hold_max_radps").value)
+        self.xt_gain = float(p("cross_track_gain").value)
+        self.xt_max_angle = float(p("cross_track_max_angle_rad").value)
         self.settle_duration = float(p("settle_duration_s").value)
         self.odom_timeout = float(p("odom_timeout_s").value)
         self.timeout_factor = float(p("phase_timeout_factor").value)
@@ -103,6 +110,8 @@ class EscapeController(Node):
         self.yaw: float = 0.0
         self.initial_yaw: float = 0.0
         self.target_yaw: float = 0.0
+        self.line_origin: Tuple[float, float] = (0.0, 0.0)   # corridor centre = start pose
+        self.line_heading: float = 0.0                         # travel direction along corridor
         self.turn_accum: float = 0.0
         self._accumulate_turn = False
         self._progress_value = 0.0
@@ -138,6 +147,29 @@ class EscapeController(Node):
 
     def _hold_heading(self, target_yaw: float) -> float:
         error = wrap_angle(target_yaw - self.yaw)
+        return max(-self.hold_max, min(self.hold_max, self.hold_gain * error))
+
+    def _travel_heading(self) -> float:
+        """Direction the robot actually moves when driving 'visibly forward'."""
+        return self.yaw if self.drive_sign > 0 else wrap_angle(self.yaw + math.pi)
+
+    def _cross_track_error(self) -> float:
+        """Signed lateral offset from the corridor centre line (+ = left of travel)."""
+        dx = self.xy[0] - self.line_origin[0]
+        dy = self.xy[1] - self.line_origin[1]
+        return math.cos(self.line_heading) * dy - math.sin(self.line_heading) * dx
+
+    def _along_track(self) -> float:
+        dx = self.xy[0] - self.phase_start_xy[0]
+        dy = self.xy[1] - self.phase_start_xy[1]
+        return math.cos(self.line_heading) * dx + math.sin(self.line_heading) * dy
+
+    def _follow_line(self) -> float:
+        """Angular command that returns to the centre line, then holds its heading."""
+        e = self._cross_track_error()
+        correction = max(-self.xt_max_angle, min(self.xt_max_angle, math.atan(self.xt_gain * e)))
+        desired = wrap_angle(self.line_heading - correction)
+        error = wrap_angle(desired - self._travel_heading())
         return max(-self.hold_max, min(self.hold_max, self.hold_gain * error))
 
     def _publish(self, linear_x: float = 0.0, angular_z: float = 0.0) -> None:
@@ -221,9 +253,13 @@ class EscapeController(Node):
         if self.phase is Phase.WAITING:
             self.initial_yaw = self.yaw
             self.target_yaw = wrap_angle(self.initial_yaw + self.turn_angle)
+            self.line_origin = self.xy
+            self.line_heading = wrap_angle(self._travel_heading() + self.turn_angle)
             self.get_logger().info(
                 f"Start pose {self._pose_text()}; target heading after arc "
-                f"{math.degrees(self.target_yaw):.1f}deg"
+                f"{math.degrees(self.target_yaw):.1f}deg; corridor line through "
+                f"({self.line_origin[0]:.2f}, {self.line_origin[1]:.2f}) "
+                f"dir {math.degrees(self.line_heading):.1f}deg"
             )
             self._enter(Phase.ARC_REVERSE, now, abs(self.turn_angle) / self.turn_speed)
 
@@ -245,14 +281,18 @@ class EscapeController(Node):
             self._publish()
             if elapsed >= self.settle_duration:
                 self._enter(Phase.FORWARD, now, self.forward_distance / self.forward_speed)
+                self.get_logger().info(f"  cross-track at FORWARD start {self._cross_track_error():+.3f} m")
 
         elif self.phase is Phase.FORWARD:
-            self._publish(self.drive_sign * self.forward_speed, self._hold_heading(self.target_yaw))
-            distance = self._distance_from_phase_start()
+            self._publish(self.drive_sign * self.forward_speed, self._follow_line())
+            distance = self._along_track()
             if distance >= self.forward_distance:
                 self._publish()
                 self.phase = Phase.COMPLETE
-                self.get_logger().info(f"Escape sequence COMPLETE at {self._pose_text()}")
+                self.get_logger().info(
+                    f"Escape sequence COMPLETE at {self._pose_text()}; "
+                    f"cross-track {self._cross_track_error():+.3f} m"
+                )
             elif self._stalled(distance, now):
                 self._abort(f"FORWARD stalled: no progress for {self.stall_timeout:.1f}s")
             elif elapsed > self.phase_timeout:

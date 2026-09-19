@@ -22,8 +22,12 @@ escape_controller:
     forward_distance_m: 9.00
     forward_speed_mps: 0.50
 
-    heading_hold_gain: 1.0          # 직진 중 yaw 유지 P 게인
+    heading_hold_gain: 1.0          # 직진 중 방향 오차 -> 각속도 P 게인
     heading_hold_max_radps: 0.30
+    # 직진 구간 중앙선 복귀: 중앙선 = 시작 위치(통로 한가운데)를 지나 회전 후 진행 방향으로 뻗는 직선.
+    # 횡오차 e 에 대해 접근각 atan(cross_track_gain * e) (최대 cross_track_max_angle_rad) 로 중앙선에 붙는다.
+    cross_track_gain: 1.5           # 0.4 m 오차 -> 약 31도 접근각. 약 1 m 진행 안에 중앙 복귀
+    cross_track_max_angle_rad: 0.7  # 접근각 상한 40도
     settle_duration_s: 0.5
     odom_timeout_s: 1.0
     # 실시간 배율이 낮아도 중단되지 않도록 제한시간은 넉넉히, 대신 진행 정체(stall)로 중단 판정

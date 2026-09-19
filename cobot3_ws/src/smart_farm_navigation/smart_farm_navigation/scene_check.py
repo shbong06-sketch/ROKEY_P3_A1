@@ -54,16 +54,20 @@ class SceneCheck(Node):
         ok = True
         log = self.get_logger()
 
+        # Let DDS discovery settle before counting endpoints (counts are 0 right after start-up).
+        self.spin_for(3.0)
         subs = self.count_subscribers(self.cmd_vel_topic)
         pubs = self.count_publishers(self.cmd_vel_topic)
         log.info(f"[1] {self.cmd_vel_topic}: subscribers={subs} publishers={pubs}")
         if subs < 1:
             log.error("    no /cmd_vel subscriber: Isaac Sim scene not playing or bridge inactive")
             ok = False
+        if pubs > 0:
+            log.warning("    another /cmd_vel publisher is active; stop it before running escape_controller")
 
-        self.spin_for(3.0)
         if self.odom is None:
             log.error(f"[2] {self.odom_topic}: no message in 3 s")
+            log.info("RESULT: FAIL")
             return 1
         p = self.odom.pose.pose
         log.info(
