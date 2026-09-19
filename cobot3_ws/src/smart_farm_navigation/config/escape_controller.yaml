@@ -2,13 +2,25 @@ escape_controller:
   ros__parameters:
     cmd_vel_topic: /cmd_vel
     odom_topic: /chassis/odom
+    # gopi_run.sh --escape 가 auto_start:=true 를 명령줄로 덮어쓴다. 파일값은 안전을 위해 false 유지.
     auto_start: false
-    # The six values below must be measured in smart_farm_nav2_01.usd before use.
-    reverse_speed_mps: 0.0
-    reverse_duration_s: 0.0
-    ccw_angular_speed_radps: 0.0
-    turn_duration_s: 0.0
-    forward_speed_mps: 0.0
-    forward_duration_s: 0.0
+
+    # ---- smart_farm_nav2_01.usd 실측 기반 값 (2026-09-19, 내피에서 USD 직접 판독) ----
+    # 로봇: /World/nova_carter_ROS, 초기 (0, 0), yaw 0 (+x 방향 주시)
+    # 벽: /World/Cube x=-2.5, /World/Cube_01 x=+2.5, 각 1.0 x 15.0 x 0.2 m -> 통로 안쪽 폭 4.0 m, y -7.5..+7.5
+    # 로봇 외형(Nav2 footprint): 전방 +0.14, 후방 -0.607, 반폭 0.25 m
+    # DifferentialController 상한: maxLinearSpeed 1.0 m/s, maxAngularSpeed 1.2 rad/s
+    reverse_distance_m: 0.30        # 후진 거리. 후방 벽까지 여유 1.39 m 중 0.3 m 사용
+    reverse_speed_mps: 0.20
+    turn_angle_rad: -1.5708         # 부호 + = 반시계(CCW). -90도(시계) = +x 주시 -> -y 주시 최단 회전
+    turn_speed_radps: 0.50
+    forward_distance_m: 9.00        # y=0 -> y=-9.0. 통로 끝 y=-7.5 를 차체 후단까지 완전히 통과
+    forward_speed_mps: 0.50
+
+    heading_hold_gain: 1.0          # 주행 중 yaw 유지 P 게인
+    heading_hold_max_radps: 0.30
     settle_duration_s: 0.5
     odom_timeout_s: 1.0
+    phase_timeout_factor: 3.0       # 단계 제한시간 = max(phase_timeout_min_s, factor x 공칭 소요시간)
+    phase_timeout_min_s: 5.0
+    stop_hold_duration_s: 1.0       # 완료/중단 후 zero Twist 유지 시간, 이후 프로세스 종료
