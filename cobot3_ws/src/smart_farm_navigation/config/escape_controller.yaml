@@ -6,21 +6,26 @@ escape_controller:
     auto_start: false
 
     # ---- smart_farm_nav2_01.usd 실측 기반 값 (2026-09-19, 내피에서 USD 직접 판독) ----
-    # 로봇: /World/nova_carter_ROS, 초기 (0, 0), yaw 0 (+x 방향 주시)
-    # 벽: /World/Cube x=-2.5, /World/Cube_01 x=+2.5, 각 1.0 x 15.0 x 0.2 m -> 통로 안쪽 폭 4.0 m, y -7.5..+7.5
-    # 로봇 외형(Nav2 footprint): 전방 +0.14, 후방 -0.607, 반폭 0.25 m
-    # DifferentialController 상한: maxLinearSpeed 1.0 m/s, maxAngularSpeed 1.2 rad/s
-    reverse_distance_m: 0.30        # 후진 거리. 후방 벽까지 여유 1.39 m 중 0.3 m 사용
+    # 로봇: /World/nova_carter_ROS, 초기 (0, 0), yaw 0 / 벽: /World/Cube x=-2.5, /World/Cube_01 x=+2.5
+    # 통로 안쪽 폭 4.0 m, y -7.5..+7.5 / 로봇 외형 전방 +0.14, 후방 -0.607, 반폭 0.25 m
+    # DifferentialController 상한: 1.0 m/s, 1.2 rad/s / 고피 실시간 배율 약 0.27 (2026-09-19 실측)
+    #
+    # 동작: 우측 뒤로 원호 후진(후진+반시계 회전, 회전반경 = reverse_speed/turn_speed = 0.4 m)
+    #       -> 정면축이 통로와 평행(초기 yaw + turn_angle) -> 정지 -> 직진 forward_distance -> 정지
     reverse_speed_mps: 0.20
-    turn_angle_rad: -1.5708         # 부호 + = 반시계(CCW). -90도(시계) = +x 주시 -> -y 주시 최단 회전
     turn_speed_radps: 0.50
-    forward_distance_m: 9.00        # y=0 -> y=-9.0. 통로 끝 y=-7.5 를 차체 후단까지 완전히 통과
+    turn_angle_rad: 1.5708          # + = 반시계. 후단이 우측으로 돌아 나가며 90도 회전
+    reverse_max_distance_m: 1.00    # 원호 경로 공칭 0.63 m. 초과 시 안전 중단 (후방 벽 여유 1.39 m)
+    forward_distance_m: 9.00
     forward_speed_mps: 0.50
 
-    heading_hold_gain: 1.0          # 주행 중 yaw 유지 P 게인
+    heading_hold_gain: 1.0          # 직진 중 yaw 유지 P 게인
     heading_hold_max_radps: 0.30
     settle_duration_s: 0.5
     odom_timeout_s: 1.0
-    phase_timeout_factor: 3.0       # 단계 제한시간 = max(phase_timeout_min_s, factor x 공칭 소요시간)
-    phase_timeout_min_s: 5.0
-    stop_hold_duration_s: 1.0       # 완료/중단 후 zero Twist 유지 시간, 이후 프로세스 종료
+    # 실시간 배율이 낮아도 중단되지 않도록 제한시간은 넉넉히, 대신 진행 정체(stall)로 중단 판정
+    phase_timeout_factor: 10.0      # 단계 제한시간 = max(phase_timeout_min_s, factor x 공칭 소요시간)
+    phase_timeout_min_s: 30.0
+    stall_timeout_s: 4.0            # 이 시간 동안 각도/거리 진행이 stall_min_progress 미만이면 중단
+    stall_min_progress: 0.01
+    stop_hold_duration_s: 1.0

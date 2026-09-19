@@ -1,13 +1,15 @@
 """Odometry-closed /cmd_vel escape sequence for smart_farm_nav2_01.usd.
 
-Sequence: REVERSE (reverse_distance_m) -> stop -> TURN (turn_angle_rad, +CCW)
--> stop -> FORWARD (forward_distance_m) -> stop -> exit.
+Sequence: ARC_REVERSE (reverse while rotating turn_angle_rad, +CCW, so the
+rear swings to the right and the robot ends parallel to the corridor)
+-> stop -> FORWARD (forward_distance_m, heading held) -> stop -> exit.
 
-Each phase ends when /chassis/odom shows the requested distance or angle,
+Each phase ends when /chassis/odom shows the requested angle or distance,
 not after a fixed time, so the result does not depend on the simulator's
-real-time factor.  A per-phase timeout (phase_timeout_factor x nominal time,
-at least phase_timeout_min_s) aborts the run with a zero Twist if odometry
-does not progress.  Heading is held with a small P term while driving.
+real-time factor (measured about 0.27x on 고피).  A phase is aborted with a
+zero Twist when odometry stops progressing for stall_timeout_s, when the
+generous phase timeout expires, or when the reverse path exceeds
+reverse_max_distance_m.
 """
 
 import math
@@ -24,10 +26,8 @@ from rclpy.signals import SignalHandlerOptions
 
 class Phase(Enum):
     WAITING = auto()
-    REVERSE = auto()
-    REVERSE_STOP = auto()
-    TURN = auto()
-    TURN_STOP = auto()
+    ARC_REVERSE = auto()
+    ARC_STOP = auto()
     FORWARD = auto()
     COMPLETE = auto()
     ABORTED = auto()
@@ -49,28 +49,30 @@ class EscapeController(Node):
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
         self.declare_parameter("odom_topic", "/chassis/odom")
         self.declare_parameter("auto_start", False)
-        self.declare_parameter("reverse_distance_m", 0.0)
         self.declare_parameter("reverse_speed_mps", 0.0)
-        self.declare_parameter("turn_angle_rad", 0.0)
         self.declare_parameter("turn_speed_radps", 0.0)
+        self.declare_parameter("turn_angle_rad", 0.0)
+        self.declare_parameter("reverse_max_distance_m", 1.0)
         self.declare_parameter("forward_distance_m", 0.0)
         self.declare_parameter("forward_speed_mps", 0.0)
         self.declare_parameter("heading_hold_gain", 1.0)
         self.declare_parameter("heading_hold_max_radps", 0.3)
         self.declare_parameter("settle_duration_s", 0.5)
         self.declare_parameter("odom_timeout_s", 1.0)
-        self.declare_parameter("phase_timeout_factor", 3.0)
-        self.declare_parameter("phase_timeout_min_s", 5.0)
+        self.declare_parameter("phase_timeout_factor", 10.0)
+        self.declare_parameter("phase_timeout_min_s", 30.0)
+        self.declare_parameter("stall_timeout_s", 4.0)
+        self.declare_parameter("stall_min_progress", 0.01)
         self.declare_parameter("stop_hold_duration_s", 1.0)
 
         p = self.get_parameter
         self.cmd_vel_topic = p("cmd_vel_topic").value
         self.odom_topic = p("odom_topic").value
         self.auto_start = bool(p("auto_start").value)
-        self.reverse_distance = float(p("reverse_distance_m").value)
         self.reverse_speed = float(p("reverse_speed_mps").value)
-        self.turn_angle = float(p("turn_angle_rad").value)
         self.turn_speed = float(p("turn_speed_radps").value)
+        self.turn_angle = float(p("turn_angle_rad").value)
+        self.reverse_max_distance = float(p("reverse_max_distance_m").value)
         self.forward_distance = float(p("forward_distance_m").value)
         self.forward_speed = float(p("forward_speed_mps").value)
         self.hold_gain = float(p("heading_hold_gain").value)
@@ -79,6 +81,8 @@ class EscapeController(Node):
         self.odom_timeout = float(p("odom_timeout_s").value)
         self.timeout_factor = float(p("phase_timeout_factor").value)
         self.timeout_min = float(p("phase_timeout_min_s").value)
+        self.stall_timeout = float(p("stall_timeout_s").value)
+        self.stall_min_progress = float(p("stall_min_progress").value)
         self.stop_hold = float(p("stop_hold_duration_s").value)
 
         self.command_publisher = self.create_publisher(Twist, self.cmd_vel_topic, 10)
@@ -96,6 +100,8 @@ class EscapeController(Node):
         self.target_yaw: float = 0.0
         self.turn_accum: float = 0.0
         self._accumulate_turn = False
+        self._progress_value = 0.0
+        self._progress_at: float = 0.0
         self._invalid_reported = False
         self._finish_started_at: Optional[float] = None
         self.finished = False
@@ -137,7 +143,7 @@ class EscapeController(Node):
 
     def _parameters_valid(self) -> bool:
         return (
-            self.reverse_distance > 0.0 and self.reverse_speed > 0.0
+            self.reverse_speed > 0.0 and self.reverse_max_distance > 0.0
             and self.turn_angle != 0.0 and self.turn_speed > 0.0
             and self.forward_distance > 0.0 and self.forward_speed > 0.0
             and self.settle_duration >= 0.0 and self.odom_timeout > 0.0
@@ -152,10 +158,20 @@ class EscapeController(Node):
         self.phase_started_at = now
         self.phase_start_xy = self.xy
         self.phase_timeout = max(self.timeout_min, self.timeout_factor * nominal_time)
-        self._accumulate_turn = phase is Phase.TURN
-        if phase is Phase.TURN:
+        self._accumulate_turn = phase is Phase.ARC_REVERSE
+        if phase is Phase.ARC_REVERSE:
             self.turn_accum = 0.0
+        self._progress_value = 0.0
+        self._progress_at = now
         self.get_logger().info(f"Phase {phase.name} at {self._pose_text()} (timeout {self.phase_timeout:.1f}s)")
+
+    def _stalled(self, progress: float, now: float) -> bool:
+        """True when `progress` (m or rad) has not grown for stall_timeout_s."""
+        if progress - self._progress_value >= self.stall_min_progress:
+            self._progress_value = progress
+            self._progress_at = now
+            return False
+        return now - self._progress_at > self.stall_timeout
 
     def _abort(self, reason: str) -> None:
         if self.phase in (Phase.ABORTED, Phase.COMPLETE):
@@ -201,45 +217,40 @@ class EscapeController(Node):
             self.initial_yaw = self.yaw
             self.target_yaw = wrap_angle(self.initial_yaw + self.turn_angle)
             self.get_logger().info(
-                f"Start pose {self._pose_text()}; target heading after turn "
+                f"Start pose {self._pose_text()}; target heading after arc "
                 f"{math.degrees(self.target_yaw):.1f}deg"
             )
-            self._enter(Phase.REVERSE, now, self.reverse_distance / self.reverse_speed)
+            self._enter(Phase.ARC_REVERSE, now, abs(self.turn_angle) / self.turn_speed)
 
         elapsed = now - (self.phase_started_at or now)
 
-        if self.phase is Phase.REVERSE:
-            self._publish(-self.reverse_speed, self._hold_heading(self.initial_yaw))
-            if self._distance_from_phase_start() >= self.reverse_distance:
-                self._enter(Phase.REVERSE_STOP, now)
-            elif elapsed > self.phase_timeout:
-                self._abort("REVERSE timeout: odometry did not reach reverse_distance_m")
-
-        elif self.phase is Phase.REVERSE_STOP:
-            self._publish()
-            if elapsed >= self.settle_duration:
-                self._enter(Phase.TURN, now, abs(self.turn_angle) / self.turn_speed)
-
-        elif self.phase is Phase.TURN:
-            self._publish(0.0, math.copysign(self.turn_speed, self.turn_angle))
+        if self.phase is Phase.ARC_REVERSE:
+            self._publish(-self.reverse_speed, math.copysign(self.turn_speed, self.turn_angle))
             if abs(self.turn_accum) >= abs(self.turn_angle):
-                self._enter(Phase.TURN_STOP, now)
+                self._enter(Phase.ARC_STOP, now)
+            elif self._distance_from_phase_start() > self.reverse_max_distance:
+                self._abort("ARC_REVERSE exceeded reverse_max_distance_m before reaching turn_angle_rad")
+            elif self._stalled(abs(self.turn_accum), now):
+                self._abort(f"ARC_REVERSE stalled: heading unchanged for {self.stall_timeout:.1f}s")
             elif elapsed > self.phase_timeout:
-                self._abort("TURN timeout: odometry did not reach turn_angle_rad")
+                self._abort("ARC_REVERSE timeout")
 
-        elif self.phase is Phase.TURN_STOP:
+        elif self.phase is Phase.ARC_STOP:
             self._publish()
             if elapsed >= self.settle_duration:
                 self._enter(Phase.FORWARD, now, self.forward_distance / self.forward_speed)
 
         elif self.phase is Phase.FORWARD:
             self._publish(self.forward_speed, self._hold_heading(self.target_yaw))
-            if self._distance_from_phase_start() >= self.forward_distance:
+            distance = self._distance_from_phase_start()
+            if distance >= self.forward_distance:
                 self._publish()
                 self.phase = Phase.COMPLETE
                 self.get_logger().info(f"Escape sequence COMPLETE at {self._pose_text()}")
+            elif self._stalled(distance, now):
+                self._abort(f"FORWARD stalled: no progress for {self.stall_timeout:.1f}s")
             elif elapsed > self.phase_timeout:
-                self._abort("FORWARD timeout: odometry did not reach forward_distance_m")
+                self._abort("FORWARD timeout")
 
     def publish_stop_burst(self, count: int = 5) -> None:
         """Repeat the zero Twist so the simulator's last-value subscriber holds zero."""
