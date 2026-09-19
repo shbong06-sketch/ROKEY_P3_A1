@@ -64,6 +64,8 @@ class SceneCheck(Node):
             ok = False
         if pubs > 0:
             log.warning("    another /cmd_vel publisher is active; stop it before running escape_controller")
+        clock_pubs = self.count_publishers("/clock")
+        log.info(f"[1b] /clock publishers={clock_pubs} " + ("(use_sim_time usable)" if clock_pubs else "(no /clock: scene lacks ROS_Clock graph)"))
 
         if self.odom is None:
             log.error(f"[2] {self.odom_topic}: no message in 3 s")

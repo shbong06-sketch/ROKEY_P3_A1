@@ -25,6 +25,7 @@ setup(
         "console_scripts": [
             "escape_controller = smart_farm_navigation.escape_controller:main",
             "scene_check = smart_farm_navigation.scene_check:main",
+            "path_runner = smart_farm_navigation.path_runner:main",
         ],
     },
 )
