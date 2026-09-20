@@ -19,7 +19,7 @@ path_runner_smooth:
     curve_tangent_scale: 0.5          # 곡선의 접선 길이 비율(클수록 완만하게 출발, 급하게 마무리)
     path_step_m: 0.05
 
-    drive_direction_sign: 1.0         # 팀 관찰(11차): 보이는 정면 = base_link +x. 장면에서 로봇을 180도 돌린 뒤 사용
+    drive_direction_sign: -1.0         # 팀 관찰(11차): 보이는 정면 = base_link +x. 장면에서 로봇을 180도 돌린 뒤 사용
     drive_speed_mps: 0.4
     drive_min_speed_mps: 0.08
     slow_zone_m: 0.5
