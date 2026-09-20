@@ -35,7 +35,7 @@
 
 ## [터미널 1] Isaac Sim 실행
 ```bash
-ros_set
+
 isaac_ros
 bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
 isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/launch_scene.py /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smartfarm_v1/smartfarm_v1.usd
@@ -46,7 +46,6 @@ isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts
 ## [터미널 2] 빌드 및 장면 통신 점검
 ```bash
 ros_set
-isaac_ros
 bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
 cd /home/rokey/ROKEY_P3_A1/cobot3_ws
 rm -rf build/smart_farm_navigation install/smart_farm_navigation
@@ -55,13 +54,17 @@ source install/setup.bash
 ros2 pkg executables smart_farm_navigation
 ros2 run smart_farm_navigation scene_check 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/check_$(date +%Y%m%d_%H%M).txt
 ```
+
+---
+차라리 symlink를 쓰는게 어떤지?
+---
+
 - 기대: executables 3줄(escape_controller, path_runner, scene_check). scene_check에 `[1b] /clock publishers=1`이 새로 보이고 마지막 줄 RESULT: OK.
 - 로그의 `[2] /chassis/odom ... yaw`가 0° 근처인지 기록해 둠(시작 방향 확인용).
 
 ## [터미널 3] 경로 실행
 ```bash
 ros_set
-isaac_ros
 bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 ros2 launch smart_farm_navigation path.launch.py auto_start:=true 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/path_$(date +%Y%m%d_%H%M).txt
