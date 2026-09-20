@@ -307,6 +307,25 @@ def yaw_deg(quaternion):
     return float(np.degrees(np.arctan2(rotation[1, 0], rotation[0, 0])))
 
 
+def multiply_quaternions_wxyz(left, right):
+    """wxyz quaternion 두 개를 곱하고 단위 quaternion으로 반환합니다."""
+    lw, lx, ly, lz = np.asarray(left, dtype=float)
+    rw, rx, ry, rz = np.asarray(right, dtype=float)
+    result = np.array(
+        [
+            lw * rw - lx * rx - ly * ry - lz * rz,
+            lw * rx + lx * rw + ly * rz - lz * ry,
+            lw * ry - lx * rz + ly * rw + lz * rx,
+            lw * rz + lx * ry - ly * rx + lz * rw,
+        ],
+        dtype=float,
+    )
+    norm = np.linalg.norm(result)
+    if norm == 0.0:
+        raise ValueError("quaternion 곱의 크기가 0입니다.")
+    return result / norm
+
+
 class BaseWatcher:
     """
     AMR 이 실제로 멈췄는지 직접 재서 확인합니다.
@@ -464,6 +483,7 @@ def solve_plan(
     upper_deg,
     initial_joints_deg=None,
     warm_start_joints_deg=None,
+    fork_quaternion=None,
     debug=False,
 ):
     """
@@ -473,7 +493,11 @@ def solve_plan(
     팔이 갑자기 다른 자세로 뒤집히지 않게 합니다.
     첫 목표는 HOME 자세를 기준으로 계산하고, 변화량도 HOME과 비교합니다.
     """
-    want_rotation = quat_to_rot_matrix(FORK_QUAT)
+    fork_quaternion = np.asarray(
+        FORK_QUAT if fork_quaternion is None else fork_quaternion,
+        dtype=float,
+    )
+    want_rotation = quat_to_rot_matrix(fork_quaternion)
     initial_joints_deg = np.asarray(
         HOME_JOINTS_DEG if initial_joints_deg is None else initial_joints_deg,
         dtype=float,
@@ -499,7 +523,7 @@ def solve_plan(
     for index, segment in enumerate(segments):
         name, target = segment.name, segment.target
         joints, solved = solver.compute_inverse_kinematics(
-            EE_FRAME, target, FORK_QUAT, warm
+            EE_FRAME, target, fork_quaternion, warm
         )
         if not solved:
             if debug:
@@ -583,7 +607,15 @@ class JointSequence:
       PLACED      : 내려놓은 뒤. 포크를 뺄 때 팔레트가 따라오면 → 중단
     """
 
-    def __init__(self, robot, pallet, indices, plan, completion_message=None):
+    def __init__(
+        self,
+        robot,
+        pallet,
+        indices,
+        plan,
+        completion_message=None,
+        carrying=False,
+    ):
         self.robot = robot
         self.pallet = pallet
         self.indices = indices
@@ -608,6 +640,12 @@ class JointSequence:
         self.support_offset = None    # 손목 기준 팔레트 위치 (운반 중 확인용)
         self.carry_z = None           # 운반 중 높이 (안착 확인용)
         self.placed_position = None   # 안착 위치 (포크 뺄 때 확인용)
+
+        if carrying:
+            self.phase = "CARRYING"
+            self.pallet_start = self.pallet_position()
+            self.support_offset = self.relative_position()
+            self.carry_z = self.pallet_position()[2]
 
     def pallet_position(self):
         return np.array(self.pallet.get_world_pose()[0], dtype=float)
@@ -968,6 +1006,88 @@ def build_pick_sequence(
         indices,
         plan,
         completion_message="[DONE] 집기·인양·인출·운반 자세까지 확인했습니다.",
+    )
+
+
+
+def build_place_sequence(
+    solver,
+    robot,
+    pallet,
+    indices,
+    lower_deg,
+    upper_deg,
+    base_position,
+    base_quaternion,
+    destination_position,
+    destination_quaternion,
+):
+    """현재 운반 자세에서 지정된 팔레트 pose로 내려놓고 포크를 뺍니다."""
+    solver.set_robot_base_pose(
+        robot_position=base_position,
+        robot_orientation=base_quaternion,
+    )
+
+    destination_position = np.asarray(destination_position, dtype=float)
+    destination_quaternion = np.asarray(destination_quaternion, dtype=float)
+    destination_quaternion /= np.linalg.norm(destination_quaternion)
+    destination_rotation = quat_to_rot_matrix(destination_quaternion)
+    fork_quaternion = multiply_quaternions_wxyz(
+        destination_quaternion,
+        FORK_QUAT,
+    )
+    place_points = [
+        (
+            stage_name,
+            destination_position
+            + destination_rotation @ np.asarray(offset, dtype=float),
+        )
+        for stage_name, offset in PLACE_STAGES
+    ]
+
+    current_joints_deg = read_joints_deg(robot, indices)
+    base_rotation = quat_to_rot_matrix(base_quaternion)
+    print(
+        f"[Place IK base] position={np.round(base_position, 4).tolist()}, "
+        f"quaternion(wxyz)={np.round(base_quaternion, 5).tolist()}"
+    )
+    print(
+        f"[Place target] pallet origin={np.round(destination_position, 4).tolist()}, "
+        f"quaternion(wxyz)={np.round(destination_quaternion, 5).tolist()}"
+    )
+    print(
+        f"[Place target] TCP quaternion(wxyz)="
+        f"{np.round(fork_quaternion, 5).tolist()}"
+    )
+    for stage_name, target in place_points:
+        target_in_base = base_rotation.T @ (
+            np.asarray(target) - np.asarray(base_position)
+        )
+        print(
+            f"  - {stage_name}: world={np.round(target, 4).tolist()}, "
+            f"base_xyz={np.round(target_in_base, 4).tolist()}, "
+            f"distance={np.linalg.norm(target_in_base):.4f} m"
+        )
+
+    plan = solve_plan(
+        solver,
+        robot,
+        split_segments(place_points),
+        lower_deg,
+        upper_deg,
+        initial_joints_deg=current_joints_deg,
+        warm_start_joints_deg=current_joints_deg,
+        fork_quaternion=fork_quaternion,
+        debug=True,
+    )
+    print_plan(plan)
+    return JointSequence(
+        robot,
+        pallet,
+        indices,
+        plan,
+        completion_message="[DONE] Conveyor/seg_6 Place와 포크 인출을 확인했습니다.",
+        carrying=True,
     )
 
 
