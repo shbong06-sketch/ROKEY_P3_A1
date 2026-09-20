@@ -376,7 +376,7 @@ CHECK_PALLET_ON_CONVEYOR → START_CONVEYOR → MONITOR_EXIT → STOP_CONVEYOR �
 ## 14. QoS·시간·준비 정책
 
 - command/result Topic: RELIABLE, KEEP_LAST, depth 10
-- status Topic: RELIABLE, TRANSIENT_LOCAL, KEEP_LAST, depth 1
+- status Topic: RELIABLE, VOLATILE, KEEP_LAST, depth 10
 - 검사 영상 Topic: 센서 특성에 맞춰 BEST_EFFORT 사용 가능
 - 모든 ROS 2 노드의 use_sim_time 설정을 통일한다.
 - Task Manager의 결과 대기 timeout은 시뮬레이션 Pause 중 무한 대기를 방지할 수 있도록 실제 경과 시간 기준으로 관리한다.
