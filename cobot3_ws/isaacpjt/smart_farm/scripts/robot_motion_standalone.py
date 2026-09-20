@@ -233,7 +233,7 @@ def main():
                     check_base_level(arm_base.get_world_pose()[1])
                     motion.start_transfer(
                         pallets[task.pallet_path],
-                        task,
+                        task.destination_shelf_top,
                         start_from_home=(task_index == 0),
                     )
                 continue

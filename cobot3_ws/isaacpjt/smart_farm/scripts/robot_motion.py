@@ -394,29 +394,30 @@ def check_stage_tables():
 
 
 # ── 계획 만들기 ──────────────────────────────────────────
-def stage_points(pallet, destination_shelf_top):
-    """
-    집기 좌표와 놓기 좌표를 월드 좌표로 바꿉니다.
-
-    집기는 '지금 팔레트가 있는 자리', 놓기는 '놓을 자리'가 기준입니다.
-    같은 층에 놓으면 두 기준이 같습니다.
-    """
-    position, quaternion = pallet.get_world_pose()
+def _transform_stage_points(origin, quaternion, stages):
+    """기준점 상대 단계 좌표를 월드 좌표로 바꿉니다."""
     rotation = quat_to_rot_matrix(quaternion)
+    origin = np.array(origin, dtype=float)
+    return [
+        (name, origin + rotation @ np.array(offset, dtype=float))
+        for name, offset in stages
+    ]
 
-    pick_origin = np.array(position, dtype=float)
-    place_origin = pick_origin.copy()
+
+def pick_stage_points(pallet_position, pallet_quaternion):
+    """집을 당시 팔레트 pose를 기준으로 Pick 단계 좌표를 만듭니다."""
+    return _transform_stage_points(pallet_position, pallet_quaternion, PICK_STAGES)
+
+
+def place_stage_points(pallet_position, pallet_quaternion, destination_shelf_top):
+    """집을 당시 팔레트 pose와 놓을 높이로 Place 단계 좌표를 만듭니다."""
+    place_origin = np.array(pallet_position, dtype=float).copy()
     if destination_shelf_top is not None:
         place_origin[2] = destination_shelf_top     # 팔레트 원점 높이 = 선반 윗면
-
-    points = []
-    for origin, stages in ((pick_origin, PICK_STAGES), (place_origin, PLACE_STAGES)):
-        for name, offset in stages:
-            points.append((name, origin + rotation @ np.array(offset, dtype=float)))
-    return points
+    return _transform_stage_points(place_origin, pallet_quaternion, PLACE_STAGES)
 
 
-def split_segments(points):
+def split_segments(points, start_point=None):
     """
     긴 구간을 MAX_SEGMENT_M 이하로 자릅니다.
 
@@ -424,20 +425,28 @@ def split_segments(points):
     인양·안착 확인은 마지막 조각에서만 합니다.
     관절값은 아직 모르므로 빈 배열로 두고, solve_plan 이 채웁니다.
     """
-    first_stage, first_point = points[0]
     empty = np.zeros(len(JOINT_NAMES))
-    result = [Step(first_stage, first_stage, first_point, empty, True)]
+    result = []
+    previous = None if start_point is None else np.array(start_point, dtype=float)
 
-    for (stage, goal), (_, start) in zip(points[1:], points[:-1]):
+    for stage, goal in points:
+        if previous is None:
+            result.append(Step(stage, stage, goal, empty, True))
+            previous = goal
+            continue
+
+        start = previous
         count = max(1, int(np.ceil(np.linalg.norm(goal - start) / MAX_SEGMENT_M)))
         for k in range(1, count + 1):
             name = stage if count == 1 else f"{stage}_{k}"
             point = start + (goal - start) * k / count
             result.append(Step(stage, name, point, empty, k == count))
+        previous = goal
     return result
 
 
-def solve_plan(solver, segments, lower_deg, upper_deg, start_joints_deg):
+def solve_plan(solver, segments, lower_deg, upper_deg, start_joints_deg,
+               first_move_limit_deg=FIRST_MOVE_LIMIT_DEG):
     """
     각 목표 좌표를 IK로 풀어 관절값 표를 만듭니다.
 
@@ -486,7 +495,7 @@ def solve_plan(solver, segments, lower_deg, upper_deg, start_joints_deg):
                 f"(한계 {lower_deg[i]:+.0f} ~ {upper_deg[i]:+.0f})" for i in over
             )
             raise RuntimeError(f"{name}: 관절 한계를 벗어났습니다 — {detail}")
-        limit = FIRST_MOVE_LIMIT_DEG if index == 0 else IK_JUMP_LIMIT_DEG
+        limit = first_move_limit_deg if index == 0 else IK_JUMP_LIMIT_DEG
         jump = float(np.max(np.abs(joints_deg - previous)))
         if jump > limit:
             raise RuntimeError(
@@ -509,33 +518,16 @@ def print_plan(plan):
 
 
 # ── 실행 ────────────────────────────────────────────────
-class JointSequence:
-    """
-    계획된 관절값을 한 단계씩 실행하고, 팔레트 상태를 실제로 확인합니다.
+class _PalletTracker:
+    """Pick과 Place 사이에 팔레트 pose와 안전검사 기준을 유지합니다."""
 
-    팔레트 상태는 세 시기로 나뉩니다.
-      BEFORE_LIFT : 아직 들기 전. 팔레트가 움직이면 밀고 있는 것 → 중단
-      CARRYING    : 들고 있는 중. 손목 기준 상대 위치가 변하면 미끄러진 것 → 중단
-      PLACED      : 내려놓은 뒤. 포크를 뺄 때 팔레트가 따라오면 → 중단
-    """
-
-    def __init__(self, robot, pallet, indices, plan):
+    def __init__(self, robot, pallet):
         self.robot = robot
         self.pallet = pallet
-        self.indices = indices
-        self.plan = plan
-
-        self.index = -1
-        self.stage = "WAIT"
-        self.name = "WAIT"
-        self.last = True
-        self.elapsed = 0.0
-        self.reached_seconds = 0.0
-        self.done = False
-
-        self.start = read_joints_deg(robot, indices)
-        self.goal = self.start.copy()
-        self.duration = START_WAIT_SECONDS
+        position, quaternion = pallet.get_world_pose()
+        self.pick_position = np.array(position, dtype=float)
+        self.pick_quaternion = np.array(quaternion, dtype=float)
+        self.pick_end_target = None
 
         self.phase = "BEFORE_LIFT"
         self.pallet_start = None      # 시작 위치 (밀림 확인용)
@@ -552,37 +544,18 @@ class JointSequence:
         position, quaternion = self.robot.end_effector.get_world_pose()
         return quat_to_rot_matrix(quaternion).T @ (self.pallet_position() - position)
 
-    # ── 단계 진행 ───────────────────────────────────
-    def begin_next_stage(self):
-        self.index += 1
-        self.elapsed = 0.0
-        self.reached_seconds = 0.0
+    def begin_wait(self):
+        if self.pallet_start is None:
+            self.pallet_start = self.pallet_position()
 
-        if self.index == len(self.plan):
-            self.stage = self.name = "DONE"
-            self.done = True
-            print("[DONE] 집기·인양·인출·놓기까지 확인했습니다.")
-            return
-
-        step = self.plan[self.index]
-        self.stage, self.name, self.last = step.stage, step.name, step.last
-        self.start = read_joints_deg(self.robot, self.indices)
-        self.goal = np.asarray(step.joints, dtype=float)
-
-        largest_move = float(np.max(np.abs(self.goal - self.start)))
-        self.duration = max(MIN_MOVE_SECONDS, largest_move / JOINT_SPEED_DEG_S)
-
-        # 인양·안착 확인에 쓸 기준 높이는 그 단계의 '첫' 조각에서 한 번만 기록합니다.
-        if self.stage == STAGE_PALLET_UP and self.lift_start_z is None:
+    def begin_stage(self, stage):
+        if stage == STAGE_PALLET_UP and self.lift_start_z is None:
             self.lift_start_z = self.pallet_position()[2]
-        if self.stage == STAGE_PALLET_DOWN and self.carry_z is None:
+        if stage == STAGE_PALLET_DOWN and self.carry_z is None:
             self.carry_z = self.pallet_position()[2]
 
-        print(f"[{self.name}] 보간 시간 {self.duration:.1f}초")
-
-    def confirm_stage_end(self):
-        """단계가 끝난 순간에만 하는 확인 (인양 성공, 안착 성공)"""
-        if self.stage == STAGE_PALLET_UP and self.last:
+    def confirm_stage_end(self, stage, last):
+        if stage == STAGE_PALLET_UP and last:
             rise = self.pallet_position()[2] - self.lift_start_z
             if rise < MIN_PALLET_RISE:
                 raise RuntimeError(f"인양 실패: 실제 상승량 {rise * 1000:.1f} mm")
@@ -590,7 +563,7 @@ class JointSequence:
             self.phase = "CARRYING"
             print(f"[인양 확인] 실제 상승량 {rise * 1000:.1f} mm")
 
-        if self.stage == STAGE_PALLET_DOWN and self.last:
+        if stage == STAGE_PALLET_DOWN and last:
             drop = self.carry_z - self.pallet_position()[2]
             if drop < MIN_PALLET_DROP:
                 raise RuntimeError(
@@ -601,36 +574,108 @@ class JointSequence:
             self.phase = "PLACED"
             print(f"[안착 확인] 실제 하강량 {drop * 1000:.1f} mm")
 
-    # ── 팔레트 상태 확인 ────────────────────────────
-    def check_pallet(self):
+    def check(self, stage, name):
         if self.pallet_start is None:
             return
 
         if self.phase == "CARRYING":
             # PALLET_DOWN 은 일부러 내려놓는 단계입니다. 팔레트가 선반에 닿은 뒤에도
             # 포크는 포켓 안에서 더 내려가므로, 손목 기준 위치가 바뀌는 게 정상입니다.
-            # (아래 '들기 전' 검사에서 PALLET_UP 을 빼 두는 것과 같은 이유)
-            if self.stage == STAGE_PALLET_DOWN:
+            if stage == STAGE_PALLET_DOWN:
                 return
             slip = float(np.linalg.norm(self.relative_position() - self.support_offset))
             if slip > PALLET_SLIP_TOL:
                 raise RuntimeError(
-                    f"{self.name}: 운반 중 팔레트가 {slip * 1000:.1f} mm 미끄러졌습니다."
+                    f"{name}: 운반 중 팔레트가 {slip * 1000:.1f} mm 미끄러졌습니다."
                 )
 
         elif self.phase == "PLACED":
             moved = float(np.linalg.norm(self.pallet_position() - self.placed_position))
             if moved > PALLET_STAY_TOL:
                 raise RuntimeError(
-                    f"{self.name}: 포크를 빼는 중 팔레트가 {moved * 1000:.1f} mm 따라왔습니다."
+                    f"{name}: 포크를 빼는 중 팔레트가 {moved * 1000:.1f} mm 따라왔습니다."
                 )
 
-        elif self.stage != STAGE_PALLET_UP:      # 아직 들기 전
+        elif stage != STAGE_PALLET_UP:      # 아직 들기 전
             moved = float(np.linalg.norm(self.pallet_position() - self.pallet_start))
             if moved > PALLET_PUSH_TOL:
                 raise RuntimeError(
-                    f"{self.name}: 인양 전 팔레트가 {moved * 1000:.1f} mm 움직였습니다."
+                    f"{name}: 인양 전 팔레트가 {moved * 1000:.1f} mm 움직였습니다."
                 )
+
+
+class JointSequence:
+    """
+    계획된 관절값을 한 단계씩 실행하고, 팔레트 상태를 실제로 확인합니다.
+
+    팔레트 상태는 세 시기로 나뉩니다.
+      BEFORE_LIFT : 아직 들기 전. 팔레트가 움직이면 밀고 있는 것 → 중단
+      CARRYING    : 들고 있는 중. 손목 기준 상대 위치가 변하면 미끄러진 것 → 중단
+      PLACED      : 내려놓은 뒤. 포크를 뺄 때 팔레트가 따라오면 → 중단
+    """
+
+    def __init__(self, robot, indices, plan, pallet_tracker=None,
+                 done_message="[DONE] 동작을 확인했습니다.",
+                 start_wait_seconds=START_WAIT_SECONDS):
+        self.robot = robot
+        self.indices = indices
+        self.plan = plan
+        self.pallet_tracker = pallet_tracker
+        self.done_message = done_message
+
+        self.index = -1
+        self.stage = "WAIT"
+        self.name = "WAIT"
+        self.last = True
+        self.elapsed = 0.0
+        self.reached_seconds = 0.0
+        self.done = False
+
+        self.start = read_joints_deg(robot, indices)
+        self.goal = self.start.copy()
+        self.duration = start_wait_seconds
+        if start_wait_seconds <= 0.0:
+            if self.pallet_tracker is not None:
+                self.pallet_tracker.begin_wait()
+            self.begin_next_stage()
+
+    def pallet_position(self):
+        return None if self.pallet_tracker is None else self.pallet_tracker.pallet_position()
+
+    # ── 단계 진행 ───────────────────────────────────
+    def begin_next_stage(self):
+        self.index += 1
+        self.elapsed = 0.0
+        self.reached_seconds = 0.0
+
+        if self.index == len(self.plan):
+            self.stage = self.name = "DONE"
+            self.done = True
+            print(self.done_message)
+            return
+
+        step = self.plan[self.index]
+        self.stage, self.name, self.last = step.stage, step.name, step.last
+        self.start = read_joints_deg(self.robot, self.indices)
+        self.goal = np.asarray(step.joints, dtype=float)
+
+        largest_move = float(np.max(np.abs(self.goal - self.start)))
+        self.duration = max(MIN_MOVE_SECONDS, largest_move / JOINT_SPEED_DEG_S)
+
+        if self.pallet_tracker is not None:
+            self.pallet_tracker.begin_stage(self.stage)
+
+        print(f"[{self.name}] 보간 시간 {self.duration:.1f}초")
+
+    def confirm_stage_end(self):
+        """단계가 끝난 순간에만 하는 확인 (인양 성공, 안착 성공)"""
+        if self.pallet_tracker is not None:
+            self.pallet_tracker.confirm_stage_end(self.stage, self.last)
+
+    # ── 팔레트 상태 확인 ────────────────────────────
+    def check_pallet(self):
+        if self.pallet_tracker is not None:
+            self.pallet_tracker.check(self.stage, self.name)
 
     # ── 매 물리 스텝 ────────────────────────────────
     def update(self, dt):
@@ -643,8 +688,9 @@ class JointSequence:
         if self.name == "WAIT":
             command_joints_deg(self.robot, self.indices, self.goal)
             self.elapsed += dt
-            if self.elapsed >= START_WAIT_SECONDS:
-                self.pallet_start = self.pallet_position()
+            if self.elapsed >= self.duration:
+                if self.pallet_tracker is not None:
+                    self.pallet_tracker.begin_wait()
                 self.begin_next_stage()
             return
 
@@ -680,51 +726,37 @@ class JointSequence:
             )
 
 
-def build_sequence(solver, robot, arm_base, pallet, indices, lower_deg, upper_deg, task,
-                   start_from_home):
-    """
-    지금 팔이 서 있는 자리와 팔레트 위치로 이 작업의 계획을 만듭니다.
-
-    start_from_home : 첫 작업이면 True. HOME 자세를 맨 앞에 붙입니다.
-        이어지는 작업에서는 False 입니다. 앞 작업이 EXIT(랙 앞 위쪽)에서 끝나
-        이미 안전한 자세이고, 굳이 HOME 까지 갔다 오면 팔이 한 번 쫙 펴지면서
-        랙을 스칩니다(실측: 3단 팔레트를 16.7 mm 밀었습니다).
-    """
-    base_position, base_quaternion = arm_base.get_world_pose()      # IK 기준점
-    _, chassis_quaternion = robot.get_world_pose()                  # 차체 = 도킹 방향
-    pallet_position, pallet_quaternion = pallet.get_world_pose()
-    check_base_pose(base_position, chassis_quaternion, pallet_position, pallet_quaternion)
-
-    solver.set_robot_base_pose(
-        robot_position=base_position,
-        robot_orientation=base_quaternion,
+def build_sequence(solver, robot, indices, lower_deg, upper_deg, points,
+                   start_joints_deg, pallet_tracker=None, start_point=None,
+                   home_joints=None, first_move_limit_deg=FIRST_MOVE_LIMIT_DEG,
+                   done_message="[DONE] 동작을 확인했습니다.",
+                   start_wait_seconds=START_WAIT_SECONDS):
+    """주어진 Pick 또는 Place 좌표를 기존 IK와 JointSequence로 만듭니다."""
+    segments = split_segments(points, start_point=start_point)
+    plan = solve_plan(
+        solver,
+        segments,
+        lower_deg,
+        upper_deg,
+        start_joints_deg,
+        first_move_limit_deg=first_move_limit_deg,
     )
-    destination = (
-        "같은 층"
-        if task.destination_shelf_top is None
-        else f"선반 윗면 {task.destination_shelf_top}"
-    )
-    print(f"[작업] {task.pallet_path} → {destination}")
-    print(f"[팔 베이스] {np.round(base_position, 3).tolist()} "
-          f"(요 {yaw_deg(base_quaternion):+.1f}° → HOME joint_1 {180.0 - yaw_deg(base_quaternion):+.1f}°)")
-    print(f"[팔레트] {np.round(pallet_position, 3).tolist()}")
-
-    # 리프트 높이 조정이 끝난 뒤, 고정된 베이스에서 집기·놓기 전체를 계획합니다.
-    # 계획을 푸는 출발 자세. IK 의 warm start 이자 첫 목표까지의 변화량 기준입니다.
-    start_deg = (home_joints_deg(base_quaternion) if start_from_home
-                 else read_joints_deg(robot, indices))
-    segments = split_segments(stage_points(pallet, task.destination_shelf_top))
-    plan = solve_plan(solver, segments, lower_deg, upper_deg, start_deg)
-
-    if start_from_home:
-        plan = [Step(STAGE_HOME, STAGE_HOME, None, start_deg, True)] + plan
+    if home_joints is not None:
+        plan = [Step(STAGE_HOME, STAGE_HOME, None, home_joints, True)] + plan
 
     print_plan(plan)
-    return JointSequence(robot, pallet, indices, plan)
+    return JointSequence(
+        robot,
+        indices,
+        plan,
+        pallet_tracker=pallet_tracker,
+        done_message=done_message,
+        start_wait_seconds=start_wait_seconds,
+    )
 
 
 class RobotMotion:
-    """기존 IK 계획과 JointSequence를 한 번에 하나씩 실행합니다."""
+    """기존 IK와 JointSequence로 Home, Pick, Place를 실행합니다."""
 
     def __init__(self, robot, arm_base, solver, stage, arm_path):
         self._robot = robot
@@ -737,8 +769,11 @@ class RobotMotion:
         self._lower_deg = None
         self._upper_deg = None
         self._sequence = None
+        self._pallet_tracker = None
         self._hold_target = None
         self._log_elapsed = 0.0
+        self._transfer_place_pending = False
+        self._transfer_destination = None
         self._initialized = False
 
     def initialize(self):
@@ -755,26 +790,106 @@ class RobotMotion:
         self._hold_target = read_joints_deg(self._robot, self._indices)
         self._initialized = True
 
-    def start_transfer(self, pallet, task, start_from_home=True):
-        """기존 Pick+Place 통합 계획을 만들고 실행 준비를 합니다."""
+    def start_home(self):
+        """현재 베이스 방향에 맞는 HOME 자세로 이동합니다."""
         self._require_initialized()
-        if self.is_running:
-            raise RuntimeError(
-                f"팔 동작이 이미 실행 중입니다: {self.current_stage}"
-            )
+        self._require_idle()
+        if self._is_carrying:
+            raise RuntimeError("팔레트를 운반 중에는 HOME 동작을 시작할 수 없습니다.")
 
-        self._sequence = build_sequence(
+        _, base_quaternion = self._arm_base.get_world_pose()
+        goal = home_joints_deg(base_quaternion)
+        plan = [Step(STAGE_HOME, STAGE_HOME, None, goal, True)]
+        print_plan(plan)
+        self._pallet_tracker = None
+        self._sequence = JointSequence(
+            self._robot,
+            self._indices,
+            plan,
+            done_message="[DONE] HOME 자세에 도달했습니다.",
+        )
+        self._reset_start_state()
+
+    def start_pick(self, pallet, start_from_home=True):
+        """PICK_STAGES만 계획하고 팔레트를 CARRYING 상태까지 인출합니다."""
+        self._require_initialized()
+        self._require_idle()
+        if self._is_carrying:
+            raise RuntimeError("이미 팔레트를 운반 중이므로 새 Pick을 시작할 수 없습니다.")
+
+        tracker = _PalletTracker(self._robot, pallet)
+        base_position, base_quaternion = self._set_solver_base_pose()
+        _, chassis_quaternion = self._robot.get_world_pose()
+        check_base_pose(
+            base_position,
+            chassis_quaternion,
+            tracker.pick_position,
+            tracker.pick_quaternion,
+        )
+        print(f"[팔 베이스] {np.round(base_position, 3).tolist()} "
+              f"(요 {yaw_deg(base_quaternion):+.1f}° → HOME joint_1 "
+              f"{180.0 - yaw_deg(base_quaternion):+.1f}°)")
+        print(f"[팔레트] {np.round(tracker.pick_position, 3).tolist()}")
+
+        start_deg = (
+            home_joints_deg(base_quaternion)
+            if start_from_home
+            else read_joints_deg(self._robot, self._indices)
+        )
+        points = pick_stage_points(tracker.pick_position, tracker.pick_quaternion)
+        sequence = build_sequence(
             self._solver,
             self._robot,
-            self._arm_base,
-            pallet,
             self._indices,
             self._lower_deg,
             self._upper_deg,
-            task,
-            start_from_home,
+            points,
+            start_deg,
+            pallet_tracker=tracker,
+            home_joints=start_deg if start_from_home else None,
+            done_message="[DONE] 집기·인양·인출까지 확인했습니다.",
         )
-        self._log_elapsed = 0.0
+        tracker.pick_end_target = np.array(points[-1][1], dtype=float)
+        self._pallet_tracker = tracker
+        self._sequence = sequence
+        self._reset_start_state()
+
+    def start_place(self, destination_shelf_top):
+        """CARRYING 팔레트에 대해 PLACE_STAGES만 계획하고 실행합니다."""
+        self._require_initialized()
+        self._require_idle()
+        if not self._is_carrying:
+            raise RuntimeError("Place는 Pick이 끝난 CARRYING 상태에서만 시작할 수 있습니다.")
+
+        self._set_solver_base_pose()
+        tracker = self._pallet_tracker
+        points = place_stage_points(
+            tracker.pick_position,
+            tracker.pick_quaternion,
+            destination_shelf_top,
+        )
+        start_deg = read_joints_deg(self._robot, self._indices)
+        self._sequence = build_sequence(
+            self._solver,
+            self._robot,
+            self._indices,
+            self._lower_deg,
+            self._upper_deg,
+            points,
+            start_deg,
+            pallet_tracker=tracker,
+            start_point=tracker.pick_end_target,
+            first_move_limit_deg=IK_JUMP_LIMIT_DEG,
+            done_message="[DONE] 놓기·안착·포크 인출까지 확인했습니다.",
+            start_wait_seconds=0.0,
+        )
+        self._reset_start_state()
+
+    def start_transfer(self, pallet, destination_shelf_top, start_from_home=True):
+        """start_pick() 완료 후 start_place()를 자동으로 이어 실행합니다."""
+        self.start_pick(pallet, start_from_home=start_from_home)
+        self._transfer_place_pending = True
+        self._transfer_destination = destination_shelf_top
 
     def update(self, dt):
         """현재 JointSequence를 물리 한 스텝만큼 진행합니다."""
@@ -782,22 +897,33 @@ class RobotMotion:
         if not self.is_running:
             return
 
-        self._sequence.update(dt)
+        sequence = self._sequence
+        sequence.update(dt)
         self._log_elapsed += dt
         if self._log_elapsed >= LOG_INTERVAL_SECONDS:
-            print(
-                f"[{self._sequence.name}] "
-                f"관절 {np.round(read_joints_deg(self._robot, self._indices), 1)}, "
-                f"팔레트 {np.round(self._sequence.pallet_position(), 3)}"
+            status = (
+                f"[{sequence.name}] "
+                f"관절 {np.round(read_joints_deg(self._robot, self._indices), 1)}"
             )
+            pallet_position = sequence.pallet_position()
+            if pallet_position is not None:
+                status += f", 팔레트 {np.round(pallet_position, 3)}"
+            print(status)
             self._log_elapsed = 0.0
 
-        if self._sequence.done:
-            self._hold_target = np.asarray(self._sequence.goal, dtype=float).copy()
+        if sequence.done:
+            self._hold_target = np.asarray(sequence.goal, dtype=float).copy()
+            if self._transfer_place_pending:
+                destination = self._transfer_destination
+                self._transfer_place_pending = False
+                self._transfer_destination = None
+                self.start_place(destination)
 
     def hold(self):
         """현재 위치 또는 마지막으로 완료한 안전한 관절 목표를 유지합니다."""
         self._require_initialized()
+        if self._pallet_tracker is not None:
+            self._pallet_tracker.check("HOLD", "HOLD")
         if self.is_running:
             self._hold_target = read_joints_deg(self._robot, self._indices)
         command_joints_deg(self._robot, self._indices, self._hold_target)
@@ -811,7 +937,10 @@ class RobotMotion:
             self._hold_target = np.asarray(self._sequence.goal, dtype=float).copy()
 
         self._sequence = None
+        self._pallet_tracker = None
         self._log_elapsed = 0.0
+        self._transfer_place_pending = False
+        self._transfer_destination = None
         command_joints_deg(self._robot, self._indices, self._hold_target)
 
     @property
@@ -826,6 +955,30 @@ class RobotMotion:
     def current_stage(self):
         return "IDLE" if self._sequence is None else self._sequence.name
 
+    def _reset_start_state(self):
+        self._log_elapsed = 0.0
+
     def _require_initialized(self):
         if not self._initialized:
             raise RuntimeError("RobotMotion.initialize()를 먼저 호출하세요.")
+
+    def _require_idle(self):
+        if self.is_running:
+            raise RuntimeError(
+                f"팔 동작이 이미 실행 중입니다: {self.current_stage}"
+            )
+
+    @property
+    def _is_carrying(self):
+        return (
+            self._pallet_tracker is not None
+            and self._pallet_tracker.phase == "CARRYING"
+        )
+
+    def _set_solver_base_pose(self):
+        base_position, base_quaternion = self._arm_base.get_world_pose()
+        self._solver.set_robot_base_pose(
+            robot_position=base_position,
+            robot_orientation=base_quaternion,
+        )
+        return base_position, base_quaternion
