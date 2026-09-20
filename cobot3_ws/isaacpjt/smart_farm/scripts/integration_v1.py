@@ -1,4 +1,33 @@
-"""Integration V1: integrated scene에서 M0609 Pick/Retract를 검증합니다."""
+"""Integration V1: Pick/Retract 뒤 ROS 2 /cmd_vel 주행을 준비합니다."""
+
+import os
+import sys
+from pathlib import Path
+
+
+# Isaac Sim 5.1 내장 ROS 2 Jazzy 라이브러리는 프로세스 시작 때 검색되어야 합니다.
+isaac_root = os.environ.get("ISAAC_PATH") or os.path.abspath(
+    os.path.join(os.path.dirname(os.path.abspath(sys.executable)), "..", "..", "..")
+)
+ros_lib = os.path.join(
+    isaac_root, "exts", "isaacsim.ros2.bridge", "jazzy", "lib"
+)
+if (
+    os.path.isdir(ros_lib)
+    and ros_lib not in os.environ.get("LD_LIBRARY_PATH", "")
+    and not os.environ.get("ROS_DISTRO")
+    and os.environ.get("SMARTFARM_ROS_REEXEC") != "1"
+):
+    current_ld_path = os.environ.get("LD_LIBRARY_PATH", "")
+    os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
+        path for path in (current_ld_path, ros_lib) if path
+    )
+    os.environ["SMARTFARM_ROS_REEXEC"] = "1"
+    print(f"[ROS2] Bridge library path 추가 후 다시 실행합니다: {ros_lib}")
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+os.environ.setdefault("ROS_DISTRO", "jazzy")
+os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
 
 from isaacsim import SimulationApp
 
@@ -6,27 +35,35 @@ from isaacsim import SimulationApp
 simulation_app = SimulationApp({"headless": False})
 
 
-from pathlib import Path
-
 import numpy as np
 import omni.usd
-from pxr import UsdPhysics
+from pxr import PhysxSchema, Usd, UsdPhysics, UsdShade
 
 from isaacsim.core.api import World
+from isaacsim.core.utils.extensions import enable_extension
 
 import robot_motion
 
 
-USD_PATH = (
+SCENE_DIR = (
     Path(__file__).resolve().parent.parent
     / "scenes"
-    / "Collected_smartfarm_v003"
-    / "Collected_smartfarm_v003.usd"
+    / "Collected_smartfarm_v004"
 )
+sys.path.insert(0, str(SCENE_DIR))
+from rig_mode import RigModeSwitch, apply_rig_stability
+
+
+enable_extension("isaacsim.ros2.bridge")
+simulation_app.update()
+print("[Integration V1] ROS 2 Bridge extension enabled: /cmd_vel")
+
+
+USD_PATH = SCENE_DIR / "Collected_smartfarm_v004.usd"
 
 PHYSICS_DT = 1.0 / 60.0
 
-# Scene configuration confirmed from Collected_smartfarm_v003.usd.
+# Scene configuration confirmed from Collected_smartfarm_v004.usd.
 WORLD_PRIM_PATH = "/World"
 SMART_FARM_PRIM_PATH = "/World/SmartFarm"
 PLACED_PRIM_PATH = f"{SMART_FARM_PRIM_PATH}/Placed"
@@ -81,6 +118,68 @@ CONFIGURED_PRIMS = (
     ("Nova odometry graph", NOVA_ODOMETRY_GRAPH_PATH),
 )
 
+GRIP_MATERIAL_PATH = "/World/IntegrationMaterials/ForkPalletGrip"
+GRIP_STATIC_FRICTION = 1.5
+GRIP_DYNAMIC_FRICTION = 1.2
+GRIP_RESTITUTION = 0.0
+
+
+def apply_grip_friction(stage):
+    """Session Layer에서 fork/pallet collider에 고마찰 재질을 적용합니다."""
+    stage.DefinePrim("/World/IntegrationMaterials", "Scope")
+    material = UsdShade.Material.Define(stage, GRIP_MATERIAL_PATH)
+    material_prim = material.GetPrim()
+
+    physics_material = UsdPhysics.MaterialAPI.Apply(material_prim)
+    physics_material.CreateStaticFrictionAttr().Set(GRIP_STATIC_FRICTION)
+    physics_material.CreateDynamicFrictionAttr().Set(GRIP_DYNAMIC_FRICTION)
+    physics_material.CreateRestitutionAttr().Set(GRIP_RESTITUTION)
+
+    physx_material = PhysxSchema.PhysxMaterialAPI.Apply(material_prim)
+    physx_material.CreateFrictionCombineModeAttr().Set("max")
+
+    for label, root_path in (
+        ("fork", FORK_PRIM_PATH),
+        ("pallet", PALLET_PRIM_PATH),
+    ):
+        root = stage.GetPrimAtPath(root_path)
+        if not root.IsValid():
+            raise RuntimeError(f"{label} prim이 없습니다: {root_path}")
+
+        # Root binding은 reference/instance 내부 collider에도 상속됩니다.
+        UsdShade.MaterialBindingAPI.Apply(root).Bind(
+            material,
+            UsdShade.Tokens.strongerThanDescendants,
+            "physics",
+        )
+
+        collider_paths = []
+        for prim in Usd.PrimRange(root):
+            if not prim.HasAPI(UsdPhysics.CollisionAPI):
+                continue
+            collider_paths.append(str(prim.GetPath()))
+            if prim.IsInstanceProxy():
+                continue
+            UsdShade.MaterialBindingAPI.Apply(prim).Bind(
+                material,
+                UsdShade.Tokens.strongerThanDescendants,
+                "physics",
+            )
+
+        print(
+            f"[Grip friction] {label}: {len(collider_paths)} collider(s), "
+            f"static={GRIP_STATIC_FRICTION}, "
+            f"dynamic={GRIP_DYNAMIC_FRICTION}, combine=max"
+        )
+        for collider_path in collider_paths:
+            print(f"  - {collider_path}")
+        if not collider_paths:
+            print(
+                f"  [Warning] 직접 탐색된 collider가 없어 root binding만 적용했습니다: "
+                f"{root_path}"
+            )
+
+
 
 def print_scene_debug(stage):
     """Print the configured integration prims once without dumping the stage."""
@@ -112,6 +211,7 @@ def print_scene_debug(stage):
 
 def print_motion_poses(stage):
     """IK와 Pick 기준이 되는 pose를 초기화 직후 한 번만 출력합니다."""
+    poses = {}
     for label, prim_path in (
         ("M0609 base", M0609_BASE_LINK_PRIM_PATH),
         ("link_6", M0609_LINK6_PRIM_PATH),
@@ -119,11 +219,28 @@ def print_motion_poses(stage):
         ("pick pallet", PALLET_PRIM_PATH),
     ):
         position, quaternion = robot_motion.prim_world_pose(stage, prim_path)
+        poses[label] = (position, quaternion)
         print(
             f"[Integration V1] {label}: "
             f"position={np.round(position, 4).tolist()}, "
             f"quaternion(wxyz)={np.round(quaternion, 5).tolist()}"
         )
+
+    link_position, link_quaternion = poses["link_6"]
+    fork_position, fork_quaternion = poses["fork"]
+    link_rotation = robot_motion.quat_to_rot_matrix(link_quaternion)
+    fork_in_link_position = link_rotation.T @ (fork_position - link_position)
+    fork_in_link_rotation = (
+        link_rotation.T @ robot_motion.quat_to_rot_matrix(fork_quaternion)
+    )
+    print(
+        "[Integration V1] fork relative to link_6: "
+        f"position={np.round(fork_in_link_position, 5).tolist()}"
+    )
+    print(
+        "[Integration V1] fork rotation relative to link_6=\n"
+        f"{np.array2string(fork_in_link_rotation, precision=4, suppress_small=True)}"
+    )
 
 
 def main():
@@ -145,9 +262,11 @@ def main():
     if stage is None:
         raise RuntimeError("USD stage is not available after loading.")
     stage.SetEditTarget(stage.GetSessionLayer())
+    apply_grip_friction(stage)
 
     print(f"[Integration V1] Stage ready: {stage.GetRootLayer().realPath}")
     print_scene_debug(stage)
+    apply_rig_stability(stage, NOVA_PRIM_PATH)
 
     world = World(
         stage_units_in_meters=1.0,
@@ -163,11 +282,13 @@ def main():
             robot_path=M0609_PRIM_PATH,
             end_effector_path=M0609_TCP_PRIM_PATH,
             pallet_path=PALLET_PRIM_PATH,
+            initial_joints_deg=robot_motion.TRAVEL_STOW_JOINTS_DEG,
         )
     )
 
     for _ in range(10):
         world.step(render=True)
+    rig_switch = RigModeSwitch(robot)
 
     print_motion_poses(stage)
     base_position, base_quaternion = robot_motion.prim_world_pose(
@@ -187,7 +308,7 @@ def main():
             base_position,
             base_quaternion,
         )
-        print("[Integration V1] READY → Pick → Retract를 시작합니다.")
+        print("[Integration V1] PRE_PICK → READY → Pick → Retract → Carry Rotate를 시작합니다.")
     except RuntimeError as error:
         failed = True
         world.pause()
@@ -204,14 +325,28 @@ def main():
 
         try:
             sequence.update(PHYSICS_DT)
+            rig_switch.auto(PHYSICS_DT)
             world.step(render=True)
             if sequence.done and not completion_reported:
-                print("[Integration V1] Pick/Retract 완료. 창을 닫으면 종료합니다.")
+                _, fork_quaternion = robot_motion.prim_world_pose(
+                    stage, FORK_PRIM_PATH
+                )
+                fork_direction = robot_motion.quat_to_rot_matrix(
+                    fork_quaternion
+                )[:, 2]
+                print(
+                    "[Integration V1] 운반 자세 fork +Z world axis="
+                    f"{np.round(fork_direction, 4).tolist()}"
+                )
+                print(
+                    "[Integration V1] 운반 자세 완료. ROS 2 /cmd_vel 입력을 기다립니다."
+                )
                 completion_reported = True
         except RuntimeError as error:
             failed = True
+            rig_switch.work()
             world.pause()
-            print(f"[Integration V1] Pick/Retract 중단: {error}")
+            print(f"[Integration V1] Pick/Carry 중단: {error}")
 
 
 if __name__ == "__main__":
