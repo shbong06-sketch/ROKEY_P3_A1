@@ -288,7 +288,7 @@ class CycleStateMachine:
                 return "TRANSPORT_NOT_SAFE"
 
         elif command.operation == "NAVIGATION":
-            if result.reached_station != "INSPECTION_DOCK":
+            if result.reached_station != command.destination:
                 return "DOCKING_ERROR"
 
         elif command.operation == "INSPECT":
