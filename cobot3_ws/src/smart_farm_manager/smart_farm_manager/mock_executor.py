@@ -1,4 +1,9 @@
-"""Task Manager 통합 테스트에 사용하는 executor mock 노드."""
+"""
+Task Manager 통합 테스트에 사용하는 executor mock 노드.
+`sim_task`, `navigation`, `inspection` 역할 중 하나를 수행한다.
+
+추후, 실제 executor 노드와 통합 시, 동일한 토픽 계약으로 실제 노드를 실행하면 된다.
+"""
 
 from typing import Dict, Optional, Set
 
