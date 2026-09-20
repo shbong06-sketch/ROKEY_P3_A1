@@ -34,7 +34,7 @@ from typing import NamedTuple, Optional
 
 import numpy as np
 import omni.usd
-from pxr import UsdGeom, UsdPhysics
+from pxr import PhysxSchema, UsdGeom, UsdPhysics
 
 from isaacsim.core.api import World
 from isaacsim.core.prims import SingleRigidPrim
@@ -68,13 +68,13 @@ FORK_TINE_TIP = 0.245          # 갈래 끝
 FORK_PLATE_FRONT = 0.025       # 판 앞면
 FORK_TINE_HALF_HEIGHT = 0.006  # 갈래 두께의 절반
 
-# 팔레트: prim 원점에서 잰 거리 (깊이 0.30 기준)
-PALLET_FRONT = 0.150           # 앞면(로봇 쪽)
+# 팔레트: prim 원점에서 잰 거리 (simple_pallet의 X 깊이 0.40 m 기준)
+PALLET_FRONT = 0.200           # 앞면(로봇 쪽)
 PALLET_POCKET_CENTER = 0.047   # 포크 틈의 가운데 높이
 
 
 # ── 여유 값 (동작을 조정할 때 여기를 바꿉니다) ───────────
-PLATE_CLEARANCE = 0.010        # 포크 판과 팔레트 앞면 사이 여유
+PLATE_CLEARANCE = 0.030        # 포크 판과 팔레트 앞면 사이 여유
 APPROACH_GAP = 0.037           # 진입 직전, 갈래 끝과 앞면 사이
 READY_GAP = 0.187              # 대기 위치, 갈래 끝과 앞면 사이
 PALLET_LIFT = 0.060            # 인양 높이
@@ -140,6 +140,15 @@ MAX_SEGMENT_M = 0.06           # 이보다 긴 구간은 잘라서 간다
 # joint_1 만 180도 = 팔을 세운 채 랙 쪽을 보게 돌린 자세라, 장면 시작 자세에서
 # 안전하게 갈 수 있고 첫 목표까지의 관절 변화도 작습니다.
 HOME_JOINTS_DEG = [180.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+# m0609_description.yaml의 default_q. Integration에서는 현재 자세의 안전성
+# 기준과 IK branch 선택용 seed를 분리하기 위해서만 사용합니다.
+LULA_DEFAULT_Q_DEG = [0.0, -90.0, 90.0, 0.0, 0.0, 0.0]
+
+# Integration V1 joint-space poses. Lift가 높이를 담당하므로 world 좌표와
+# 분리하여 유지합니다.
+TRAVEL_STOW_JOINTS_DEG = [30.0, 45.0, 140.0, 90.0, -90.0, 90.0]
+PRE_PICK_JOINTS_DEG = [31.0, 55.0, 130.0, 60.0, -90.0, 90.0]
+CARRY_JOINT_1_TURN_DEG = 90.0
 
 
 # ── 시간·검사 기준 ───────────────────────────────────────
@@ -203,6 +212,20 @@ def command_joints_deg(robot, indices, target_deg):
     )
 
 
+def nearest_equivalent_joints_deg(joints_deg, reference_deg, lower_deg, upper_deg):
+    """각 관절을 제한 안에서 reference와 가장 가까운 360도 동치각으로 바꿉니다."""
+    result = np.asarray(joints_deg, dtype=float).copy()
+    reference_deg = np.asarray(reference_deg, dtype=float)
+    for index, angle in enumerate(result):
+        candidates = angle + 360.0 * np.arange(-2, 3)
+        valid = candidates[
+            (candidates >= lower_deg[index]) & (candidates <= upper_deg[index])
+        ]
+        if valid.size:
+            result[index] = valid[np.argmin(np.abs(valid - reference_deg[index]))]
+    return result
+
+
 def setup_arm_drives(stage, robot_path=None):
     """팔 관절의 Drive를 강화합니다. 메모리 안의 장면만 바뀌고 USD 파일은 그대로입니다."""
     robot_path = ROBOT_PATH if robot_path is None else robot_path
@@ -214,6 +237,30 @@ def setup_arm_drives(stage, robot_path=None):
         drive.GetDampingAttr().Set(DRIVE_DAMPING)
         drive.GetMaxForceAttr().Set(DRIVE_MAX_FORCE)
     print(f"[Drive] {len(JOINT_NAMES)}개 강화")
+
+
+def set_arm_initial_state(stage, robot_path, joints_deg):
+    """Session layer에 M0609 초기 관절 상태와 Drive target을 함께 설정합니다."""
+    joints_deg = np.asarray(joints_deg, dtype=float)
+    if joints_deg.shape != (len(JOINT_NAMES),):
+        raise ValueError("M0609 초기 관절값은 6개여야 합니다.")
+
+    for name, position_deg in zip(JOINT_NAMES, joints_deg):
+        prim = stage.GetPrimAtPath(f"{robot_path}/joints/{name}")
+        if not prim.IsValid():
+            raise RuntimeError(f"USD 관절을 찾지 못했습니다: {name}")
+
+        state = PhysxSchema.JointStateAPI.Apply(
+            prim, UsdPhysics.Tokens.angular
+        )
+        state.CreatePositionAttr().Set(float(position_deg))
+        state.CreateVelocityAttr().Set(0.0)
+
+        drive = UsdPhysics.DriveAPI.Get(prim, UsdPhysics.Tokens.angular)
+        drive.GetTargetPositionAttr().Set(float(position_deg))
+        drive.GetTargetVelocityAttr().Set(0.0)
+
+    print(f"[Initial joints] {np.round(joints_deg, 1).tolist()}")
 
 
 def joint_limits_deg(stage, robot_path=None):
@@ -241,9 +288,15 @@ def prim_world_pose(stage, prim_path):
     translation = transform.ExtractTranslation()
     quaternion = transform.ExtractRotationQuat()
     imaginary = quaternion.GetImaginary()
+    quaternion_wxyz = np.array(
+        [quaternion.GetReal(), *imaginary], dtype=float
+    )
+    quaternion_norm = np.linalg.norm(quaternion_wxyz)
+    if quaternion_norm == 0.0:
+        raise RuntimeError(f"회전 quaternion이 0입니다: {prim_path}")
     return (
         np.array(translation, dtype=float),
-        np.array([quaternion.GetReal(), *imaginary], dtype=float),
+        quaternion_wxyz / quaternion_norm,
     )
 
 
@@ -410,6 +463,7 @@ def solve_plan(
     lower_deg,
     upper_deg,
     initial_joints_deg=None,
+    warm_start_joints_deg=None,
     debug=False,
 ):
     """
@@ -424,11 +478,21 @@ def solve_plan(
         HOME_JOINTS_DEG if initial_joints_deg is None else initial_joints_deg,
         dtype=float,
     )
-    warm = np.deg2rad(initial_joints_deg)
+    warm_start_joints_deg = np.asarray(
+        initial_joints_deg
+        if warm_start_joints_deg is None
+        else warm_start_joints_deg,
+        dtype=float,
+    )
+    warm = np.deg2rad(warm_start_joints_deg)
     plan = []
 
     if debug:
-        print(f"[IK DEBUG] initial seed deg={np.round(initial_joints_deg, 2).tolist()}")
+        print(f"[IK DEBUG] initial joints deg={np.round(initial_joints_deg, 2).tolist()}")
+        print(
+            f"[IK DEBUG] solver warm start deg="
+            f"{np.round(warm_start_joints_deg, 2).tolist()}"
+        )
         print(f"[IK DEBUG] lower limits deg={np.round(lower_deg, 2).tolist()}")
         print(f"[IK DEBUG] upper limits deg={np.round(upper_deg, 2).tolist()}")
 
@@ -457,15 +521,19 @@ def solve_plan(
                 f"자세 {angle_error:.1f}°)."
             )
 
-        joints_deg = np.rad2deg(joints)
         previous = initial_joints_deg if index == 0 else plan[-1].joints
+        raw_joints_deg = np.rad2deg(joints)
+        joints_deg = nearest_equivalent_joints_deg(
+            raw_joints_deg, previous, lower_deg, upper_deg
+        )
         delta_deg = joints_deg - previous
         shortest_delta_deg = (delta_deg + 180.0) % 360.0 - 180.0
         if debug:
             print(f"[IK DEBUG] {name}: solved=True")
             print(f"  target world={np.round(target, 4).tolist()}")
             print(f"  seed deg={np.round(previous, 2).tolist()}")
-            print(f"  solution deg={np.round(joints_deg, 2).tolist()}")
+            print(f"  raw solution deg={np.round(raw_joints_deg, 2).tolist()}")
+            print(f"  normalized solution deg={np.round(joints_deg, 2).tolist()}")
             print(f"  raw delta deg={np.round(delta_deg, 2).tolist()}")
             print(
                 f"  shortest delta deg="
@@ -491,7 +559,7 @@ def solve_plan(
             )
 
         plan.append(segment._replace(joints=joints_deg))
-        warm = joints
+        warm = np.deg2rad(joints_deg)
 
     return plan
 
@@ -618,10 +686,12 @@ class JointSequence:
                 )
 
         elif self.stage != STAGE_PALLET_UP:      # 아직 들기 전
-            moved = float(np.linalg.norm(self.pallet_position() - self.pallet_start))
+            displacement = self.pallet_position() - self.pallet_start
+            moved = float(np.linalg.norm(displacement))
             if moved > PALLET_PUSH_TOL:
                 raise RuntimeError(
-                    f"{self.name}: 인양 전 팔레트가 {moved * 1000:.1f} mm 움직였습니다."
+                    f"{self.name}: 인양 전 팔레트가 {moved * 1000:.1f} mm 움직였습니다. "
+                    f"변위 xyz(mm)={np.round(displacement * 1000, 1).tolist()}"
                 )
 
     # ── 매 물리 스텝 ────────────────────────────────
@@ -710,6 +780,7 @@ def initialize_motion(
     robot_path,
     end_effector_path,
     pallet_path,
+    initial_joints_deg=None,
 ):
     """이미 열린 World에서 기존 M0609 제어 객체를 초기화합니다."""
     for path in (URDF_PATH, DESCRIPTION_PATH):
@@ -728,6 +799,15 @@ def initialize_motion(
     check_stage_tables()
     lower_deg, upper_deg = joint_limits_deg(stage, robot_path)
     setup_arm_drives(stage, robot_path)
+    if initial_joints_deg is not None:
+        initial_joints_deg = np.asarray(initial_joints_deg, dtype=float)
+        if initial_joints_deg.shape != (len(JOINT_NAMES),):
+            raise ValueError("M0609 초기 관절값은 6개여야 합니다.")
+        if np.any(initial_joints_deg < lower_deg) or np.any(
+            initial_joints_deg > upper_deg
+        ):
+            raise RuntimeError("M0609 초기 관절 자세가 USD 관절 한계를 벗어났습니다.")
+        set_arm_initial_state(stage, robot_path, initial_joints_deg)
 
     robot = world.scene.add(
         SingleManipulator(
@@ -764,7 +844,7 @@ def build_pick_sequence(
     base_position,
     base_quaternion,
 ):
-    """기존 HOME→READY→APPROACH→DOCK→PALLET_UP→RETRACT 계획만 만듭니다."""
+    """TRAVEL_STOW→PRE_PICK 뒤 기존 Pick/Retract 계획을 만듭니다."""
     solver.set_robot_base_pose(
         robot_position=base_position,
         robot_orientation=base_quaternion,
@@ -775,13 +855,35 @@ def build_pick_sequence(
 
     integration_home_deg = read_joints_deg(robot, indices)
     print(
-        f"[Integration HOME] 현재 관절을 사용합니다: "
+        f"[Integration TRAVEL_STOW] 현재 관절을 사용합니다: "
         f"{np.round(integration_home_deg, 1).tolist()}"
     )
+    pre_pick_deg = np.asarray(PRE_PICK_JOINTS_DEG, dtype=float)
+    pre_pick_delta = np.abs(pre_pick_deg - integration_home_deg)
+    if np.any(pre_pick_deg < lower_deg) or np.any(pre_pick_deg > upper_deg):
+        raise RuntimeError("PRE_PICK 자세가 USD 관절 한계를 벗어났습니다.")
+    if np.max(pre_pick_delta) > FIRST_MOVE_LIMIT_DEG:
+        raise RuntimeError(
+            f"TRAVEL_STOW→PRE_PICK 관절 변화가 "
+            f"{np.max(pre_pick_delta):.1f}°로 한계 {FIRST_MOVE_LIMIT_DEG:.0f}°를 넘습니다."
+        )
+    print(f"[Integration PRE_PICK] {pre_pick_deg.tolist()}")
     all_dof_names = getattr(robot, "dof_names", None)
     if all_dof_names is not None:
         print(f"[Integration DOF] articulation DOFs={list(all_dof_names)}")
     print(f"[Integration DOF] M0609 indices={indices.tolist()}")
+    print(
+        "[Integration dimensions] "
+        f"fork_tine_tip={FORK_TINE_TIP:.4f}, "
+        f"fork_plate_front={FORK_PLATE_FRONT:.4f}, "
+        f"pallet_front={PALLET_FRONT:.4f}, "
+        f"pallet_pocket_center={PALLET_POCKET_CENTER:.4f}, "
+        f"plate_clearance={PLATE_CLEARANCE:.4f}, "
+        f"approach_gap={APPROACH_GAP:.4f}, "
+        f"ready_gap={READY_GAP:.4f}, "
+        f"pallet_lift={PALLET_LIFT:.4f}, "
+        f"retract_distance={RETRACT_DISTANCE:.4f}"
+    )
 
     pallet_position, pallet_quaternion = pallet.get_world_pose()
     ee_position, ee_quaternion = robot.end_effector.get_world_pose()
@@ -834,11 +936,30 @@ def build_pick_sequence(
         split_segments(pick_points),
         lower_deg,
         upper_deg,
-        initial_joints_deg=integration_home_deg,
+        initial_joints_deg=pre_pick_deg,
+        warm_start_joints_deg=pre_pick_deg,
         debug=True,
     )
-    home = Step(STAGE_HOME, STAGE_HOME, None, integration_home_deg.copy(), True)
-    plan = [home] + plan
+    home = Step(
+        "TRAVEL_STOW",
+        "TRAVEL_STOW",
+        None,
+        integration_home_deg.copy(),
+        True,
+    )
+    pre_pick = Step("PRE_PICK", "PRE_PICK", None, pre_pick_deg, True)
+    plan = [home, pre_pick] + plan
+
+    # RETRACT 자세를 유지한 채 base 축인 joint_1만 +90도 회전합니다.
+    # Pick 중 fork +Z는 world -X를 향하므로, 이 회전 뒤에는 world -Y를 향합니다.
+    carry_joints = plan[-1].joints.copy()
+    carry_joints[0] += CARRY_JOINT_1_TURN_DEG
+    carry_joints = nearest_equivalent_joints_deg(
+        carry_joints, plan[-1].joints, lower_deg, upper_deg
+    )
+    plan.append(
+        Step("CARRY_ROTATE", "CARRY_ROTATE", None, carry_joints, True)
+    )
 
     print_plan(plan)
     return JointSequence(
@@ -846,7 +967,7 @@ def build_pick_sequence(
         pallet,
         indices,
         plan,
-        completion_message="[DONE] 집기·인양·인출까지 확인했습니다.",
+        completion_message="[DONE] 집기·인양·인출·운반 자세까지 확인했습니다.",
     )
 
 
