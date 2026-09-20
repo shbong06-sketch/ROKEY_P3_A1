@@ -6,78 +6,27 @@
   PLACE_STAGES : 놓을 자리를 기준으로 한 좌표
 두 묶음이 같은 오프셋 표를 씁니다. 기준점만 다릅니다.
 
-리프트(lift.py)
-  작업을 시작하기 전에 '집을 선반'에 맞춰 팔 베이스 높이를 맞춥니다.
-  한 작업 안에서는 리프트를 움직이지 않습니다. 집는 층과 놓는 층의 작업 가능
-  높이가 겹치기 때문입니다 (예: 3단 집기 1.003~ / 2단 놓기 ~1.253 → 겹침).
-  리프트는 작업과 작업 '사이'에만 움직입니다.
-
 수정할 곳
-  SCENE_PATH        : 어느 월드 USD 를 열지
-  RIG_PATH          : 월드 안에서 리그(카터+리프트+팔)가 놓인 자리
-  TASKS             : 어느 팔레트를 어느 층으로 옮길지 (순서대로 실행)
   치수/여유 값      : 포크나 팔레트가 바뀔 때
   BASE_* 허용 범위  : AMR 도킹 오차를 어디까지 받아 줄지
   JOINT_SPEED_DEG_S : 관절 명령 속도
-
-Play  : 시작 / 일시정지한 위치에서 재개
-Stop  : 다음 Play에서 처음부터 재시작
 
 주의
   - IK는 충돌을 피하지 않습니다. 경로가 랙에 닿는지는 화면으로 확인하세요.
   - 관절 보간은 중간 경로의 완전한 직선을 보장하지 않습니다.
 """
 
-from isaacsim import SimulationApp
-
-app = SimulationApp({"headless": False})
-
-from pathlib import Path
 from typing import NamedTuple, Optional
 
 import numpy as np
-import omni.usd
 from pxr import UsdPhysics
 
-from isaacsim.core.api import World
-from isaacsim.core.prims import SingleRigidPrim
 from isaacsim.core.utils.rotations import quat_to_rot_matrix
 from isaacsim.core.utils.types import ArticulationAction
-from isaacsim.robot.manipulators.manipulators import SingleManipulator
-from isaacsim.robot_motion.motion_generation import LulaKinematicsSolver
-
-from lift import Lift, check_base_level, check_fork_clear_of_rack
-
-
-# ── 파일·로봇 경로 ───────────────────────────────────────
-SCENE_PATH = Path("/home/rokey/Collected_smartfarm_v004/Collected_smartfarm_v004.usd")
-
-M0609_DIR = Path(__file__).resolve().parent.parent.parent / "M0609"
-URDF_PATH = M0609_DIR / "doosan-robot2/urdf/m0609_isaac_sim.urdf"
-DESCRIPTION_PATH = M0609_DIR / "descriptor/m0609_description.yaml"
-
-# 리그(카터 + 리프트 + 팔) 안의 prim 경로.
-#   ROBOT_PATH    : 아티큘레이션 루트. 관절을 읽고 쓰는 창구입니다.
-#   ARM_BASE_PATH : 팔이 실제로 서 있는 자리. IK 의 기준점입니다.
-#                   카터가 움직이거나 리프트가 오르면 이 자리가 따라 움직입니다.
-RIG_PATH = "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS"
-ROBOT_PATH = f"{RIG_PATH}/chassis_link"
-ARM_PATH = f"{RIG_PATH}/m0609_with_fork"
-ARM_BASE_PATH = f"{ARM_PATH}/base_link"
 
 EE_FRAME = "link_6"
-EE_PATH = f"{ARM_PATH}/{EE_FRAME}"
 JOINT_NAMES = [f"joint_{i}" for i in range(1, 7)]
 WHEEL_JOINT_NAMES = ["joint_wheel_left", "joint_wheel_right"]
-
-# 리프트
-LIFT_JOINT_PATH = f"{RIG_PATH}/lift_v3_physics/lift_prismatic_joint"
-LIFT_JOINT_NAME = "lift_prismatic_joint"
-
-RACK_FRONT_X = -1.205          # 선반판 앞면. 이보다 안쪽(작은 x)은 랙 내부입니다
-BASE_BELOW_SHELF = 0.213       # 집을 선반 윗면보다 팔 베이스를 이만큼 아래에 둡니다
-SETTLE_STEPS = 120             # Play 후 리그가 내려앉기를 기다리는 물리 스텝 수
-                               # (안정되기 전에 리프트 기준을 잡으면 10 cm 넘게 틀립니다)
 
 
 # ── 포크 자세와 치수 ─────────────────────────────────────
@@ -151,29 +100,10 @@ PLACE_STAGES = [
     ("EXIT",             [RETRACT_X, 0.0, ENTRY_Z]),  # 수직으로 올라간 뒤 HOME 으로 (들어올 때의 반대)
 ]
 
-# ── 작업 목록 ────────────────────────────────────────────
-# 위에서부터 순서대로 실행합니다. 한 작업이 끝나면 다음 작업의 계획을 새로 만듭니다.
-#   pallet_path           : 집을 팔레트 prim
-#   destination_shelf_top : 놓을 선반 윗면 높이. None 이면 집은 자리와 같은 층
-#     0.713 = 1단, 1.013 = 2단, 1.313 = 3단, 1.613 = 4단, 1.913 = 5단
-#
-# 작업 전에 집을 선반 높이에 맞춰 리프트를 움직입니다.
-# 팔로 집고 놓는 동안에는 그 높이를 유지합니다.
-# 닿지 않는 작업을 적으면 계획 단계에서 이유를 말하고 멈춥니다.
-SHELF_TOP = {1: 0.713, 2: 1.013, 3: 1.313, 4: 1.613, 5: 1.913}
-
-
 class Task(NamedTuple):
     pallet_path: str
     destination_shelf_top: Optional[float]
 
-
-# 팔레트 prim 은 '강체 그 자체'를 가리켜야 합니다.
-# 이 월드에서는 Pallet_N 은 빈 Xform 이고 그 안의 Asset 이 강체입니다.
-# 바깥 Xform 을 적으면 강체가 둘로 겹쳐 물리 결과가 흔들립니다.
-TASKS = [
-    Task("/World/SmartFarm/Placed/Pallet_1/Asset", SHELF_TOP[2]),   # 1단 팔레트 → 2단
-]
 
 MAX_SEGMENT_M = 0.06           # 이보다 긴 구간은 잘라서 간다
 
@@ -190,7 +120,6 @@ HOME_JOINTS_DEG = [180.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
 # ── 시간·검사 기준 ───────────────────────────────────────
-PHYSICS_DT = 1.0 / 60.0
 JOINT_SPEED_DEG_S = 20.0       # 관절 명령 속도. 올리면 추종 오차가 커집니다
 MIN_MOVE_SECONDS = 0.5         # 짧은 구간도 최소 이만큼은 씁니다
 START_WAIT_SECONDS = 2.0
@@ -210,8 +139,6 @@ MIN_PALLET_RISE = 0.010        # 인양 후 실제 상승량 최소값
 PALLET_SLIP_TOL = 0.030        # 운반 중 손목 기준 상대 위치 변화
 MIN_PALLET_DROP = 0.010        # 안착 후 실제 하강량 최소값
 PALLET_STAY_TOL = 0.020        # 포크를 뺄 때 팔레트가 따라 나오면 중단
-LOG_INTERVAL_SECONDS = 1.0
-
 # ── AMR 도킹 허용 범위 ───────────────────────────────────
 # 여기는 '누가 봐도 잘못 선 경우'를 거르는 안전선입니다.
 # 실제로 팔이 닿는지는 그 뒤 IK 가 판단합니다 (범위 안이어도 IK 가 거부할 수 있음).
@@ -262,11 +189,11 @@ def command_joints_deg(robot, indices, target_deg):
     )
 
 
-def setup_arm_drives(stage):
+def setup_arm_drives(stage, arm_path):
     """팔 관절의 Drive를 강화합니다. 메모리 안의 장면만 바뀌고 USD 파일은 그대로입니다."""
     for name in JOINT_NAMES:
         drive = UsdPhysics.DriveAPI.Get(
-            stage.GetPrimAtPath(f"{ARM_PATH}/joints/{name}"), "angular"
+            stage.GetPrimAtPath(f"{arm_path}/joints/{name}"), "angular"
         )
         drive.GetStiffnessAttr().Set(DRIVE_STIFFNESS)
         drive.GetDampingAttr().Set(DRIVE_DAMPING)
@@ -274,7 +201,7 @@ def setup_arm_drives(stage):
     print(f"[Drive] {len(JOINT_NAMES)}개 강화")
 
 
-def brake_wheels(stage):
+def brake_wheels(stage, rig_path):
     """
     카터 바퀴를 지금 각도에 붙잡습니다 (주차 브레이크).
 
@@ -284,7 +211,7 @@ def brake_wheels(stage):
     """
     for name in WHEEL_JOINT_NAMES:
         drive = UsdPhysics.DriveAPI.Get(
-            stage.GetPrimAtPath(f"{RIG_PATH}/{name}"), "angular"
+            stage.GetPrimAtPath(f"{rig_path}/{name}"), "angular"
         )
         drive.GetStiffnessAttr().Set(WHEEL_BRAKE_STIFFNESS)
         drive.GetTargetPositionAttr().Set(0.0)
@@ -292,12 +219,12 @@ def brake_wheels(stage):
     print(f"[브레이크] 카터 바퀴 {len(WHEEL_JOINT_NAMES)}개 고정")
 
 
-def joint_limits_deg(stage):
+def joint_limits_deg(stage, arm_path):
     """USD에 적힌 관절 한계를 degree로 읽습니다."""
     lower, upper = [], []
     for name in JOINT_NAMES:
         joint = UsdPhysics.RevoluteJoint(
-            stage.GetPrimAtPath(f"{ARM_PATH}/joints/{name}")
+            stage.GetPrimAtPath(f"{arm_path}/joints/{name}")
         )
         if not joint:
             raise RuntimeError(f"USD 관절을 찾지 못했습니다: {name}")
@@ -792,200 +719,3 @@ def build_sequence(solver, robot, arm_base, pallet, indices, lower_deg, upper_de
 
     print_plan(plan)
     return JointSequence(robot, pallet, indices, plan)
-
-
-def open_scene():
-    """파일과 프림을 확인하고, 수정 대상이 세션 레이어인 stage를 반환합니다."""
-    if not SCENE_PATH.is_file():
-        raise FileNotFoundError(SCENE_PATH)
-    for path in (URDF_PATH, DESCRIPTION_PATH):
-        if not path.is_file():
-            raise FileNotFoundError(path)
-    if not TASKS:
-        raise ValueError("TASKS 가 비어 있습니다.")
-
-    omni.usd.get_context().open_stage(str(SCENE_PATH))
-    while omni.usd.get_context().get_stage_loading_status()[2] > 0:
-        app.update()
-
-    stage = omni.usd.get_context().get_stage()
-    stage.SetEditTarget(stage.GetSessionLayer())
-
-    needed = [ROBOT_PATH, ARM_BASE_PATH, EE_PATH] + [t.pallet_path for t in TASKS]
-    for path in needed:
-        if not stage.GetPrimAtPath(path).IsValid():
-            raise RuntimeError(f"Prim이 없습니다: {path}")
-
-    return stage
-
-
-def create_world():
-    """로봇·베이스·팔레트를 등록하고 Play를 기다리는 World를 만듭니다."""
-    world = World(
-        stage_units_in_meters=1.0,
-        physics_dt=PHYSICS_DT,
-        rendering_dt=PHYSICS_DT,
-        physics_prim_path="/physicsScene",
-    )
-    # 아티큘레이션 루트는 카터(chassis_link)이고, 팔은 그 안의 관절 6개입니다.
-    robot = world.scene.add(
-        SingleManipulator(
-            prim_path=ROBOT_PATH,
-            name="carter_m0609",
-            end_effector_prim_path=EE_PATH,
-        )
-    )
-    # IK 의 기준점. 카터가 움직이거나 리프트가 오르면 이 자리가 따라 움직입니다.
-    arm_base = world.scene.add(
-        SingleRigidPrim(prim_path=ARM_BASE_PATH, name="arm_base")
-    )
-    # 작업 목록에 나오는 팔레트를 모두 등록합니다 (같은 팔레트는 한 번만).
-    pallets = {}
-    for task in TASKS:
-        if task.pallet_path not in pallets:
-            pallets[task.pallet_path] = world.scene.add(
-                SingleRigidPrim(prim_path=task.pallet_path, name=f"pallet{len(pallets)}")
-            )
-
-    world.reset()
-    world.pause()
-
-    return world, robot, arm_base, pallets
-
-
-def main():
-    stage = open_scene()
-    check_stage_tables()
-    lower_deg, upper_deg = joint_limits_deg(stage)
-    setup_arm_drives(stage)
-    brake_wheels(stage)
-    world, robot, arm_base, pallets = create_world()
-
-    # 관절 인덱스는 초기화 뒤에야 읽히므로 여기서 만듭니다.
-    # 기준 잡기(calibrate)는 아래 루프에서 reset 직후에 합니다.
-    lift = Lift(robot, stage, arm_base, LIFT_JOINT_PATH, LIFT_JOINT_NAME)
-
-    solver = LulaKinematicsSolver(
-        robot_description_path=str(DESCRIPTION_PATH),
-        urdf_path=str(URDF_PATH),
-    )
-    indices = robot_indices(robot)
-    watcher = BaseWatcher()
-
-    task_index = 0
-    # 승강 → 베이스 정지 확인 → 계획 실행 → 다음 작업 순서입니다.
-    # sequence 없음 + lift_ready=False: 승강 / True: 정지 확인과 계획 생성.
-    sequence = None          # 계획이 생기면 팔 동작을 실행합니다
-    lift_ready = False       # 이 작업에 맞는 높이로 리프트를 옮겼는가
-    lift_moving = False      # 지금 승강 중인가
-    needs_reset = True
-    failed = False
-    log_elapsed = 0.0
-
-    print(f"작업 {len(TASKS)}개. Play: 시작/재개 | Pause: 대기 | Stop: 처음부터 재시작")
-
-    while app.is_running():
-        if world.is_stopped():
-            needs_reset = True
-            world.render()
-            continue
-
-        if not world.is_playing():
-            world.render()
-            continue
-
-        if failed and not needs_reset:
-            world.pause()
-            continue
-
-        try:
-            # Stop 후 Play 에서만 처음부터 다시 시작합니다.
-            if needs_reset:
-                world.reset()
-                needs_reset = False
-                failed = False
-                log_elapsed = 0.0
-                task_index = 0
-                sequence = None
-                lift_ready = False
-                lift_moving = False
-                watcher.reset()
-
-                # 리그가 내려앉기를 기다린 뒤에 리프트 기준을 잡습니다.
-                # 건너뛰면 '리프트 값 ↔ 베이스 높이' 관계를 10 cm 넘게 틀리게 잽니다.
-                print(f"[장면] 안정될 때까지 {SETTLE_STEPS} 스텝 기다립니다")
-                for _ in range(SETTLE_STEPS):
-                    world.step(render=True)
-                lift.calibrate()
-
-            if task_index >= len(TASKS):
-                world.step(render=True)
-                continue
-
-            # 1) 계획 전에, 집을 선반에 맞춰 리프트로 베이스 높이를 맞춘다
-            if sequence is None and not lift_ready:
-                if not lift_moving:
-                    task = TASKS[task_index]
-                    print(f"\n── 작업 {task_index + 1}/{len(TASKS)} ──")
-                    # 승강 중 포크가 랙에 있으면 선반을 들이받습니다
-                    check_fork_clear_of_rack(tine_tip_position(robot)[0], RACK_FRONT_X)
-                    pick_shelf_top = float(pallets[task.pallet_path].get_world_pose()[0][2])
-                    lift.move_to(lift.clamp_height(pick_shelf_top - BASE_BELOW_SHELF),
-                                 loaded=False)
-                    lift_moving = True
-                lift.update(PHYSICS_DT)
-                world.step(render=True)
-                if lift.done:
-                    lift_moving = False
-                    lift_ready = True
-                    watcher.reset()      # 리프트가 멈춘 뒤부터 정지 확인을 시작합니다
-                continue
-
-            # 2) 팔 베이스가 실제로 멈추면 계획을 만든다
-            if sequence is None:
-                lift.hold()
-                watcher.update(arm_base, PHYSICS_DT)
-                world.step(render=True)
-                if watcher.settled:
-                    task = TASKS[task_index]
-                    check_base_level(arm_base.get_world_pose()[1])
-                    sequence = build_sequence(
-                        solver, robot, arm_base, pallets[task.pallet_path],
-                        indices, lower_deg, upper_deg, task,
-                        start_from_home=(task_index == 0),
-                    )
-                continue
-
-            lift.hold()              # 지게차 규칙: 팔이 움직이는 동안 리프트는 멈춰 있는다
-            sequence.update(PHYSICS_DT)
-            world.step(render=True)
-
-            log_elapsed += PHYSICS_DT
-            if log_elapsed >= LOG_INTERVAL_SECONDS:
-                print(
-                    f"[{sequence.name}] "
-                    f"관절 {np.round(read_joints_deg(robot, indices), 1)}, "
-                    f"팔레트 {np.round(sequence.pallet_position(), 3)}"
-                )
-                log_elapsed = 0.0
-
-            # 이 작업이 끝나면 다음 작업으로. AMR 정지 확인부터 다시 합니다.
-            if sequence.done:
-                task_index += 1
-                sequence = None
-                lift_ready = False
-                watcher.reset()
-                if task_index >= len(TASKS):
-                    print("[완료] 모든 작업을 마쳤습니다.")
-
-        except RuntimeError as error:      # LiftError 도 RuntimeError 입니다
-            failed = True
-            world.pause()
-            print(f"[중단] {error}")
-            print("원인을 확인하세요. Stop → Play로 처음부터 재시험합니다.")
-
-
-try:
-    main()
-finally:
-    app.close()
