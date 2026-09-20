@@ -37,7 +37,7 @@ simulation_app = SimulationApp({"headless": False})
 
 import numpy as np
 import omni.usd
-from pxr import PhysxSchema, Usd, UsdPhysics, UsdShade
+from pxr import PhysxSchema, Usd, UsdGeom, UsdPhysics, UsdShade
 
 from isaacsim.core.api import World
 from isaacsim.core.utils.extensions import enable_extension
@@ -89,6 +89,15 @@ RACK_PRIM_PATH = f"{PLACED_PRIM_PATH}/Rack_1"
 PALLET_ROOT_PRIM_PATH = f"{PLACED_PRIM_PATH}/Pallet_1"
 PALLET_PRIM_PATH = f"{PALLET_ROOT_PRIM_PATH}/Asset"
 CONVEYOR_PRIM_PATH = f"{PLACED_PRIM_PATH}/Conveyor"
+CONVEYOR_SEG6_PRIM_NAME = "Seg_6"
+CONVEYOR_SEG6_PRIM_PATH = f"{CONVEYOR_PRIM_PATH}/{CONVEYOR_SEG6_PRIM_NAME}"
+CONVEYOR_SEG6_REPORTED_XY = np.array([2.328, -5.121], dtype=float)
+CONVEYOR_STANDOFF_M = 1.5
+PLACE_PALLET_QUATERNION = np.array(
+    [np.sqrt(0.5), 0.0, 0.0, np.sqrt(0.5)], dtype=float
+)
+NAVIGATION_START_DISTANCE_M = 0.05
+NAVIGATION_ARRIVAL_TOLERANCE_M = 0.15
 
 NOVA_CMD_VEL_GRAPH_PATH = f"{NOVA_PRIM_PATH}/differential_drive"
 NOVA_CMD_VEL_SUBSCRIBER_PATH = (
@@ -113,6 +122,7 @@ CONFIGURED_PRIMS = (
     ("Pick pallet root", PALLET_ROOT_PRIM_PATH),
     ("Pick pallet rigid body", PALLET_PRIM_PATH),
     ("Conveyor", CONVEYOR_PRIM_PATH),
+    ("Conveyor Seg_6", CONVEYOR_SEG6_PRIM_PATH),
     ("Nova cmd_vel graph", NOVA_CMD_VEL_GRAPH_PATH),
     ("Nova Twist subscriber", NOVA_CMD_VEL_SUBSCRIBER_PATH),
     ("Nova odometry graph", NOVA_ODOMETRY_GRAPH_PATH),
@@ -181,6 +191,94 @@ def apply_grip_friction(stage):
 
 
 
+
+def find_conveyor_seg6(stage):
+    """Conveyor 아래에서 seg_6를 찾아 실제 prim path를 반환합니다."""
+    conveyor = stage.GetPrimAtPath(CONVEYOR_PRIM_PATH)
+    if not conveyor.IsValid():
+        raise RuntimeError(f"Conveyor prim이 없습니다: {CONVEYOR_PRIM_PATH}")
+
+    exact = stage.GetPrimAtPath(CONVEYOR_SEG6_PRIM_PATH)
+    if exact.IsValid():
+        return exact
+
+    try:
+        matches = [
+            prim
+            for prim in Usd.PrimRange.Stage(stage, Usd.TraverseInstanceProxies())
+            if prim.GetName() == CONVEYOR_SEG6_PRIM_NAME
+            and str(prim.GetPath()).startswith(f"{CONVEYOR_PRIM_PATH}/")
+        ]
+    except Exception as error:
+        raise RuntimeError(
+            f"seg_6 stage traversal 실패: {type(error).__name__}: {error}"
+        ) from error
+    if not matches:
+        raise RuntimeError(
+            f"{CONVEYOR_PRIM_PATH} 아래에서 {CONVEYOR_SEG6_PRIM_NAME} prim을 "
+            "찾지 못했습니다. Scene의 실제 이름을 확인하세요."
+        )
+
+    def xy_error(prim):
+        position, _ = robot_motion.prim_world_pose(stage, str(prim.GetPath()))
+        return float(np.linalg.norm(position[:2] - CONVEYOR_SEG6_REPORTED_XY))
+
+    seg6 = min(matches, key=xy_error)
+    if len(matches) > 1:
+        print(
+            f"[Integration V1] seg_6 후보 {len(matches)}개 중 "
+            f"보고 좌표 {CONVEYOR_SEG6_REPORTED_XY.tolist()}에 가장 가까운 prim을 사용합니다."
+        )
+    return seg6
+
+
+def conveyor_place_target(stage):
+    """seg_6 중심 XY와 월드 bounding box 상단 Z로 팔레트 안착 pose를 만듭니다."""
+    print("[Integration V1] Conveyor seg_6 Place pose를 계산합니다.")
+    seg6 = find_conveyor_seg6(stage)
+    seg6_path = str(seg6.GetPath())
+    seg6_position, seg6_quaternion = robot_motion.prim_world_pose(stage, seg6_path)
+
+    try:
+        bbox_cache = UsdGeom.BBoxCache(
+            Usd.TimeCode.Default(),
+            [UsdGeom.Tokens.default_, UsdGeom.Tokens.render, UsdGeom.Tokens.proxy],
+            True,
+        )
+        aligned_box = bbox_cache.ComputeWorldBound(seg6).ComputeAlignedBox()
+        bounds_min = np.array(aligned_box.GetMin(), dtype=float)
+        bounds_max = np.array(aligned_box.GetMax(), dtype=float)
+    except Exception as error:
+        raise RuntimeError(
+            f"seg_6 world bounding box 계산 실패 ({seg6_path}): "
+            f"{type(error).__name__}: {error}"
+        ) from error
+    if not np.all(np.isfinite(bounds_min)) or not np.all(np.isfinite(bounds_max)):
+        raise RuntimeError(f"seg_6 world bounding box를 계산하지 못했습니다: {seg6_path}")
+
+    destination = np.array(
+        [seg6_position[0], seg6_position[1], bounds_max[2]],
+        dtype=float,
+    )
+    print(f"[Integration V1] Conveyor seg_6 path: {seg6_path}")
+    print(
+        f"[Integration V1] Conveyor seg_6 pose: "
+        f"position={np.round(seg6_position, 4).tolist()}, "
+        f"quaternion(wxyz)={np.round(seg6_quaternion, 5).tolist()}"
+    )
+    print(
+        f"[Integration V1] Conveyor seg_6 bounds: "
+        f"min={np.round(bounds_min, 4).tolist()}, "
+        f"max={np.round(bounds_max, 4).tolist()}"
+    )
+    print(
+        f"[Integration V1] Place pallet origin: "
+        f"position={np.round(destination, 4).tolist()}, "
+        f"quaternion(wxyz)={np.round(PLACE_PALLET_QUATERNION, 5).tolist()}"
+    )
+    return destination
+
+
 def print_scene_debug(stage):
     """Print the configured integration prims once without dumping the stage."""
     print("[Integration V1] Configured prims:")
@@ -213,6 +311,8 @@ def print_motion_poses(stage):
     """IK와 Pick 기준이 되는 pose를 초기화 직후 한 번만 출력합니다."""
     poses = {}
     for label, prim_path in (
+        ("LiftRig", LIFT_RIG_PRIM_PATH),
+        ("Nova chassis", NOVA_ARTICULATION_ROOT_PATH),
         ("M0609 base", M0609_BASE_LINK_PRIM_PATH),
         ("link_6", M0609_LINK6_PRIM_PATH),
         ("fork", FORK_PRIM_PATH),
@@ -224,6 +324,15 @@ def print_motion_poses(stage):
             f"[Integration V1] {label}: "
             f"position={np.round(position, 4).tolist()}, "
             f"quaternion(wxyz)={np.round(quaternion, 5).tolist()}"
+        )
+
+    # path_runner_smooth의 waypoint 변환에 바로 사용할 시작 기준값입니다.
+    for label in ("LiftRig", "Nova chassis"):
+        position, quaternion = poses[label]
+        print(
+            f"[Navigation reference] {label}: "
+            f"world_xy={np.round(position[:2], 4).tolist()}, "
+            f"world_yaw_deg={robot_motion.yaw_deg(quaternion):.2f}"
         )
 
     link_position, link_quaternion = poses["link_6"]
@@ -291,12 +400,25 @@ def main():
     rig_switch = RigModeSwitch(robot)
 
     print_motion_poses(stage)
+    navigation_goal_xy = CONVEYOR_SEG6_REPORTED_XY + np.array(
+        [0.0, CONVEYOR_STANDOFF_M], dtype=float
+    )
+    print(
+        f"[Integration V1] Navigation arrival target: "
+        f"world_xy={np.round(navigation_goal_xy, 4).tolist()}, "
+        f"tolerance={NAVIGATION_ARRIVAL_TOLERANCE_M:.2f} m"
+    )
+
     base_position, base_quaternion = robot_motion.prim_world_pose(
         stage, M0609_BASE_LINK_PRIM_PATH
     )
     sequence = None
+    phase = "PICK"
     failed = False
-    completion_reported = False
+    navigation_started = False
+    navigation_start_position = None
+    arrival_watcher = robot_motion.BaseWatcher()
+    place_completion_reported = False
     try:
         sequence = robot_motion.build_pick_sequence(
             solver,
@@ -325,9 +447,13 @@ def main():
 
         try:
             sequence.update(PHYSICS_DT)
-            rig_switch.auto(PHYSICS_DT)
+            if phase == "PLACE":
+                rig_switch.work()
+            else:
+                rig_switch.auto(PHYSICS_DT)
             world.step(render=True)
-            if sequence.done and not completion_reported:
+
+            if phase == "PICK" and sequence.done:
                 _, fork_quaternion = robot_motion.prim_world_pose(
                     stage, FORK_PRIM_PATH
                 )
@@ -341,12 +467,80 @@ def main():
                 print(
                     "[Integration V1] 운반 자세 완료. ROS 2 /cmd_vel 입력을 기다립니다."
                 )
-                completion_reported = True
+                phase = "WAIT_NAVIGATION"
+                navigation_start_position = np.asarray(
+                    robot.get_world_pose()[0], dtype=float
+                )
+                arrival_watcher.reset()
+
+            elif phase == "WAIT_NAVIGATION":
+                chassis_position = np.asarray(robot.get_world_pose()[0], dtype=float)
+                moved_from_start = float(
+                    np.linalg.norm(chassis_position[:2] - navigation_start_position[:2])
+                )
+                wheel_speed = rig_switch.commanded_wheel_speed()
+                if not navigation_started and (
+                    wheel_speed > 1.0e-3
+                    or moved_from_start >= NAVIGATION_START_DISTANCE_M
+                ):
+                    navigation_started = True
+                    arrival_watcher.reset()
+                    print(
+                        "[Integration V1] AMR 주행 시작 감지: "
+                        f"start_xy={np.round(navigation_start_position[:2], 4).tolist()}"
+                    )
+
+                if navigation_started:
+                    arrival_watcher.update(robot, PHYSICS_DT)
+                    if arrival_watcher.settled and rig_switch.mode == "work":
+                        arrival_error = float(
+                            np.linalg.norm(chassis_position[:2] - navigation_goal_xy)
+                        )
+                        print(
+                            "[Integration V1] AMR 정지 확인: "
+                            f"actual_xy={np.round(chassis_position[:2], 4).tolist()}, "
+                            f"target_xy={np.round(navigation_goal_xy, 4).tolist()}, "
+                            f"error={arrival_error:.3f} m"
+                        )
+                        if arrival_error > NAVIGATION_ARRIVAL_TOLERANCE_M:
+                            raise RuntimeError(
+                                "AMR이 목표 밖에서 정지했습니다: "
+                                f"위치 오차 {arrival_error:.3f} m "
+                                f"(허용 {NAVIGATION_ARRIVAL_TOLERANCE_M:.3f} m)"
+                            )
+
+                        base_position, base_quaternion = robot_motion.prim_world_pose(
+                            stage, M0609_BASE_LINK_PRIM_PATH
+                        )
+                        place_position = conveyor_place_target(stage)
+                        sequence = robot_motion.build_place_sequence(
+                            solver,
+                            robot,
+                            pallet,
+                            indices,
+                            lower_deg,
+                            upper_deg,
+                            base_position,
+                            base_quaternion,
+                            place_position,
+                            PLACE_PALLET_QUATERNION,
+                        )
+                        phase = "PLACE"
+                        print(
+                            "[Integration V1] AMR 도착 → 브레이크 ON → "
+                            "seg_6 Place → Fork Out을 시작합니다."
+                        )
+
+            elif phase == "PLACE" and sequence.done and not place_completion_reported:
+                print("[Integration V1] Pick → Transport → Place 1 cycle 완료.")
+                place_completion_reported = True
+
         except RuntimeError as error:
             failed = True
             rig_switch.work()
             world.pause()
-            print(f"[Integration V1] Pick/Carry 중단: {error}")
+            print(f"[Integration V1] {phase} 중단: {error}")
+            print("[Integration V1] 상태를 확인할 수 있도록 창을 유지합니다.")
 
 
 if __name__ == "__main__":
