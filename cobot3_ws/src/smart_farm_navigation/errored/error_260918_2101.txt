@@ -1,0 +1,52 @@
+3. 제어 노드를 대기 상태로 실행한다.
+
+ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/escape_controller.yaml"
+
+기대 결과
+- "Prepared for /cmd_vel; waiting for /chassis/odom" 로그가 출력된다.
+- 로봇은 움직이지 않는다. 기본 설정은 auto_start=false와 모든 이동값 0.0이다.
+- Ctrl+C로 종료해도 Python traceback 없이 종료된다.
+
+중단 조건
+- /cmd_vel 구독자 또는 /chassis/odom 메시지가 없으면 3단계를 실행하지 않는다.
+- 실패 출력은 cobot3_ws/src/smart_farm_navigation/errored/에 새 txt 파일로 원문 저장한다.
+
+---
+터미널2
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/escape_controller.yaml"
+Package not found
+Package 'smart_farm_navigation' not found
+rokey@IsaacSim03:~/ROKEY_P3_A1$ 
+---
+터미널3
+---
+rokey@IsaacSim03:~/cobot3_ws$ ros_set
+rokey@IsaacSim03:~/cobot3_ws$ isaac_ros
+등록 완료: /home/rokey/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib
+rokey@IsaacSim03:~/cobot3_ws$ ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/escape_controller.yaml"
+Traceback (most recent call last):
+  File "/home/rokey/cobot3_ws/install/smart_farm_navigation/lib/smart_farm_navigation/escape_controller", line 33, in <module>
+    sys.exit(load_entry_point('smart-farm-navigation', 'console_scripts', 'escape_controller')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rokey/cobot3_ws/install/smart_farm_navigation/lib/smart_farm_navigation/escape_controller", line 25, in importlib_load_entry_point
+    return next(matches).load()
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/metadata/__init__.py", line 205, in load
+    module = import_module(match.group('module'))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/rokey/cobot3_ws/build/smart_farm_navigation/smart_farm_navigation/escape_controller.py", line 15, in <module>
+    from rclpy.exceptions import RCLError
+ImportError: cannot import name 'RCLError' from 'rclpy.exceptions' (/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/exceptions.py)
+[ros2run]: Process exited with failure 1
+rokey@IsaacSim03:~/cobot3_ws$ 
+---

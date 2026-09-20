@@ -1,0 +1,55 @@
+[INFO] [1789868432.214146925] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789868432.214447080] [go_to_station_args]: initial pose set to (0.00, 0.00, 90.0deg)
+[INFO] [1789868433.220469365] [basic_navigator]: amcl/get_state service not available, waiting...
+[INFO] [1789868434.221229598] [basic_navigator]: amcl/get_state service not available, waiting...
+[INFO] [1789868436.761160991] [basic_navigator]: Setting initial pose
+[INFO] [1789868436.761362301] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789868436.761544452] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789868436.761732833] [basic_navigator]: Setting initial pose
+[INFO] [1789868436.761844135] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789868436.761962040] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789868436.762077468] [basic_navigator]: Setting initial pose
+[INFO] [1789868436.762182693] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789868436.762290299] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789868438.764542452] [basic_navigator]: Nav2 is ready for use!
+[INFO] [1789868438.764724926] [go_to_station_args]: Nav2 active
+[INFO] [1789868438.764938743] [go_to_station_args]: goToPose INSPECT_ZONE: (-2.44, 5.40, 90.0deg)
+[INFO] [1789868438.765318040] [basic_navigator]: Navigating to goal: -2.44 5.4...
+[INFO] [1789868438.869760871] [go_to_station_args]:   remaining 6.34 m, elapsed 0s, recoveries 0
+[INFO] [1789868440.071703224] [go_to_station_args]:   remaining 5.91 m, elapsed 1s, recoveries 0
+[INFO] [1789868441.273663044] [go_to_station_args]:   remaining 5.66 m, elapsed 3s, recoveries 0
+[INFO] [1789868442.475551060] [go_to_station_args]:   remaining 5.41 m, elapsed 4s, recoveries 0
+[INFO] [1789868443.677581840] [go_to_station_args]:   remaining 5.16 m, elapsed 5s, recoveries 0
+[INFO] [1789868444.880145518] [go_to_station_args]:   remaining 4.89 m, elapsed 6s, recoveries 0
+[INFO] [1789868446.081940606] [go_to_station_args]:   remaining 4.65 m, elapsed 7s, recoveries 0
+[INFO] [1789868447.283716390] [go_to_station_args]:   remaining 4.39 m, elapsed 9s, recoveries 0
+[INFO] [1789868448.485619810] [go_to_station_args]:   remaining 4.11 m, elapsed 10s, recoveries 0
+[INFO] [1789868449.687359963] [go_to_station_args]:   remaining 3.86 m, elapsed 11s, recoveries 0
+[INFO] [1789868450.889116913] [go_to_station_args]:   remaining 3.64 m, elapsed 12s, recoveries 0
+[INFO] [1789868452.090860732] [go_to_station_args]:   remaining 3.36 m, elapsed 13s, recoveries 0
+[INFO] [1789868453.293524858] [go_to_station_args]:   remaining 3.16 m, elapsed 15s, recoveries 0
+[INFO] [1789868454.495053597] [go_to_station_args]:   remaining 2.94 m, elapsed 16s, recoveries 0
+[INFO] [1789868455.696588609] [go_to_station_args]:   remaining 2.76 m, elapsed 17s, recoveries 0
+[INFO] [1789868456.898163248] [go_to_station_args]:   remaining 2.51 m, elapsed 18s, recoveries 0
+[INFO] [1789868458.100498635] [go_to_station_args]:   remaining 2.29 m, elapsed 19s, recoveries 0
+[INFO] [1789868459.302160784] [go_to_station_args]:   remaining 2.05 m, elapsed 21s, recoveries 0
+[INFO] [1789868460.503857999] [go_to_station_args]:   remaining 1.81 m, elapsed 22s, recoveries 0
+[INFO] [1789868461.705580568] [go_to_station_args]:   remaining 1.56 m, elapsed 23s, recoveries 0
+[INFO] [1789868462.906965718] [go_to_station_args]:   remaining 1.31 m, elapsed 24s, recoveries 0
+[INFO] [1789868464.109062571] [go_to_station_args]:   remaining 1.06 m, elapsed 25s, recoveries 0
+[INFO] [1789868465.311035836] [go_to_station_args]:   remaining 0.84 m, elapsed 27s, recoveries 0
+[INFO] [1789868466.512650176] [go_to_station_args]:   remaining 0.63 m, elapsed 28s, recoveries 0
+[INFO] [1789868467.714743138] [go_to_station_args]:   remaining 0.46 m, elapsed 29s, recoveries 0
+[INFO] [1789868468.916460603] [go_to_station_args]:   remaining 0.36 m, elapsed 30s, recoveries 0
+[INFO] [1789868470.118331217] [go_to_station_args]:   remaining 0.26 m, elapsed 31s, recoveries 0
+[INFO] [1789868471.320264294] [go_to_station_args]:   remaining 0.19 m, elapsed 33s, recoveries 0
+[INFO] [1789868472.521777949] [go_to_station_args]:   remaining 0.16 m, elapsed 34s, recoveries 0
+[INFO] [1789868473.723654607] [go_to_station_args]:   remaining 0.14 m, elapsed 35s, recoveries 0
+[INFO] [1789868474.925148595] [go_to_station_args]:   remaining 0.11 m, elapsed 36s, recoveries 0
+[INFO] [1789868476.126627381] [go_to_station_args]:   remaining 0.11 m, elapsed 37s, recoveries 0
+[INFO] [1789868477.328523642] [go_to_station_args]:   remaining 0.09 m, elapsed 39s, recoveries 0
+[INFO] [1789868478.530214731] [go_to_station_args]:   remaining 0.11 m, elapsed 40s, recoveries 0
+[INFO] [1789868479.731729239] [go_to_station_args]:   remaining 0.11 m, elapsed 41s, recoveries 0
+[INFO] [1789868480.933851507] [go_to_station_args]:   remaining 0.11 m, elapsed 42s, recoveries 0
+[INFO] [1789868482.135689414] [go_to_station_args]:   remaining 0.11 m, elapsed 43s, recoveries 0
+[INFO] [1789868483.238444160] [go_to_station_args]: RESULT SUCCEEDED for INSPECT_ZONE after 44s

@@ -1,0 +1,33 @@
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-20-10-10-36-664944-IsaacSim03-5682
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [path_runner-1]: process started with pid [5687]
+[path_runner-1] [0m[INFO] [1789866636.977873307] [path_runner]: path_runner ready on /cmd_vel; 3 waypoint(s); auto_start=true[0m
+[path_runner-1] [0m[INFO] [1789866637.121402939] [path_runner]: Start odom x=-0.000 y=-0.000 heading=-179.9deg; waypoints(start frame)=(3.00,0.00), (3.00,2.44), (5.40,2.44); final heading 0deg[0m
+[path_runner-1] [0m[INFO] [1789866637.121595058] [path_runner]:   segment 1: to odom (-3.00, -0.00) length 3.00 m heading -179.9deg[0m
+[path_runner-1] [0m[INFO] [1789866637.121710931] [path_runner]: Phase TURN [seg 1/3] at odom x=-0.000 y=-0.000 heading=-179.9deg[0m
+[path_runner-1] [0m[INFO] [1789866637.121878674] [path_runner]: Phase DRIVE [seg 1/3] at odom x=-0.000 y=-0.000 heading=-179.9deg[0m
+[path_runner-1] [31m[ERROR] [1789866649.821526364] [path_runner]: Path ABORTED at odom x=-1.696 y=-0.012 heading=-179.5deg: no fresh Odometry on /chassis/odom within 1.00s[0m
+[ERROR] [path_runner-1]: process has died [pid 5687, exit code 2, cmd '/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/lib/smart_farm_navigation/path_runner --ros-args -r __node:=path_runner --params-file /home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/share/smart_farm_navigation/config/path_runner.yaml --params-file /tmp/launch_params_bia8qiu_'].
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-20-10-10-54-126042-IsaacSim03-5712
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [path_runner-1]: process started with pid [5717]
+[path_runner-1] [0m[INFO] [1789866654.426558360] [path_runner]: path_runner ready on /cmd_vel; 3 waypoint(s); auto_start=true[0m
+[path_runner-1] [0m[INFO] [1789866662.919490553] [path_runner]: Start odom x=0.000 y=-0.000 heading=-180.0deg; waypoints(start frame)=(3.00,0.00), (3.00,2.44), (5.40,2.44); final heading 0deg[0m
+[path_runner-1] [0m[INFO] [1789866662.919685989] [path_runner]:   segment 1: to odom (-3.00, -0.00) length 3.00 m heading -180.0deg[0m
+[path_runner-1] [0m[INFO] [1789866662.919803742] [path_runner]: Phase TURN [seg 1/3] at odom x=0.000 y=-0.000 heading=-180.0deg[0m
+[path_runner-1] [0m[INFO] [1789866662.919983752] [path_runner]: Phase DRIVE [seg 1/3] at odom x=0.000 y=-0.000 heading=-180.0deg[0m
+[path_runner-1] [0m[INFO] [1789866686.269970373] [path_runner]:   waypoint 1 reached at odom x=-2.953 y=-0.015 heading=-179.8deg; cross-track +0.013 m[0m
+[path_runner-1] [0m[INFO] [1789866686.270182353] [path_runner]: Phase SETTLE [seg 1/3] at odom x=-2.953 y=-0.015 heading=-179.8deg[0m
+[path_runner-1] [0m[INFO] [1789866686.819758353] [path_runner]:   segment 2: to odom (-3.00, -2.44) length 2.43 m heading -90.9deg[0m
+[path_runner-1] [0m[INFO] [1789866686.819952459] [path_runner]: Phase TURN [seg 2/3] at odom x=-2.959 y=-0.015 heading=-179.8deg[0m
+[path_runner-1] [0m[INFO] [1789866699.019771527] [path_runner]: Phase DRIVE [seg 2/3] at odom x=-3.011 y=-0.048 heading=-92.9deg[0m
+[path_runner-1] [0m[INFO] [1789866717.070048092] [path_runner]:   waypoint 2 reached at odom x=-2.979 y=-2.393 heading=-91.7deg; cross-track +0.019 m[0m
+[path_runner-1] [0m[INFO] [1789866717.070241819] [path_runner]: Phase SETTLE [seg 2/3] at odom x=-2.979 y=-2.393 heading=-91.7deg[0m
+[path_runner-1] [0m[INFO] [1789866717.619779254] [path_runner]:   segment 3: to odom (-5.40, -2.44) length 2.42 m heading -179.0deg[0m
+[path_runner-1] [0m[INFO] [1789866717.619975420] [path_runner]: Phase TURN [seg 3/3] at odom x=-2.979 y=-2.399 heading=-91.7deg[0m
+[path_runner-1] [0m[INFO] [1789866730.719804626] [path_runner]: Phase DRIVE [seg 3/3] at odom x=-3.019 y=-2.469 heading=-177.0deg[0m
+[path_runner-1] [0m[INFO] [1789866748.869824163] [path_runner]:   waypoint 3 reached at odom x=-5.351 y=-2.448 heading=-177.5deg; cross-track +0.006 m[0m
+[path_runner-1] [0m[INFO] [1789866748.870029388] [path_runner]: Phase SETTLE [seg 3/3] at odom x=-5.351 y=-2.448 heading=-177.5deg[0m
+[path_runner-1] [0m[INFO] [1789866749.369737235] [path_runner]: Phase FINAL_TURN [seg 4/3] at odom x=-5.357 y=-2.448 heading=-177.5deg[0m
+[path_runner-1] [31m[ERROR] [1789866753.369714516] [path_runner]: Path ABORTED at odom x=-5.358 y=-2.448 heading=-177.5deg: turn stalled: heading not changing[0m
+[ERROR] [path_runner-1]: process has died [pid 5717, exit code 2, cmd '/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/lib/smart_farm_navigation/path_runner --ros-args -r __node:=path_runner --params-file /home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/share/smart_farm_navigation/config/path_runner.yaml --params-file /tmp/launch_params_fqh8mgzj'].

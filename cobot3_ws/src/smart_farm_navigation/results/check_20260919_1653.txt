@@ -1,0 +1,6 @@
+[INFO] [1789804413.173330848] [scene_check]: [1] /cmd_vel: subscribers=1 publishers=0
+[INFO] [1789804413.173625556] [scene_check]: [2] /chassis/odom: frame odom -> base_link, x=-0.024 y=-0.000 yaw=0.1deg, stamp=206.700
+[INFO] [1789804413.173836687] [scene_check]: [3] /tf: odom -> ['base_link']; base_link children=41
+[INFO] [1789804413.174032631] [scene_check]: [4] drift check: holding for 15 s without commands
+[INFO] [1789804428.185591951] [scene_check]:     moved 0.0007 m in 15.0 s wall; odom rate 23.2 Hz
+[INFO] [1789804428.185857102] [scene_check]: RESULT: OK
