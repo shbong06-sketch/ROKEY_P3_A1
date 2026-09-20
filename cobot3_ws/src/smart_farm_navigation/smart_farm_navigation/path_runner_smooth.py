@@ -18,7 +18,7 @@ from typing import List, Tuple
 import rclpy
 from rclpy.signals import SignalHandlerOptions
 
-from smart_farm_navigation.escape_controller import wrap_angle
+from smart_farm_navigation.geometry import wrap_angle
 from smart_farm_navigation.path_runner import PathRunner
 
 

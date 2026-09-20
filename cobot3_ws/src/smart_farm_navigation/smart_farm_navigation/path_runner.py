@@ -20,7 +20,7 @@ from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.signals import SignalHandlerOptions
 
-from smart_farm_navigation.escape_controller import wrap_angle, yaw_from_odom
+from smart_farm_navigation.geometry import wrap_angle, yaw_from_odom
 
 
 class Phase(Enum):

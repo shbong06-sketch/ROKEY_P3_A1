@@ -44,7 +44,7 @@ ros2 run smart_farm_navigation scene_check --ros-args -p cmd_vel_topic:=/carter2
 ```
 - 기대: `/carter1/cmd_vel`, `/carter1/chassis/odom`, `/carter2/cmd_vel`, `/carter2/chassis/odom` 이 보이고 scene_check RESULT: OK. (namespace 를 안 쓴 단일 로봇이면 토픽에 접두어가 없음. 그 경우 4·5단계의 topic 인자를 생략.)
 
-### [터미널 3] carter1 → 검수 위치
+### [터미널 3] carter1 → INSPECTION_DOCK(검수 도킹점)
 ```bash
 ros_set
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
@@ -53,7 +53,7 @@ ros2 launch smart_farm_navigation path_smooth.launch.py auto_start:=true 2>&1 | 
 - namespace 사용 시 launch 대신: `ros2 run smart_farm_navigation path_runner_smooth --ros-args --params-file /home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/share/smart_farm_navigation/config/path_runner_smooth.yaml -p auto_start:=true -p cmd_vel_topic:=/carter1/cmd_vel -p odom_topic:=/carter1/chassis/odom`
 - 기대: `Path COMPLETE`. carter1 이 통로를 완전히 벗어난 뒤 4단계 진행.
 
-### [터미널 4] carter2 → 도킹 창 저속 정지 → pick & place
+### [터미널 4] carter2 → RACK_DOCK(랙 도킹점) 저속 정지 → pick & place
 ```bash
 ros_set
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash

@@ -70,3 +70,6 @@ ros2 launch smart_farm_navigation escape.launch.py auto_start:=true 2>&1 | tee -
 "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smartfarm_v1/smartfarm_v1.usd"임.
 그리고 기존과 달리 후진 후 x축 위치 가다듬은 다음 전진해서 통로를 빠져나오는게 아니라, 처음부터 카터가 전진만 하면 통로를 빠져나오게 첫 위치를 바꿨고 그렇게 전진해서 통로를 빠져나오면 큐브만 달랑 보이는 영역이 있는데 그쪽으로 좌회전 후 큐브가 놓인 자리 코앞에서 멈추는 식으로 변경됨. 단, 멈췄을때의 카터 각도는 통로 빠져나올려고 전진했을때의 방향과 일치해야함.
 그리고 저 smartfarm_v1.usd에서 기존 "smart_farm_nav2_01.usd" 장면에서 통로 역할을 했던 cube벽의 역할을 "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/assets/simple_rack/SubUSDs"에 있는 랙 usd가 대체했음(아마도 rack_4tier_simplified.usd). 이러한 변경사항 반영해서 전체 자동 자율주행 경로를 수정해 줄 것.
+
+
+
