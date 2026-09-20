@@ -27,14 +27,14 @@ Stop  : 다음 Play에서 처음부터 재시작
 
 from isaacsim import SimulationApp
 
-app = SimulationApp({"headless": False})
+app = SimulationApp({"headless": False}) if __name__ == "__main__" else None
 
 from pathlib import Path
 from typing import NamedTuple, Optional
 
 import numpy as np
 import omni.usd
-from pxr import UsdPhysics
+from pxr import UsdGeom, UsdPhysics
 
 from isaacsim.core.api import World
 from isaacsim.core.prims import SingleRigidPrim
@@ -203,11 +203,12 @@ def command_joints_deg(robot, indices, target_deg):
     )
 
 
-def setup_arm_drives(stage):
+def setup_arm_drives(stage, robot_path=None):
     """팔 관절의 Drive를 강화합니다. 메모리 안의 장면만 바뀌고 USD 파일은 그대로입니다."""
+    robot_path = ROBOT_PATH if robot_path is None else robot_path
     for name in JOINT_NAMES:
         drive = UsdPhysics.DriveAPI.Get(
-            stage.GetPrimAtPath(f"{ROBOT_PATH}/joints/{name}"), "angular"
+            stage.GetPrimAtPath(f"{robot_path}/joints/{name}"), "angular"
         )
         drive.GetStiffnessAttr().Set(DRIVE_STIFFNESS)
         drive.GetDampingAttr().Set(DRIVE_DAMPING)
@@ -215,18 +216,35 @@ def setup_arm_drives(stage):
     print(f"[Drive] {len(JOINT_NAMES)}개 강화")
 
 
-def joint_limits_deg(stage):
+def joint_limits_deg(stage, robot_path=None):
     """USD에 적힌 관절 한계를 degree로 읽습니다."""
+    robot_path = ROBOT_PATH if robot_path is None else robot_path
     lower, upper = [], []
     for name in JOINT_NAMES:
         joint = UsdPhysics.RevoluteJoint(
-            stage.GetPrimAtPath(f"{ROBOT_PATH}/joints/{name}")
+            stage.GetPrimAtPath(f"{robot_path}/joints/{name}")
         )
         if not joint:
             raise RuntimeError(f"USD 관절을 찾지 못했습니다: {name}")
         lower.append(joint.GetLowerLimitAttr().Get())
         upper.append(joint.GetUpperLimitAttr().Get())
     return np.array(lower), np.array(upper)
+
+
+def prim_world_pose(stage, prim_path):
+    """USD prim의 현재 world pose를 (position, quaternion wxyz)로 반환합니다."""
+    prim = stage.GetPrimAtPath(prim_path)
+    if not prim.IsValid():
+        raise RuntimeError(f"Prim이 없습니다: {prim_path}")
+
+    transform = UsdGeom.XformCache().GetLocalToWorldTransform(prim)
+    translation = transform.ExtractTranslation()
+    quaternion = transform.ExtractRotationQuat()
+    imaginary = quaternion.GetImaginary()
+    return (
+        np.array(translation, dtype=float),
+        np.array([quaternion.GetReal(), *imaginary], dtype=float),
+    )
 
 
 # ── AMR 베이스 확인 ─────────────────────────────────────
@@ -385,7 +403,15 @@ def split_segments(points):
     return result
 
 
-def solve_plan(solver, robot, segments, lower_deg, upper_deg):
+def solve_plan(
+    solver,
+    robot,
+    segments,
+    lower_deg,
+    upper_deg,
+    initial_joints_deg=None,
+    debug=False,
+):
     """
     각 목표 좌표를 IK로 풀어 관절값 표를 만듭니다.
 
@@ -394,8 +420,17 @@ def solve_plan(solver, robot, segments, lower_deg, upper_deg):
     첫 목표는 HOME 자세를 기준으로 계산하고, 변화량도 HOME과 비교합니다.
     """
     want_rotation = quat_to_rot_matrix(FORK_QUAT)
-    warm = np.deg2rad(HOME_JOINTS_DEG)
+    initial_joints_deg = np.asarray(
+        HOME_JOINTS_DEG if initial_joints_deg is None else initial_joints_deg,
+        dtype=float,
+    )
+    warm = np.deg2rad(initial_joints_deg)
     plan = []
+
+    if debug:
+        print(f"[IK DEBUG] initial seed deg={np.round(initial_joints_deg, 2).tolist()}")
+        print(f"[IK DEBUG] lower limits deg={np.round(lower_deg, 2).tolist()}")
+        print(f"[IK DEBUG] upper limits deg={np.round(upper_deg, 2).tolist()}")
 
     for index, segment in enumerate(segments):
         name, target = segment.name, segment.target
@@ -403,6 +438,12 @@ def solve_plan(solver, robot, segments, lower_deg, upper_deg):
             EE_FRAME, target, FORK_QUAT, warm
         )
         if not solved:
+            if debug:
+                print(
+                    f"[IK DEBUG] {name}: solved=False, "
+                    f"target={np.round(target, 4).tolist()}, "
+                    f"seed_deg={np.round(np.rad2deg(warm), 2).tolist()}"
+                )
             raise RuntimeError(f"{name}: IK 실패. 목표 {np.round(target, 3)}에 닿지 않습니다.")
 
         reached, rotation = solver.compute_forward_kinematics(EE_FRAME, joints)
@@ -417,16 +458,35 @@ def solve_plan(solver, robot, segments, lower_deg, upper_deg):
             )
 
         joints_deg = np.rad2deg(joints)
+        previous = initial_joints_deg if index == 0 else plan[-1].joints
+        delta_deg = joints_deg - previous
+        shortest_delta_deg = (delta_deg + 180.0) % 360.0 - 180.0
+        if debug:
+            print(f"[IK DEBUG] {name}: solved=True")
+            print(f"  target world={np.round(target, 4).tolist()}")
+            print(f"  seed deg={np.round(previous, 2).tolist()}")
+            print(f"  solution deg={np.round(joints_deg, 2).tolist()}")
+            print(f"  raw delta deg={np.round(delta_deg, 2).tolist()}")
+            print(
+                f"  shortest delta deg="
+                f"{np.round(shortest_delta_deg, 2).tolist()}"
+            )
+            print(
+                f"  FK world={np.round(reached, 4).tolist()}, "
+                f"position error={position_error * 1000.0:.2f} mm, "
+                f"orientation error={angle_error:.3f} deg"
+            )
         if np.any(joints_deg < lower_deg) or np.any(joints_deg > upper_deg):
             raise RuntimeError(f"{name}: 관절 한계를 벗어났습니다.")
 
         # 첫 목표는 HOME에서 오는 큰 이동이라 기준을 따로 둡니다.
-        previous = np.array(HOME_JOINTS_DEG) if index == 0 else plan[-1].joints
         limit = FIRST_MOVE_LIMIT_DEG if index == 0 else IK_JUMP_LIMIT_DEG
-        jump = float(np.max(np.abs(joints_deg - previous)))
+        jump_index = int(np.argmax(np.abs(delta_deg)))
+        jump = float(np.abs(delta_deg[jump_index]))
         if jump > limit:
             raise RuntimeError(
-                f"{name}: 앞 자세 대비 관절이 {jump:.1f}° 바뀝니다 (한계 {limit:.0f}°). "
+                f"{name}: {JOINT_NAMES[jump_index]}이 앞 자세 대비 {jump:.1f}° "
+                f"바뀝니다 (한계 {limit:.0f}°). "
                 "자세가 뒤집히거나 크게 휘두르는 경로입니다."
             )
 
@@ -455,11 +515,12 @@ class JointSequence:
       PLACED      : 내려놓은 뒤. 포크를 뺄 때 팔레트가 따라오면 → 중단
     """
 
-    def __init__(self, robot, pallet, indices, plan):
+    def __init__(self, robot, pallet, indices, plan, completion_message=None):
         self.robot = robot
         self.pallet = pallet
         self.indices = indices
         self.plan = plan
+        self.completion_message = completion_message
 
         self.index = -1
         self.stage = "WAIT"
@@ -497,7 +558,7 @@ class JointSequence:
         if self.index == len(self.plan):
             self.stage = self.name = "DONE"
             self.done = True
-            print("[DONE] 집기·인양·인출·놓기까지 확인했습니다.")
+            print(self.completion_message or "[DONE] 집기·인양·인출·놓기까지 확인했습니다.")
             return
 
         step = self.plan[self.index]
@@ -642,6 +703,153 @@ def build_sequence(solver, robot, pallet, indices, lower_deg, upper_deg, task):
     return JointSequence(robot, pallet, indices, plan)
 
 
+def initialize_motion(
+    world,
+    stage,
+    articulation_root_path,
+    robot_path,
+    end_effector_path,
+    pallet_path,
+):
+    """이미 열린 World에서 기존 M0609 제어 객체를 초기화합니다."""
+    for path in (URDF_PATH, DESCRIPTION_PATH):
+        if not path.is_file():
+            raise FileNotFoundError(path)
+
+    for prim_path in (
+        articulation_root_path,
+        robot_path,
+        end_effector_path,
+        pallet_path,
+    ):
+        if not stage.GetPrimAtPath(prim_path).IsValid():
+            raise RuntimeError(f"Prim이 없습니다: {prim_path}")
+
+    check_stage_tables()
+    lower_deg, upper_deg = joint_limits_deg(stage, robot_path)
+    setup_arm_drives(stage, robot_path)
+
+    robot = world.scene.add(
+        SingleManipulator(
+            prim_path=articulation_root_path,
+            name="integration_m0609",
+            end_effector_prim_path=end_effector_path,
+        )
+    )
+    pallet = world.scene.add(
+        SingleRigidPrim(prim_path=pallet_path, name="integration_pick_pallet")
+    )
+    world.reset()
+
+    solver = LulaKinematicsSolver(
+        robot_description_path=str(DESCRIPTION_PATH),
+        urdf_path=str(URDF_PATH),
+    )
+    indices = robot_indices(robot)
+    if np.any(indices < 0):
+        raise RuntimeError(
+            f"M0609 관절 인덱스를 찾지 못했습니다: {indices.tolist()}"
+        )
+
+    return solver, robot, pallet, indices, lower_deg, upper_deg
+
+
+def build_pick_sequence(
+    solver,
+    robot,
+    pallet,
+    indices,
+    lower_deg,
+    upper_deg,
+    base_position,
+    base_quaternion,
+):
+    """기존 HOME→READY→APPROACH→DOCK→PALLET_UP→RETRACT 계획만 만듭니다."""
+    solver.set_robot_base_pose(
+        robot_position=base_position,
+        robot_orientation=base_quaternion,
+    )
+    print(f"[IK base] position={np.round(base_position, 4).tolist()}")
+    print(f"[IK base] quaternion(wxyz)={np.round(base_quaternion, 5).tolist()}")
+    print(f"[팔레트] {np.round(pallet.get_world_pose()[0], 3).tolist()}")
+
+    integration_home_deg = read_joints_deg(robot, indices)
+    print(
+        f"[Integration HOME] 현재 관절을 사용합니다: "
+        f"{np.round(integration_home_deg, 1).tolist()}"
+    )
+    all_dof_names = getattr(robot, "dof_names", None)
+    if all_dof_names is not None:
+        print(f"[Integration DOF] articulation DOFs={list(all_dof_names)}")
+    print(f"[Integration DOF] M0609 indices={indices.tolist()}")
+
+    pallet_position, pallet_quaternion = pallet.get_world_pose()
+    ee_position, ee_quaternion = robot.end_effector.get_world_pose()
+    base_rotation = quat_to_rot_matrix(base_quaternion)
+    pallet_in_base = base_rotation.T @ (
+        np.asarray(pallet_position) - np.asarray(base_position)
+    )
+    ee_in_base = base_rotation.T @ (
+        np.asarray(ee_position) - np.asarray(base_position)
+    )
+    fork_rotation_in_base = base_rotation.T @ quat_to_rot_matrix(FORK_QUAT)
+    print(
+        f"[Integration geometry] pallet quaternion(wxyz)="
+        f"{np.round(pallet_quaternion, 5).tolist()}"
+    )
+    print(
+        f"[Integration geometry] pallet in M0609 base xyz="
+        f"{np.round(pallet_in_base, 4).tolist()}"
+    )
+    print(
+        f"[Integration geometry] current link_6 world xyz="
+        f"{np.round(ee_position, 4).tolist()}, quaternion(wxyz)="
+        f"{np.round(ee_quaternion, 5).tolist()}"
+    )
+    print(
+        f"[Integration geometry] current link_6 in base xyz="
+        f"{np.round(ee_in_base, 4).tolist()}"
+    )
+    print(f"[Integration geometry] desired TCP world quaternion(wxyz)={FORK_QUAT.tolist()}")
+    print(
+        "[Integration geometry] desired TCP rotation in base=\n"
+        f"{np.array2string(fork_rotation_in_base, precision=4, suppress_small=True)}"
+    )
+
+    pick_points = stage_points(pallet, None)[:len(PICK_STAGES)]
+    print("[Integration targets] pallet pose로 다시 계산한 Pick 목표:")
+    for (stage_name, offset), (_, target) in zip(PICK_STAGES, pick_points):
+        target_in_base = base_rotation.T @ (
+            np.asarray(target) - np.asarray(base_position)
+        )
+        print(
+            f"  - {stage_name}: offset={np.round(offset, 4).tolist()}, "
+            f"world={np.round(target, 4).tolist()}, "
+            f"base_xyz={np.round(target_in_base, 4).tolist()}, "
+            f"distance={np.linalg.norm(target_in_base):.4f} m"
+        )
+    plan = solve_plan(
+        solver,
+        robot,
+        split_segments(pick_points),
+        lower_deg,
+        upper_deg,
+        initial_joints_deg=integration_home_deg,
+        debug=True,
+    )
+    home = Step(STAGE_HOME, STAGE_HOME, None, integration_home_deg.copy(), True)
+    plan = [home] + plan
+
+    print_plan(plan)
+    return JointSequence(
+        robot,
+        pallet,
+        indices,
+        plan,
+        completion_message="[DONE] 집기·인양·인출까지 확인했습니다.",
+    )
+
+
 def main():
     if not SCENE_PATH.is_file():
         raise FileNotFoundError(SCENE_PATH)
@@ -775,7 +983,8 @@ def main():
             print("원인을 확인하세요. Stop → Play로 처음부터 재시험합니다.")
 
 
-try:
-    main()
-finally:
-    app.close()
+if __name__ == "__main__":
+    try:
+        main()
+    finally:
+        app.close()
