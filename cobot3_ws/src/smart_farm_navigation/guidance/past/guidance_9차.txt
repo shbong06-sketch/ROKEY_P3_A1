@@ -1,0 +1,75 @@
+[9차] smart_farm_nav2_01.usd 통로 중앙선 복귀 직진 + 환경 충돌 사전 점검 (터미널 3개)
+
+목적
+- 8차 직진 구간에서 한쪽 벽으로 붙던 문제를 수정하였다. 직진 단계가 "시작 위치(통로 한가운데)를 지나는 중앙선"을 목표로 횡오차를 줄이며 진행하므로, 원호 후진으로 생긴 약 0.4 m 치우침을 약 1 m 진행 안에 복귀한 뒤 중앙을 유지한다.
+- 고피의 시스템 ROS 2(jazzy) 와 Isaac Sim 내장 bridge(humble) 배포판 차이를 매 터미널에서 자동 점검하는 env_check.sh 를 추가하였다.
+- 8차의 "No executable found" 는 내피 재현 결과 패키지 문제가 아니었다(빌드 후 escape_controller, scene_check 둘 다 설치됨). 아래 2단계에 설치 확인 명령을 넣었다.
+
+사전 조건
+- 이 문서를 읽는 시점에 feature/navigation 최신 상태이다.
+- 고정 경로
+  워크스페이스: /home/rokey/ROKEY_P3_A1/cobot3_ws
+  장면: /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smart_farm_nav2_01.usd
+  결과: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results
+  점검 스크립트: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
+
+공통 규칙
+- 세 터미널 모두 ros_set → isaac_ros → env_check.sh 순서로 시작한다. env_check.sh 가 CONFLICT 를 내면 그 터미널에서는 아무것도 실행하지 않는다.
+- Isaac Sim 은 시스템 ROS(jazzy) 를 소싱한 터미널에서만 실행한다. humble 내장 lib 을 LD_LIBRARY_PATH 에 넣지 않는다.
+
+[터미널 1] Isaac Sim 실행
+
+ros_set
+isaac_ros
+bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
+isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/launch_scene.py
+
+- 기대: env_check 판정 OK 또는 WARN. Isaac Sim 창이 열리고 "[launch_scene] PLAY" 출력.
+- 대체: isaac 실행 → File > Open 으로 장면 → Play.
+
+[터미널 2] 빌드 및 장면 통신 점검
+
+ros_set
+isaac_ros
+bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws
+rm -rf build/smart_farm_navigation install/smart_farm_navigation
+colcon build --packages-select smart_farm_navigation
+source install/setup.bash
+ros2 pkg executables smart_farm_navigation
+ros2 run smart_farm_navigation scene_check 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/check_$(date +%Y%m%d_%H%M).txt
+
+- ros2 pkg executables 기대 출력 2줄: "smart_farm_navigation escape_controller", "smart_farm_navigation scene_check". 한 줄이라도 없으면 rm -rf 부터 다시 한다.
+- scene_check 기대: [1] /cmd_vel subscribers=1 publishers=0, [2] odom → base_link, [3] /tf odom → ['base_link'], [4] 15 s 드리프트 0.05 m 미만, 마지막 "RESULT: OK".
+
+[터미널 3] 탈출 동작 실행
+
+ros_set
+isaac_ros
+bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+ros2 launch smart_farm_navigation escape.launch.py auto_start:=true 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/escape_$(date +%Y%m%d_%H%M).txt
+
+- 동작: 원호 후진(후단이 우측으로, yaw +90도) → 정지 → 중앙선으로 복귀하며 9.0 m 직진 → 정지 → 자동 종료(launch 는 Ctrl+C).
+- 기대 로그: "corridor line through (x, y) dir ..." → Phase ARC_REVERSE → ARC_STOP → FORWARD → "cross-track at FORWARD start +0.4 m 내외" → "COMPLETE ... cross-track ±0.05 m 이내".
+- 뷰포트 기대: 직진 초반에 통로 중앙으로 붙은 뒤 벽과 등거리로 진행.
+- 재실행 전에는 터미널 1 의 Isaac Sim 을 Ctrl+C 로 닫고 다시 띄워 초기 자세로 되돌린다.
+
+---
+커맨드 실행 중 물리력이 있는 객체와 충돌이 나서 카터가 멈추긴했는데, 다른 환경으로 조성한 usd("/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smartfarm_v1/smartfarm_v1.usd")에서 불러온 Nova_Carter_ROS를 이용해 ros topic list를 체크하고 작업을 수행해본거라 환경 자체가 달랐어서 발생한 충돌이었으니 통신 자체는 정상으로 봐도 무방함. 단, 충돌 전까지 움직임을 보니 후진이 아니라 전진을 하려던 것 같았는데...어차피 이제 동작을 수정할거니 정말 큰 상관 없음.
+---
+
+기록
+- results/ 의 check_*.txt, escape_*.txt 를 커밋·푸시한다.
+
+대기 사항
+- 디지털 트윈 장면이 도착하기 전까지 경로 설계는 진행하지 않는다. 위 절차는 26.09.21 시연 전 재현 확인용이다.
+
+---
+우리 메인 환경이 조성된 usd를 새로 구축함.
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smartfarm_v1/smartfarm_v1.usd"임.
+그리고 기존과 달리 후진 후 x축 위치 가다듬은 다음 전진해서 통로를 빠져나오는게 아니라, 처음부터 카터가 전진만 하면 통로를 빠져나오게 첫 위치를 바꿨고 그렇게 전진해서 통로를 빠져나오면 큐브만 달랑 보이는 영역이 있는데 그쪽으로 좌회전 후 큐브가 놓인 자리 코앞에서 멈추는 식으로 변경됨. 단, 멈췄을때의 카터 각도는 통로 빠져나올려고 전진했을때의 방향과 일치해야함.
+그리고 저 smartfarm_v1.usd에서 기존 "smart_farm_nav2_01.usd" 장면에서 통로 역할을 했던 cube벽의 역할을 "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/assets/simple_rack/SubUSDs"에 있는 랙 usd가 대체했음(아마도 rack_4tier_simplified.usd). 이러한 변경사항 반영해서 전체 자동 자율주행 경로를 수정해 줄 것.
+
+
+

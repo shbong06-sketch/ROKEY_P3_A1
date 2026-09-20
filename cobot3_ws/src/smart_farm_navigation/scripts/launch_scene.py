@@ -17,7 +17,14 @@ scene = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SCENE
 
 from isaacsim import SimulationApp  # noqa: E402  (must precede other omni imports)
 
-app = SimulationApp({"headless": False})
+import os as _os
+_exp = _os.environ.get("ISAAC_EXPERIENCE", "")        # e.g. ISAAC_EXPERIENCE=full -> same extension set as the `isaac` GUI
+_kw = {}
+if _exp:
+    _path = _exp if _exp.endswith(".kit") else _os.path.expanduser(f"~/isaacsim/apps/isaacsim.exp.{_exp}.kit")
+    _kw["experience"] = _path
+    print(f"[launch_scene] experience: {_path}", flush=True)
+app = SimulationApp({"headless": False}, **_kw)
 
 running = True
 
@@ -71,7 +78,10 @@ try:
             with open(out, "w") as f:
                 f.write(f"# written by launch_scene.py {_dt.datetime.now():%Y-%m-%d %H:%M:%S}\n"
                         f"scene: {scene}\nprim: {path}\nx: {x:.4f}\ny: {y:.4f}\nyaw_deg: {yaw:.2f}\n")
-            print(f"[launch_scene] spawn pose written to {out}", flush=True)
+                f.write("robots:\n")
+                for i, (p2, x2, y2, z2, yaw2) in enumerate(found, 1):
+                    f.write(f"  - name: carter{i}\n    prim: {p2}\n    x: {x2:.4f}\n    y: {y2:.4f}\n    yaw_deg: {yaw2:.2f}\n")
+            print(f"[launch_scene] spawn pose(s) written to {out} ({len(found)} robot prim(s))", flush=True)
         else:
             print("[launch_scene] WARNING: no prim with 'carter'/'nova' in its name under /World; AMCL initial pose must be given manually", flush=True)
     except Exception as exc:  # noqa: BLE001

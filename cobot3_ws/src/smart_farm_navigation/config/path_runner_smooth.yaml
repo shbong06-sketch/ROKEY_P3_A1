@@ -1,0 +1,42 @@
+path_runner_smooth:
+  ros__parameters:
+    cmd_vel_topic: /cmd_vel
+    odom_topic: /chassis/odom
+    auto_start: false                 # path_smooth.launch.py auto_start:=true 로 켠다
+    # ---- Collected_smartfarm_v003.usd (2026-09-20) ----
+    # 로봇(LiftRig) 시작 (-0.22, 0.82), yaw 는 통로 탈출 방향으로 회전됨. 첫 통로 안쪽 폭 1.72 m (x -0.86..0.86), y 0.27..4.51
+    # 컨베이어 북쪽 가장자리 y = -4.55, 검수 M0609 x = -0.67
+    # 경유지(시작 기준 좌표계: X = 시작 시 정면, Y = 왼쪽). 마지막 점이 최종 도착점, 그 앞의 점들은 직선 구간.
+    #   (1.5, 0.0)   통로 남단(y 0.27) 을 차체 길이만큼 지난 탈출점. 여기서부터 곡선
+    #   (4.9, -0.45) INSPECTION_DOCK: 컨베이어 앞 0.3 m (base_link y ≈ -4.1), 검수 M0609 정면(x ≈ -0.67, 시작보다 0.45 m 오른쪽)
+    #   탈출 방향이 북쪽(+y)이면 Y 부호를 뒤집고 X 를 다시 잰다.
+    waypoints_x: [1.5, 4.9]
+    waypoints_y: [0.0, -0.45]
+    final_heading_deg: 0.0            # 도착 방향 = 통로 진행 방향
+    approach_length_m: 0.8            # 도착점 앞 0.8 m 지점(도착 축 위)에 먼저 도달한 뒤 직진 접근
+    lookahead_m: 0.5                  # pure pursuit 전방 주시 거리
+    curve_speed_mps: 0.25             # 곡선 구간 속도
+    curve_tangent_scale: 0.5          # 곡선의 접선 길이 비율(클수록 완만하게 출발, 급하게 마무리)
+    path_step_m: 0.05
+
+    drive_direction_sign: -1.0         # 팀 관찰(11차): 보이는 정면 = base_link +x. 장면에서 로봇을 180도 돌린 뒤 사용
+    drive_speed_mps: 0.4
+    drive_min_speed_mps: 0.08
+    slow_zone_m: 0.5
+    turn_speed_radps: 0.6
+    turn_min_speed_radps: 0.1
+    turn_gain: 1.5
+    heading_tolerance_deg: 2.0
+    waypoint_tolerance_m: 0.05
+    heading_hold_gain: 1.0
+    heading_hold_max_radps: 0.3
+    cross_track_gain: 1.5
+    cross_track_max_angle_rad: 0.7
+    max_cross_track_m: 0.6
+    settle_duration_s: 0.5
+    odom_timeout_s: 1.0
+    phase_timeout_factor: 10.0
+    phase_timeout_min_s: 30.0
+    stall_timeout_s: 4.0
+    stall_min_progress: 0.01
+    stop_hold_duration_s: 1.0

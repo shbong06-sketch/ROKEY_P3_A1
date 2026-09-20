@@ -1,0 +1,33 @@
+# carter2: 맵 바깥에서 등장 -> 랙 통로 직진 -> 목표 랙 앞 도킹 창 안에서 천천히 정지.
+# path_runner 를 namespace 토픽으로 실행함 (carter2_dock.launch.py).
+# 도킹 창(robot_motion.py BASE_*_WINDOW): 팔 베이스 기준 x -0.70..-0.55, y ±0.15, yaw ±15도 (월드 좌표).
+# 시작 기준 좌표계: X = carter2 시작 시 정면(통로 방향), Y = 왼쪽. 값은 Collected_smartfarm_v001.usd 확정 후 채움.
+/**:
+  ros__parameters:
+    cmd_vel_topic: /carter2/cmd_vel
+    odom_topic: /carter2/chassis/odom
+    auto_start: false
+    waypoints_x: [4.0]                # 시작점에서 도킹 창 중심까지의 직선 거리(m). 장면 확정 후 수정
+    waypoints_y: [0.0]
+    final_heading_deg: 0.0
+    drive_direction_sign: 1.0
+    drive_speed_mps: 0.3
+    drive_min_speed_mps: 0.05         # 마지막 구간 최저 속도 (천천히 정지)
+    slow_zone_m: 1.2                  # 도킹 창 1.2 m 전부터 감속
+    turn_speed_radps: 0.4
+    turn_min_speed_radps: 0.08
+    turn_gain: 1.5
+    heading_tolerance_deg: 2.0
+    waypoint_tolerance_m: 0.03        # 도킹 창 ±0.15 m 보다 훨씬 작게
+    heading_hold_gain: 1.0
+    heading_hold_max_radps: 0.3
+    cross_track_gain: 1.5
+    cross_track_max_angle_rad: 0.7
+    max_cross_track_m: 0.5            # 통로 폭 1.44 m: 0.47 m 여유 안에서 중단
+    settle_duration_s: 0.5
+    odom_timeout_s: 1.0
+    phase_timeout_factor: 10.0
+    phase_timeout_min_s: 30.0
+    stall_timeout_s: 4.0
+    stall_min_progress: 0.01
+    stop_hold_duration_s: 2.0         # robot_motion.py 가 정지(0.5 s)를 확인할 시간 확보
