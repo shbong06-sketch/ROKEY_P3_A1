@@ -26,6 +26,7 @@ setup(
             "scene_check = smart_farm_navigation.scene_check:main",
             "path_runner = smart_farm_navigation.path_runner:main",
             "path_runner_smooth = smart_farm_navigation.path_runner_smooth:main",
+            "navigation_node = smart_farm_navigation.navigation_node:main",
         ],
     },
 )
