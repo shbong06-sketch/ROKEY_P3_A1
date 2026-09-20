@@ -10,6 +10,8 @@ from typing import Tuple
 
 @dataclass(frozen=True)
 class TaskCommandData:
+    """상태 머신과 ROS adapter 사이에서 사용하는 작업 명령 모델."""
+
     task_id: str
     command_id: str
 
@@ -24,6 +26,8 @@ class TaskCommandData:
 
 @dataclass(frozen=True)
 class TaskResultData:
+    """executor가 반환한 작업 결과를 표현하는 내부 데이터 모델."""
+
     task_id: str
     command_id: str
 

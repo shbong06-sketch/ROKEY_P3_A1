@@ -15,6 +15,8 @@ from .scenario import (
 
 
 class CycleStateMachine:
+    """시나리오 규칙에 따라 명령을 만들고 결과를 상태 전이에 반영한다."""
+
     VALID_PLANT_SLOTS: Set[str] = {
         f"SLOT_{index:02d}" for index in range(1, 9)
     }
@@ -36,6 +38,8 @@ class CycleStateMachine:
         self,
         scenario: Optional[ScenarioDefinition] = None,
     ) -> None:
+        """시나리오와 사이클 실행에 필요한 논리 상태를 초기화한다."""
+
         self.scenario = scenario or create_demo_harvest_scenario()
 
         self.state = CycleState.IDLE
@@ -53,6 +57,8 @@ class CycleStateMachine:
         self._restore_initial_logical_state()
 
     def _restore_initial_logical_state(self) -> None:
+        """팔레트 위치를 시나리오 시작 전 논리 상태로 복원한다."""
+
         self.pallet_locations = {
             "PALLET_001": "RACK_L1",
             "PALLET_002": "RACK_L2",
@@ -61,6 +67,8 @@ class CycleStateMachine:
 
     @property
     def is_terminal(self) -> bool:
+        """현재 사이클이 성공 또는 오류로 종료됐는지 반환한다."""
+
         return self.state in {
             CycleState.COMPLETE,
             CycleState.ERROR,
@@ -68,6 +76,8 @@ class CycleStateMachine:
 
     @property
     def is_running(self) -> bool:
+        """현재 사이클이 명령을 수행할 수 있는 실행 상태인지 반환한다."""
+
         return self.state not in {
             CycleState.IDLE,
             CycleState.COMPLETE,
@@ -249,6 +259,8 @@ class CycleStateMachine:
         self,
         result: TaskResultData,
     ) -> bool:
+        """결과의 task, command, operation이 활성 명령과 같은지 확인한다."""
+
         command = self.active_command
 
         return (
@@ -351,6 +363,8 @@ class CycleStateMachine:
         reason: str,
         reset_required: bool,
     ) -> None:
+        """상태를 ERROR로 전이하고 복구 필요 여부에 맞는 상태를 기록한다."""
+
         self.active_command = None
         self.state = CycleState.ERROR
         self.failure_reason = reason

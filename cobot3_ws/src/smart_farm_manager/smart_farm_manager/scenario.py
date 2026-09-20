@@ -6,6 +6,8 @@ from typing import Tuple
 
 
 class CycleState(str, Enum):
+    """Task Manager가 가질 수 있는 사이클 상태."""
+
     IDLE = "IDLE"
     PREFLIGHT = "PREFLIGHT"
 
@@ -22,6 +24,8 @@ class CycleState(str, Enum):
 
 
 class ExecutorName(str, Enum):
+    """공정 명령을 수행하는 executor 식별자."""
+
     SIM_TASK = "sim_task"
     NAVIGATION = "navigation"
     INSPECTION = "inspection"
@@ -29,6 +33,8 @@ class ExecutorName(str, Enum):
 
 @dataclass(frozen=True)
 class StepDefinition:
+    """한 공정의 담당 executor, 명령 인자 및 제한 시간 정의."""
+
     state: CycleState
     executor: ExecutorName
     operation: str
@@ -44,10 +50,14 @@ class StepDefinition:
 
 @dataclass(frozen=True)
 class ScenarioDefinition:
+    """시나리오 식별자와 순서가 있는 공정 정의 모음."""
+
     scenario_id: str
     steps: Tuple[StepDefinition, ...]
 
     def step_for(self, state: CycleState) -> StepDefinition:
+        """주어진 사이클 상태에 대응하는 공정 정의를 반환한다."""
+
         for step in self.steps:
             if step.state == state:
                 return step
