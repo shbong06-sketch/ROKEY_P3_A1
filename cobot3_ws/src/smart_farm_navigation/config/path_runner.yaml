@@ -17,7 +17,7 @@ path_runner:
     waypoints_y: [0.0, 2.44, 2.44]
     final_heading_deg: 0.0            # 시작 방향과 동일 (통로를 빠져나올 때의 방향)
 
-    drive_direction_sign: -1.0        # 이 carter 는 linear.x < 0 이 보이는 정면 방향
+    drive_direction_sign: 1.0         # 11차 팀 관찰: linear.x > 0 이 보이는 정면. 장면에서 로봇 초기 yaw 를 180도 돌려 사용
     drive_speed_mps: 0.4
     drive_min_speed_mps: 0.08
     slow_zone_m: 0.5                  # 경유지 0.5 m 전부터 감속
