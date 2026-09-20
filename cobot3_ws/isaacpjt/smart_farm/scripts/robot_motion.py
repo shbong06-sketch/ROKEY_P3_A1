@@ -1,17 +1,20 @@
 """
-팔레트 집기 → 인양 → 인출 → 놓기 : 월드 좌표 목표를 IK로 풀어 실행
+리프트로 높이 맞추기 → 팔레트 집기 → 인양 → 인출 → 놓기 : 월드 좌표 목표를 IK로 풀어 실행
 
 동작은 두 묶음입니다.
   PICK_STAGES  : 집을 팔레트를 기준으로 한 좌표
   PLACE_STAGES : 놓을 자리를 기준으로 한 좌표
 두 묶음이 같은 오프셋 표를 씁니다. 기준점만 다릅니다.
 
-리프트가 생기면
-  RETRACT(빼기)와 DESCEND(놓을 높이) 사이에 리프트 이동을 넣고,
-  TASKS 의 destination_shelf_top 을 놓을 층으로 적으면 층 간 이동이 됩니다.
-  (아래 build_sequence 의 '리프트 자리' 주석 참고)
+리프트(lift.py)
+  작업을 시작하기 전에 '집을 선반'에 맞춰 팔 베이스 높이를 맞춥니다.
+  한 작업 안에서는 리프트를 움직이지 않습니다. 집는 층과 놓는 층의 작업 가능
+  높이가 겹치기 때문입니다 (예: 3단 집기 1.003~ / 2단 놓기 ~1.253 → 겹침).
+  리프트는 작업과 작업 '사이'에만 움직입니다.
 
 수정할 곳
+  SCENE_PATH        : 어느 월드 USD 를 열지
+  RIG_PATH          : 월드 안에서 리그(카터+리프트+팔)가 놓인 자리
   TASKS             : 어느 팔레트를 어느 층으로 옮길지 (순서대로 실행)
   치수/여유 값      : 포크나 팔레트가 바뀔 때
   BASE_* 허용 범위  : AMR 도킹 오차를 어디까지 받아 줄지
@@ -43,18 +46,38 @@ from isaacsim.core.utils.types import ArticulationAction
 from isaacsim.robot.manipulators.manipulators import SingleManipulator
 from isaacsim.robot_motion.motion_generation import LulaKinematicsSolver
 
+from lift import Lift, check_base_level, check_fork_clear_of_rack
+
 
 # ── 파일·로봇 경로 ───────────────────────────────────────
-SCENE_PATH = (
-    Path(__file__).resolve().parent.parent / "scenes/demo_test/demo_test.usd"
-)
+SCENE_PATH = Path("/home/rokey/Collected_smartfarm_v004/Collected_smartfarm_v004.usd")
+
 M0609_DIR = Path(__file__).resolve().parent.parent.parent / "M0609"
 URDF_PATH = M0609_DIR / "doosan-robot2/urdf/m0609_isaac_sim.urdf"
 DESCRIPTION_PATH = M0609_DIR / "descriptor/m0609_description.yaml"
 
-ROBOT_PATH = "/World/m0609_with_fork"
+# 리그(카터 + 리프트 + 팔) 안의 prim 경로.
+#   ROBOT_PATH    : 아티큘레이션 루트. 관절을 읽고 쓰는 창구입니다.
+#   ARM_BASE_PATH : 팔이 실제로 서 있는 자리. IK 의 기준점입니다.
+#                   카터가 움직이거나 리프트가 오르면 이 자리가 따라 움직입니다.
+RIG_PATH = "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS"
+ROBOT_PATH = f"{RIG_PATH}/chassis_link"
+ARM_PATH = f"{RIG_PATH}/m0609_with_fork"
+ARM_BASE_PATH = f"{ARM_PATH}/base_link"
+
 EE_FRAME = "link_6"
+EE_PATH = f"{ARM_PATH}/{EE_FRAME}"
 JOINT_NAMES = [f"joint_{i}" for i in range(1, 7)]
+WHEEL_JOINT_NAMES = ["joint_wheel_left", "joint_wheel_right"]
+
+# 리프트
+LIFT_JOINT_PATH = f"{RIG_PATH}/lift_v3_physics/lift_prismatic_joint"
+LIFT_JOINT_NAME = "lift_prismatic_joint"
+
+RACK_FRONT_X = -1.205          # 선반판 앞면. 이보다 안쪽(작은 x)은 랙 내부입니다
+BASE_BELOW_SHELF = 0.213       # 집을 선반 윗면보다 팔 베이스를 이만큼 아래에 둡니다
+SETTLE_STEPS = 120             # Play 후 리그가 내려앉기를 기다리는 물리 스텝 수
+                               # (안정되기 전에 리프트 기준을 잡으면 10 cm 넘게 틀립니다)
 
 
 # ── 포크 자세와 치수 ─────────────────────────────────────
@@ -64,13 +87,15 @@ JOINT_NAMES = [f"joint_{i}" for i in range(1, 7)]
 FORK_QUAT = np.array([0.5, 0.5, -0.5, -0.5])
 
 # 포크: link_6 원점에서 잰 거리 (충돌 박스 실측값)
-FORK_TINE_TIP = 0.245          # 갈래 끝
-FORK_PLATE_FRONT = 0.025       # 판 앞면
-FORK_TINE_HALF_HEIGHT = 0.006  # 갈래 두께의 절반
+# 주의: fork_tool prim 자체에 scale (1.5, 1, 1.2) 가 걸려 있습니다.
+#       아래 값은 그 배율까지 반영한 '진짜' 치수입니다.
+#       USD 에서 Cube 크기만 보고 적으면 갈래 길이가 49 mm 짧게 나옵니다.
+FORK_TINE_TIP = 0.294          # 갈래 끝        (0.135 + 0.220/2) x 1.2
+FORK_PLATE_FRONT = 0.030       # 판 앞면        (0.0125 + 0.025/2) x 1.2
 
-# 팔레트: prim 원점에서 잰 거리 (깊이 0.30 기준)
+# 팔레트: prim 원점에서 잰 거리 (simple_pallet.usd 깊이 0.30 기준 실측)
 PALLET_FRONT = 0.150           # 앞면(로봇 쪽)
-PALLET_POCKET_CENTER = 0.047   # 포크 틈의 가운데 높이
+PALLET_POCKET_CENTER = 0.040   # 포크 틈의 가운데 높이
 
 
 # ── 여유 값 (동작을 조정할 때 여기를 바꿉니다) ───────────
@@ -78,7 +103,9 @@ PLATE_CLEARANCE = 0.010        # 포크 판과 팔레트 앞면 사이 여유
 APPROACH_GAP = 0.037           # 진입 직전, 갈래 끝과 앞면 사이
 READY_GAP = 0.187              # 대기 위치, 갈래 끝과 앞면 사이
 PALLET_LIFT = 0.060            # 인양 높이
-RETRACT_DISTANCE = 0.418       # 인출 거리 (팔레트 뒷면이 선반 앞 끝을 3cm 넘어섬)
+ENTRY_RISE = 0.150             # 랙 앞에서 뜨는 높이 (HOME 과 작업 높이를 잇는 경유점)
+                               # 더 키우면 높은 층에서 IK 자세가 뒤집힙니다
+RETRACT_DISTANCE = 0.328       # 인출 거리 (팔레트 뒷면이 선반 앞 끝을 3cm 넘어섬)
 
 
 # ── 위 값에서 계산되는 목표 (기준점 기준 좌표) ───────────
@@ -90,6 +117,7 @@ RETRACT_X = DOCK_X + RETRACT_DISTANCE
 
 FORK_Z = PALLET_POCKET_CENTER
 LIFTED_Z = FORK_Z + PALLET_LIFT
+ENTRY_Z = FORK_Z + ENTRY_RISE
 
 # 검사와 연결된 단계 이름은 상수로 둡니다. 오타로 검사가 빠지는 것을 막습니다.
 STAGE_HOME = "HOME"
@@ -97,8 +125,17 @@ STAGE_PALLET_UP = "PALLET_UP"       # 이 단계 끝에서 '인양 확인'
 STAGE_PALLET_DOWN = "PALLET_DOWN"   # 이 단계 끝에서 '안착 확인'
 
 # 집기: 집을 팔레트가 기준
+#
+# ENTRY 가 맨 앞에 있는 이유:
+#   HOME 은 팔을 세운 자세, READY 는 랙 앞 낮은 자세입니다. 둘을 바로 이으면
+#   관절 보간이 큰 호를 그려서 포크가 랙을 쓸고 내려옵니다.
+#   랙 앞 '높은 곳'을 한 번 거치면 그 뒤로는 앞에서 내려오므로 랙에 닿지 않습니다.
+#   경유점의 앞뒤 위치를 RETRACT_X 로 잡은 이유: READY_X 는 팔 베이스에서 30 cm 밖에
+#   안 떨어진 좁은 구역이라 높이를 더하면 IK 가 풀리지 않습니다. RETRACT_X 는
+#   팔레트를 들고 오르내리는 자리라 이 높이대가 이미 검증돼 있습니다.
 PICK_STAGES = [
-    ("READY",          [READY_X,    0.0, FORK_Z]),   # 랙 앞에서 대기
+    ("ENTRY",          [RETRACT_X,  0.0, ENTRY_Z]),  # 랙 앞 위쪽 (HOME 에서 여기로 먼저)
+    ("READY",          [READY_X,    0.0, FORK_Z]),   # 수직으로 내려와 랙 앞에서 대기
     ("APPROACH",       [APPROACH_X, 0.0, FORK_Z]),   # 팔레트 앞까지 접근
     ("DOCK",           [DOCK_X,     0.0, FORK_Z]),   # 판이 앞면에 닿기 직전까지 삽입
     (STAGE_PALLET_UP,  [DOCK_X,     0.0, LIFTED_Z]), # 인양
@@ -111,16 +148,17 @@ PLACE_STAGES = [
     ("PLACE_IN",         [DOCK_X,    0.0, LIFTED_Z]), # 선반 안으로 삽입
     (STAGE_PALLET_DOWN,  [DOCK_X,    0.0, FORK_Z]),   # 내려서 선반에 안착
     ("FORK_OUT",         [RETRACT_X, 0.0, FORK_Z]),   # 빈 포크만 빼기
+    ("EXIT",             [RETRACT_X, 0.0, ENTRY_Z]),  # 수직으로 올라간 뒤 HOME 으로 (들어올 때의 반대)
 ]
 
 # ── 작업 목록 ────────────────────────────────────────────
 # 위에서부터 순서대로 실행합니다. 한 작업이 끝나면 다음 작업의 계획을 새로 만듭니다.
 #   pallet_path           : 집을 팔레트 prim
 #   destination_shelf_top : 놓을 선반 윗면 높이. None 이면 집은 자리와 같은 층
-#     0.713 = 1단, 1.013 = 2단, 1.313 = 3단, 1.613 = 4단
+#     0.713 = 1단, 1.013 = 2단, 1.313 = 3단, 1.613 = 4단, 1.913 = 5단
 #
-# 지금은 리프트가 없어 베이스 높이가 고정입니다. 베이스 z=0.80 에서는
-# 1단과 2단 작업 구간이 겹치므로 '2단 → 1단' 까지만 가능합니다.
+# 작업 전에 집을 선반 높이에 맞춰 리프트를 움직입니다.
+# 팔로 집고 놓는 동안에는 그 높이를 유지합니다.
 # 닿지 않는 작업을 적으면 계획 단계에서 이유를 말하고 멈춥니다.
 SHELF_TOP = {1: 0.713, 2: 1.013, 3: 1.313, 4: 1.613, 5: 1.913}
 
@@ -130,27 +168,36 @@ class Task(NamedTuple):
     destination_shelf_top: Optional[float]
 
 
+# 팔레트 prim 은 '강체 그 자체'를 가리켜야 합니다.
+# 이 월드에서는 Pallet_N 은 빈 Xform 이고 그 안의 Asset 이 강체입니다.
+# 바깥 Xform 을 적으면 강체가 둘로 겹쳐 물리 결과가 흔들립니다.
 TASKS = [
-    Task("/World/simple_pallet1", SHELF_TOP[1]),    # 2단 팔레트 → 1단
+    Task("/World/SmartFarm/Placed/Pallet_1/Asset", SHELF_TOP[2]),   # 1단 팔레트 → 2단
 ]
 
 MAX_SEGMENT_M = 0.06           # 이보다 긴 구간은 잘라서 간다
 
 # 시작할 때 먼저 지나가는 고정 자세. 매번 같은 곳에서 출발하게 합니다.
-# joint_1 만 180도 = 팔을 세운 채 랙 쪽을 보게 돌린 자세라, 장면 시작 자세에서
-# 안전하게 갈 수 있고 첫 목표까지의 관절 변화도 작습니다.
+# joint_1 만 180도 = 팔을 세운 채 랙 쪽(월드 -x)을 보게 돌린 자세라, 장면 시작
+# 자세에서 안전하게 갈 수 있고 첫 목표까지의 관절 변화도 작습니다.
+# 팔 베이스가 돌아가 있으면 home_joints_deg() 가 그만큼 빼 줍니다.
+# joint_2 는 0 으로 둡니다. 기울이면 팔이 '마스트 쪽'으로 눕습니다.
+#   joint_2 = -20 일 때 손목과 마스트 사이 1 mm (실측) — 사실상 파고듭니다
+#   joint_2 =   0 일 때 마스트 64 mm / 랙 68 mm 여유
+# 이 리그는 자기충돌이 꺼져 있어 겹쳐도 시뮬레이터가 알려주지 않습니다. 눈으로 보거나
+# 따로 계산해야 하므로, 여유가 넉넉한 값을 씁니다.
 HOME_JOINTS_DEG = [180.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
 # ── 시간·검사 기준 ───────────────────────────────────────
 PHYSICS_DT = 1.0 / 60.0
-JOINT_SPEED_DEG_S = 8.0
-MIN_MOVE_SECONDS = 1.0
+JOINT_SPEED_DEG_S = 20.0       # 관절 명령 속도. 올리면 추종 오차가 커집니다
+MIN_MOVE_SECONDS = 0.5         # 짧은 구간도 최소 이만큼은 씁니다
 START_WAIT_SECONDS = 2.0
 
 JOINT_REACHED_TOL_DEG = 1.0
 JOINT_TRACKING_LIMIT_DEG = 8.0
-HOLD_SECONDS = 0.5
+HOLD_SECONDS = 0.3             # 목표에 닿은 뒤 이만큼 머물러야 '도달'로 봅니다
 REACH_TIMEOUT_SECONDS = 5.0
 
 IK_POSITION_TOL = 0.002        # m,   IK 결과와 목표의 거리
@@ -166,12 +213,21 @@ PALLET_STAY_TOL = 0.020        # 포크를 뺄 때 팔레트가 따라 나오면
 LOG_INTERVAL_SECONDS = 1.0
 
 # ── AMR 도킹 허용 범위 ───────────────────────────────────
-# 베이스가 이 범위 안에 '멈춰' 있어야 계획을 만듭니다.
-# 범위 안이어도 팔이 닿지 않으면 IK 검사에서 다시 걸러집니다.
-BASE_X_WINDOW = (-0.70, -0.55)      # m,   앞뒤 (작을수록 랙에 가까움)
-BASE_Y_WINDOW = (-0.15, 0.15)       # m,   좌우
-BASE_YAW_LIMIT_DEG = 15.0           # deg, 틀어짐
-BASE_HEIGHT_BAND = (-0.31, 0.24)    # m,   '놓을 선반 윗면' 대비 베이스 높이
+# 여기는 '누가 봐도 잘못 선 경우'를 거르는 안전선입니다.
+# 실제로 팔이 닿는지는 그 뒤 IK 가 판단합니다 (범위 안이어도 IK 가 거부할 수 있음).
+#
+# 기준을 월드 좌표가 아니라 '집을 팔레트'로 잡습니다.
+# 그래야 AMR 이 어느 랙 앞에 서든 같은 값으로 검사할 수 있습니다.
+# 검증된 자리는 팔레트 원점에서 앞으로 0.932 m, 옆으로 +0.018 m 입니다.
+BASE_TO_PALLET_X = (0.89, 1.05)     # m,   앞뒤 (작을수록 팔레트에 가까움)
+BASE_TO_PALLET_Y = (-0.21, 0.34)    # m,   좌우 어긋남
+BASE_YAW_LIMIT_DEG = 25.0           # deg, 기준 방향에서 얼마나 틀어져도 되는가
+CHASSIS_FACING_DEG = 90.0           # deg, 차체가 랙을 향하는 기준 방향
+                                    #   0  = 앞면이 랙을 봄
+                                    #   90 = 옆면이 랙을 봄 (v004 배치)
+                                    # 팔 베이스가 아니라 '차체' 기준입니다. 팔 베이스는
+                                    # 리그에 비스듬히 붙어 있을 수 있어 각도 판단에 못 씁니다.
+BASE_HEIGHT_BAND = (-0.50, 0.15)    # m,   '집을 팔레트가 있는 선반 윗면' 대비 베이스 높이
 
 BASE_STILL_TOL = 0.002              # m,   이보다 적게 움직이면 정지로 봅니다
 BASE_STILL_SECONDS = 0.5            # 이만큼 계속 멈춰 있어야 시작합니다
@@ -181,6 +237,9 @@ BASE_WAIT_NOTICE_SECONDS = 3.0      # 대기 중 안내를 찍는 주기
 DRIVE_STIFFNESS = 1e8
 DRIVE_DAMPING = 1e4
 DRIVE_MAX_FORCE = 1e8
+
+# 카터 바퀴를 지금 각도에 붙잡는 강성 (주차 브레이크).
+WHEEL_BRAKE_STIFFNESS = 1e5
 
 
 # ── 로봇 읽기·쓰기 ───────────────────────────────────────
@@ -207,7 +266,7 @@ def setup_arm_drives(stage):
     """팔 관절의 Drive를 강화합니다. 메모리 안의 장면만 바뀌고 USD 파일은 그대로입니다."""
     for name in JOINT_NAMES:
         drive = UsdPhysics.DriveAPI.Get(
-            stage.GetPrimAtPath(f"{ROBOT_PATH}/joints/{name}"), "angular"
+            stage.GetPrimAtPath(f"{ARM_PATH}/joints/{name}"), "angular"
         )
         drive.GetStiffnessAttr().Set(DRIVE_STIFFNESS)
         drive.GetDampingAttr().Set(DRIVE_DAMPING)
@@ -215,12 +274,30 @@ def setup_arm_drives(stage):
     print(f"[Drive] {len(JOINT_NAMES)}개 강화")
 
 
+def brake_wheels(stage):
+    """
+    카터 바퀴를 지금 각도에 붙잡습니다 (주차 브레이크).
+
+    팔이 팔레트를 밀고 당기면 카터가 굴러가고, 그러면 IK 의 기준점이 흔들립니다.
+    이 스크립트는 주행을 하지 않으므로 시작 각도(0)에 그대로 묶어 둡니다.
+    주행까지 하는 스크립트에서는 팀원의 rig_mode.py 로 주행/작업을 전환하세요.
+    """
+    for name in WHEEL_JOINT_NAMES:
+        drive = UsdPhysics.DriveAPI.Get(
+            stage.GetPrimAtPath(f"{RIG_PATH}/{name}"), "angular"
+        )
+        drive.GetStiffnessAttr().Set(WHEEL_BRAKE_STIFFNESS)
+        drive.GetTargetPositionAttr().Set(0.0)
+        drive.GetTargetVelocityAttr().Set(0.0)
+    print(f"[브레이크] 카터 바퀴 {len(WHEEL_JOINT_NAMES)}개 고정")
+
+
 def joint_limits_deg(stage):
     """USD에 적힌 관절 한계를 degree로 읽습니다."""
     lower, upper = [], []
     for name in JOINT_NAMES:
         joint = UsdPhysics.RevoluteJoint(
-            stage.GetPrimAtPath(f"{ROBOT_PATH}/joints/{name}")
+            stage.GetPrimAtPath(f"{ARM_PATH}/joints/{name}")
         )
         if not joint:
             raise RuntimeError(f"USD 관절을 찾지 못했습니다: {name}")
@@ -230,17 +307,46 @@ def joint_limits_deg(stage):
 
 
 # ── AMR 베이스 확인 ─────────────────────────────────────
+def tine_tip_position(robot):
+    """포크 갈래 끝의 월드 좌표. 손목에서 포크가 뻗는 방향으로 FORK_TINE_TIP 만큼."""
+    position, quaternion = robot.end_effector.get_world_pose()
+    forward = quat_to_rot_matrix(quaternion) @ np.array([0.0, 0.0, FORK_TINE_TIP])
+    return np.array(position, dtype=float) + forward
+
+
 def yaw_deg(quaternion):
     """베이스가 z축으로 몇 도 돌아가 있는지 (w, x, y, z)"""
     rotation = quat_to_rot_matrix(quaternion)
     return float(np.degrees(np.arctan2(rotation[1, 0], rotation[0, 0])))
 
 
+def wrap_deg(angle):
+    """각도를 -180 ~ +180 으로 접습니다."""
+    return (angle + 180.0) % 360.0 - 180.0
+
+
+def home_joints_deg(base_quaternion):
+    """
+    지금 팔 베이스가 향한 방향에 맞춘 HOME 관절값.
+
+    joint_1 은 베이스 좌표계 기준이라, 베이스가 돌아간 만큼 빼 줘야
+    팔이 늘 같은 세계 방향(랙 쪽)을 봅니다.
+
+    빼고 나서 -180~180 으로 접습니다. 접지 않으면 베이스가 180도 돌아 선 배치에서
+    joint_1 이 360도가 되어 한계(±360)에 붙어 버립니다. 접어도 문제없는 이유는
+    solve_plan 이 IK 결과를 '앞 자세에 가장 가까운 표현'으로 맞춰 주기 때문입니다.
+    """
+    joints = np.array(HOME_JOINTS_DEG, dtype=float)
+    joints[0] = wrap_deg(joints[0] - yaw_deg(base_quaternion))
+    return joints
+
+
 class BaseWatcher:
     """
-    AMR 이 실제로 멈췄는지 직접 재서 확인합니다.
+    팔 베이스가 실제로 멈췄는지 직접 재서 확인합니다.
 
-    상위에서 '도착했다' 고 알려 주는 것과, 차체가 실제로 정지한 것은 다릅니다.
+    상위에서 '도착했다' 고 알려 주는 것과, 실제로 정지한 것은 다릅니다.
+    카터 주행뿐 아니라 리프트 승강이 끝났는지도 이 한 군데서 같이 걸러집니다.
     매 물리 스텝마다 update 를 부르고, settled 가 True 가 되면 계획을 만듭니다.
     """
 
@@ -253,8 +359,8 @@ class BaseWatcher:
         self.waited_seconds = 0.0
         self.notice_seconds = 0.0
 
-    def update(self, robot, dt):
-        position = np.array(robot.get_world_pose()[0], dtype=float)
+    def update(self, arm_base, dt):
+        position = np.array(arm_base.get_world_pose()[0], dtype=float)
         moved = (
             self.last_position is None
             or float(np.linalg.norm(position - self.last_position)) > BASE_STILL_TOL
@@ -266,49 +372,66 @@ class BaseWatcher:
         self.notice_seconds += dt
         if self.notice_seconds >= BASE_WAIT_NOTICE_SECONDS:
             self.notice_seconds = 0.0
-            print(f"[대기] AMR 정지를 기다리는 중 ({self.waited_seconds:.1f}초)")
+            print(f"[대기] 팔 베이스 정지를 기다리는 중 ({self.waited_seconds:.1f}초)")
 
     @property
     def settled(self):
         return self.still_seconds >= BASE_STILL_SECONDS
 
 
-def check_base_pose(base_position, base_quaternion, destination_shelf_top):
-    """
-    도킹 위치가 허용 범위 안인지 확인합니다.
+def base_offset_from_pallet(base_position, pallet_position, pallet_quaternion):
+    """팔레트 좌표계에서 본 팔 베이스 위치. (앞뒤, 좌우, 위아래)"""
+    rotation = quat_to_rot_matrix(pallet_quaternion)
+    return rotation.T @ (np.array(base_position, float) - np.array(pallet_position, float))
 
-    범위를 벗어나면 계획을 만들지 않고, 무엇이 얼마나 벗어났는지 알려 줍니다.
-    """
-    x, y, z = (float(v) for v in base_position)
-    yaw = yaw_deg(base_quaternion)
 
-    if not BASE_X_WINDOW[0] <= x <= BASE_X_WINDOW[1]:
+def check_base_pose(arm_position, chassis_quaternion, pallet_position, pallet_quaternion):
+    """
+    도킹 위치가 안전선 안인지 확인합니다.
+
+    기준은 '집을 팔레트'입니다. 어느 랙 앞이든 같은 값으로 검사됩니다.
+    위치는 '팔 베이스'로, 각도는 '차체'로 봅니다.
+      - 팔이 닿는지는 팔 베이스가 팔레트에서 얼마나 떨어져 있느냐로 정해집니다.
+      - 팔 베이스는 리그에 비스듬히 붙어 있을 수 있어(에셋 값) 각도 판단에 쓰면
+        안 됩니다. AMR 이 삐뚤게 섰는지는 차체 방향으로 봐야 합니다.
+        (팔 베이스가 돌아간 건 home_joints_deg() 가 알아서 보정합니다)
+
+    여기를 통과했다고 작업이 가능한 것은 아닙니다. 실제 도달 여부는 IK 가 봅니다.
+    벗어나면 무엇이 얼마나 벗어났는지 알려 주고 계획을 만들지 않습니다.
+    """
+    forward, sideways, _ = base_offset_from_pallet(
+        arm_position, pallet_position, pallet_quaternion
+    )
+    yaw = wrap_deg(yaw_deg(chassis_quaternion) - yaw_deg(pallet_quaternion)
+                   - CHASSIS_FACING_DEG)
+    height = float(arm_position[2]) - float(pallet_position[2])   # 팔레트 원점 = 선반 윗면
+
+    if not BASE_TO_PALLET_X[0] <= forward <= BASE_TO_PALLET_X[1]:
         raise RuntimeError(
-            f"도킹 앞뒤 위치가 범위 밖입니다: x={x:.3f} "
-            f"(허용 {BASE_X_WINDOW[0]} ~ {BASE_X_WINDOW[1]}). 다시 도킹하세요."
+            f"팔레트와의 앞뒤 거리가 범위 밖입니다: {forward:.3f} m "
+            f"(허용 {BASE_TO_PALLET_X[0]} ~ {BASE_TO_PALLET_X[1]}). 다시 도킹하세요."
         )
-    if not BASE_Y_WINDOW[0] <= y <= BASE_Y_WINDOW[1]:
+    if not BASE_TO_PALLET_Y[0] <= sideways <= BASE_TO_PALLET_Y[1]:
         raise RuntimeError(
-            f"도킹 좌우 위치가 범위 밖입니다: y={y:.3f} "
-            f"(허용 {BASE_Y_WINDOW[0]} ~ {BASE_Y_WINDOW[1]}). 다시 도킹하세요."
+            f"팔레트와의 좌우 어긋남이 범위 밖입니다: {sideways:+.3f} m "
+            f"(허용 {BASE_TO_PALLET_Y[0]} ~ {BASE_TO_PALLET_Y[1]}). 다시 도킹하세요."
         )
     if abs(yaw) > BASE_YAW_LIMIT_DEG:
         raise RuntimeError(
-            f"도킹 각도가 범위 밖입니다: {yaw:.1f}° "
+            f"차체가 팔레트를 정면으로 보고 있지 않습니다: {yaw:+.1f}° "
             f"(허용 ±{BASE_YAW_LIMIT_DEG}°). 다시 도킹하세요."
         )
+    if not BASE_HEIGHT_BAND[0] <= height <= BASE_HEIGHT_BAND[1]:
+        raise RuntimeError(
+            f"베이스 높이가 집을 선반과 맞지 않습니다: 선반 윗면 대비 {height:+.3f} m "
+            f"(허용 {BASE_HEIGHT_BAND[0]:+.2f} ~ {BASE_HEIGHT_BAND[1]:+.2f}). "
+            "리프트 높이를 조정하세요."
+        )
 
-    if destination_shelf_top is not None:
-        relative = z - destination_shelf_top
-        if not BASE_HEIGHT_BAND[0] <= relative <= BASE_HEIGHT_BAND[1]:
-            raise RuntimeError(
-                f"베이스 높이가 놓을 선반과 맞지 않습니다: z={z:.3f}, "
-                f"선반 윗면 {destination_shelf_top:.3f} 대비 {relative:+.3f} m "
-                f"(허용 {BASE_HEIGHT_BAND[0]:+.2f} ~ {BASE_HEIGHT_BAND[1]:+.2f}). "
-                "리프트 높이를 조정하세요."
-            )
-
-    print(f"[도킹 확인] x={x:.3f} y={y:.3f} z={z:.3f} yaw={yaw:.1f}° — 범위 안")
+    print(
+        f"[도킹 확인] 팔레트 기준 앞뒤 {forward:.3f} m, 좌우 {sideways:+.3f} m, "
+        f"높이 {height:+.3f} m, 차체 틀어짐 {yaw:+.1f}° — 범위 안"
+    )
 
 
 # ── 계획의 한 줄 ────────────────────────────────────────
@@ -385,16 +508,16 @@ def split_segments(points):
     return result
 
 
-def solve_plan(solver, robot, segments, lower_deg, upper_deg):
+def solve_plan(solver, segments, lower_deg, upper_deg, start_joints_deg):
     """
     각 목표 좌표를 IK로 풀어 관절값 표를 만듭니다.
 
     바로 앞 단계의 해를 다음 계산의 출발점(warm start)으로 넘겨서,
     팔이 갑자기 다른 자세로 뒤집히지 않게 합니다.
-    첫 목표는 HOME 자세를 기준으로 계산하고, 변화량도 HOME과 비교합니다.
+    첫 작업은 HOME, 후속 작업은 현재 관절 자세를 기준으로 계산·검사합니다.
     """
     want_rotation = quat_to_rot_matrix(FORK_QUAT)
-    warm = np.deg2rad(HOME_JOINTS_DEG)
+    warm = np.deg2rad(start_joints_deg)
     plan = []
 
     for index, segment in enumerate(segments):
@@ -403,7 +526,10 @@ def solve_plan(solver, robot, segments, lower_deg, upper_deg):
             EE_FRAME, target, FORK_QUAT, warm
         )
         if not solved:
-            raise RuntimeError(f"{name}: IK 실패. 목표 {np.round(target, 3)}에 닿지 않습니다.")
+            raise RuntimeError(
+                f"{name}: 지금 도킹 위치에서는 목표 {np.round(target, 3)} 에 닿지 않습니다. "
+                "AMR 위치나 리프트 높이를 조정해 다시 시도하세요."
+            )
 
         reached, rotation = solver.compute_forward_kinematics(EE_FRAME, joints)
         position_error = float(np.linalg.norm(reached - target))
@@ -416,12 +542,21 @@ def solve_plan(solver, robot, segments, lower_deg, upper_deg):
                 f"자세 {angle_error:.1f}°)."
             )
 
-        joints_deg = np.rad2deg(joints)
-        if np.any(joints_deg < lower_deg) or np.any(joints_deg > upper_deg):
-            raise RuntimeError(f"{name}: 관절 한계를 벗어났습니다.")
+        # 첫 목표는 시작 자세에서 오는 이동이라 변화량 기준을 따로 둡니다.
+        previous = start_joints_deg if index == 0 else plan[-1].joints
 
-        # 첫 목표는 HOME에서 오는 큰 이동이라 기준을 따로 둡니다.
-        previous = np.array(HOME_JOINTS_DEG) if index == 0 else plan[-1].joints
+        # IK 는 같은 자세를 +360 / -360 도 다르게 표현해 돌려주기도 합니다.
+        # 그대로 두면 실제로는 제자리인데 '360도 휘두른다'고 읽히고, 보간도 한 바퀴
+        # 돌아갑니다. 앞 자세에서 가장 가까운 표현으로 맞춰 둡니다.
+        joints_deg = previous + wrap_deg(np.rad2deg(joints) - previous)
+
+        over = np.where((joints_deg < lower_deg) | (joints_deg > upper_deg))[0]
+        if len(over):
+            detail = ", ".join(
+                f"{JOINT_NAMES[i]} {joints_deg[i]:+.1f}° "
+                f"(한계 {lower_deg[i]:+.0f} ~ {upper_deg[i]:+.0f})" for i in over
+            )
+            raise RuntimeError(f"{name}: 관절 한계를 벗어났습니다 — {detail}")
         limit = FIRST_MOVE_LIMIT_DEG if index == 0 else IK_JUMP_LIMIT_DEG
         jump = float(np.max(np.abs(joints_deg - previous)))
         if jump > limit:
@@ -543,6 +678,11 @@ class JointSequence:
             return
 
         if self.phase == "CARRYING":
+            # PALLET_DOWN 은 일부러 내려놓는 단계입니다. 팔레트가 선반에 닿은 뒤에도
+            # 포크는 포켓 안에서 더 내려가므로, 손목 기준 위치가 바뀌는 게 정상입니다.
+            # (아래 '들기 전' 검사에서 PALLET_UP 을 빼 두는 것과 같은 이유)
+            if self.stage == STAGE_PALLET_DOWN:
+                return
             slip = float(np.linalg.norm(self.relative_position() - self.support_offset))
             if slip > PALLET_SLIP_TOL:
                 raise RuntimeError(
@@ -611,10 +751,20 @@ class JointSequence:
             )
 
 
-def build_sequence(solver, robot, pallet, indices, lower_deg, upper_deg, task):
-    """지금 서 있는 자리와 팔레트 위치로 이 작업의 계획을 만듭니다."""
-    base_position, base_quaternion = robot.get_world_pose()
-    check_base_pose(base_position, base_quaternion, task.destination_shelf_top)
+def build_sequence(solver, robot, arm_base, pallet, indices, lower_deg, upper_deg, task,
+                   start_from_home):
+    """
+    지금 팔이 서 있는 자리와 팔레트 위치로 이 작업의 계획을 만듭니다.
+
+    start_from_home : 첫 작업이면 True. HOME 자세를 맨 앞에 붙입니다.
+        이어지는 작업에서는 False 입니다. 앞 작업이 EXIT(랙 앞 위쪽)에서 끝나
+        이미 안전한 자세이고, 굳이 HOME 까지 갔다 오면 팔이 한 번 쫙 펴지면서
+        랙을 스칩니다(실측: 3단 팔레트를 16.7 mm 밀었습니다).
+    """
+    base_position, base_quaternion = arm_base.get_world_pose()      # IK 기준점
+    _, chassis_quaternion = robot.get_world_pose()                  # 차체 = 도킹 방향
+    pallet_position, pallet_quaternion = pallet.get_world_pose()
+    check_base_pose(base_position, chassis_quaternion, pallet_position, pallet_quaternion)
 
     solver.set_robot_base_pose(
         robot_position=base_position,
@@ -626,23 +776,26 @@ def build_sequence(solver, robot, pallet, indices, lower_deg, upper_deg, task):
         else f"선반 윗면 {task.destination_shelf_top}"
     )
     print(f"[작업] {task.pallet_path} → {destination}")
-    print(f"[팔레트] {np.round(pallet.get_world_pose()[0], 3).tolist()}")
+    print(f"[팔 베이스] {np.round(base_position, 3).tolist()} "
+          f"(요 {yaw_deg(base_quaternion):+.1f}° → HOME joint_1 {180.0 - yaw_deg(base_quaternion):+.1f}°)")
+    print(f"[팔레트] {np.round(pallet_position, 3).tolist()}")
 
-    # 리프트 자리:
-    #   리프트가 생기면 RETRACT 와 DESCEND 사이에서 베이스 높이를 바꾸고,
-    #   그 뒤 build_sequence 를 다시 불러 놓기 계획을 새로 만들면 됩니다.
+    # 리프트 높이 조정이 끝난 뒤, 고정된 베이스에서 집기·놓기 전체를 계획합니다.
+    # 계획을 푸는 출발 자세. IK 의 warm start 이자 첫 목표까지의 변화량 기준입니다.
+    start_deg = (home_joints_deg(base_quaternion) if start_from_home
+                 else read_joints_deg(robot, indices))
     segments = split_segments(stage_points(pallet, task.destination_shelf_top))
-    plan = solve_plan(solver, robot, segments, lower_deg, upper_deg)
+    plan = solve_plan(solver, segments, lower_deg, upper_deg, start_deg)
 
-    # 항상 같은 자세에서 출발하도록 HOME을 맨 앞에 붙입니다.
-    home = Step(STAGE_HOME, STAGE_HOME, None, np.array(HOME_JOINTS_DEG, float), True)
-    plan = [home] + plan
+    if start_from_home:
+        plan = [Step(STAGE_HOME, STAGE_HOME, None, start_deg, True)] + plan
 
     print_plan(plan)
     return JointSequence(robot, pallet, indices, plan)
 
 
-def main():
+def open_scene():
+    """파일과 프림을 확인하고, 수정 대상이 세션 레이어인 stage를 반환합니다."""
     if not SCENE_PATH.is_file():
         raise FileNotFoundError(SCENE_PATH)
     for path in (URDF_PATH, DESCRIPTION_PATH):
@@ -658,27 +811,33 @@ def main():
     stage = omni.usd.get_context().get_stage()
     stage.SetEditTarget(stage.GetSessionLayer())
 
-    needed = [ROBOT_PATH, f"{ROBOT_PATH}/{EE_FRAME}"] + [t.pallet_path for t in TASKS]
+    needed = [ROBOT_PATH, ARM_BASE_PATH, EE_PATH] + [t.pallet_path for t in TASKS]
     for path in needed:
         if not stage.GetPrimAtPath(path).IsValid():
             raise RuntimeError(f"Prim이 없습니다: {path}")
 
-    check_stage_tables()
-    lower_deg, upper_deg = joint_limits_deg(stage)
-    setup_arm_drives(stage)
+    return stage
 
+
+def create_world():
+    """로봇·베이스·팔레트를 등록하고 Play를 기다리는 World를 만듭니다."""
     world = World(
         stage_units_in_meters=1.0,
         physics_dt=PHYSICS_DT,
         rendering_dt=PHYSICS_DT,
         physics_prim_path="/physicsScene",
     )
+    # 아티큘레이션 루트는 카터(chassis_link)이고, 팔은 그 안의 관절 6개입니다.
     robot = world.scene.add(
         SingleManipulator(
             prim_path=ROBOT_PATH,
-            name="m0609",
-            end_effector_prim_path=f"{ROBOT_PATH}/{EE_FRAME}",
+            name="carter_m0609",
+            end_effector_prim_path=EE_PATH,
         )
+    )
+    # IK 의 기준점. 카터가 움직이거나 리프트가 오르면 이 자리가 따라 움직입니다.
+    arm_base = world.scene.add(
+        SingleRigidPrim(prim_path=ARM_BASE_PATH, name="arm_base")
     )
     # 작업 목록에 나오는 팔레트를 모두 등록합니다 (같은 팔레트는 한 번만).
     pallets = {}
@@ -691,6 +850,21 @@ def main():
     world.reset()
     world.pause()
 
+    return world, robot, arm_base, pallets
+
+
+def main():
+    stage = open_scene()
+    check_stage_tables()
+    lower_deg, upper_deg = joint_limits_deg(stage)
+    setup_arm_drives(stage)
+    brake_wheels(stage)
+    world, robot, arm_base, pallets = create_world()
+
+    # 관절 인덱스는 초기화 뒤에야 읽히므로 여기서 만듭니다.
+    # 기준 잡기(calibrate)는 아래 루프에서 reset 직후에 합니다.
+    lift = Lift(robot, stage, arm_base, LIFT_JOINT_PATH, LIFT_JOINT_NAME)
+
     solver = LulaKinematicsSolver(
         robot_description_path=str(DESCRIPTION_PATH),
         urdf_path=str(URDF_PATH),
@@ -699,7 +873,11 @@ def main():
     watcher = BaseWatcher()
 
     task_index = 0
-    sequence = None          # None 이면 '아직 계획 없음 = AMR 정지를 기다리는 중'
+    # 승강 → 베이스 정지 확인 → 계획 실행 → 다음 작업 순서입니다.
+    # sequence 없음 + lift_ready=False: 승강 / True: 정지 확인과 계획 생성.
+    sequence = None          # 계획이 생기면 팔 동작을 실행합니다
+    lift_ready = False       # 이 작업에 맞는 높이로 리프트를 옮겼는가
+    lift_moving = False      # 지금 승강 중인가
     needs_reset = True
     failed = False
     log_elapsed = 0.0
@@ -729,25 +907,56 @@ def main():
                 log_elapsed = 0.0
                 task_index = 0
                 sequence = None
+                lift_ready = False
+                lift_moving = False
                 watcher.reset()
+
+                # 리그가 내려앉기를 기다린 뒤에 리프트 기준을 잡습니다.
+                # 건너뛰면 '리프트 값 ↔ 베이스 높이' 관계를 10 cm 넘게 틀리게 잽니다.
+                print(f"[장면] 안정될 때까지 {SETTLE_STEPS} 스텝 기다립니다")
+                for _ in range(SETTLE_STEPS):
+                    world.step(render=True)
+                lift.calibrate()
 
             if task_index >= len(TASKS):
                 world.step(render=True)
                 continue
 
-            # 계획이 없으면: AMR 이 멈출 때까지 기다렸다가 계획을 만든다
+            # 1) 계획 전에, 집을 선반에 맞춰 리프트로 베이스 높이를 맞춘다
+            if sequence is None and not lift_ready:
+                if not lift_moving:
+                    task = TASKS[task_index]
+                    print(f"\n── 작업 {task_index + 1}/{len(TASKS)} ──")
+                    # 승강 중 포크가 랙에 있으면 선반을 들이받습니다
+                    check_fork_clear_of_rack(tine_tip_position(robot)[0], RACK_FRONT_X)
+                    pick_shelf_top = float(pallets[task.pallet_path].get_world_pose()[0][2])
+                    lift.move_to(lift.clamp_height(pick_shelf_top - BASE_BELOW_SHELF),
+                                 loaded=False)
+                    lift_moving = True
+                lift.update(PHYSICS_DT)
+                world.step(render=True)
+                if lift.done:
+                    lift_moving = False
+                    lift_ready = True
+                    watcher.reset()      # 리프트가 멈춘 뒤부터 정지 확인을 시작합니다
+                continue
+
+            # 2) 팔 베이스가 실제로 멈추면 계획을 만든다
             if sequence is None:
-                watcher.update(robot, PHYSICS_DT)
+                lift.hold()
+                watcher.update(arm_base, PHYSICS_DT)
                 world.step(render=True)
                 if watcher.settled:
                     task = TASKS[task_index]
-                    print(f"\n── 작업 {task_index + 1}/{len(TASKS)} ──")
+                    check_base_level(arm_base.get_world_pose()[1])
                     sequence = build_sequence(
-                        solver, robot, pallets[task.pallet_path],
+                        solver, robot, arm_base, pallets[task.pallet_path],
                         indices, lower_deg, upper_deg, task,
+                        start_from_home=(task_index == 0),
                     )
                 continue
 
+            lift.hold()              # 지게차 규칙: 팔이 움직이는 동안 리프트는 멈춰 있는다
             sequence.update(PHYSICS_DT)
             world.step(render=True)
 
@@ -764,11 +973,12 @@ def main():
             if sequence.done:
                 task_index += 1
                 sequence = None
+                lift_ready = False
                 watcher.reset()
                 if task_index >= len(TASKS):
                     print("[완료] 모든 작업을 마쳤습니다.")
 
-        except RuntimeError as error:
+        except RuntimeError as error:      # LiftError 도 RuntimeError 입니다
             failed = True
             world.pause()
             print(f"[중단] {error}")
