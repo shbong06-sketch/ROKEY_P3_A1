@@ -16,7 +16,6 @@ app = SimulationApp({"headless": False})
 
 from pathlib import Path
 
-import numpy as np
 import omni.usd
 
 from isaacsim.core.api import World
@@ -28,14 +27,9 @@ from lift import Lift, check_base_level, check_fork_clear_of_rack
 from robot_motion import (
     BaseWatcher,
     EE_FRAME,
+    RobotMotion,
     Task,
     brake_wheels,
-    build_sequence,
-    check_stage_tables,
-    joint_limits_deg,
-    read_joints_deg,
-    robot_indices,
-    setup_arm_drives,
     tine_tip_position,
 )
 
@@ -86,7 +80,6 @@ TASKS = [
 ]
 
 PHYSICS_DT = 1.0 / 60.0
-LOG_INTERVAL_SECONDS = 1.0
 
 
 def open_scene():
@@ -150,9 +143,6 @@ def create_world():
 
 def main():
     stage = open_scene()
-    check_stage_tables()
-    lower_deg, upper_deg = joint_limits_deg(stage, ARM_PATH)
-    setup_arm_drives(stage, ARM_PATH)
     brake_wheels(stage, RIG_PATH)
     world, robot, arm_base, pallets = create_world()
 
@@ -164,18 +154,16 @@ def main():
         robot_description_path=str(DESCRIPTION_PATH),
         urdf_path=str(URDF_PATH),
     )
-    indices = robot_indices(robot)
+    motion = RobotMotion(robot, arm_base, solver, stage, ARM_PATH)
+    motion.initialize()
     watcher = BaseWatcher()
 
     task_index = 0
     # 승강 → 베이스 정지 확인 → 계획 실행 → 다음 작업 순서입니다.
-    # sequence 없음 + lift_ready=False: 승강 / True: 정지 확인과 계획 생성.
-    sequence = None          # 계획이 생기면 팔 동작을 실행합니다
     lift_ready = False       # 이 작업에 맞는 높이로 리프트를 옮겼는가
     lift_moving = False      # 지금 승강 중인가
     needs_reset = True
     failed = False
-    log_elapsed = 0.0
 
     print(f"작업 {len(TASKS)}개. Play: 시작/재개 | Pause: 대기 | Stop: 처음부터 재시작")
 
@@ -196,12 +184,11 @@ def main():
         try:
             # Stop 후 Play 에서만 처음부터 다시 시작합니다.
             if needs_reset:
+                motion.cancel()
                 world.reset()
                 needs_reset = False
                 failed = False
-                log_elapsed = 0.0
                 task_index = 0
-                sequence = None
                 lift_ready = False
                 lift_moving = False
                 watcher.reset()
@@ -218,7 +205,7 @@ def main():
                 continue
 
             # 1) 계획 전에, 집을 선반에 맞춰 리프트로 베이스 높이를 맞춘다
-            if sequence is None and not lift_ready:
+            if not motion.is_running and not lift_ready:
                 if not lift_moving:
                     task = TASKS[task_index]
                     print(f"\n── 작업 {task_index + 1}/{len(TASKS)} ──")
@@ -237,37 +224,28 @@ def main():
                 continue
 
             # 2) 팔 베이스가 실제로 멈추면 계획을 만든다
-            if sequence is None:
+            if not motion.is_running:
                 lift.hold()
                 watcher.update(arm_base, PHYSICS_DT)
                 world.step(render=True)
                 if watcher.settled:
                     task = TASKS[task_index]
                     check_base_level(arm_base.get_world_pose()[1])
-                    sequence = build_sequence(
-                        solver, robot, arm_base, pallets[task.pallet_path],
-                        indices, lower_deg, upper_deg, task,
+                    motion.start_transfer(
+                        pallets[task.pallet_path],
+                        task,
                         start_from_home=(task_index == 0),
                     )
                 continue
 
             lift.hold()              # 지게차 규칙: 팔이 움직이는 동안 리프트는 멈춰 있는다
-            sequence.update(PHYSICS_DT)
+            motion.update(PHYSICS_DT)
             world.step(render=True)
 
-            log_elapsed += PHYSICS_DT
-            if log_elapsed >= LOG_INTERVAL_SECONDS:
-                print(
-                    f"[{sequence.name}] "
-                    f"관절 {np.round(read_joints_deg(robot, indices), 1)}, "
-                    f"팔레트 {np.round(sequence.pallet_position(), 3)}"
-                )
-                log_elapsed = 0.0
-
             # 이 작업이 끝나면 다음 작업으로. AMR 정지 확인부터 다시 합니다.
-            if sequence.done:
+            if motion.is_done:
+                motion.cancel()
                 task_index += 1
-                sequence = None
                 lift_ready = False
                 watcher.reset()
                 if task_index >= len(TASKS):
@@ -275,6 +253,7 @@ def main():
 
         except RuntimeError as error:      # LiftError 도 RuntimeError 입니다
             failed = True
+            motion.cancel()
             world.pause()
             print(f"[중단] {error}")
             print("원인을 확인하세요. Stop → Play로 처음부터 재시험합니다.")

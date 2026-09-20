@@ -139,6 +139,8 @@ MIN_PALLET_RISE = 0.010        # 인양 후 실제 상승량 최소값
 PALLET_SLIP_TOL = 0.030        # 운반 중 손목 기준 상대 위치 변화
 MIN_PALLET_DROP = 0.010        # 안착 후 실제 하강량 최소값
 PALLET_STAY_TOL = 0.020        # 포크를 뺄 때 팔레트가 따라 나오면 중단
+LOG_INTERVAL_SECONDS = 1.0
+
 # ── AMR 도킹 허용 범위 ───────────────────────────────────
 # 여기는 '누가 봐도 잘못 선 경우'를 거르는 안전선입니다.
 # 실제로 팔이 닿는지는 그 뒤 IK 가 판단합니다 (범위 안이어도 IK 가 거부할 수 있음).
@@ -719,3 +721,111 @@ def build_sequence(solver, robot, arm_base, pallet, indices, lower_deg, upper_de
 
     print_plan(plan)
     return JointSequence(robot, pallet, indices, plan)
+
+
+class RobotMotion:
+    """기존 IK 계획과 JointSequence를 한 번에 하나씩 실행합니다."""
+
+    def __init__(self, robot, arm_base, solver, stage, arm_path):
+        self._robot = robot
+        self._arm_base = arm_base
+        self._solver = solver
+        self._stage = stage
+        self._arm_path = arm_path
+
+        self._indices = None
+        self._lower_deg = None
+        self._upper_deg = None
+        self._sequence = None
+        self._hold_target = None
+        self._log_elapsed = 0.0
+        self._initialized = False
+
+    def initialize(self):
+        """관절 인덱스와 한계를 한 번 읽고 팔 관절 Drive를 준비합니다."""
+        if self._initialized:
+            return
+
+        check_stage_tables()
+        self._lower_deg, self._upper_deg = joint_limits_deg(
+            self._stage, self._arm_path
+        )
+        setup_arm_drives(self._stage, self._arm_path)
+        self._indices = robot_indices(self._robot)
+        self._hold_target = read_joints_deg(self._robot, self._indices)
+        self._initialized = True
+
+    def start_transfer(self, pallet, task, start_from_home=True):
+        """기존 Pick+Place 통합 계획을 만들고 실행 준비를 합니다."""
+        self._require_initialized()
+        if self.is_running:
+            raise RuntimeError(
+                f"팔 동작이 이미 실행 중입니다: {self.current_stage}"
+            )
+
+        self._sequence = build_sequence(
+            self._solver,
+            self._robot,
+            self._arm_base,
+            pallet,
+            self._indices,
+            self._lower_deg,
+            self._upper_deg,
+            task,
+            start_from_home,
+        )
+        self._log_elapsed = 0.0
+
+    def update(self, dt):
+        """현재 JointSequence를 물리 한 스텝만큼 진행합니다."""
+        self._require_initialized()
+        if not self.is_running:
+            return
+
+        self._sequence.update(dt)
+        self._log_elapsed += dt
+        if self._log_elapsed >= LOG_INTERVAL_SECONDS:
+            print(
+                f"[{self._sequence.name}] "
+                f"관절 {np.round(read_joints_deg(self._robot, self._indices), 1)}, "
+                f"팔레트 {np.round(self._sequence.pallet_position(), 3)}"
+            )
+            self._log_elapsed = 0.0
+
+        if self._sequence.done:
+            self._hold_target = np.asarray(self._sequence.goal, dtype=float).copy()
+
+    def hold(self):
+        """현재 위치 또는 마지막으로 완료한 안전한 관절 목표를 유지합니다."""
+        self._require_initialized()
+        if self.is_running:
+            self._hold_target = read_joints_deg(self._robot, self._indices)
+        command_joints_deg(self._robot, self._indices, self._hold_target)
+
+    def cancel(self):
+        """진행 중 동작을 버리고 현재 위치를 유지합니다."""
+        self._require_initialized()
+        if self.is_running:
+            self._hold_target = read_joints_deg(self._robot, self._indices)
+        elif self.is_done:
+            self._hold_target = np.asarray(self._sequence.goal, dtype=float).copy()
+
+        self._sequence = None
+        self._log_elapsed = 0.0
+        command_joints_deg(self._robot, self._indices, self._hold_target)
+
+    @property
+    def is_running(self):
+        return self._sequence is not None and not self._sequence.done
+
+    @property
+    def is_done(self):
+        return self._sequence is not None and self._sequence.done
+
+    @property
+    def current_stage(self):
+        return "IDLE" if self._sequence is None else self._sequence.name
+
+    def _require_initialized(self):
+        if not self._initialized:
+            raise RuntimeError("RobotMotion.initialize()를 먼저 호출하세요.")
