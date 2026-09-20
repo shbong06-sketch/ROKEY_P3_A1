@@ -62,6 +62,14 @@ ros2 topic pub --once /navigation/command std_msgs/msg/String "{data: '{\"comman
 ros2 topic echo /navigation/result
 ```
 
+### 3-1. 설정을 고쳤을 때 (drive_direction_sign, 경유지 등)
+- launch 는 `install/` 아래 복사본 YAML 을 읽으므로 `config/*.yaml` 을 고친 뒤에는 2절의 재빌드가 필요함. 재빌드 없이 바로 쓰려면 `config/destinations.yaml` 대신 노드에 소스 경로를 주면 됨:
+```bash
+ros2 run smart_farm_navigation navigation_node --ros-args -p destinations_file:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/config/destinations.yaml
+```
+  단, destinations.yaml 의 params 는 install 경로 기준이므로 이 방법으로도 path_runner_smooth.yaml 은 재빌드가 필요함. 결론: **YAML 수정 후에는 항상 재빌드**.
+- 후진 판별: 정지 후 `ros2 topic echo /chassis/odom --once --field pose.pose.position` 의 x 가 양수면 명령대로 +x 로 간 것이라 장면의 carter yaw 가 반대인 것이고, 음수면 sign 설정 문제임. sign 을 바꿔도 변화가 없었다면 재빌드가 안 된 것임.
+
 ### 4. 확인 항목
 - 고피 장면의 carter 시작 방향이 통로 탈출 방향(정면)인지. 경유지는 `config/path_runner_smooth.yaml`(1.5 m 직진, 0.45 m 우측, 4.9 m 앞 정지).
 - 주행 결과 로그(results/navnode_*.txt)를 커밋·푸시함.

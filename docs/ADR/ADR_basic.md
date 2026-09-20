@@ -74,7 +74,7 @@ isaac_ros() {
 - **Nav2 및 RViz2 설정 경로**:
   - `"/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/src/navigation/carter_navigation"`
 - **메인 시뮬레이션 씬**:
-  - `"/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smart_farm_nav2_01.usd"`
+  - `매번 변동 가능성 농후`
 - **Occupancy Grid Map 백업 경로**:
   - `"/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps"`
 
@@ -85,7 +85,8 @@ isaac_ros() {
 ### [1차 목표: 개루프/토픽 기반 기본 탈출 동작 제어]
 Nav2 스택의 복잡한 경로 계획 이전에 ROS2 토픽 통신 채널인 `/cmd_vel`을 발행하여 지정된 탈출 시퀀스를 정상 수행하는 것을 목표로 함.
 
-- **대상 씬**: `"smart_farm_nav2_01.usd"`
+- **통합 시점 이후로 변동되었으니, "Collected_smartfarm_v###.usd"를 확인할 것**
+- **대상 씬**: `매번 변동 가능성 농후`
 - **초기 상태**: 로봇 carter가 cube prim을 정면으로 바라보고 있으며, cube prim 2개로 형성된 좁은 통로 내부에 위치함.
 - **수행 모션 시퀀스**:
   1. **후진**: 살짝 후진하여 전방 회전각 및 안전 공간 확보.
