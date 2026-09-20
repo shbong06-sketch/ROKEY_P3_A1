@@ -44,6 +44,39 @@ try:
     for _ in range(60):  # let OmniGraph / ROS2 contexts initialise
         app.update()
 
+    # Record the robot's world pose (= AMCL initial pose in the map frame) for nav2.launch.py.
+    try:
+        import math as _m
+        import omni.usd as _ou
+        from pxr import UsdGeom as _UG, Usd as _U
+        stage = _ou.get_context().get_stage()
+        xc = _UG.XformCache()
+        found = []
+        for prim in stage.Traverse():
+            path = str(prim.GetPath())
+            if path.count("/") > 2:
+                continue
+            if any(k in path.lower() for k in ("carter", "nova")):
+                m = xc.GetLocalToWorldTransform(prim)
+                t = m.ExtractTranslation(); q = m.ExtractRotationQuat()
+                w = q.GetReal(); qx, qy, qz = q.GetImaginary()
+                yaw = _m.degrees(_m.atan2(2 * (w * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz)))
+                found.append((path, float(t[0]), float(t[1]), float(t[2]), yaw))
+        for path, x, y, z, yaw in found:
+            print(f"[launch_scene] robot prim {path}: x={x:.3f} y={y:.3f} z={z:.3f} yaw={yaw:.1f}deg", flush=True)
+        if found:
+            import datetime as _dt
+            path, x, y, z, yaw = found[0]
+            out = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/robot_spawn.yaml"
+            with open(out, "w") as f:
+                f.write(f"# written by launch_scene.py {_dt.datetime.now():%Y-%m-%d %H:%M:%S}\n"
+                        f"scene: {scene}\nprim: {path}\nx: {x:.4f}\ny: {y:.4f}\nyaw_deg: {yaw:.2f}\n")
+            print(f"[launch_scene] spawn pose written to {out}", flush=True)
+        else:
+            print("[launch_scene] WARNING: no prim with 'carter'/'nova' in its name under /World; AMCL initial pose must be given manually", flush=True)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[launch_scene] spawn pose record failed: {exc}", flush=True)
+
     signal.signal(signal.SIGTERM, _request_stop)
     signal.signal(signal.SIGINT, _request_stop)
 
