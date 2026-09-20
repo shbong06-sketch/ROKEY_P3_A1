@@ -17,7 +17,14 @@ scene = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SCENE
 
 from isaacsim import SimulationApp  # noqa: E402  (must precede other omni imports)
 
-app = SimulationApp({"headless": False})
+import os as _os
+_exp = _os.environ.get("ISAAC_EXPERIENCE", "")        # e.g. ISAAC_EXPERIENCE=full -> same extension set as the `isaac` GUI
+_kw = {}
+if _exp:
+    _path = _exp if _exp.endswith(".kit") else _os.path.expanduser(f"~/isaacsim/apps/isaacsim.exp.{_exp}.kit")
+    _kw["experience"] = _path
+    print(f"[launch_scene] experience: {_path}", flush=True)
+app = SimulationApp({"headless": False}, **_kw)
 
 running = True
 
