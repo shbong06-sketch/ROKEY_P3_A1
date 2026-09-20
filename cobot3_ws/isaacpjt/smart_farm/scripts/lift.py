@@ -7,12 +7,14 @@
   3. 급가감속 금지             : 목표를 한 번에 주지 않고, 속도 제한을 걸어 조금씩 옮긴다
 
 쓰는 법
-    lift = Lift(robot, stage, arm_base, LIFT_JOINT_PATH, LIFT_JOINT_NAME)
+    lift = LiftController(robot, stage, arm_base, LIFT_JOINT_PATH, LIFT_JOINT_NAME)
     # 물리가 안정된 뒤에 (Play 직후에 부르면 엉뚱한 값을 잽니다)
     lift.calibrate()
-    lift.move_to(base_height=1.05, loaded=False)
-    while not lift.done:                   # 물리 스텝마다
-        lift.update(PHYSICS_DT)
+    lift.start_move(base_height=1.05, loaded=False)
+    # 이후 물리 스텝마다 한 번씩 호출합니다.
+    lift.update(PHYSICS_DT)
+    if lift.is_done:
+        print("리프트 이동 완료")
 
 이 파일은 경로를 상수로 갖고 있지 않습니다. 월드마다 prim 경로가 다르기 때문에
 쓰는 쪽에서 넘겨 줍니다. (경로를 박아 두면 월드가 바뀔 때 조용히 깨집니다)
@@ -47,7 +49,7 @@ class LiftError(RuntimeError):
     """리프트 때문에 작업을 멈춰야 할 때"""
 
 
-class Lift:
+class LiftController:
     """
     리프트 한 축을 제어합니다.
 
@@ -69,7 +71,7 @@ class Lift:
         self._speed = LIFT_SPEED_EMPTY
         self._elapsed = 0.0
         self._settled_seconds = 0.0
-        self.done = True
+        self._done = True
 
     # ── 읽기 ────────────────────────────────────────
     def joint_position(self):
@@ -79,6 +81,10 @@ class Lift:
     def base_height(self):
         """팔 베이스의 실제 월드 높이 (m). 이 값이 계획의 기준입니다."""
         return float(self._arm_base.get_world_pose()[0][2])
+
+    @property
+    def is_done(self):
+        return self._done
 
     def calibrate(self):
         """
@@ -121,7 +127,7 @@ class Lift:
         return clamped
 
     # ── 명령 ────────────────────────────────────────
-    def move_to(self, base_height, loaded):
+    def start_move(self, base_height, loaded=False):
         """
         베이스를 이 높이로 옮깁니다. 실제 이동은 update() 가 합니다.
 
@@ -145,7 +151,7 @@ class Lift:
         self._speed = LIFT_SPEED_LOADED if loaded else LIFT_SPEED_EMPTY
         self._elapsed = 0.0
         self._settled_seconds = 0.0
-        self.done = False
+        self._done = False
         print(
             f"[리프트] {self.base_height():.3f} → {base_height:.3f} m "
             f"({'적재' if loaded else '공차'}, {self._speed} m/s)"
@@ -155,9 +161,9 @@ class Lift:
         """
         물리 스텝마다 부릅니다. 목표까지 조금씩 옮기고, 도달·정지를 확인합니다.
 
-        도착해서 멈추면 self.done 이 True 가 됩니다.
+        도착해서 멈추면 self.is_done 이 True 가 됩니다.
         """
-        if self.done:
+        if self._done:
             return
 
         self._elapsed += dt
@@ -181,7 +187,7 @@ class Lift:
         if gap <= LIFT_REACHED_TOL:
             self._settled_seconds += dt
             if self._settled_seconds >= LIFT_SETTLE_SECONDS:
-                self.done = True
+                self._done = True
                 # 목표와 실제의 절대 차이를 출력합니다. 위·아래 방향은 구분하지 않습니다.
                 print(
                     f"[리프트] 도착. 베이스 높이 {self.base_height():.3f} m "
@@ -192,10 +198,23 @@ class Lift:
             self._settled_seconds = 0.0
 
         if self._elapsed > LIFT_TIMEOUT_SECONDS:
+            goal = self._goal
+            current = self.joint_position()
+            self.stop()
             raise LiftError(
-                f"리프트 시간 초과: 목표 {self._goal:.3f} m, 현재 {self.joint_position():.3f} m "
+                f"리프트 시간 초과: 목표 {goal:.3f} m, 현재 {current:.3f} m "
                 f"(차이 {gap * 1000:.0f} mm). 드라이브 강성이 모자라면 여기서 멈춥니다."
             )
+
+    def stop(self):
+        """현재 조인트 위치를 새 명령으로 고정하고 이동을 종료합니다."""
+        current = self.joint_position()
+        self._command = current
+        self._goal = current
+        self._elapsed = 0.0
+        self._settled_seconds = 0.0
+        self._done = True
+        self._apply(current)
 
     def hold(self):
         """지금 위치를 유지합니다. 팔이 움직이는 동안 매 스텝 부릅니다."""

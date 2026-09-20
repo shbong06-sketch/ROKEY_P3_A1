@@ -23,7 +23,7 @@ from isaacsim.core.prims import SingleRigidPrim
 from isaacsim.robot.manipulators.manipulators import SingleManipulator
 from isaacsim.robot_motion.motion_generation import LulaKinematicsSolver
 
-from lift import Lift, check_base_level, check_fork_clear_of_rack
+from lift import LiftController, check_base_level, check_fork_clear_of_rack
 from robot_motion import (
     BaseWatcher,
     EE_FRAME,
@@ -148,7 +148,7 @@ def main():
 
     # 관절 인덱스는 초기화 뒤에야 읽히므로 여기서 만듭니다.
     # 기준 잡기(calibrate)는 아래 루프에서 reset 직후에 합니다.
-    lift = Lift(robot, stage, arm_base, LIFT_JOINT_PATH, LIFT_JOINT_NAME)
+    lift = LiftController(robot, stage, arm_base, LIFT_JOINT_PATH, LIFT_JOINT_NAME)
 
     solver = LulaKinematicsSolver(
         robot_description_path=str(DESCRIPTION_PATH),
@@ -212,12 +212,11 @@ def main():
                     # 승강 중 포크가 랙에 있으면 선반을 들이받습니다
                     check_fork_clear_of_rack(tine_tip_position(robot)[0], RACK_FRONT_X)
                     pick_shelf_top = float(pallets[task.pallet_path].get_world_pose()[0][2])
-                    lift.move_to(lift.clamp_height(pick_shelf_top - BASE_BELOW_SHELF),
-                                 loaded=False)
+                    lift.start_move(pick_shelf_top - BASE_BELOW_SHELF)
                     lift_moving = True
                 lift.update(PHYSICS_DT)
                 world.step(render=True)
-                if lift.done:
+                if lift.is_done:
                     lift_moving = False
                     lift_ready = True
                     watcher.reset()      # 리프트가 멈춘 뒤부터 정지 확인을 시작합니다
@@ -253,6 +252,7 @@ def main():
 
         except RuntimeError as error:      # LiftError 도 RuntimeError 입니다
             failed = True
+            lift.stop()
             motion.cancel()
             world.pause()
             print(f"[중단] {error}")
