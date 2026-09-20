@@ -23,7 +23,8 @@ from isaacsim.core.prims import SingleRigidPrim
 from isaacsim.robot.manipulators.manipulators import SingleManipulator
 from isaacsim.robot_motion.motion_generation import LulaKinematicsSolver
 
-from lift import LiftController, check_base_level, check_fork_clear_of_rack
+from lift import LiftController, check_fork_clear_of_rack
+from pallet_transfer import PalletTransferController, TransferState
 from robot_motion import (
     BaseWatcher,
     EE_FRAME,
@@ -157,13 +158,19 @@ def main():
     motion = RobotMotion(robot, arm_base, solver, stage, ARM_PATH)
     motion.initialize()
     watcher = BaseWatcher()
+    transfer = PalletTransferController(
+        lift,
+        motion,
+        arm_base,
+        watcher,
+        BASE_BELOW_SHELF,
+        lambda: check_fork_clear_of_rack(
+            tine_tip_position(robot)[0], RACK_FRONT_X
+        ),
+    )
 
     task_index = 0
-    # 승강 → 베이스 정지 확인 → 계획 실행 → 다음 작업 순서입니다.
-    lift_ready = False       # 이 작업에 맞는 높이로 리프트를 옮겼는가
-    lift_moving = False      # 지금 승강 중인가
     needs_reset = True
-    failed = False
 
     print(f"작업 {len(TASKS)}개. Play: 시작/재개 | Pause: 대기 | Stop: 처음부터 재시작")
 
@@ -177,21 +184,17 @@ def main():
             world.render()
             continue
 
-        if failed and not needs_reset:
+        if transfer.state == TransferState.FAILED and not needs_reset:
             world.pause()
             continue
 
         try:
             # Stop 후 Play 에서만 처음부터 다시 시작합니다.
             if needs_reset:
-                motion.cancel()
+                transfer.cancel()
                 world.reset()
                 needs_reset = False
-                failed = False
                 task_index = 0
-                lift_ready = False
-                lift_moving = False
-                watcher.reset()
 
                 # 리그가 내려앉기를 기다린 뒤에 리프트 기준을 잡습니다.
                 # 건너뛰면 '리프트 값 ↔ 베이스 높이' 관계를 10 cm 넘게 틀리게 잽니다.
@@ -204,56 +207,21 @@ def main():
                 world.step(render=True)
                 continue
 
-            # 1) 계획 전에, 집을 선반에 맞춰 리프트로 베이스 높이를 맞춘다
-            if not motion.is_running and not lift_ready:
-                if not lift_moving:
-                    task = TASKS[task_index]
-                    print(f"\n── 작업 {task_index + 1}/{len(TASKS)} ──")
-                    # 승강 중 포크가 랙에 있으면 선반을 들이받습니다
-                    check_fork_clear_of_rack(tine_tip_position(robot)[0], RACK_FRONT_X)
-                    pick_shelf_top = float(pallets[task.pallet_path].get_world_pose()[0][2])
-                    lift.start_move(pick_shelf_top - BASE_BELOW_SHELF)
-                    lift_moving = True
-                lift.update(PHYSICS_DT)
-                world.step(render=True)
-                if lift.is_done:
-                    lift_moving = False
-                    lift_ready = True
-                    watcher.reset()      # 리프트가 멈춘 뒤부터 정지 확인을 시작합니다
-                continue
+            if not transfer.is_running:
+                task = TASKS[task_index]
+                print(f"\n── 작업 {task_index + 1}/{len(TASKS)} ──")
+                transfer.start(task, pallets[task.pallet_path])
 
-            # 2) 팔 베이스가 실제로 멈추면 계획을 만든다
-            if not motion.is_running:
-                lift.hold()
-                watcher.update(arm_base, PHYSICS_DT)
-                world.step(render=True)
-                if watcher.settled:
-                    task = TASKS[task_index]
-                    check_base_level(arm_base.get_world_pose()[1])
-                    motion.start_transfer(
-                        pallets[task.pallet_path],
-                        task.destination_shelf_top,
-                        start_from_home=(task_index == 0),
-                    )
-                continue
-
-            lift.hold()              # 지게차 규칙: 팔이 움직이는 동안 리프트는 멈춰 있는다
-            motion.update(PHYSICS_DT)
+            transfer.update(PHYSICS_DT)
             world.step(render=True)
 
-            # 이 작업이 끝나면 다음 작업으로. AMR 정지 확인부터 다시 합니다.
-            if motion.is_done:
-                motion.cancel()
+            if transfer.state == TransferState.SUCCEEDED:
                 task_index += 1
-                lift_ready = False
-                watcher.reset()
                 if task_index >= len(TASKS):
                     print("[완료] 모든 작업을 마쳤습니다.")
 
-        except RuntimeError as error:      # LiftError 도 RuntimeError 입니다
-            failed = True
-            lift.stop()
-            motion.cancel()
+        except RuntimeError as error:
+            transfer.cancel()
             world.pause()
             print(f"[중단] {error}")
             print("원인을 확인하세요. Stop → Play로 처음부터 재시험합니다.")
