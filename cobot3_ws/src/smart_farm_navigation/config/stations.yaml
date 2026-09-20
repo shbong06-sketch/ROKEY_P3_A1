@@ -1,0 +1,8 @@
+# map-frame poses (Isaac world frame) for smartfarm_v1.usd. yaw_deg: 0 = +x, 90 = +y.
+# initial_pose is the fallback only; nav2.launch.py and go_to_station prefer results/robot_spawn.yaml
+# written by scripts/launch_scene.py when the scene is opened.
+initial_pose: {x: 0.0, y: 0.0, yaw_deg: 90.0}
+stations:
+  CORRIDOR_EXIT: {x: 0.0, y: 3.0, yaw_deg: 90.0}       # just past the racks (rack end y=1.48)
+  INSPECT_ZONE:  {x: -2.44, y: 5.4, yaw_deg: 90.0}     # conveyor front face y=6.32; 0.92 m gap so the 0.66 m rear sweep clears it when rotating
+  RACK_FRONT:    {x: 0.0, y: -2.5, yaw_deg: 90.0}      # south approach in front of the rack corridor (carter2 later)
