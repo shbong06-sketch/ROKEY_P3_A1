@@ -142,7 +142,7 @@ ros2 topic echo /navigation/result --once --full-length
 
 ## 7. 내피 사전 시험 결과와 알려진 한계
 
-- 내피에서 지도 기반 가상 로봇(/clock·/tf·odom·2D 스캔 + 리프트 반사 모사)으로 `RACK_DOCK → INSPECTION_DOCK → RACK_DOCK` 왕복을 3회 반복해 모두 `SUCCEEDED`, recovery 0회, 편도 18~21초였음. `/navigation/command` 경로도 같은 조건에서 확인함. Isaac Sim 실물 시험은 아직 안 함.
+- 내피에서 지도 기반 가상 로봇(/clock·/tf·odom·2D 스캔 + 리프트 반사 모사)으로 `RACK_DOCK → INSPECTION_DOCK → RACK_DOCK` 왕복을 최종 설정으로 2회 실행해 모두 `SUCCEEDED`, 편도 18~29초(통로 후진 포함)였음. `/navigation/command` → `/navigation/result` 경로도 같은 조건에서 `SUCCEEDED` 를 확인함. 조정 과정에서 통로 안 제자리 회전으로 1회 실패하였고, 그 대책이 0절 3번의 후진 탈출임. Isaac Sim 실물 시험은 아직 안 함.
 - 가상 시험에서 도착 시 위치추정 오차가 0.2~0.35 m 있었음. 가상 센서의 한계일 가능성이 크나, 실물에서도 비슷하면 M0609 Place 정밀도에 부족함. 4절 실행 후 Isaac 화면의 실제 정지 위치(1절 방식으로 prim 좌표 확인)와 (3.328, −5.251) 의 차이를 알려주면 AMCL 또는 최종 접근 단계를 조정함.
 - 지도의 랙 가장자리는 x −1.10 인데 USD 의 랙·팔레트 외곽은 x −0.86 임(지도 생성 높이에 팔레트가 안 잡힘). Nav2 는 통로를 실제보다 0.24 m 넓게 봄. 통로 안 회전을 막은 이유이며, 장기적으로는 지도를 팔레트 높이까지 포함해 다시 만들어야 함.
 - `launch_scene.py` 는 리프트·M0609 를 제어하지 않음. 팀 통합 standalone 과 동시에 실행할 수 없음(한 시뮬레이션에 SimulationApp 하나). 통합 시에는 팀 스크립트에 `/clock` 그래프 추가 부분만 옮기면 됨.
