@@ -71,7 +71,7 @@ ros2 run smart_farm_navigation navigation_node --ros-args -p destinations_file:=
 - 후진 판별: 정지 후 `ros2 topic echo /chassis/odom --once --field pose.pose.position` 의 x 가 양수면 명령대로 +x 로 간 것이라 장면의 carter yaw 가 반대인 것이고, 음수면 sign 설정 문제임. sign 을 바꿔도 변화가 없었다면 재빌드가 안 된 것임.
 
 ### 4. 확인 항목
-- 고피 장면의 carter 시작 방향이 통로 탈출 방향(정면)인지. 경유지는 `config/path_runner_smooth.yaml`(1.5 m 직진, 0.45 m 우측, 4.9 m 앞 정지).
+- 고피 장면의 carter 시작 방향이 통로 탈출 방향(정면)인지. 경유지는 `config/path_runner_smooth.yaml`(1.5 m 직진 후 곡선, 왼쪽 3.728 m·앞 4.821 m 지점 = Conveyor/Seg_6 가운데 앞 정지, 값 근거는 docs/troubleshooting.md 4-4).
 - 주행 결과 로그(results/navnode_*.txt)를 커밋·푸시함.
 
 ## 알려진 제한

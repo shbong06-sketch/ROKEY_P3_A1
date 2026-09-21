@@ -92,8 +92,13 @@ CONVEYOR_PRIM_PATH = f"{PLACED_PRIM_PATH}/Conveyor"
 CONVEYOR_SEG6_PRIM_NAME = "Seg_6"
 CONVEYOR_SEG6_PRIM_PATH = f"{CONVEYOR_PRIM_PATH}/{CONVEYOR_SEG6_PRIM_NAME}"
 CONVEYOR_SEG6_REPORTED_XY = np.array([2.328, -5.121], dtype=float)
-CONVEYOR_LATERAL_OFFSET_X_M = 0.3
+# 검수 영역 = Seg_6 가운데 (2026-09-21 확정). 세그먼트 길이 2.0 m 이므로 pivot 에서 +X 1.0 m.
+CONVEYOR_SEG_LENGTH_M = 2.0
+CONVEYOR_LATERAL_OFFSET_X_M = CONVEYOR_SEG_LENGTH_M / 2.0
 CONVEYOR_STANDOFF_M = 1.5
+# AMR 정차점과 팔레트 Place x 의 상대 거리 (시연에서 검증된 0.3 m 유지). Place x = 정차 x - 0.3
+PLACE_X_BEHIND_AMR_M = 0.3
+# path_runner_smooth.yaml 의 경유지는 이 정차점 기준: world (3.328, -3.621) -> 시작 기준 (4.821, 3.728)
 PLACE_PALLET_QUATERNION = np.array(
     [np.sqrt(0.5), 0.0, 0.0, np.sqrt(0.5)], dtype=float
 )
@@ -259,7 +264,7 @@ def conveyor_place_target(stage):
 
     destination = np.array(
         [
-            seg6_position[0],
+            seg6_position[0] + CONVEYOR_LATERAL_OFFSET_X_M - PLACE_X_BEHIND_AMR_M,
             bounds_max[1] - robot_motion.PALLET_FRONT,
             bounds_max[2],
         ],

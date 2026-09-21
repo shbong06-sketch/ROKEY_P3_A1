@@ -11,7 +11,8 @@
 | `smart_farm_navigation/geometry.py` | — | — | wrap_angle, yaw_from_odom 공용 함수 |
 
 ## 문서
-- `docs/integration_plan.md` 통합 계획, `docs/architecture.md` 노드·상태 그림, `docs/*.mmd` 그림 원본.
+- `docs/integration_plan.md` 통합 계획, `docs/architecture.md` 노드·상태 그림, `docs/*.mmd` 그림 원본, `docs/troubleshooting.md` 트러블슈팅 정리(v004 좌표·확정 값 포함).
+- 팀 통합 standalone: `cobot3_ws/isaacpjt/smart_farm/scripts/integration_v1.py` (Seg_6 정차점 상수가 path_runner_smooth.yaml 경유지와 짝을 이룸).
 - `guidance/guidance1_11차.md` 곡선 주행 + ros_set 실측, `guidance/guidance1_12차.md` 통합 리허설(최신).
 
 ## 실효 파일 보관 위치 (각 모듈 최상단의 past/)

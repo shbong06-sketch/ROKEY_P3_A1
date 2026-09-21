@@ -126,31 +126,24 @@
 - 화면에서 보이는 "오른쪽/왼쪽" 은 카메라 시점에 따라 달라지고, YAML 의 Y 는 **로봇 주행 방향 기준 왼쪽** 임. 카메라가 로봇 뒤에서 진행 방향을 보고 있을 때만 둘이 일치함.
 - 장면이 바뀌면 (1) 시작 위치, (2) 전진 방향, (3) 목적지 위치가 모두 바뀌므로, `waypoints_x` 의 길이와 `waypoints_y` 의 부호·크기를 매번 다시 재야 함. 이전 장면 값이 남아 있으면 "코드는 정상인데 엉뚱한 곳으로 간다" 로 보임.
 
-### 4-4. v004 에 맞는 값을 정하는 절차 (`config/path_runner_smooth.yaml`)
+### 4-4. v004 확정 값 (`config/path_runner_smooth.yaml`, 2026-09-21)
+1차 시연 후 확정한 값임. 검수 영역은 컨베이어 그룹의 왼쪽 끝 prim(`/World/SmartFarm/Placed/Conveyor/Seg_6`)의 가운데이고, 도착 시 컨베이어 벨트가 뻗은 방향(world X)과 수직으로 서서 정면으로 바라봄.
 
-1. **전진 방향 확인** (`drive_direction_sign`)
-   - 현재 값으로 한 번 짧게 주행시켜 시작 로그의 `Phase TRACK at odom ... heading=` 를 봄.
-   - 카터가 바라보는 방향으로 전진하면 그대로 둠. 반대로 가면 `1.0 ↔ −1.0` 만 바꾸고 재빌드함. `waypoints_y` 는 건드리지 않음.
-2. **거리 재기** (`waypoints_x`) — 현장 확인
-   - Isaac Sim 에서 카터 시작점과 컨베이어 벨트 prim 의 앞 가장자리, 검수 영역 중심의 월드 좌표를 읽음.
-   - `waypoints_x[0]` = 통로를 빠져나와 곡선을 시작할 수 있는 지점까지의 거리 (통로 끝 + 차체 길이 약 0.5 m).
-   - `waypoints_x[1]` = 시작점에서 검수 영역까지 주행 방향 성분 − 컨베이어 앞 여유 0.4~0.5 m.
-3. **좌우 거리 재기** (`waypoints_y`) — 현장 확인
-   - 검수 영역이 주행 축에서 얼마나 옆으로 떨어져 있는지를 잼. v004 는 왼쪽이므로 `waypoints_y[1]` 은 **+거리**.
-   - `waypoints_y[0]` 은 통로 중앙 유지이므로 0.0.
-4. `final_heading_deg` 는 도착 후 컨베이어를 어느 방향으로 봐야 하는지에 따라 정함. 주행 방향 그대로면 0.0, 왼쪽으로 돌아 컨베이어를 정면으로 보면 +90.0.
-5. 수정 후 반드시 `colcon build --packages-select smart_farm_navigation` 실행.
+| 항목 | 값 | 근거 |
+|---|---|---|
+| 카터 시작 | world (−0.40, 1.20), yaw +90° | `LiftRig/Asset/nova_carter_ROS` |
+| 주행 정면 | world −Y | 카터가 바라보는 방향 그대로 전진. `drive_direction_sign −1.0` (= `base_link` −x) |
+| Seg_6 | pivot (2.328, −5.121), 길이 2.0 m → 가운데 x 3.328 | `integration_v1.py` 와 동일 값 |
+| 정차점 | world (3.328, −3.621) | pivot y + standoff 1.5 m |
+| `waypoints_x` | `[1.5, 4.821]` | 4.821 = 1.20 − (−3.621) |
+| `waypoints_y` | `[0.0, 3.728]` | 3.728 = 3.328 − (−0.40). 양수 = 왼쪽(world +X) |
+| `final_heading_deg` | 0.0 | 주행 정면(−Y)이 곧 컨베이어를 정면으로 보는 방향. 회전 없음 |
+| `approach_length_m` | 0.8 | 유지 |
 
-| 파라미터 | v003/구 장면 값 | v004 방향 | 비고 |
-|---|---|---|---|
-| `waypoints_x` | `[1.5, 4.9]` | `[통로 탈출 거리, 검수 영역까지 거리]` | 현장 확인 |
-| `waypoints_y` | `[0.0, −0.45]` | `[0.0, +좌측 거리]` | 부호 반전 확정, 크기 현장 확인 |
-| `final_heading_deg` | 0.0 | 0.0 또는 +90.0 | 검수 자세에 따라 |
-| `drive_direction_sign` | −1.0 | 1단계 결과 | 카터가 보는 방향으로 전진되는 값 |
-| `approach_length_m` | 0.8 | 0.8 | 유지 |
+같은 정차점을 `integration_v1.py` 가 도착 판정(`CONVEYOR_LATERAL_OFFSET_X_M`, `CONVEYOR_STANDOFF_M`)에 쓰므로 두 파일의 값은 항상 함께 바꿔야 함. 수정 후 `colcon build --packages-select smart_farm_navigation`.
 
 ### 4-5. 방향이 맞는지 5초 안에 확인하는 방법
-- 시작 로그 `heading ≈ 0°` 이면 주행 방향 = `base_link` +x (`sign 1.0`), `≈ ±180°` 이면 −x (`sign −1.0`).
+- 시작 로그 `heading ≈ ±180°` 이면 주행 방향 = `base_link` −x (`sign −1.0`, v004 정상). `≈ 0°` 이면 반대로 가는 것임.
 - 카터가 바라보는 쪽으로 움직이는지, 곡선에서 화면상 왼쪽으로 꺾이는지 두 가지만 봄.
   - 반대로 전진·후진 → `drive_direction_sign` 만 바꿈.
   - 오른쪽으로 꺾임 → `waypoints_y[1]` 부호만 바꿈.

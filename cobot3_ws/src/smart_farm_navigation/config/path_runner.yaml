@@ -4,13 +4,13 @@ path_runner:
     odom_topic: /chassis/odom
     auto_start: false                 # path.launch.py auto_start:=true 로 켠다
 
-    # ---- Collected_smartfarm_v003.usd: 직선-제자리회전 버전 (곡선 주행은 path_runner_smooth.yaml) ----
-    #   (1.5, 0.0) 통로 탈출점 -> (1.5, -0.45) 우측 이동 -> (4.9, -0.45) INSPECTION_DOCK
-    waypoints_x: [1.5, 1.5, 4.9]
-    waypoints_y: [0.0, -0.45, -0.45]
+    # ---- Collected_smartfarm_v004.usd: 직선-제자리회전 버전 (곡선 주행은 path_runner_smooth.yaml, 값 근거도 그 파일 참고) ----
+    #   (1.5, 0.0) 통로 탈출점 -> (1.5, 3.728) 왼쪽 이동 -> (4.821, 3.728) INSPECTION_DOCK (Seg_6 가운데 앞)
+    waypoints_x: [1.5, 1.5, 4.821]
+    waypoints_y: [0.0, 3.728, 3.728]
     final_heading_deg: 0.0            # 시작 방향과 동일 (통로를 빠져나올 때의 방향)
 
-    drive_direction_sign: 1.0         # 11차 팀 관찰: linear.x > 0 이 보이는 정면. 장면에서 로봇 초기 yaw 를 180도 돌려 사용
+    drive_direction_sign: -1.0        # 카터가 바라보는 정면 = base_link -x (path_runner_smooth.yaml 과 동일)
     drive_speed_mps: 0.4
     drive_min_speed_mps: 0.08
     slow_zone_m: 0.5                  # 경유지 0.5 m 전부터 감속
