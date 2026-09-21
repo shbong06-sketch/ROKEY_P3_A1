@@ -88,16 +88,24 @@ SHELF_TOP = {1: 0.713, 2: 1.013, 3: 1.313, 4: 1.613, 5: 1.913}
 # 이 월드에서는 Pallet_N 은 빈 Xform 이고 그 안의 Asset 이 강체입니다.
 # 바깥 Xform 을 적으면 강체가 둘로 겹쳐 물리 결과가 흔들립니다.
 TASKS = [
-    Task("/World/SmartFarm/Placed/Pallet_1/Asset", SHELF_TOP[1]),   # 2단 → 1단
-    Task("/World/SmartFarm/Placed/Pallet_2/Asset", SHELF_TOP[2]),   # 3단 → 2단
-    Task("/World/SmartFarm/Placed/Pallet_3/Asset", SHELF_TOP[3]),   # 4단 → 3단
-    # AMR 이 1단을 반출한 뒤의 연쇄. 아래층부터 차례로 비우며 내려옵니다.
+    Task("/World/SmartFarm/Placed/Pallet_2/Asset", SHELF_TOP[2]),               # 3단 → 2단
+    Task("/World/SmartFarm/Placed/Pallet_3/Asset", SHELF_TOP[3]),               # 4단 → 3단
+    Task("/World/SmartFarm/Placed/Pallet_1/Asset", None, pick_only=True),       # 1단 집기만
+    # 2단이 비어 있는 상태에서 시작합니다. 위 칸부터 한 칸씩 내려 채운 뒤,
+    # 맨 아래 팔레트를 집어 든 채로 멈춥니다 (AMR 이 이동할 차례).
 ]
 
 # 모든 작업을 마친 뒤 리프트를 이 층의 작업 높이로 내려둡니다.
 # 다음 사이클(AMR 이 1단에 팔레트를 놓아주는 것)을 바로 받을 수 있게 합니다.
 # None 이면 마지막 작업 높이에 그대로 둡니다.
-PARK_SHELF_TOP = SHELF_TOP[1]
+PARK_SHELF_TOP = None   # 마지막에 팔레트를 든 채 멈추므로 리프트를 내리지 않습니다
+
+# 화면 갱신 주기. 물리는 매 스텝 계산하고, 그림만 이 간격으로 그립니다.
+# 물리 결과와 로봇 동작은 전혀 바뀌지 않고 보이는 부드러움만 줄어듭니다.
+#   0 이면 아예 안 그림 (헤드리스)
+#   1 이면 매 스텝    (예전 방식)
+#   3 이면 초당 20번   (눈으로는 차이가 거의 없고 시간은 크게 줄어듦)
+RENDER_EVERY = 0 if os.environ.get("HEADLESS") == "1" else 3
 
 PHYSICS_DT = 1.0 / 60.0
 
@@ -188,6 +196,16 @@ def main():
         ),
     )
 
+    step_count = 0
+
+    def step_world():
+        """물리를 한 스텝 진행합니다. 화면은 RENDER_EVERY 간격으로만 그립니다."""
+        nonlocal step_count
+        step_count += 1
+        world.step(
+            render=RENDER_EVERY > 0 and step_count % RENDER_EVERY == 0
+        )
+
     task_index = 0
     needs_reset = True
     failed = False           # 오류 후에는 Stop → Play 전까지 재개하지 않습니다
@@ -229,7 +247,7 @@ def main():
                 # 건너뛰면 '리프트 값 ↔ 베이스 높이' 관계를 10 cm 넘게 틀리게 잽니다.
                 print(f"[장면] 안정될 때까지 {SETTLE_STEPS} 스텝 기다립니다")
                 for _ in range(SETTLE_STEPS):
-                    world.step(render=True)
+                    step_world()
                 lift.calibrate()
 
             if task_index >= len(TASKS):
@@ -252,7 +270,7 @@ def main():
                 elif parking == 'done':
                     lift.hold()
 
-                world.step(render=True)
+                step_world()
                 if headless and (PARK_SHELF_TOP is None or parking == 'done'):
                     return
                 continue
@@ -265,7 +283,7 @@ def main():
             transfer.update(PHYSICS_DT)
             if transfer.state == TransferState.FAILED:
                 raise RuntimeError(f"팔레트 이송 실패: {transfer.error}")
-            world.step(render=True)
+            step_world()
 
             if transfer.state == TransferState.SUCCEEDED:
                 task_index += 1

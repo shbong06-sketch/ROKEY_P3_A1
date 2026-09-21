@@ -104,6 +104,15 @@ class PalletTransferController:
                 self._lift.hold()
                 self._motion.update(dt)
                 if self._motion.is_done:
+                    if self._task.pick_only:
+                        # 집기만 하는 작업. 팔레트를 든 채로 끝냅니다.
+                        # cancel() 은 부르지 않습니다. 그걸 부르면 팔레트 추적이
+                        # 지워져서, 실제로는 들고 있는데 '운반 중' 표시가 풀립니다.
+                        # 그 상태로 다음 Pick 을 시작하면 막아주지 못합니다.
+                        # 동작이 끝난 뒤에는 구동부가 마지막 명령 자세를 유지합니다.
+                        self._completed_tasks += 1
+                        self._state = TransferState.SUCCEEDED
+                        return
                     self._motion.start_place(self._task.destination_shelf_top)
                     self._state = TransferState.PLACING
                 return
