@@ -1,11 +1,15 @@
 """Isaac Sim 안에서 Sim Task ROS 노드와 팔레트 이송을 함께 실행한다.
 
 실행 예:
+    # Task Manager 명령 대기
     ~/isaacsim/python.sh runtime/standalone_app.py --autoplay
-    HEADLESS=1 ~/isaacsim/python.sh runtime/standalone_app.py
+
+    # robot_motion_standalone.py처럼 TRANSFER를 즉시 검증
+    ~/isaacsim/python.sh runtime/standalone_app.py --demo
 """
 
 import argparse
+import json
 import os
 import sys
 import traceback
@@ -66,7 +70,16 @@ def parse_args():
         help="통합에 사용할 USD Scene",
     )
     parser.add_argument("--headless", action="store_true")
-    parser.add_argument("--autoplay", action="store_true")
+    parser.add_argument(
+        "--autoplay",
+        action="store_true",
+        help="timeline을 자동 재생하고 ROS 명령을 기다림",
+    )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="timeline 재생 후 검증용 TRANSFER 명령을 자동 발행",
+    )
     return parser.parse_known_args()
 
 
@@ -125,7 +138,7 @@ def configure_ros_environment():
 args, kit_args = parse_args()
 if os.environ.get("HEADLESS") == "1":
     args.headless = True
-args.autoplay = args.autoplay or args.headless
+args.autoplay = args.autoplay or args.headless or args.demo
 
 configure_ros_environment()
 
@@ -141,6 +154,7 @@ app = SimulationApp(
 
 import omni.usd  # noqa: E402
 import rclpy  # noqa: E402
+from std_msgs.msg import String  # noqa: E402
 from isaacsim.core.api import World  # noqa: E402
 from isaacsim.core.prims import (  # noqa: E402
     SingleArticulation,
@@ -561,11 +575,17 @@ def run():
     node = SimTaskNode(
         supported_operations={"TRANSFER"},
     )
+    demo_publisher = (
+        node.create_publisher(String, "/sim_task/command", 10)
+        if args.demo
+        else None
+    )
     print("[시작] ROS 2 노드 초기화가 완료되었습니다.", flush=True)
 
     step_count = 0
     needs_initialization = True
     stopped_handled = False
+    demo_command_sent = False
 
     def step_world():
         nonlocal step_count
@@ -651,6 +671,30 @@ def run():
                 )
                 node.mark_ready(ready_detail)
                 print(f"[READY] {ready_detail}", flush=True)
+
+                if args.demo and not demo_command_sent:
+                    message = String()
+                    message.data = json.dumps(
+                        {
+                            "task_id": "STANDALONE-DEMO",
+                            "command_id": "STANDALONE-DEMO-CMD-001",
+                            "operation": "TRANSFER",
+                            "recipe_id": "RACK_REARRANGE_01",
+                        },
+                        separators=(",", ":"),
+                    )
+                    demo_publisher.publish(message)
+                    demo_command_sent = True
+                    print(
+                        "[DEMO] 검증용 TRANSFER 명령을 발행했습니다.",
+                        flush=True,
+                    )
+                else:
+                    print(
+                        "[대기] /sim_task/command의 String/JSON 명령을 "
+                        "기다립니다. 독립 동작 검증은 --demo를 사용하세요.",
+                        flush=True,
+                    )
 
             command = node.take_command()
             if command is not None:
