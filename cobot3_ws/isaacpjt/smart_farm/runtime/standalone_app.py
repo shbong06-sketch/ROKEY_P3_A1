@@ -31,6 +31,9 @@ DEFAULT_SCENE_PATH = (
 PHYSICS_DT = 1.0 / 60.0
 RENDER_EVERY = 3
 SETTLE_STEPS = 120
+CARRY_ROTATE_DEG = 90.0
+TRAVEL_BASE_HEIGHT = 1.0388
+TRAVEL_HEIGHT_TOL = 0.015
 
 RIG_PATH = "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS"
 ROBOT_PATH = f"{RIG_PATH}/chassis_link"
@@ -183,6 +186,7 @@ from robot_motion import (  # noqa: E402
     RobotMotion,
     Task,
     brake_wheels,
+    release_wheels,
     tine_tip_position,
 )
 from sim_task_node import SimTaskNode  # noqa: E402
@@ -230,11 +234,14 @@ class SimulationRuntime:
     """Standalone 루프가 소유하는 Isaac Sim 객체."""
 
     world: World
+    stage: object
     robot: ArticulationLinkManipulator
     lift: LiftController
     motion: RobotMotion
     transfer: PalletTransferController
     pallets: dict
+    harvest_phase: str = "IDLE"
+    wheels_released: bool = False
 
 
 class TransferOperation:
@@ -483,6 +490,7 @@ def create_simulation_runtime(scene_path):
 
     return SimulationRuntime(
         world=world,
+        stage=stage,
         robot=robot,
         lift=lift,
         motion=motion,
@@ -495,7 +503,10 @@ def initialize_scene(runtime, transfer_operation, step_world):
     """Stop 후 Play를 포함해 Scene과 제어기를 초기 상태로 맞춘다."""
 
     transfer_operation.reset()
+    runtime.harvest_phase = "IDLE"
+    runtime.wheels_released = False
     runtime.world.reset()
+    brake_wheels(runtime.stage, RIG_PATH)
 
     print(f"[장면] 안정화를 위해 {SETTLE_STEPS} physics step을 진행합니다.")
     for _ in range(SETTLE_STEPS):
@@ -548,6 +559,7 @@ def start_operation(command, runtime, transfer_operation, node):
             f"팔레트 prim이 등록되지 않았습니다: {HARVEST_TASK.pallet_path}"
         )
 
+    runtime.harvest_phase = "PICK"
     runtime.transfer.start(HARVEST_TASK, pallet)
     if runtime.transfer.state == TransferState.FAILED:
         raise RuntimeError(str(runtime.transfer.error))
@@ -558,18 +570,28 @@ def start_operation(command, runtime, transfer_operation, node):
     )
 
 
-def verify_transport_ready(runtime):
-    """Pick 완료 후 Navigation 전환에 필요한 운반 상태를 확인한다."""
+def verify_carrying_clear(runtime):
+    """팔레트를 안정적으로 들고 포크가 랙 밖에 있는지 확인한다."""
 
     if not runtime.motion.is_carrying:
         raise RuntimeError("팔레트가 CARRYING 상태가 아닙니다.")
-
-    runtime.lift.hold()
     runtime.motion.hold()
     check_fork_clear_of_rack(
         tine_tip_position(runtime.robot)[0],
         RACK_FRONT_X,
     )
+
+
+def verify_transport_ready(runtime):
+    """운반 자세와 travel 높이가 Navigation에 안전한지 확인한다."""
+
+    verify_carrying_clear(runtime)
+    runtime.lift.hold()
+    height_error = abs(runtime.lift.base_height() - TRAVEL_BASE_HEIGHT)
+    if height_error > TRAVEL_HEIGHT_TOL:
+        raise RuntimeError(
+            f"travel 높이 오차가 큽니다: {height_error * 1000:.1f} mm"
+        )
 
 
 def update_operation(node, runtime, transfer_operation):
@@ -578,20 +600,72 @@ def update_operation(node, runtime, transfer_operation):
         raise RuntimeError("active command is missing")
 
     if command.operation == "PICK_HARVEST":
-        runtime.transfer.update(PHYSICS_DT)
-        node.set_phase(
-            f"PICK_HARVEST/{runtime.transfer.state.value}",
-            detail=runtime.motion.current_stage,
-        )
+        if runtime.harvest_phase == "PICK":
+            runtime.transfer.update(PHYSICS_DT)
+            node.set_phase(
+                f"PICK_HARVEST/{runtime.transfer.state.value}",
+                detail=runtime.motion.current_stage,
+            )
 
-        if runtime.transfer.state == TransferState.FAILED:
-            raise RuntimeError(str(runtime.transfer.error))
-        if runtime.transfer.state != TransferState.SUCCEEDED:
+            if runtime.transfer.state == TransferState.FAILED:
+                raise RuntimeError(str(runtime.transfer.error))
+            if runtime.transfer.state != TransferState.SUCCEEDED:
+                return
+
+            verify_carrying_clear(runtime)
+            runtime.motion.start_carry_rotate(CARRY_ROTATE_DEG)
+            runtime.harvest_phase = "CARRY_ROTATE"
+            node.set_phase(
+                "PICK_HARVEST/CARRY_ROTATE",
+                detail=f"joint_1 +{CARRY_ROTATE_DEG:.1f} deg",
+            )
             return
 
-        verify_transport_ready(runtime)
-        node.succeed(phase="RESULT", safe_to_navigate=True)
-        return
+        if runtime.harvest_phase == "CARRY_ROTATE":
+            runtime.lift.hold()
+            runtime.motion.update(PHYSICS_DT)
+            node.set_phase(
+                "PICK_HARVEST/CARRY_ROTATE",
+                detail=runtime.motion.current_stage,
+            )
+            if runtime.motion.is_running:
+                return
+            if not runtime.motion.is_done:
+                raise RuntimeError("운반 자세 동작이 완료되지 않았습니다.")
+
+            verify_carrying_clear(runtime)
+            runtime.lift.start_move(TRAVEL_BASE_HEIGHT, loaded=True)
+            runtime.harvest_phase = "LIFT_TO_TRAVEL"
+            node.set_phase(
+                "PICK_HARVEST/LIFT_TO_TRAVEL",
+                detail=f"target={TRAVEL_BASE_HEIGHT:.4f}m",
+            )
+            return
+
+        if runtime.harvest_phase == "LIFT_TO_TRAVEL":
+            runtime.motion.hold()
+            runtime.lift.update(PHYSICS_DT)
+            node.set_phase(
+                "PICK_HARVEST/LIFT_TO_TRAVEL",
+                detail=f"height={runtime.lift.base_height():.4f}m",
+            )
+            if not runtime.lift.is_done:
+                return
+
+            node.set_phase(
+                "PICK_HARVEST/VERIFY_TRANSPORT_READY",
+                detail="checking carry pose and travel height",
+            )
+            verify_transport_ready(runtime)
+            release_wheels(runtime.stage, RIG_PATH)
+            runtime.wheels_released = True
+            runtime.harvest_phase = "CARRY"
+            node.succeed(phase="RESULT", safe_to_navigate=True)
+            return
+
+        raise RuntimeError(
+            f"invalid PICK_HARVEST phase: {runtime.harvest_phase}"
+        )
 
     if not transfer_operation.is_running:
         raise RuntimeError("active command has no running operation")
