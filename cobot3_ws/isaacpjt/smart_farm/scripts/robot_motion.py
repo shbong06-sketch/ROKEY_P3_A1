@@ -971,6 +971,11 @@ class RobotMotion:
     def current_stage(self):
         return "IDLE" if self._sequence is None else self._sequence.name
 
+    @property
+    def is_carrying(self):
+        """팔레트가 Pick 검증을 마치고 운반 상태인지 반환합니다."""
+        return self._is_carrying
+
     def _reset_start_state(self):
         self._log_elapsed = 0.0
 

@@ -53,6 +53,7 @@ SHELF_TOP = {
 PALLET_ASSET_NAME = (
     "palette2_palete_tray_romaine_8_hole_physics_1__01"
 )
+PALLET_1_PATH = f"/World/SmartFarm/Placed/Pallet_01/{PALLET_ASSET_NAME}"
 PALLET_2_PATH = f"/World/SmartFarm/Placed/Pallet_02/{PALLET_ASSET_NAME}"
 PALLET_3_PATH = f"/World/SmartFarm/Placed/Pallet_03/{PALLET_ASSET_NAME}"
 
@@ -210,6 +211,9 @@ TRANSFER_UNITS = (
 )
 
 
+HARVEST_TASK = Task(PALLET_1_PATH, None, pick_only=True)
+
+
 class ArticulationLinkManipulator(SingleManipulator):
     """비루트 end-effector 링크를 독립 강체처럼 reset하지 않는다."""
 
@@ -226,7 +230,9 @@ class SimulationRuntime:
     """Standalone 루프가 소유하는 Isaac Sim 객체."""
 
     world: World
+    robot: ArticulationLinkManipulator
     lift: LiftController
+    motion: RobotMotion
     transfer: PalletTransferController
     pallets: dict
 
@@ -388,7 +394,10 @@ def create_simulation_runtime(scene_path):
     stage = open_scene(scene_path)
     print("[시작] USD Scene 로딩이 완료되었습니다.", flush=True)
 
-    pallet_paths = tuple(unit.task.pallet_path for unit in TRANSFER_UNITS)
+    pallet_paths = (
+        *(unit.task.pallet_path for unit in TRANSFER_UNITS),
+        HARVEST_TASK.pallet_path,
+    )
     require_prims(
         stage,
         (
@@ -474,7 +483,9 @@ def create_simulation_runtime(scene_path):
 
     return SimulationRuntime(
         world=world,
+        robot=robot,
         lift=lift,
+        motion=motion,
         transfer=transfer,
         pallets=pallets,
     )
@@ -493,8 +504,24 @@ def initialize_scene(runtime, transfer_operation, step_world):
     runtime.lift.calibrate()
 
 
-def start_operation(command, transfer_operation, node):
-    if command.operation != "TRANSFER":
+def start_operation(command, runtime, transfer_operation, node):
+    if command.operation == "TRANSFER":
+        if command.recipe_id not in ("", "RACK_REARRANGE_01"):
+            node.fail(
+                reason="INVALID_COMMAND",
+                phase="COMMAND_DISPATCH",
+                reset_required=False,
+            )
+            return
+
+        transfer_operation.start()
+        node.set_phase(
+            transfer_operation.phase,
+            detail="physical transfer started",
+        )
+        return
+
+    if command.operation != "PICK_HARVEST":
         node.fail(
             reason="INVALID_COMMAND",
             phase="COMMAND_DISPATCH",
@@ -502,7 +529,12 @@ def start_operation(command, transfer_operation, node):
         )
         return
 
-    if command.recipe_id not in ("", "RACK_REARRANGE_01"):
+    if (
+        command.recipe_id not in ("", "HARVEST_RACK_L1")
+        or command.pallet_id != "PALLET_001"
+        or command.source != "RACK_L1"
+        or command.destination != "CARRY"
+    ):
         node.fail(
             reason="INVALID_COMMAND",
             phase="COMMAND_DISPATCH",
@@ -510,14 +542,57 @@ def start_operation(command, transfer_operation, node):
         )
         return
 
-    transfer_operation.start()
+    pallet = runtime.pallets.get(HARVEST_TASK.pallet_path)
+    if pallet is None:
+        raise RuntimeError(
+            f"팔레트 prim이 등록되지 않았습니다: {HARVEST_TASK.pallet_path}"
+        )
+
+    runtime.transfer.start(HARVEST_TASK, pallet)
+    if runtime.transfer.state == TransferState.FAILED:
+        raise RuntimeError(str(runtime.transfer.error))
+
     node.set_phase(
-        transfer_operation.phase,
-        detail="physical transfer started",
+        f"PICK_HARVEST/{runtime.transfer.state.value}",
+        detail="harvest pick started",
     )
 
 
-def update_operation(node, transfer_operation):
+def verify_transport_ready(runtime):
+    """Pick 완료 후 Navigation 전환에 필요한 운반 상태를 확인한다."""
+
+    if not runtime.motion.is_carrying:
+        raise RuntimeError("팔레트가 CARRYING 상태가 아닙니다.")
+
+    runtime.lift.hold()
+    runtime.motion.hold()
+    check_fork_clear_of_rack(
+        tine_tip_position(runtime.robot)[0],
+        RACK_FRONT_X,
+    )
+
+
+def update_operation(node, runtime, transfer_operation):
+    command = node.active_command
+    if command is None:
+        raise RuntimeError("active command is missing")
+
+    if command.operation == "PICK_HARVEST":
+        runtime.transfer.update(PHYSICS_DT)
+        node.set_phase(
+            f"PICK_HARVEST/{runtime.transfer.state.value}",
+            detail=runtime.motion.current_stage,
+        )
+
+        if runtime.transfer.state == TransferState.FAILED:
+            raise RuntimeError(str(runtime.transfer.error))
+        if runtime.transfer.state != TransferState.SUCCEEDED:
+            return
+
+        verify_transport_ready(runtime)
+        node.succeed(phase="RESULT", safe_to_navigate=True)
+        return
+
     if not transfer_operation.is_running:
         raise RuntimeError("active command has no running operation")
 
@@ -573,7 +648,7 @@ def run():
     print("[시작] ROS 2 노드를 초기화합니다.", flush=True)
     rclpy.init()
     node = SimTaskNode(
-        supported_operations={"TRANSFER"},
+        supported_operations={"TRANSFER", "PICK_HARVEST"},
     )
     demo_publisher = (
         node.create_publisher(String, "/sim_task/command", 10)
@@ -667,7 +742,7 @@ def run():
                 needs_initialization = False
                 ready_detail = (
                     f"{args.scene.stem} scene ready; "
-                    "TRANSFER physical profile loaded"
+                    "TRANSFER/PICK_HARVEST physical profiles loaded"
                 )
                 node.mark_ready(ready_detail)
                 print(f"[READY] {ready_detail}", flush=True)
@@ -701,6 +776,7 @@ def run():
                 try:
                     start_operation(
                         command,
+                        runtime,
                         transfer_operation,
                         node,
                     )
@@ -717,6 +793,7 @@ def run():
                 try:
                     update_operation(
                         node,
+                        runtime,
                         transfer_operation,
                     )
                 except RuntimeError as error:
@@ -727,6 +804,10 @@ def run():
                         reason="MOTION_FAILED",
                         phase="EXECUTION",
                     )
+
+            if runtime.motion.is_carrying and not node.has_active_command:
+                runtime.lift.hold()
+                runtime.motion.hold()
 
             step_world()
 
