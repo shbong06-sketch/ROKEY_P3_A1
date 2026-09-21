@@ -45,8 +45,8 @@ from robot_motion import (
 SCENE_PATH = Path(
     Path(__file__).resolve().parent.parent
         / "scenes"
-        / "Collected_smartfarm_v006"
-        / "Collected_smartfarm_v006.usd"
+        / "Collected_smartfarm_v006_lite"
+        / "Collected_smartfarm_v006_lite.usd"
 )
 
 M0609_DIR = Path(__file__).resolve().parent.parent.parent / "M0609"
