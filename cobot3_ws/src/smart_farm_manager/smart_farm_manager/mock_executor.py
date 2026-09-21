@@ -225,8 +225,8 @@ class MockExecutorNode(Node):
         # 실제 executor의 성공 조건과 같은 필드를 operation별로 채운다.
         if command.operation == "TRANSFER":
             result.completed_units = [
-                "PALLET_002:RACK_L2:RACK_L3",
-                "PALLET_001:RACK_L1:RACK_L2",
+                "PALLET_002:RACK_L3:RACK_L2",
+                "PALLET_003:RACK_L4:RACK_L3",
             ]
         elif command.operation == "PICK_HARVEST":
             result.safe_to_navigate = True

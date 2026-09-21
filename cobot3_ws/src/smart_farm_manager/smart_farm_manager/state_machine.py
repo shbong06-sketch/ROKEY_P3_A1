@@ -22,8 +22,8 @@ class CycleStateMachine:
     }
 
     EXPECTED_TRANSFER_UNITS: Set[str] = {
-        "PALLET_002:RACK_L2:RACK_L3",
-        "PALLET_001:RACK_L1:RACK_L2",
+        "PALLET_002:RACK_L3:RACK_L2",
+        "PALLET_003:RACK_L4:RACK_L3",
     }
 
     PHYSICAL_OPERATIONS: Set[str] = {
@@ -61,8 +61,8 @@ class CycleStateMachine:
 
         self.pallet_locations = {
             "PALLET_001": "RACK_L1",
-            "PALLET_002": "RACK_L2",
-            "PALLET_004": "RACK_L4",
+            "PALLET_002": "RACK_L3",
+            "PALLET_003": "RACK_L4",
         }
 
     @property
@@ -320,19 +320,19 @@ class CycleStateMachine:
         """성공 결과에 따른 논리 상태와 다음 공정 상태를 반영한다."""
 
         if command.operation == "TRANSFER":
-            self.pallet_locations["PALLET_002"] = "RACK_L3"
-            self.pallet_locations["PALLET_001"] = "RACK_L2"
+            self.pallet_locations["PALLET_002"] = "RACK_L2"
+            self.pallet_locations["PALLET_003"] = "RACK_L3"
             self.state = CycleState.PICK_HARVEST
 
         elif command.operation == "PICK_HARVEST":
-            self.pallet_locations["PALLET_004"] = "CARRY"
+            self.pallet_locations["PALLET_001"] = "CARRY"
             self.state = CycleState.NAVIGATION
 
         elif command.operation == "NAVIGATION":
             self.state = CycleState.PLACE_INSPECT
 
         elif command.operation == "PLACE_INSPECT":
-            self.pallet_locations["PALLET_004"] = "INSPECT_STATION"
+            self.pallet_locations["PALLET_001"] = "INSPECT_STATION"
             self.state = CycleState.INSPECT
 
         elif command.operation == "INSPECT":
@@ -348,7 +348,7 @@ class CycleStateMachine:
             self.state = CycleState.CONVEYOR_OUT
 
         elif command.operation == "CONVEYOR_OUT":
-            self.pallet_locations["PALLET_004"] = "PACK_OUT"
+            self.pallet_locations["PALLET_001"] = "PACK_OUT"
             self.state = CycleState.COMPLETE
             self.terminal_status = "SUCCEEDED"
 

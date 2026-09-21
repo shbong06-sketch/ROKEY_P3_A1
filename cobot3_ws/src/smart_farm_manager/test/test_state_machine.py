@@ -33,12 +33,13 @@ def success_result(command, **overrides) -> TaskResultData:
 
 def complete_transfer(machine: CycleStateMachine) -> None:
     command = machine.create_command()
+    assert command.operation == "TRANSFER"
 
     result = success_result(
         command,
         completed_units=(
-            "PALLET_002:RACK_L2:RACK_L3",
-            "PALLET_001:RACK_L1:RACK_L2",
+            "PALLET_002:RACK_L3:RACK_L2",
+            "PALLET_003:RACK_L4:RACK_L3",
         ),
     )
 
@@ -48,6 +49,10 @@ def complete_transfer(machine: CycleStateMachine) -> None:
 
 def complete_pick_harvest(machine: CycleStateMachine) -> None:
     command = machine.create_command()
+    assert command.operation == "PICK_HARVEST"
+    assert command.pallet_id == "PALLET_001"
+    assert command.source == "RACK_L1"
+    assert command.destination == "CARRY"
 
     result = success_result(
         command,
@@ -60,6 +65,8 @@ def complete_pick_harvest(machine: CycleStateMachine) -> None:
 
 def complete_navigation(machine: CycleStateMachine) -> None:
     command = machine.create_command()
+    assert command.operation == "NAVIGATION"
+    assert command.destination == "INSPECTION_DOCK"
 
     result = success_result(
         command,
@@ -82,19 +89,19 @@ def test_full_cycle_with_defects():
 
     complete_transfer(machine)
     assert machine.state == CycleState.PICK_HARVEST
-    assert machine.pallet_locations["PALLET_002"] == "RACK_L3"
-    assert machine.pallet_locations["PALLET_001"] == "RACK_L2"
+    assert machine.pallet_locations["PALLET_002"] == "RACK_L2"
+    assert machine.pallet_locations["PALLET_003"] == "RACK_L3"
 
     complete_pick_harvest(machine)
     assert machine.state == CycleState.NAVIGATION
-    assert machine.pallet_locations["PALLET_004"] == "CARRY"
+    assert machine.pallet_locations["PALLET_001"] == "CARRY"
 
     complete_navigation(machine)
     assert machine.state == CycleState.PLACE_INSPECT
 
     complete_place_inspect(machine)
     assert machine.state == CycleState.INSPECT
-    assert machine.pallet_locations["PALLET_004"] == "INSPECT_STATION"
+    assert machine.pallet_locations["PALLET_001"] == "INSPECT_STATION"
 
     inspect_command = machine.create_command()
     inspect_result = success_result(
@@ -123,7 +130,7 @@ def test_full_cycle_with_defects():
 
     assert machine.state == CycleState.COMPLETE
     assert machine.terminal_status == "SUCCEEDED"
-    assert machine.pallet_locations["PALLET_004"] == "PACK_OUT"
+    assert machine.pallet_locations["PALLET_001"] == "PACK_OUT"
 
 
 def test_cycle_skips_cull_when_no_defect_exists():
@@ -215,7 +222,7 @@ def test_incomplete_transfer_requires_reset():
     result = success_result(
         command,
         completed_units=(
-            "PALLET_002:RACK_L2:RACK_L3",
+            "PALLET_002:RACK_L3:RACK_L2",
         ),
     )
 
