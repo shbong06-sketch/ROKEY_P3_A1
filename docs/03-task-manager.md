@@ -1,6 +1,6 @@
 # Task Manager 통합 및 테스트 가이드
 
-이 문서는 현재 `feature/task_manager` 브랜치의 실제 구현을 기준으로 Task Manager를 mock executor 또는 실제 executor에 연결하고 검증하는 절차를 설명한다.
+이 문서는 현재 `feature/system-integration` 브랜치의 실제 구현을 기준으로 Task Manager를 mock executor 또는 실제 executor에 연결하고 검증하는 절차를 설명한다.
 
 관련 설계는 [시스템 아키텍처](./01-architecture.md)와 [인터페이스 설계](./02-interfaces.md)를 함께 참고한다.
 
@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | 사이클 시작 | `/start_cycle` | `smart_farm_interfaces/srv/StartCycle` |
 | 사이클 상태 | `/cycle/status` | `smart_farm_interfaces/msg/CycleStatus` |
-| Sim 명령/결과/상태 | `/sim_task/command`, `/sim_task/result`, `/sim_task/status` | `TaskCommand`, `TaskResult`, `ExecutorStatus` |
+| Sim 명령/결과/상태 | `/sim_task/command`, `/sim_task/result`, `/sim_task/status` | `std_msgs/msg/String` JSON |
 | 주행 명령/결과/상태 | `/navigation/command`, `/navigation/result`, `/navigation/status` | `TaskCommand`, `TaskResult`, `ExecutorStatus` |
 | 검사 명령/결과/상태 | `/inspection/command`, `/inspection/result`, `/inspection/status` | `TaskCommand`, `TaskResult`, `ExecutorStatus` |
 
@@ -57,6 +57,7 @@ ros2 interface show smart_farm_interfaces/srv/StartCycle
 ros2 interface show smart_farm_interfaces/msg/TaskCommand
 ros2 interface show smart_farm_interfaces/msg/TaskResult
 ros2 interface show smart_farm_interfaces/msg/ExecutorStatus
+ros2 interface show std_msgs/msg/String
 ```
 
 ## 3. 전체 mock으로 한 사이클 검증
@@ -90,7 +91,7 @@ ros2 topic list | sort
 
 ```bash
 ros2 topic echo /sim_task/status \
-  smart_farm_interfaces/msg/ExecutorStatus --once
+  std_msgs/msg/String --once
 ros2 topic echo /navigation/status \
   smart_farm_interfaces/msg/ExecutorStatus --once
 ros2 topic echo /inspection/status \
@@ -146,8 +147,8 @@ Task Manager 로그에서도 `PREFLIGHT complete`, 각 `Command published`, 마�
 문제가 생겼을 때는 별도 터미널에서 담당 토픽을 직접 관찰한다.
 
 ```bash
-ros2 topic echo /sim_task/command smart_farm_interfaces/msg/TaskCommand
-ros2 topic echo /sim_task/result smart_farm_interfaces/msg/TaskResult
+ros2 topic echo /sim_task/command std_msgs/msg/String
+ros2 topic echo /sim_task/result std_msgs/msg/String
 ros2 topic echo /navigation/command smart_farm_interfaces/msg/TaskCommand
 ros2 topic echo /navigation/result smart_farm_interfaces/msg/TaskResult
 ros2 topic echo /inspection/command smart_farm_interfaces/msg/TaskCommand
@@ -225,8 +226,8 @@ inspection mock, 실제 Navigation Executor만 실행한다. 실제 노드의 �
   사용한다.
 - 시작 준비가 끝난 뒤 1~2Hz로 `READY` heartbeat를 발행한다.
 - 작업 중에도 heartbeat를 멈추지 않고 `BUSY` 또는 구현 상태값을 발행한다.
-- `ExecutorStatus.executor`는 `sim_task`, `navigation`, `inspection` 중 담당 이름과
-  정확히 일치해야 한다.
+- status의 `executor`는 담당 이름과 정확히 일치해야 한다. Sim Task는 JSON의
+  `executor`, Navigation·Inspection은 `ExecutorStatus.executor`를 사용한다.
 - 한 번에 명령 하나만 실행하며, 완료한 `command_id`를 재수신해도 물리 동작을
   반복하지 않는다.
 - 명령 수신 콜백에서 장시간 블로킹하지 않는다.
@@ -240,7 +241,8 @@ ros2 topic info /navigation/result --verbose
 ```
 
 `Publisher count`, `Subscription count`와 양쪽 endpoint의 reliability/durability를 함께
-확인한다. 다른 executor도 토픽 prefix만 바꿔 같은 방법으로 검사한다.
+확인한다. 다른 executor도 토픽 prefix만 바꿔 같은 방법으로 검사한다. Sim Task의 세
+토픽 타입은 `std_msgs/msg/String`, 나머지 executor는 해당 사용자 정의 메시지여야 한다.
 
 ### 6.2 Navigation Executor
 
@@ -251,6 +253,9 @@ ros2 topic info /navigation/result --verbose
 
 ### 6.3 Sim Task Executor
 
+- command/result/status 토픽은 모두 `std_msgs/msg/String`이며 `String.data`를 JSON object로 파싱한다.
+- command의 `task_id`, `command_id`, `operation`과 result의 `status`는 필수 문자열이다.
+- 잘못된 JSON, 필수 필드 누락 및 타입 불일치 명령은 물리 동작을 시작하지 않는다.
 - `TRANSFER`, `PICK_HARVEST`, `PLACE_INSPECT`, `CULL`, `CONVEYOR_OUT`을 처리한다.
 - Isaac Sim 장면과 제어기가 준비된 뒤에만 `READY`를 보낸다.
 - ROS 콜백에서는 명령을 저장하고, 물리 동작은 Standalone update loop에서 진행한다.
@@ -335,20 +340,33 @@ ros2 topic pub --once /navigation/result \
     completed_units: [], defect_slots: [], unknown_slots: []}"
 ```
 
-### 8.4 executor 실패
+### 8.4 잘못된 Sim Task JSON
+
+아래처럼 JSON 구문 오류가 있는 결과를 발행한다.
+
+```bash
+ros2 topic pub --once /sim_task/result std_msgs/msg/String \
+  "{data: '{invalid-json'}"
+```
+
+Task Manager가 `Invalid sim_task result JSON ignored` 경고를 남기고 현재 active command를
+유지해야 한다. `task_id` 같은 필수 필드 누락, 문자열 필드의 숫자 입력, 배열 필드에
+문자열을 넣은 경우도 같은 방식으로 무시돼야 한다.
+
+### 8.5 executor 실패
 
 실제 executor 또는 시험용 publisher가 현재 ID와 operation은 그대로 유지하고
 `status: FAILED`와 구체적인 `reason`을 반환하게 한다. Task Manager가 다음 명령을
 발행하지 않아야 한다. 물리 operation 실패는 `RESET_REQUIRED`, 그 외 실패는
 `FAILED`로 종료되는지 확인한다.
 
-### 8.5 결과 timeout
+### 8.6 결과 timeout
 
 executor가 command를 수신하되 result를 발행하지 않도록 만든다. 현재 timeout은
 `scenario.py`의 단계별 `timeout_sec` 값이며 YAML 파라미터가 아니다. 짧은 시험값이
 필요하면 별도 테스트 브랜치에서만 값을 낮추고 시험 후 복구한다.
 
-### 8.6 CULL 생략
+### 8.7 CULL 생략
 
 Inspection mock을 다음처럼 수동 실행하면 불량 슬롯이 없는 결과를 만들 수 있다.
 
@@ -359,7 +377,8 @@ ros2 run smart_farm_manager mock_executor \
 ```
 
 `INSPECT` 다음에 `/sim_task/command`로 `CULL`이 발행되지 않고 바로
-`CONVEYOR_OUT`이 발행되는지 확인한다.
+`CONVEYOR_OUT`이 발행되는지 확인한다. `/sim_task/command`의 `String.data` JSON에서
+`operation` 값을 확인한다.
 
 ## 9. 자동 테스트
 

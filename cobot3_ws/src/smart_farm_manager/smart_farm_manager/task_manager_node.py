@@ -1,5 +1,6 @@
 """ROS 2 인터페이스와 순수 Python 상태 머신을 연결하는 Task Manager 노드."""
 
+import json
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,6 +17,8 @@ from smart_farm_interfaces.msg import (
     TaskResult,
 )
 from smart_farm_interfaces.srv import StartCycle
+
+from std_msgs.msg import String
 
 from .protocol import TaskCommandData, TaskResultData
 from .scenario import CycleState
@@ -83,7 +86,7 @@ class TaskManagerNode(Node):
         # Task Manager가 각 executor로 보내는 공통 작업 명령
         self.command_publishers = {
             "sim_task": self.create_publisher(
-                TaskCommand,
+                String,
                 "/sim_task/command",
                 10,
             ),
@@ -101,9 +104,9 @@ class TaskManagerNode(Node):
 
         # 각 executor가 반환하는 terminal 작업 결과
         self.create_subscription(
-            TaskResult,
+            String,
             "/sim_task/result",
-            lambda msg: self._result_callback(msg, "sim_task"),
+            self._sim_result_callback,
             10,
         )
         self.create_subscription(
@@ -121,9 +124,9 @@ class TaskManagerNode(Node):
 
         # executor 준비 상태 및 freshness를 확인하는 heartbeat
         self.create_subscription(
-            ExecutorStatus,
+            String,
             "/sim_task/status",
-            lambda msg: self._status_callback(msg, "sim_task"),
+            self._sim_status_callback,
             10,
         )
         self.create_subscription(
@@ -264,6 +267,44 @@ class TaskManagerNode(Node):
         message: TaskResult,
         executor: str,
     ) -> None:
+        """커스텀 ROS 결과를 내부 모델로 변환한다."""
+
+        self._handle_result(
+            self._task_result_from_ros(message),
+            executor,
+        )
+
+    def _sim_result_callback(self, message: String) -> None:
+        """Sim Task JSON 결과를 검증하고 내부 모델로 변환한다."""
+
+        try:
+            result_data = self._task_result_from_json(message.data)
+        except (TypeError, ValueError) as error:
+            self.get_logger().warning(
+                f"Invalid sim_task result JSON ignored: {error}"
+            )
+            return
+
+        self._handle_result(result_data, "sim_task")
+
+    def _sim_status_callback(self, message: String) -> None:
+        """Sim Task JSON heartbeat를 검증하고 공통 상태 처리로 전달한다."""
+
+        try:
+            status = self._executor_status_from_json(message.data)
+        except (TypeError, ValueError) as error:
+            self.get_logger().warning(
+                f"Invalid sim_task status JSON ignored: {error}"
+            )
+            return
+
+        self._status_callback(status, "sim_task")
+
+    def _handle_result(
+        self,
+        result_data: TaskResultData,
+        executor: str,
+    ) -> None:
         """종료 결과가 현재 명령과 일치하는지 검증하고 상태를 전이한다."""
 
         if self.machine.active_command is None:
@@ -280,14 +321,13 @@ class TaskManagerNode(Node):
             )
             return
 
-        result_data = self._task_result_from_ros(message)
         outcome = self.machine.handle_result(result_data)
 
         if not outcome.accepted:
             self.get_logger().warning(
                 "Result ignored: "
                 f"reason={outcome.reason}, "
-                f"command_id={message.command_id}"
+                f"command_id={result_data.command_id}"
             )
             return
 
@@ -464,12 +504,13 @@ class TaskManagerNode(Node):
             self.machine.state
         )
         command_data = self.machine.create_command()
-        command_message = self._task_command_to_ros(
-            command_data
-        )
 
         executor = step.executor.value
         publisher = self.command_publishers[executor]
+        if executor == "sim_task":
+            command_message = self._task_command_to_json(command_data)
+        else:
+            command_message = self._task_command_to_ros(command_data)
         publisher.publish(command_message)
 
         self.command_deadline = (
@@ -577,6 +618,28 @@ class TaskManagerNode(Node):
         return message
 
     @staticmethod
+    def _task_command_to_json(data: TaskCommandData) -> String:
+        """내부 명령 모델을 Sim Task용 JSON String으로 변환한다."""
+
+        payload = {
+            "task_id": data.task_id,
+            "command_id": data.command_id,
+            "operation": data.operation,
+            "recipe_id": data.recipe_id,
+            "pallet_id": data.pallet_id,
+            "source": data.source,
+            "destination": data.destination,
+            "target_slots": list(data.target_slots),
+        }
+        message = String()
+        message.data = json.dumps(
+            payload,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        return message
+
+    @staticmethod
     def _task_result_from_ros(
         message: TaskResult,
     ) -> TaskResultData:
@@ -595,6 +658,113 @@ class TaskManagerNode(Node):
             defect_slots=tuple(message.defect_slots),
             unknown_slots=tuple(message.unknown_slots),
         )
+
+    @classmethod
+    def _task_result_from_json(cls, raw_message: str) -> TaskResultData:
+        """Sim Task JSON 결과를 상태 머신용 내부 모델로 변환한다."""
+
+        payload = cls._parse_json_object(raw_message)
+        return TaskResultData(
+            task_id=cls._json_string(payload, "task_id", required=True),
+            command_id=cls._json_string(
+                payload,
+                "command_id",
+                required=True,
+            ),
+            operation=cls._json_string(
+                payload,
+                "operation",
+                required=True,
+            ),
+            status=cls._json_string(payload, "status", required=True),
+            phase=cls._json_string(payload, "phase"),
+            reason=cls._json_string(payload, "reason", default="NONE"),
+            safe_to_navigate=cls._json_bool(
+                payload,
+                "safe_to_navigate",
+            ),
+            reached_station=cls._json_string(payload, "reached_station"),
+            completed_units=cls._json_string_tuple(
+                payload,
+                "completed_units",
+            ),
+            defect_slots=cls._json_string_tuple(payload, "defect_slots"),
+            unknown_slots=cls._json_string_tuple(payload, "unknown_slots"),
+        )
+
+    @classmethod
+    def _executor_status_from_json(cls, raw_message: str) -> ExecutorStatus:
+        """Sim Task JSON heartbeat를 공통 상태 메시지 모델로 변환한다."""
+
+        payload = cls._parse_json_object(raw_message)
+        message = ExecutorStatus()
+        message.executor = cls._json_string(
+            payload,
+            "executor",
+            required=True,
+        )
+        message.state = cls._json_string(
+            payload,
+            "state",
+            required=True,
+        )
+        message.task_id = cls._json_string(payload, "task_id")
+        message.command_id = cls._json_string(payload, "command_id")
+        message.operation = cls._json_string(payload, "operation")
+        message.phase = cls._json_string(payload, "phase")
+        message.detail = cls._json_string(payload, "detail")
+        return message
+
+    @staticmethod
+    def _parse_json_object(raw_message: str) -> dict:
+        """문자열을 JSON object로 파싱한다."""
+
+        payload = json.loads(raw_message)
+        if not isinstance(payload, dict):
+            raise ValueError("top-level JSON value must be an object")
+        return payload
+
+    @staticmethod
+    def _json_string(
+        payload: dict,
+        field: str,
+        *,
+        required: bool = False,
+        default: str = "",
+    ) -> str:
+        """JSON 문자열 필드를 타입과 필수 여부에 따라 검증한다."""
+
+        if field not in payload:
+            if required:
+                raise ValueError(f"missing required field: {field}")
+            return default
+
+        value = payload[field]
+        if not isinstance(value, str):
+            raise TypeError(f"field {field} must be a string")
+        if required and not value:
+            raise ValueError(f"required field is empty: {field}")
+        return value
+
+    @staticmethod
+    def _json_bool(payload: dict, field: str) -> bool:
+        """JSON boolean 필드를 검증하며 누락 시 false를 반환한다."""
+
+        value = payload.get(field, False)
+        if not isinstance(value, bool):
+            raise TypeError(f"field {field} must be a boolean")
+        return value
+
+    @staticmethod
+    def _json_string_tuple(payload: dict, field: str) -> tuple:
+        """JSON 문자열 배열을 검증해 tuple로 반환한다."""
+
+        value = payload.get(field, [])
+        if not isinstance(value, list) or not all(
+            isinstance(item, str) for item in value
+        ):
+            raise TypeError(f"field {field} must be an array of strings")
+        return tuple(value)
 
     @staticmethod
     def _create_task_id() -> str:

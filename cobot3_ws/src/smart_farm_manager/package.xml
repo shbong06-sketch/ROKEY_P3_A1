@@ -11,6 +11,7 @@
 
   <depend>rclpy</depend>
   <depend>smart_farm_interfaces</depend>
+  <depend>std_msgs</depend>
   <exec_depend>ros2launch</exec_depend>
 
   <test_depend>ament_copyright</test_depend>

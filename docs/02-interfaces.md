@@ -25,7 +25,7 @@
 - Navigation Node는 내부적으로 `BasicNavigator`와 `NavigateToPose` Action을 사용한다.
 - Isaac Sim 내부 ROS 콜백은 명령을 검증·저장하기만 한다. 실제 물리 동작은 Standalone 프레임 루프의 `update(dt)`에서 수행한다.
 - 장시간 동작을 Service 콜백이나 Topic 수신 콜백 안에서 블로킹 실행하지 않는다.
-- 최초 통합부터 std_msgs/String JSON 대신 `smart_farm_interfaces`의 사용자 정의 메시지를 사용한다.
+- Sim Task Executor 경계는 `std_msgs/msg/String`에 JSON object를 담아 사용하고, Navigation·Inspection 경계는 `smart_farm_interfaces` 사용자 정의 메시지를 사용한다.
 
 ## 2. 통신 구조
 
@@ -51,9 +51,9 @@ flowchart LR
 | 이름 | 타입 | 송신 → 수신 | 목적 |
 | --- | --- | --- | --- |
 | `/start_cycle` | smart_farm_interfaces/srv/StartCycle | 실행자 → Task Manager | 시나리오 시작 요청과 수락 |
-| `/sim_task/command` | TaskCommand Topic | Task Manager → Sim Task Executor | TRANSFER, PICK_HARVEST, PLACE_INSPECT, CULL, CONVEYOR_OUT 요청 |
-| `/sim_task/result` | TaskResult Topic | Sim Task Executor → Task Manager | Sim 작업 최종 성공·실패 결과 |
-| `/sim_task/status` | ExecutorStatus Topic | Sim Task Executor → Task Manager·관찰자 | 준비 여부, 실행 중 operation과 내부 phase |
+| `/sim_task/command` | std_msgs/msg/String JSON Topic | Task Manager → Sim Task Executor | TRANSFER, PICK_HARVEST, PLACE_INSPECT, CULL, CONVEYOR_OUT 요청 |
+| `/sim_task/result` | std_msgs/msg/String JSON Topic | Sim Task Executor → Task Manager | Sim 작업 최종 성공·실패 결과 |
+| `/sim_task/status` | std_msgs/msg/String JSON Topic | Sim Task Executor → Task Manager·관찰자 | 준비 여부, 실행 중 operation과 내부 phase |
 | `/navigation/command` | TaskCommand Topic | Task Manager → Navigation Node | INSPECTION_DOCK 이동 요청 |
 | `/navigation/result` | TaskResult Topic | Navigation Node → Task Manager | Nav2 최종 결과와 도착 작업점 |
 | `/navigation/status` | ExecutorStatus Topic | Navigation Node → Task Manager·관찰자 | Nav2 준비, 이동 중, 남은 거리 또는 내부 상태 |
@@ -86,7 +86,9 @@ string reason
 - 이미 사이클이 실행 중이면 accepted=false, reason=BUSY를 반환한다.
 - 최종 결과는 /cycle/status에서 확인한다.
 
-## 5. 공통 메시지
+## 5. 메시지 및 JSON 계약
+
+Navigation·Inspection은 아래 사용자 정의 메시지를 사용한다. Task Manager 내부 상태 머신과 Sim Task JSON도 같은 필드 의미를 공유한다.
 
 ### TaskCommand.msg
 
@@ -109,7 +111,7 @@ string[] target_slots
 - source, destination: 논리 작업점
 - target_slots: 솎아내기 대상 식물 슬롯
 
-사용하지 않는 선택 필드는 빈 문자열 또는 빈 배열로 보낸다.
+사용하지 않는 선택 필드는 빈 문자열 또는 빈 배열로 보낸다. Sim Task 명령에서는 같은 필드 이름을 JSON key로 사용한다.
 
 ### TaskResult.msg
 
@@ -155,6 +157,71 @@ state 값:
 - ERROR
 
 status Topic은 진행 관찰과 PREFLIGHT에 사용한다. Task Manager의 단계 전이는 status가 아니라 terminal TaskResult를 기준으로 한다.
+
+### Sim Task String/JSON
+
+`/sim_task/command`, `/sim_task/result`, `/sim_task/status`의 ROS 타입은 모두
+`std_msgs/msg/String`이다. `String.data`에는 UTF-8 JSON object 한 개를 넣는다.
+최상위 배열이나 JSON이 아닌 문자열은 허용하지 않는다.
+
+명령 예시:
+
+```json
+{
+  "task_id": "TASK-20260921-001",
+  "command_id": "TASK-20260921-001-CMD-001",
+  "operation": "TRANSFER",
+  "recipe_id": "RACK_REARRANGE_01",
+  "pallet_id": "",
+  "source": "",
+  "destination": "",
+  "target_slots": []
+}
+```
+
+결과 예시:
+
+```json
+{
+  "task_id": "TASK-20260921-001",
+  "command_id": "TASK-20260921-001-CMD-001",
+  "operation": "TRANSFER",
+  "status": "SUCCEEDED",
+  "phase": "RESULT",
+  "reason": "NONE",
+  "safe_to_navigate": false,
+  "reached_station": "",
+  "completed_units": [
+    "PALLET_002:RACK_L2:RACK_L3",
+    "PALLET_001:RACK_L1:RACK_L2"
+  ],
+  "defect_slots": [],
+  "unknown_slots": []
+}
+```
+
+상태 예시:
+
+```json
+{
+  "executor": "sim_task",
+  "state": "READY",
+  "task_id": "",
+  "command_id": "",
+  "operation": "",
+  "phase": "IDLE",
+  "detail": "sim task executor ready"
+}
+```
+
+명령의 `task_id`, `command_id`, `operation`은 비어 있지 않은 문자열이어야 한다.
+결과는 여기에 `status`가 추가로 필요하다. 상태는 `executor`와 `state`가 필요하며
+`executor`는 반드시 `sim_task`여야 한다. Boolean과 배열은 JSON 고유 타입을 사용한다.
+선택 필드가 없으면 빈 문자열, `false`, 빈 배열을 기본값으로 사용한다.
+
+Task Manager는 JSON 구문 오류, 최상위 object가 아닌 값, 필수 필드 누락 및 필드 타입
+불일치 메시지를 경고와 함께 무시한다. 잘못된 메시지는 상태 전이나 heartbeat 갱신에
+사용하지 않는다.
 
 ### CycleStatus.msg
 
@@ -251,28 +318,32 @@ INSPECT 결과 defect_slots가 비어 있으면 Task Manager는 CULL 명령을 �
 
 ### TRANSFER
 
-```yaml
-task_id: TASK-20260919-001
-command_id: TASK-20260919-001-CMD-001
-operation: TRANSFER
-recipe_id: RACK_REARRANGE_01
-pallet_id: ""
-source: ""
-destination: ""
-target_slots: []
+```json
+{
+  "task_id": "TASK-20260919-001",
+  "command_id": "TASK-20260919-001-CMD-001",
+  "operation": "TRANSFER",
+  "recipe_id": "RACK_REARRANGE_01",
+  "pallet_id": "",
+  "source": "",
+  "destination": "",
+  "target_slots": []
+}
 ```
 
 ### PICK_HARVEST
 
-```yaml
-task_id: TASK-20260919-001
-command_id: TASK-20260919-001-CMD-002
-operation: PICK_HARVEST
-recipe_id: HARVEST_RACK_L4
-pallet_id: PALLET_004
-source: RACK_L4
-destination: CARRY
-target_slots: []
+```json
+{
+  "task_id": "TASK-20260919-001",
+  "command_id": "TASK-20260919-001-CMD-002",
+  "operation": "PICK_HARVEST",
+  "recipe_id": "HARVEST_RACK_L4",
+  "pallet_id": "PALLET_004",
+  "source": "RACK_L4",
+  "destination": "CARRY",
+  "target_slots": []
+}
 ```
 
 ### INSPECT 결과
@@ -293,22 +364,24 @@ unknown_slots: []
 
 ### CULL
 
-```yaml
-task_id: TASK-20260919-001
-command_id: TASK-20260919-001-CMD-006
-operation: CULL
-recipe_id: CULL_DEFECT_SLOTS
-pallet_id: PALLET_004
-source: INSPECT_STATION
-destination: INSPECT_STATION
-target_slots: [SLOT_03, SLOT_07]
+```json
+{
+  "task_id": "TASK-20260919-001",
+  "command_id": "TASK-20260919-001-CMD-006",
+  "operation": "CULL",
+  "recipe_id": "CULL_DEFECT_SLOTS",
+  "pallet_id": "PALLET_004",
+  "source": "INSPECT_STATION",
+  "destination": "INSPECT_STATION",
+  "target_slots": ["SLOT_03", "SLOT_07"]
+}
 ```
 
 ## 9. Task Manager 처리 규칙
 
 1. /start_cycle 요청을 수락하면 task_id를 생성하고 PREFLIGHT를 실행한다.
 2. 각 명령을 발행할 때 새로운 command_id를 생성하고 active_command로 저장한다.
-3. 결과의 task_id, command_id, operation이 active_command와 모두 일치할 때만 처리한다.
+3. Sim Task 결과는 JSON object로 파싱·검증한 뒤, 결과의 task_id, command_id, operation이 active_command와 모두 일치할 때만 처리한다.
 4. SUCCEEDED 결과를 수신하면 논리 상태를 갱신하고 다음 단계 명령을 발행한다.
 5. FAILED, CANCELED, TIMEOUT 또는 ID 불일치 결과를 수신하면 다음 단계로 진행하지 않는다.
 6. 단계별 제한시간을 실제 경과 시간 기준으로 감시한다.
@@ -405,4 +478,5 @@ CHECK_PALLET_ON_CONVEYOR → START_CONVEYOR → MONITOR_EXIT → STOP_CONVEYOR �
 9. unknown_slots를 정상으로 처리하지 않는가.
 10. 불량이 없을 때 CULL을 안전하게 생략하는가.
 11. 컨베이어가 출구 도달 후 정지하는가.
-12. 실패·TIMEOUT 후 다음 단계 명령이 발행되지 않는가.
+12. 잘못된 Sim Task JSON이 무시되고 상태나 heartbeat를 갱신하지 않는가.
+13. 실패·TIMEOUT 후 다음 단계 명령이 발행되지 않는가.
