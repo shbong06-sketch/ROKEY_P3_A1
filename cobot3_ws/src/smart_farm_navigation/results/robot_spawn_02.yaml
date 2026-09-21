@@ -1,4 +1,4 @@
-# written by launch_scene.py 2026-09-21 20:31:45
+# written by launch_scene.py 2026-09-21 21:06:41
 scene: /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v008/Collected_smartfarm_v008.usd
 prim: /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS
 x: -0.4210
