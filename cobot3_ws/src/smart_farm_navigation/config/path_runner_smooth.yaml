@@ -3,15 +3,15 @@ path_runner_smooth:
     cmd_vel_topic: /cmd_vel
     odom_topic: /chassis/odom
     auto_start: false                 # path_smooth.launch.py auto_start:=true 로 켠다
-    # ---- Collected_smartfarm_v003.usd (2026-09-20) ----
-    # 로봇(LiftRig) 시작 (-0.22, 0.82), yaw 는 통로 탈출 방향으로 회전됨. 첫 통로 안쪽 폭 1.72 m (x -0.86..0.86), y 0.27..4.51
-    # 컨베이어 북쪽 가장자리 y = -4.55, 검수 M0609 x = -0.67
-    # 경유지(시작 기준 좌표계: X = 시작 시 정면, Y = 왼쪽). 마지막 점이 최종 도착점, 그 앞의 점들은 직선 구간.
-    #   (1.5, 0.0)   통로 남단(y 0.27) 을 차체 길이만큼 지난 탈출점. 여기서부터 곡선
-    #   (4.9, -0.45) INSPECTION_DOCK: 컨베이어 앞 0.3 m (base_link y ≈ -4.1), 검수 M0609 정면(x ≈ -0.67, 시작보다 0.45 m 오른쪽)
-    #   탈출 방향이 북쪽(+y)이면 Y 부호를 뒤집고 X 를 다시 잰다.
-    waypoints_x: [1.5, 4.9]
-    waypoints_y: [0.0, -0.45]
+    # ---- Collected_smartfarm_v004.usd (2026-09-20) ----
+    # Nova chassis 시작 (-0.4, 1.2001), yaw +90도. drive_direction_sign=-1이므로 실제 주행 정면은 world -Y이다.
+    # 경유지 좌표계: X = 실제 주행 정면(world -Y), Y = 실제 주행 기준 왼쪽(world +X).
+    # Conveyor/seg_6 world 좌표는 (2.328, -5.121)이다.
+    # 최종 목표는 Seg_6에서 world +X로 0.3 m, +Y로 1.5 m 떨어진 (2.628, -3.621)이다.
+    #   (1.5, 0.0)     시작점에서 world -Y 방향으로 1.5 m 이동한 탈출점. 여기서부터 곡선
+    #   (4.821, 3.028) Seg_6 앞/+X offset 최종 정차점
+    waypoints_x: [1.5, 4.821]
+    waypoints_y: [0.0, 3.028]
     final_heading_deg: 0.0            # 도착 방향 = 통로 진행 방향
     approach_length_m: 0.8            # 도착점 앞 0.8 m 지점(도착 축 위)에 먼저 도달한 뒤 직진 접근
     lookahead_m: 0.5                  # pure pursuit 전방 주시 거리
