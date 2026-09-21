@@ -1,5 +1,10 @@
 assets/robots/Collected_nova_carter_with_lift/*
 assets/robots/Collected_m0609_with_lift/*
+<<<<<<< HEAD
 scenes/smartfarm_v1/*
 !scenes/smartfarm_v1/smartfarm_v1.usd
 scenes/Collected_smartfarm_v002/*
+=======
+scenes/Collected_smartfarm_v00*/*
+scenes/smartfarm_v1/*
+>>>>>>> 0dfdd7cf11510d986509dfcf4d8de279e7795a66

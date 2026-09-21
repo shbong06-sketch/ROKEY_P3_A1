@@ -1,60 +1,32 @@
 """
-팔레트 집기 → 인양 → 인출 → 놓기 : 월드 좌표 목표를 IK로 풀어 실행
+리프트로 높이 맞추기 → 팔레트 집기 → 인양 → 인출 → 놓기 : 월드 좌표 목표를 IK로 풀어 실행
 
 동작은 두 묶음입니다.
   PICK_STAGES  : 집을 팔레트를 기준으로 한 좌표
   PLACE_STAGES : 놓을 자리를 기준으로 한 좌표
 두 묶음이 같은 오프셋 표를 씁니다. 기준점만 다릅니다.
 
-리프트가 생기면
-  RETRACT(빼기)와 DESCEND(놓을 높이) 사이에 리프트 이동을 넣고,
-  TASKS 의 destination_shelf_top 을 놓을 층으로 적으면 층 간 이동이 됩니다.
-  (아래 build_sequence 의 '리프트 자리' 주석 참고)
-
 수정할 곳
-  TASKS             : 어느 팔레트를 어느 층으로 옮길지 (순서대로 실행)
   치수/여유 값      : 포크나 팔레트가 바뀔 때
   BASE_* 허용 범위  : AMR 도킹 오차를 어디까지 받아 줄지
   JOINT_SPEED_DEG_S : 관절 명령 속도
-
-Play  : 시작 / 일시정지한 위치에서 재개
-Stop  : 다음 Play에서 처음부터 재시작
 
 주의
   - IK는 충돌을 피하지 않습니다. 경로가 랙에 닿는지는 화면으로 확인하세요.
   - 관절 보간은 중간 경로의 완전한 직선을 보장하지 않습니다.
 """
 
-from isaacsim import SimulationApp
-
-app = SimulationApp({"headless": False})
-
-from pathlib import Path
 from typing import NamedTuple, Optional
 
 import numpy as np
-import omni.usd
 from pxr import UsdPhysics
 
-from isaacsim.core.api import World
-from isaacsim.core.prims import SingleRigidPrim
 from isaacsim.core.utils.rotations import quat_to_rot_matrix
 from isaacsim.core.utils.types import ArticulationAction
-from isaacsim.robot.manipulators.manipulators import SingleManipulator
-from isaacsim.robot_motion.motion_generation import LulaKinematicsSolver
 
-
-# ── 파일·로봇 경로 ───────────────────────────────────────
-SCENE_PATH = (
-    Path(__file__).resolve().parent.parent / "scenes/demo_test/demo_test.usd"
-)
-M0609_DIR = Path(__file__).resolve().parent.parent.parent / "M0609"
-URDF_PATH = M0609_DIR / "doosan-robot2/urdf/m0609_isaac_sim.urdf"
-DESCRIPTION_PATH = M0609_DIR / "descriptor/m0609_description.yaml"
-
-ROBOT_PATH = "/World/m0609_with_fork"
 EE_FRAME = "link_6"
 JOINT_NAMES = [f"joint_{i}" for i in range(1, 7)]
+WHEEL_JOINT_NAMES = ["joint_wheel_left", "joint_wheel_right"]
 
 
 # ── 포크 자세와 치수 ─────────────────────────────────────
@@ -64,13 +36,15 @@ JOINT_NAMES = [f"joint_{i}" for i in range(1, 7)]
 FORK_QUAT = np.array([0.5, 0.5, -0.5, -0.5])
 
 # 포크: link_6 원점에서 잰 거리 (충돌 박스 실측값)
-FORK_TINE_TIP = 0.245          # 갈래 끝
-FORK_PLATE_FRONT = 0.025       # 판 앞면
-FORK_TINE_HALF_HEIGHT = 0.006  # 갈래 두께의 절반
+# 주의: fork_tool prim 자체에 scale (1.5, 1, 1.2) 가 걸려 있습니다.
+#       아래 값은 그 배율까지 반영한 '진짜' 치수입니다.
+#       USD 에서 Cube 크기만 보고 적으면 갈래 길이가 49 mm 짧게 나옵니다.
+FORK_TINE_TIP = 0.294          # 갈래 끝        (0.135 + 0.220/2) x 1.2
+FORK_PLATE_FRONT = 0.030       # 판 앞면        (0.0125 + 0.025/2) x 1.2
 
-# 팔레트: prim 원점에서 잰 거리 (깊이 0.30 기준)
+# 팔레트: prim 원점에서 잰 거리 (simple_pallet.usd 깊이 0.30 기준 실측)
 PALLET_FRONT = 0.150           # 앞면(로봇 쪽)
-PALLET_POCKET_CENTER = 0.047   # 포크 틈의 가운데 높이
+PALLET_POCKET_CENTER = 0.040   # 포크 틈의 가운데 높이
 
 
 # ── 여유 값 (동작을 조정할 때 여기를 바꿉니다) ───────────
@@ -78,7 +52,9 @@ PLATE_CLEARANCE = 0.010        # 포크 판과 팔레트 앞면 사이 여유
 APPROACH_GAP = 0.037           # 진입 직전, 갈래 끝과 앞면 사이
 READY_GAP = 0.187              # 대기 위치, 갈래 끝과 앞면 사이
 PALLET_LIFT = 0.060            # 인양 높이
-RETRACT_DISTANCE = 0.418       # 인출 거리 (팔레트 뒷면이 선반 앞 끝을 3cm 넘어섬)
+ENTRY_RISE = 0.150             # 랙 앞에서 뜨는 높이 (HOME 과 작업 높이를 잇는 경유점)
+                               # 더 키우면 높은 층에서 IK 자세가 뒤집힙니다
+RETRACT_DISTANCE = 0.328       # 인출 거리 (팔레트 뒷면이 선반 앞 끝을 3cm 넘어섬)
 
 
 # ── 위 값에서 계산되는 목표 (기준점 기준 좌표) ───────────
@@ -90,6 +66,7 @@ RETRACT_X = DOCK_X + RETRACT_DISTANCE
 
 FORK_Z = PALLET_POCKET_CENTER
 LIFTED_Z = FORK_Z + PALLET_LIFT
+ENTRY_Z = FORK_Z + ENTRY_RISE
 
 # 검사와 연결된 단계 이름은 상수로 둡니다. 오타로 검사가 빠지는 것을 막습니다.
 STAGE_HOME = "HOME"
@@ -97,8 +74,17 @@ STAGE_PALLET_UP = "PALLET_UP"       # 이 단계 끝에서 '인양 확인'
 STAGE_PALLET_DOWN = "PALLET_DOWN"   # 이 단계 끝에서 '안착 확인'
 
 # 집기: 집을 팔레트가 기준
+#
+# ENTRY 가 맨 앞에 있는 이유:
+#   HOME 은 팔을 세운 자세, READY 는 랙 앞 낮은 자세입니다. 둘을 바로 이으면
+#   관절 보간이 큰 호를 그려서 포크가 랙을 쓸고 내려옵니다.
+#   랙 앞 '높은 곳'을 한 번 거치면 그 뒤로는 앞에서 내려오므로 랙에 닿지 않습니다.
+#   경유점의 앞뒤 위치를 RETRACT_X 로 잡은 이유: READY_X 는 팔 베이스에서 30 cm 밖에
+#   안 떨어진 좁은 구역이라 높이를 더하면 IK 가 풀리지 않습니다. RETRACT_X 는
+#   팔레트를 들고 오르내리는 자리라 이 높이대가 이미 검증돼 있습니다.
 PICK_STAGES = [
-    ("READY",          [READY_X,    0.0, FORK_Z]),   # 랙 앞에서 대기
+    ("ENTRY",          [RETRACT_X,  0.0, ENTRY_Z]),  # 랙 앞 위쪽 (HOME 에서 여기로 먼저)
+    ("READY",          [READY_X,    0.0, FORK_Z]),   # 수직으로 내려와 랙 앞에서 대기
     ("APPROACH",       [APPROACH_X, 0.0, FORK_Z]),   # 팔레트 앞까지 접근
     ("DOCK",           [DOCK_X,     0.0, FORK_Z]),   # 판이 앞면에 닿기 직전까지 삽입
     (STAGE_PALLET_UP,  [DOCK_X,     0.0, LIFTED_Z]), # 인양
@@ -111,46 +97,36 @@ PLACE_STAGES = [
     ("PLACE_IN",         [DOCK_X,    0.0, LIFTED_Z]), # 선반 안으로 삽입
     (STAGE_PALLET_DOWN,  [DOCK_X,    0.0, FORK_Z]),   # 내려서 선반에 안착
     ("FORK_OUT",         [RETRACT_X, 0.0, FORK_Z]),   # 빈 포크만 빼기
+    ("EXIT",             [RETRACT_X, 0.0, ENTRY_Z]),  # 수직으로 올라간 뒤 HOME 으로 (들어올 때의 반대)
 ]
-
-# ── 작업 목록 ────────────────────────────────────────────
-# 위에서부터 순서대로 실행합니다. 한 작업이 끝나면 다음 작업의 계획을 새로 만듭니다.
-#   pallet_path           : 집을 팔레트 prim
-#   destination_shelf_top : 놓을 선반 윗면 높이. None 이면 집은 자리와 같은 층
-#     0.713 = 1단, 1.013 = 2단, 1.313 = 3단, 1.613 = 4단
-#
-# 지금은 리프트가 없어 베이스 높이가 고정입니다. 베이스 z=0.80 에서는
-# 1단과 2단 작업 구간이 겹치므로 '2단 → 1단' 까지만 가능합니다.
-# 닿지 않는 작업을 적으면 계획 단계에서 이유를 말하고 멈춥니다.
-SHELF_TOP = {1: 0.713, 2: 1.013, 3: 1.313, 4: 1.613, 5: 1.913}
-
 
 class Task(NamedTuple):
     pallet_path: str
     destination_shelf_top: Optional[float]
 
 
-TASKS = [
-    Task("/World/simple_pallet1", SHELF_TOP[1]),    # 2단 팔레트 → 1단
-]
-
 MAX_SEGMENT_M = 0.06           # 이보다 긴 구간은 잘라서 간다
 
 # 시작할 때 먼저 지나가는 고정 자세. 매번 같은 곳에서 출발하게 합니다.
-# joint_1 만 180도 = 팔을 세운 채 랙 쪽을 보게 돌린 자세라, 장면 시작 자세에서
-# 안전하게 갈 수 있고 첫 목표까지의 관절 변화도 작습니다.
+# joint_1 만 180도 = 팔을 세운 채 랙 쪽(월드 -x)을 보게 돌린 자세라, 장면 시작
+# 자세에서 안전하게 갈 수 있고 첫 목표까지의 관절 변화도 작습니다.
+# 팔 베이스가 돌아가 있으면 home_joints_deg() 가 그만큼 빼 줍니다.
+# joint_2 는 0 으로 둡니다. 기울이면 팔이 '마스트 쪽'으로 눕습니다.
+#   joint_2 = -20 일 때 손목과 마스트 사이 1 mm (실측) — 사실상 파고듭니다
+#   joint_2 =   0 일 때 마스트 64 mm / 랙 68 mm 여유
+# 이 리그는 자기충돌이 꺼져 있어 겹쳐도 시뮬레이터가 알려주지 않습니다. 눈으로 보거나
+# 따로 계산해야 하므로, 여유가 넉넉한 값을 씁니다.
 HOME_JOINTS_DEG = [180.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 
 # ── 시간·검사 기준 ───────────────────────────────────────
-PHYSICS_DT = 1.0 / 60.0
-JOINT_SPEED_DEG_S = 8.0
-MIN_MOVE_SECONDS = 1.0
+JOINT_SPEED_DEG_S = 20.0       # 관절 명령 속도. 올리면 추종 오차가 커집니다
+MIN_MOVE_SECONDS = 0.5         # 짧은 구간도 최소 이만큼은 씁니다
 START_WAIT_SECONDS = 2.0
 
 JOINT_REACHED_TOL_DEG = 1.0
 JOINT_TRACKING_LIMIT_DEG = 8.0
-HOLD_SECONDS = 0.5
+HOLD_SECONDS = 0.3             # 목표에 닿은 뒤 이만큼 머물러야 '도달'로 봅니다
 REACH_TIMEOUT_SECONDS = 5.0
 
 IK_POSITION_TOL = 0.002        # m,   IK 결과와 목표의 거리
@@ -166,12 +142,21 @@ PALLET_STAY_TOL = 0.020        # 포크를 뺄 때 팔레트가 따라 나오면
 LOG_INTERVAL_SECONDS = 1.0
 
 # ── AMR 도킹 허용 범위 ───────────────────────────────────
-# 베이스가 이 범위 안에 '멈춰' 있어야 계획을 만듭니다.
-# 범위 안이어도 팔이 닿지 않으면 IK 검사에서 다시 걸러집니다.
-BASE_X_WINDOW = (-0.70, -0.55)      # m,   앞뒤 (작을수록 랙에 가까움)
-BASE_Y_WINDOW = (-0.15, 0.15)       # m,   좌우
-BASE_YAW_LIMIT_DEG = 15.0           # deg, 틀어짐
-BASE_HEIGHT_BAND = (-0.31, 0.24)    # m,   '놓을 선반 윗면' 대비 베이스 높이
+# 여기는 '누가 봐도 잘못 선 경우'를 거르는 안전선입니다.
+# 실제로 팔이 닿는지는 그 뒤 IK 가 판단합니다 (범위 안이어도 IK 가 거부할 수 있음).
+#
+# 기준을 월드 좌표가 아니라 '집을 팔레트'로 잡습니다.
+# 그래야 AMR 이 어느 랙 앞에 서든 같은 값으로 검사할 수 있습니다.
+# 검증된 자리는 팔레트 원점에서 앞으로 0.932 m, 옆으로 +0.018 m 입니다.
+BASE_TO_PALLET_X = (0.89, 1.05)     # m,   앞뒤 (작을수록 팔레트에 가까움)
+BASE_TO_PALLET_Y = (-0.21, 0.34)    # m,   좌우 어긋남
+BASE_YAW_LIMIT_DEG = 25.0           # deg, 기준 방향에서 얼마나 틀어져도 되는가
+CHASSIS_FACING_DEG = 90.0           # deg, 차체가 랙을 향하는 기준 방향
+                                    #   0  = 앞면이 랙을 봄
+                                    #   90 = 옆면이 랙을 봄 (v004 배치)
+                                    # 팔 베이스가 아니라 '차체' 기준입니다. 팔 베이스는
+                                    # 리그에 비스듬히 붙어 있을 수 있어 각도 판단에 못 씁니다.
+BASE_HEIGHT_BAND = (-0.50, 0.15)    # m,   '집을 팔레트가 있는 선반 윗면' 대비 베이스 높이
 
 BASE_STILL_TOL = 0.002              # m,   이보다 적게 움직이면 정지로 봅니다
 BASE_STILL_SECONDS = 0.5            # 이만큼 계속 멈춰 있어야 시작합니다
@@ -181,6 +166,9 @@ BASE_WAIT_NOTICE_SECONDS = 3.0      # 대기 중 안내를 찍는 주기
 DRIVE_STIFFNESS = 1e8
 DRIVE_DAMPING = 1e4
 DRIVE_MAX_FORCE = 1e8
+
+# 카터 바퀴를 지금 각도에 붙잡는 강성 (주차 브레이크).
+WHEEL_BRAKE_STIFFNESS = 1e5
 
 
 # ── 로봇 읽기·쓰기 ───────────────────────────────────────
@@ -203,11 +191,11 @@ def command_joints_deg(robot, indices, target_deg):
     )
 
 
-def setup_arm_drives(stage):
+def setup_arm_drives(stage, arm_path):
     """팔 관절의 Drive를 강화합니다. 메모리 안의 장면만 바뀌고 USD 파일은 그대로입니다."""
     for name in JOINT_NAMES:
         drive = UsdPhysics.DriveAPI.Get(
-            stage.GetPrimAtPath(f"{ROBOT_PATH}/joints/{name}"), "angular"
+            stage.GetPrimAtPath(f"{arm_path}/joints/{name}"), "angular"
         )
         drive.GetStiffnessAttr().Set(DRIVE_STIFFNESS)
         drive.GetDampingAttr().Set(DRIVE_DAMPING)
@@ -215,12 +203,30 @@ def setup_arm_drives(stage):
     print(f"[Drive] {len(JOINT_NAMES)}개 강화")
 
 
-def joint_limits_deg(stage):
+def brake_wheels(stage, rig_path):
+    """
+    카터 바퀴를 지금 각도에 붙잡습니다 (주차 브레이크).
+
+    팔이 팔레트를 밀고 당기면 카터가 굴러가고, 그러면 IK 의 기준점이 흔들립니다.
+    이 스크립트는 주행을 하지 않으므로 시작 각도(0)에 그대로 묶어 둡니다.
+    주행까지 하는 스크립트에서는 팀원의 rig_mode.py 로 주행/작업을 전환하세요.
+    """
+    for name in WHEEL_JOINT_NAMES:
+        drive = UsdPhysics.DriveAPI.Get(
+            stage.GetPrimAtPath(f"{rig_path}/{name}"), "angular"
+        )
+        drive.GetStiffnessAttr().Set(WHEEL_BRAKE_STIFFNESS)
+        drive.GetTargetPositionAttr().Set(0.0)
+        drive.GetTargetVelocityAttr().Set(0.0)
+    print(f"[브레이크] 카터 바퀴 {len(WHEEL_JOINT_NAMES)}개 고정")
+
+
+def joint_limits_deg(stage, arm_path):
     """USD에 적힌 관절 한계를 degree로 읽습니다."""
     lower, upper = [], []
     for name in JOINT_NAMES:
         joint = UsdPhysics.RevoluteJoint(
-            stage.GetPrimAtPath(f"{ROBOT_PATH}/joints/{name}")
+            stage.GetPrimAtPath(f"{arm_path}/joints/{name}")
         )
         if not joint:
             raise RuntimeError(f"USD 관절을 찾지 못했습니다: {name}")
@@ -230,17 +236,46 @@ def joint_limits_deg(stage):
 
 
 # ── AMR 베이스 확인 ─────────────────────────────────────
+def tine_tip_position(robot):
+    """포크 갈래 끝의 월드 좌표. 손목에서 포크가 뻗는 방향으로 FORK_TINE_TIP 만큼."""
+    position, quaternion = robot.end_effector.get_world_pose()
+    forward = quat_to_rot_matrix(quaternion) @ np.array([0.0, 0.0, FORK_TINE_TIP])
+    return np.array(position, dtype=float) + forward
+
+
 def yaw_deg(quaternion):
     """베이스가 z축으로 몇 도 돌아가 있는지 (w, x, y, z)"""
     rotation = quat_to_rot_matrix(quaternion)
     return float(np.degrees(np.arctan2(rotation[1, 0], rotation[0, 0])))
 
 
+def wrap_deg(angle):
+    """각도를 -180 ~ +180 으로 접습니다."""
+    return (angle + 180.0) % 360.0 - 180.0
+
+
+def home_joints_deg(base_quaternion):
+    """
+    지금 팔 베이스가 향한 방향에 맞춘 HOME 관절값.
+
+    joint_1 은 베이스 좌표계 기준이라, 베이스가 돌아간 만큼 빼 줘야
+    팔이 늘 같은 세계 방향(랙 쪽)을 봅니다.
+
+    빼고 나서 -180~180 으로 접습니다. 접지 않으면 베이스가 180도 돌아 선 배치에서
+    joint_1 이 360도가 되어 한계(±360)에 붙어 버립니다. 접어도 문제없는 이유는
+    solve_plan 이 IK 결과를 '앞 자세에 가장 가까운 표현'으로 맞춰 주기 때문입니다.
+    """
+    joints = np.array(HOME_JOINTS_DEG, dtype=float)
+    joints[0] = wrap_deg(joints[0] - yaw_deg(base_quaternion))
+    return joints
+
+
 class BaseWatcher:
     """
-    AMR 이 실제로 멈췄는지 직접 재서 확인합니다.
+    팔 베이스가 실제로 멈췄는지 직접 재서 확인합니다.
 
-    상위에서 '도착했다' 고 알려 주는 것과, 차체가 실제로 정지한 것은 다릅니다.
+    상위에서 '도착했다' 고 알려 주는 것과, 실제로 정지한 것은 다릅니다.
+    카터 주행뿐 아니라 리프트 승강이 끝났는지도 이 한 군데서 같이 걸러집니다.
     매 물리 스텝마다 update 를 부르고, settled 가 True 가 되면 계획을 만듭니다.
     """
 
@@ -253,8 +288,8 @@ class BaseWatcher:
         self.waited_seconds = 0.0
         self.notice_seconds = 0.0
 
-    def update(self, robot, dt):
-        position = np.array(robot.get_world_pose()[0], dtype=float)
+    def update(self, arm_base, dt):
+        position = np.array(arm_base.get_world_pose()[0], dtype=float)
         moved = (
             self.last_position is None
             or float(np.linalg.norm(position - self.last_position)) > BASE_STILL_TOL
@@ -266,49 +301,66 @@ class BaseWatcher:
         self.notice_seconds += dt
         if self.notice_seconds >= BASE_WAIT_NOTICE_SECONDS:
             self.notice_seconds = 0.0
-            print(f"[대기] AMR 정지를 기다리는 중 ({self.waited_seconds:.1f}초)")
+            print(f"[대기] 팔 베이스 정지를 기다리는 중 ({self.waited_seconds:.1f}초)")
 
     @property
     def settled(self):
         return self.still_seconds >= BASE_STILL_SECONDS
 
 
-def check_base_pose(base_position, base_quaternion, destination_shelf_top):
-    """
-    도킹 위치가 허용 범위 안인지 확인합니다.
+def base_offset_from_pallet(base_position, pallet_position, pallet_quaternion):
+    """팔레트 좌표계에서 본 팔 베이스 위치. (앞뒤, 좌우, 위아래)"""
+    rotation = quat_to_rot_matrix(pallet_quaternion)
+    return rotation.T @ (np.array(base_position, float) - np.array(pallet_position, float))
 
-    범위를 벗어나면 계획을 만들지 않고, 무엇이 얼마나 벗어났는지 알려 줍니다.
-    """
-    x, y, z = (float(v) for v in base_position)
-    yaw = yaw_deg(base_quaternion)
 
-    if not BASE_X_WINDOW[0] <= x <= BASE_X_WINDOW[1]:
+def check_base_pose(arm_position, chassis_quaternion, pallet_position, pallet_quaternion):
+    """
+    도킹 위치가 안전선 안인지 확인합니다.
+
+    기준은 '집을 팔레트'입니다. 어느 랙 앞이든 같은 값으로 검사됩니다.
+    위치는 '팔 베이스'로, 각도는 '차체'로 봅니다.
+      - 팔이 닿는지는 팔 베이스가 팔레트에서 얼마나 떨어져 있느냐로 정해집니다.
+      - 팔 베이스는 리그에 비스듬히 붙어 있을 수 있어(에셋 값) 각도 판단에 쓰면
+        안 됩니다. AMR 이 삐뚤게 섰는지는 차체 방향으로 봐야 합니다.
+        (팔 베이스가 돌아간 건 home_joints_deg() 가 알아서 보정합니다)
+
+    여기를 통과했다고 작업이 가능한 것은 아닙니다. 실제 도달 여부는 IK 가 봅니다.
+    벗어나면 무엇이 얼마나 벗어났는지 알려 주고 계획을 만들지 않습니다.
+    """
+    forward, sideways, _ = base_offset_from_pallet(
+        arm_position, pallet_position, pallet_quaternion
+    )
+    yaw = wrap_deg(yaw_deg(chassis_quaternion) - yaw_deg(pallet_quaternion)
+                   - CHASSIS_FACING_DEG)
+    height = float(arm_position[2]) - float(pallet_position[2])   # 팔레트 원점 = 선반 윗면
+
+    if not BASE_TO_PALLET_X[0] <= forward <= BASE_TO_PALLET_X[1]:
         raise RuntimeError(
-            f"도킹 앞뒤 위치가 범위 밖입니다: x={x:.3f} "
-            f"(허용 {BASE_X_WINDOW[0]} ~ {BASE_X_WINDOW[1]}). 다시 도킹하세요."
+            f"팔레트와의 앞뒤 거리가 범위 밖입니다: {forward:.3f} m "
+            f"(허용 {BASE_TO_PALLET_X[0]} ~ {BASE_TO_PALLET_X[1]}). 다시 도킹하세요."
         )
-    if not BASE_Y_WINDOW[0] <= y <= BASE_Y_WINDOW[1]:
+    if not BASE_TO_PALLET_Y[0] <= sideways <= BASE_TO_PALLET_Y[1]:
         raise RuntimeError(
-            f"도킹 좌우 위치가 범위 밖입니다: y={y:.3f} "
-            f"(허용 {BASE_Y_WINDOW[0]} ~ {BASE_Y_WINDOW[1]}). 다시 도킹하세요."
+            f"팔레트와의 좌우 어긋남이 범위 밖입니다: {sideways:+.3f} m "
+            f"(허용 {BASE_TO_PALLET_Y[0]} ~ {BASE_TO_PALLET_Y[1]}). 다시 도킹하세요."
         )
     if abs(yaw) > BASE_YAW_LIMIT_DEG:
         raise RuntimeError(
-            f"도킹 각도가 범위 밖입니다: {yaw:.1f}° "
+            f"차체가 팔레트를 정면으로 보고 있지 않습니다: {yaw:+.1f}° "
             f"(허용 ±{BASE_YAW_LIMIT_DEG}°). 다시 도킹하세요."
         )
+    if not BASE_HEIGHT_BAND[0] <= height <= BASE_HEIGHT_BAND[1]:
+        raise RuntimeError(
+            f"베이스 높이가 집을 선반과 맞지 않습니다: 선반 윗면 대비 {height:+.3f} m "
+            f"(허용 {BASE_HEIGHT_BAND[0]:+.2f} ~ {BASE_HEIGHT_BAND[1]:+.2f}). "
+            "리프트 높이를 조정하세요."
+        )
 
-    if destination_shelf_top is not None:
-        relative = z - destination_shelf_top
-        if not BASE_HEIGHT_BAND[0] <= relative <= BASE_HEIGHT_BAND[1]:
-            raise RuntimeError(
-                f"베이스 높이가 놓을 선반과 맞지 않습니다: z={z:.3f}, "
-                f"선반 윗면 {destination_shelf_top:.3f} 대비 {relative:+.3f} m "
-                f"(허용 {BASE_HEIGHT_BAND[0]:+.2f} ~ {BASE_HEIGHT_BAND[1]:+.2f}). "
-                "리프트 높이를 조정하세요."
-            )
-
-    print(f"[도킹 확인] x={x:.3f} y={y:.3f} z={z:.3f} yaw={yaw:.1f}° — 범위 안")
+    print(
+        f"[도킹 확인] 팔레트 기준 앞뒤 {forward:.3f} m, 좌우 {sideways:+.3f} m, "
+        f"높이 {height:+.3f} m, 차체 틀어짐 {yaw:+.1f}° — 범위 안"
+    )
 
 
 # ── 계획의 한 줄 ────────────────────────────────────────
@@ -342,29 +394,30 @@ def check_stage_tables():
 
 
 # ── 계획 만들기 ──────────────────────────────────────────
-def stage_points(pallet, destination_shelf_top):
-    """
-    집기 좌표와 놓기 좌표를 월드 좌표로 바꿉니다.
-
-    집기는 '지금 팔레트가 있는 자리', 놓기는 '놓을 자리'가 기준입니다.
-    같은 층에 놓으면 두 기준이 같습니다.
-    """
-    position, quaternion = pallet.get_world_pose()
+def _transform_stage_points(origin, quaternion, stages):
+    """기준점 상대 단계 좌표를 월드 좌표로 바꿉니다."""
     rotation = quat_to_rot_matrix(quaternion)
+    origin = np.array(origin, dtype=float)
+    return [
+        (name, origin + rotation @ np.array(offset, dtype=float))
+        for name, offset in stages
+    ]
 
-    pick_origin = np.array(position, dtype=float)
-    place_origin = pick_origin.copy()
+
+def pick_stage_points(pallet_position, pallet_quaternion):
+    """집을 당시 팔레트 pose를 기준으로 Pick 단계 좌표를 만듭니다."""
+    return _transform_stage_points(pallet_position, pallet_quaternion, PICK_STAGES)
+
+
+def place_stage_points(pallet_position, pallet_quaternion, destination_shelf_top):
+    """집을 당시 팔레트 pose와 놓을 높이로 Place 단계 좌표를 만듭니다."""
+    place_origin = np.array(pallet_position, dtype=float).copy()
     if destination_shelf_top is not None:
         place_origin[2] = destination_shelf_top     # 팔레트 원점 높이 = 선반 윗면
-
-    points = []
-    for origin, stages in ((pick_origin, PICK_STAGES), (place_origin, PLACE_STAGES)):
-        for name, offset in stages:
-            points.append((name, origin + rotation @ np.array(offset, dtype=float)))
-    return points
+    return _transform_stage_points(place_origin, pallet_quaternion, PLACE_STAGES)
 
 
-def split_segments(points):
+def split_segments(points, start_point=None):
     """
     긴 구간을 MAX_SEGMENT_M 이하로 자릅니다.
 
@@ -372,29 +425,37 @@ def split_segments(points):
     인양·안착 확인은 마지막 조각에서만 합니다.
     관절값은 아직 모르므로 빈 배열로 두고, solve_plan 이 채웁니다.
     """
-    first_stage, first_point = points[0]
     empty = np.zeros(len(JOINT_NAMES))
-    result = [Step(first_stage, first_stage, first_point, empty, True)]
+    result = []
+    previous = None if start_point is None else np.array(start_point, dtype=float)
 
-    for (stage, goal), (_, start) in zip(points[1:], points[:-1]):
+    for stage, goal in points:
+        if previous is None:
+            result.append(Step(stage, stage, goal, empty, True))
+            previous = goal
+            continue
+
+        start = previous
         count = max(1, int(np.ceil(np.linalg.norm(goal - start) / MAX_SEGMENT_M)))
         for k in range(1, count + 1):
             name = stage if count == 1 else f"{stage}_{k}"
             point = start + (goal - start) * k / count
             result.append(Step(stage, name, point, empty, k == count))
+        previous = goal
     return result
 
 
-def solve_plan(solver, robot, segments, lower_deg, upper_deg):
+def solve_plan(solver, segments, lower_deg, upper_deg, start_joints_deg,
+               first_move_limit_deg=FIRST_MOVE_LIMIT_DEG):
     """
     각 목표 좌표를 IK로 풀어 관절값 표를 만듭니다.
 
     바로 앞 단계의 해를 다음 계산의 출발점(warm start)으로 넘겨서,
     팔이 갑자기 다른 자세로 뒤집히지 않게 합니다.
-    첫 목표는 HOME 자세를 기준으로 계산하고, 변화량도 HOME과 비교합니다.
+    첫 작업은 HOME, 후속 작업은 현재 관절 자세를 기준으로 계산·검사합니다.
     """
     want_rotation = quat_to_rot_matrix(FORK_QUAT)
-    warm = np.deg2rad(HOME_JOINTS_DEG)
+    warm = np.deg2rad(start_joints_deg)
     plan = []
 
     for index, segment in enumerate(segments):
@@ -403,7 +464,10 @@ def solve_plan(solver, robot, segments, lower_deg, upper_deg):
             EE_FRAME, target, FORK_QUAT, warm
         )
         if not solved:
-            raise RuntimeError(f"{name}: IK 실패. 목표 {np.round(target, 3)}에 닿지 않습니다.")
+            raise RuntimeError(
+                f"{name}: 지금 도킹 위치에서는 목표 {np.round(target, 3)} 에 닿지 않습니다. "
+                "AMR 위치나 리프트 높이를 조정해 다시 시도하세요."
+            )
 
         reached, rotation = solver.compute_forward_kinematics(EE_FRAME, joints)
         position_error = float(np.linalg.norm(reached - target))
@@ -416,13 +480,22 @@ def solve_plan(solver, robot, segments, lower_deg, upper_deg):
                 f"자세 {angle_error:.1f}°)."
             )
 
-        joints_deg = np.rad2deg(joints)
-        if np.any(joints_deg < lower_deg) or np.any(joints_deg > upper_deg):
-            raise RuntimeError(f"{name}: 관절 한계를 벗어났습니다.")
+        # 첫 목표는 시작 자세에서 오는 이동이라 변화량 기준을 따로 둡니다.
+        previous = start_joints_deg if index == 0 else plan[-1].joints
 
-        # 첫 목표는 HOME에서 오는 큰 이동이라 기준을 따로 둡니다.
-        previous = np.array(HOME_JOINTS_DEG) if index == 0 else plan[-1].joints
-        limit = FIRST_MOVE_LIMIT_DEG if index == 0 else IK_JUMP_LIMIT_DEG
+        # IK 는 같은 자세를 +360 / -360 도 다르게 표현해 돌려주기도 합니다.
+        # 그대로 두면 실제로는 제자리인데 '360도 휘두른다'고 읽히고, 보간도 한 바퀴
+        # 돌아갑니다. 앞 자세에서 가장 가까운 표현으로 맞춰 둡니다.
+        joints_deg = previous + wrap_deg(np.rad2deg(joints) - previous)
+
+        over = np.where((joints_deg < lower_deg) | (joints_deg > upper_deg))[0]
+        if len(over):
+            detail = ", ".join(
+                f"{JOINT_NAMES[i]} {joints_deg[i]:+.1f}° "
+                f"(한계 {lower_deg[i]:+.0f} ~ {upper_deg[i]:+.0f})" for i in over
+            )
+            raise RuntimeError(f"{name}: 관절 한계를 벗어났습니다 — {detail}")
+        limit = first_move_limit_deg if index == 0 else IK_JUMP_LIMIT_DEG
         jump = float(np.max(np.abs(joints_deg - previous)))
         if jump > limit:
             raise RuntimeError(
@@ -445,33 +518,16 @@ def print_plan(plan):
 
 
 # ── 실행 ────────────────────────────────────────────────
-class JointSequence:
-    """
-    계획된 관절값을 한 단계씩 실행하고, 팔레트 상태를 실제로 확인합니다.
+class _PalletTracker:
+    """Pick과 Place 사이에 팔레트 pose와 안전검사 기준을 유지합니다."""
 
-    팔레트 상태는 세 시기로 나뉩니다.
-      BEFORE_LIFT : 아직 들기 전. 팔레트가 움직이면 밀고 있는 것 → 중단
-      CARRYING    : 들고 있는 중. 손목 기준 상대 위치가 변하면 미끄러진 것 → 중단
-      PLACED      : 내려놓은 뒤. 포크를 뺄 때 팔레트가 따라오면 → 중단
-    """
-
-    def __init__(self, robot, pallet, indices, plan):
+    def __init__(self, robot, pallet):
         self.robot = robot
         self.pallet = pallet
-        self.indices = indices
-        self.plan = plan
-
-        self.index = -1
-        self.stage = "WAIT"
-        self.name = "WAIT"
-        self.last = True
-        self.elapsed = 0.0
-        self.reached_seconds = 0.0
-        self.done = False
-
-        self.start = read_joints_deg(robot, indices)
-        self.goal = self.start.copy()
-        self.duration = START_WAIT_SECONDS
+        position, quaternion = pallet.get_world_pose()
+        self.pick_position = np.array(position, dtype=float)
+        self.pick_quaternion = np.array(quaternion, dtype=float)
+        self.pick_end_target = None
 
         self.phase = "BEFORE_LIFT"
         self.pallet_start = None      # 시작 위치 (밀림 확인용)
@@ -488,37 +544,18 @@ class JointSequence:
         position, quaternion = self.robot.end_effector.get_world_pose()
         return quat_to_rot_matrix(quaternion).T @ (self.pallet_position() - position)
 
-    # ── 단계 진행 ───────────────────────────────────
-    def begin_next_stage(self):
-        self.index += 1
-        self.elapsed = 0.0
-        self.reached_seconds = 0.0
+    def begin_wait(self):
+        if self.pallet_start is None:
+            self.pallet_start = self.pallet_position()
 
-        if self.index == len(self.plan):
-            self.stage = self.name = "DONE"
-            self.done = True
-            print("[DONE] 집기·인양·인출·놓기까지 확인했습니다.")
-            return
-
-        step = self.plan[self.index]
-        self.stage, self.name, self.last = step.stage, step.name, step.last
-        self.start = read_joints_deg(self.robot, self.indices)
-        self.goal = np.asarray(step.joints, dtype=float)
-
-        largest_move = float(np.max(np.abs(self.goal - self.start)))
-        self.duration = max(MIN_MOVE_SECONDS, largest_move / JOINT_SPEED_DEG_S)
-
-        # 인양·안착 확인에 쓸 기준 높이는 그 단계의 '첫' 조각에서 한 번만 기록합니다.
-        if self.stage == STAGE_PALLET_UP and self.lift_start_z is None:
+    def begin_stage(self, stage):
+        if stage == STAGE_PALLET_UP and self.lift_start_z is None:
             self.lift_start_z = self.pallet_position()[2]
-        if self.stage == STAGE_PALLET_DOWN and self.carry_z is None:
+        if stage == STAGE_PALLET_DOWN and self.carry_z is None:
             self.carry_z = self.pallet_position()[2]
 
-        print(f"[{self.name}] 보간 시간 {self.duration:.1f}초")
-
-    def confirm_stage_end(self):
-        """단계가 끝난 순간에만 하는 확인 (인양 성공, 안착 성공)"""
-        if self.stage == STAGE_PALLET_UP and self.last:
+    def confirm_stage_end(self, stage, last):
+        if stage == STAGE_PALLET_UP and last:
             rise = self.pallet_position()[2] - self.lift_start_z
             if rise < MIN_PALLET_RISE:
                 raise RuntimeError(f"인양 실패: 실제 상승량 {rise * 1000:.1f} mm")
@@ -526,7 +563,7 @@ class JointSequence:
             self.phase = "CARRYING"
             print(f"[인양 확인] 실제 상승량 {rise * 1000:.1f} mm")
 
-        if self.stage == STAGE_PALLET_DOWN and self.last:
+        if stage == STAGE_PALLET_DOWN and last:
             drop = self.carry_z - self.pallet_position()[2]
             if drop < MIN_PALLET_DROP:
                 raise RuntimeError(
@@ -537,31 +574,108 @@ class JointSequence:
             self.phase = "PLACED"
             print(f"[안착 확인] 실제 하강량 {drop * 1000:.1f} mm")
 
-    # ── 팔레트 상태 확인 ────────────────────────────
-    def check_pallet(self):
+    def check(self, stage, name):
         if self.pallet_start is None:
             return
 
         if self.phase == "CARRYING":
+            # PALLET_DOWN 은 일부러 내려놓는 단계입니다. 팔레트가 선반에 닿은 뒤에도
+            # 포크는 포켓 안에서 더 내려가므로, 손목 기준 위치가 바뀌는 게 정상입니다.
+            if stage == STAGE_PALLET_DOWN:
+                return
             slip = float(np.linalg.norm(self.relative_position() - self.support_offset))
             if slip > PALLET_SLIP_TOL:
                 raise RuntimeError(
-                    f"{self.name}: 운반 중 팔레트가 {slip * 1000:.1f} mm 미끄러졌습니다."
+                    f"{name}: 운반 중 팔레트가 {slip * 1000:.1f} mm 미끄러졌습니다."
                 )
 
         elif self.phase == "PLACED":
             moved = float(np.linalg.norm(self.pallet_position() - self.placed_position))
             if moved > PALLET_STAY_TOL:
                 raise RuntimeError(
-                    f"{self.name}: 포크를 빼는 중 팔레트가 {moved * 1000:.1f} mm 따라왔습니다."
+                    f"{name}: 포크를 빼는 중 팔레트가 {moved * 1000:.1f} mm 따라왔습니다."
                 )
 
-        elif self.stage != STAGE_PALLET_UP:      # 아직 들기 전
+        elif stage != STAGE_PALLET_UP:      # 아직 들기 전
             moved = float(np.linalg.norm(self.pallet_position() - self.pallet_start))
             if moved > PALLET_PUSH_TOL:
                 raise RuntimeError(
-                    f"{self.name}: 인양 전 팔레트가 {moved * 1000:.1f} mm 움직였습니다."
+                    f"{name}: 인양 전 팔레트가 {moved * 1000:.1f} mm 움직였습니다."
                 )
+
+
+class JointSequence:
+    """
+    계획된 관절값을 한 단계씩 실행하고, 팔레트 상태를 실제로 확인합니다.
+
+    팔레트 상태는 세 시기로 나뉩니다.
+      BEFORE_LIFT : 아직 들기 전. 팔레트가 움직이면 밀고 있는 것 → 중단
+      CARRYING    : 들고 있는 중. 손목 기준 상대 위치가 변하면 미끄러진 것 → 중단
+      PLACED      : 내려놓은 뒤. 포크를 뺄 때 팔레트가 따라오면 → 중단
+    """
+
+    def __init__(self, robot, indices, plan, pallet_tracker=None,
+                 done_message="[DONE] 동작을 확인했습니다.",
+                 start_wait_seconds=START_WAIT_SECONDS):
+        self.robot = robot
+        self.indices = indices
+        self.plan = plan
+        self.pallet_tracker = pallet_tracker
+        self.done_message = done_message
+
+        self.index = -1
+        self.stage = "WAIT"
+        self.name = "WAIT"
+        self.last = True
+        self.elapsed = 0.0
+        self.reached_seconds = 0.0
+        self.done = False
+
+        self.start = read_joints_deg(robot, indices)
+        self.goal = self.start.copy()
+        self.duration = start_wait_seconds
+        if start_wait_seconds <= 0.0:
+            if self.pallet_tracker is not None:
+                self.pallet_tracker.begin_wait()
+            self.begin_next_stage()
+
+    def pallet_position(self):
+        return None if self.pallet_tracker is None else self.pallet_tracker.pallet_position()
+
+    # ── 단계 진행 ───────────────────────────────────
+    def begin_next_stage(self):
+        self.index += 1
+        self.elapsed = 0.0
+        self.reached_seconds = 0.0
+
+        if self.index == len(self.plan):
+            self.stage = self.name = "DONE"
+            self.done = True
+            print(self.done_message)
+            return
+
+        step = self.plan[self.index]
+        self.stage, self.name, self.last = step.stage, step.name, step.last
+        self.start = read_joints_deg(self.robot, self.indices)
+        self.goal = np.asarray(step.joints, dtype=float)
+
+        largest_move = float(np.max(np.abs(self.goal - self.start)))
+        self.duration = max(MIN_MOVE_SECONDS, largest_move / JOINT_SPEED_DEG_S)
+
+        if self.pallet_tracker is not None:
+            self.pallet_tracker.begin_stage(self.stage)
+
+        print(f"[{self.name}] 보간 시간 {self.duration:.1f}초")
+
+    def confirm_stage_end(self):
+        """단계가 끝난 순간에만 하는 확인 (인양 성공, 안착 성공)"""
+        if self.pallet_tracker is not None:
+            self.pallet_tracker.confirm_stage_end(self.stage, self.last)
+
+    # ── 팔레트 상태 확인 ────────────────────────────
+    def check_pallet(self):
+        if self.pallet_tracker is not None:
+            self.pallet_tracker.check(self.stage, self.name)
 
     # ── 매 물리 스텝 ────────────────────────────────
     def update(self, dt):
@@ -574,8 +688,9 @@ class JointSequence:
         if self.name == "WAIT":
             command_joints_deg(self.robot, self.indices, self.goal)
             self.elapsed += dt
-            if self.elapsed >= START_WAIT_SECONDS:
-                self.pallet_start = self.pallet_position()
+            if self.elapsed >= self.duration:
+                if self.pallet_tracker is not None:
+                    self.pallet_tracker.begin_wait()
                 self.begin_next_stage()
             return
 
@@ -611,171 +726,259 @@ class JointSequence:
             )
 
 
-def build_sequence(solver, robot, pallet, indices, lower_deg, upper_deg, task):
-    """지금 서 있는 자리와 팔레트 위치로 이 작업의 계획을 만듭니다."""
-    base_position, base_quaternion = robot.get_world_pose()
-    check_base_pose(base_position, base_quaternion, task.destination_shelf_top)
-
-    solver.set_robot_base_pose(
-        robot_position=base_position,
-        robot_orientation=base_quaternion,
+def build_sequence(solver, robot, indices, lower_deg, upper_deg, points,
+                   start_joints_deg, pallet_tracker=None, start_point=None,
+                   home_joints=None, first_move_limit_deg=FIRST_MOVE_LIMIT_DEG,
+                   done_message="[DONE] 동작을 확인했습니다.",
+                   start_wait_seconds=START_WAIT_SECONDS):
+    """주어진 Pick 또는 Place 좌표를 기존 IK와 JointSequence로 만듭니다."""
+    segments = split_segments(points, start_point=start_point)
+    plan = solve_plan(
+        solver,
+        segments,
+        lower_deg,
+        upper_deg,
+        start_joints_deg,
+        first_move_limit_deg=first_move_limit_deg,
     )
-    destination = (
-        "같은 층"
-        if task.destination_shelf_top is None
-        else f"선반 윗면 {task.destination_shelf_top}"
-    )
-    print(f"[작업] {task.pallet_path} → {destination}")
-    print(f"[팔레트] {np.round(pallet.get_world_pose()[0], 3).tolist()}")
-
-    # 리프트 자리:
-    #   리프트가 생기면 RETRACT 와 DESCEND 사이에서 베이스 높이를 바꾸고,
-    #   그 뒤 build_sequence 를 다시 불러 놓기 계획을 새로 만들면 됩니다.
-    segments = split_segments(stage_points(pallet, task.destination_shelf_top))
-    plan = solve_plan(solver, robot, segments, lower_deg, upper_deg)
-
-    # 항상 같은 자세에서 출발하도록 HOME을 맨 앞에 붙입니다.
-    home = Step(STAGE_HOME, STAGE_HOME, None, np.array(HOME_JOINTS_DEG, float), True)
-    plan = [home] + plan
+    if home_joints is not None:
+        plan = [Step(STAGE_HOME, STAGE_HOME, None, home_joints, True)] + plan
 
     print_plan(plan)
-    return JointSequence(robot, pallet, indices, plan)
-
-
-def main():
-    if not SCENE_PATH.is_file():
-        raise FileNotFoundError(SCENE_PATH)
-    for path in (URDF_PATH, DESCRIPTION_PATH):
-        if not path.is_file():
-            raise FileNotFoundError(path)
-    if not TASKS:
-        raise ValueError("TASKS 가 비어 있습니다.")
-
-    omni.usd.get_context().open_stage(str(SCENE_PATH))
-    while omni.usd.get_context().get_stage_loading_status()[2] > 0:
-        app.update()
-
-    stage = omni.usd.get_context().get_stage()
-    stage.SetEditTarget(stage.GetSessionLayer())
-
-    needed = [ROBOT_PATH, f"{ROBOT_PATH}/{EE_FRAME}"] + [t.pallet_path for t in TASKS]
-    for path in needed:
-        if not stage.GetPrimAtPath(path).IsValid():
-            raise RuntimeError(f"Prim이 없습니다: {path}")
-
-    check_stage_tables()
-    lower_deg, upper_deg = joint_limits_deg(stage)
-    setup_arm_drives(stage)
-
-    world = World(
-        stage_units_in_meters=1.0,
-        physics_dt=PHYSICS_DT,
-        rendering_dt=PHYSICS_DT,
-        physics_prim_path="/physicsScene",
+    return JointSequence(
+        robot,
+        indices,
+        plan,
+        pallet_tracker=pallet_tracker,
+        done_message=done_message,
+        start_wait_seconds=start_wait_seconds,
     )
-    robot = world.scene.add(
-        SingleManipulator(
-            prim_path=ROBOT_PATH,
-            name="m0609",
-            end_effector_prim_path=f"{ROBOT_PATH}/{EE_FRAME}",
+
+
+class RobotMotion:
+    """기존 IK와 JointSequence로 Home, Pick, Place를 실행합니다."""
+
+    def __init__(self, robot, arm_base, solver, stage, arm_path):
+        self._robot = robot
+        self._arm_base = arm_base
+        self._solver = solver
+        self._stage = stage
+        self._arm_path = arm_path
+
+        self._indices = None
+        self._lower_deg = None
+        self._upper_deg = None
+        self._sequence = None
+        self._pallet_tracker = None
+        self._hold_target = None
+        self._log_elapsed = 0.0
+        self._transfer_place_pending = False
+        self._transfer_destination = None
+        self._initialized = False
+
+    def initialize(self):
+        """관절 인덱스와 한계를 한 번 읽고 팔 관절 Drive를 준비합니다."""
+        if self._initialized:
+            return
+
+        check_stage_tables()
+        self._lower_deg, self._upper_deg = joint_limits_deg(
+            self._stage, self._arm_path
         )
-    )
-    # 작업 목록에 나오는 팔레트를 모두 등록합니다 (같은 팔레트는 한 번만).
-    pallets = {}
-    for task in TASKS:
-        if task.pallet_path not in pallets:
-            pallets[task.pallet_path] = world.scene.add(
-                SingleRigidPrim(prim_path=task.pallet_path, name=f"pallet{len(pallets)}")
+        setup_arm_drives(self._stage, self._arm_path)
+        self._indices = robot_indices(self._robot)
+        self._hold_target = read_joints_deg(self._robot, self._indices)
+        self._initialized = True
+
+    def start_home(self):
+        """현재 베이스 방향에 맞는 HOME 자세로 이동합니다."""
+        self._require_initialized()
+        self._require_idle()
+        if self._is_carrying:
+            raise RuntimeError("팔레트를 운반 중에는 HOME 동작을 시작할 수 없습니다.")
+
+        _, base_quaternion = self._arm_base.get_world_pose()
+        goal = home_joints_deg(base_quaternion)
+        plan = [Step(STAGE_HOME, STAGE_HOME, None, goal, True)]
+        print_plan(plan)
+        self._pallet_tracker = None
+        self._sequence = JointSequence(
+            self._robot,
+            self._indices,
+            plan,
+            done_message="[DONE] HOME 자세에 도달했습니다.",
+        )
+        self._reset_start_state()
+
+    def start_pick(self, pallet, start_from_home=True):
+        """PICK_STAGES만 계획하고 팔레트를 CARRYING 상태까지 인출합니다."""
+        self._require_initialized()
+        self._require_idle()
+        if self._is_carrying:
+            raise RuntimeError("이미 팔레트를 운반 중이므로 새 Pick을 시작할 수 없습니다.")
+
+        tracker = _PalletTracker(self._robot, pallet)
+        base_position, base_quaternion = self._set_solver_base_pose()
+        _, chassis_quaternion = self._robot.get_world_pose()
+        check_base_pose(
+            base_position,
+            chassis_quaternion,
+            tracker.pick_position,
+            tracker.pick_quaternion,
+        )
+        print(f"[팔 베이스] {np.round(base_position, 3).tolist()} "
+              f"(요 {yaw_deg(base_quaternion):+.1f}° → HOME joint_1 "
+              f"{180.0 - yaw_deg(base_quaternion):+.1f}°)")
+        print(f"[팔레트] {np.round(tracker.pick_position, 3).tolist()}")
+
+        start_deg = (
+            home_joints_deg(base_quaternion)
+            if start_from_home
+            else read_joints_deg(self._robot, self._indices)
+        )
+        points = pick_stage_points(tracker.pick_position, tracker.pick_quaternion)
+        sequence = build_sequence(
+            self._solver,
+            self._robot,
+            self._indices,
+            self._lower_deg,
+            self._upper_deg,
+            points,
+            start_deg,
+            pallet_tracker=tracker,
+            home_joints=start_deg if start_from_home else None,
+            done_message="[DONE] 집기·인양·인출까지 확인했습니다.",
+        )
+        tracker.pick_end_target = np.array(points[-1][1], dtype=float)
+        self._pallet_tracker = tracker
+        self._sequence = sequence
+        self._reset_start_state()
+
+    def start_place(self, destination_shelf_top):
+        """CARRYING 팔레트에 대해 PLACE_STAGES만 계획하고 실행합니다."""
+        self._require_initialized()
+        self._require_idle()
+        if not self._is_carrying:
+            raise RuntimeError("Place는 Pick이 끝난 CARRYING 상태에서만 시작할 수 있습니다.")
+
+        self._set_solver_base_pose()
+        tracker = self._pallet_tracker
+        points = place_stage_points(
+            tracker.pick_position,
+            tracker.pick_quaternion,
+            destination_shelf_top,
+        )
+        start_deg = read_joints_deg(self._robot, self._indices)
+        self._sequence = build_sequence(
+            self._solver,
+            self._robot,
+            self._indices,
+            self._lower_deg,
+            self._upper_deg,
+            points,
+            start_deg,
+            pallet_tracker=tracker,
+            start_point=tracker.pick_end_target,
+            first_move_limit_deg=IK_JUMP_LIMIT_DEG,
+            done_message="[DONE] 놓기·안착·포크 인출까지 확인했습니다.",
+            start_wait_seconds=0.0,
+        )
+        self._reset_start_state()
+
+    def start_transfer(self, pallet, destination_shelf_top, start_from_home=True):
+        """start_pick() 완료 후 start_place()를 자동으로 이어 실행합니다."""
+        self.start_pick(pallet, start_from_home=start_from_home)
+        self._transfer_place_pending = True
+        self._transfer_destination = destination_shelf_top
+
+    def update(self, dt):
+        """현재 JointSequence를 물리 한 스텝만큼 진행합니다."""
+        self._require_initialized()
+        if not self.is_running:
+            return
+
+        sequence = self._sequence
+        sequence.update(dt)
+        self._log_elapsed += dt
+        if self._log_elapsed >= LOG_INTERVAL_SECONDS:
+            status = (
+                f"[{sequence.name}] "
+                f"관절 {np.round(read_joints_deg(self._robot, self._indices), 1)}"
+            )
+            pallet_position = sequence.pallet_position()
+            if pallet_position is not None:
+                status += f", 팔레트 {np.round(pallet_position, 3)}"
+            print(status)
+            self._log_elapsed = 0.0
+
+        if sequence.done:
+            self._hold_target = np.asarray(sequence.goal, dtype=float).copy()
+            if self._transfer_place_pending:
+                destination = self._transfer_destination
+                self._transfer_place_pending = False
+                self._transfer_destination = None
+                self.start_place(destination)
+
+    def hold(self):
+        """현재 위치 또는 마지막으로 완료한 안전한 관절 목표를 유지합니다."""
+        self._require_initialized()
+        if self._pallet_tracker is not None:
+            self._pallet_tracker.check("HOLD", "HOLD")
+        if self.is_running:
+            self._hold_target = read_joints_deg(self._robot, self._indices)
+        command_joints_deg(self._robot, self._indices, self._hold_target)
+
+    def cancel(self):
+        """진행 중 동작을 버리고 현재 위치를 유지합니다."""
+        self._require_initialized()
+        if self.is_running:
+            self._hold_target = read_joints_deg(self._robot, self._indices)
+        elif self.is_done:
+            self._hold_target = np.asarray(self._sequence.goal, dtype=float).copy()
+
+        self._sequence = None
+        self._pallet_tracker = None
+        self._log_elapsed = 0.0
+        self._transfer_place_pending = False
+        self._transfer_destination = None
+        command_joints_deg(self._robot, self._indices, self._hold_target)
+
+    @property
+    def is_running(self):
+        return self._sequence is not None and not self._sequence.done
+
+    @property
+    def is_done(self):
+        return self._sequence is not None and self._sequence.done
+
+    @property
+    def current_stage(self):
+        return "IDLE" if self._sequence is None else self._sequence.name
+
+    def _reset_start_state(self):
+        self._log_elapsed = 0.0
+
+    def _require_initialized(self):
+        if not self._initialized:
+            raise RuntimeError("RobotMotion.initialize()를 먼저 호출하세요.")
+
+    def _require_idle(self):
+        if self.is_running:
+            raise RuntimeError(
+                f"팔 동작이 이미 실행 중입니다: {self.current_stage}"
             )
 
-    world.reset()
-    world.pause()
+    @property
+    def _is_carrying(self):
+        return (
+            self._pallet_tracker is not None
+            and self._pallet_tracker.phase == "CARRYING"
+        )
 
-    solver = LulaKinematicsSolver(
-        robot_description_path=str(DESCRIPTION_PATH),
-        urdf_path=str(URDF_PATH),
-    )
-    indices = robot_indices(robot)
-    watcher = BaseWatcher()
-
-    task_index = 0
-    sequence = None          # None 이면 '아직 계획 없음 = AMR 정지를 기다리는 중'
-    needs_reset = True
-    failed = False
-    log_elapsed = 0.0
-
-    print(f"작업 {len(TASKS)}개. Play: 시작/재개 | Pause: 대기 | Stop: 처음부터 재시작")
-
-    while app.is_running():
-        if world.is_stopped():
-            needs_reset = True
-            world.render()
-            continue
-
-        if not world.is_playing():
-            world.render()
-            continue
-
-        if failed and not needs_reset:
-            world.pause()
-            continue
-
-        try:
-            # Stop 후 Play 에서만 처음부터 다시 시작합니다.
-            if needs_reset:
-                world.reset()
-                needs_reset = False
-                failed = False
-                log_elapsed = 0.0
-                task_index = 0
-                sequence = None
-                watcher.reset()
-
-            if task_index >= len(TASKS):
-                world.step(render=True)
-                continue
-
-            # 계획이 없으면: AMR 이 멈출 때까지 기다렸다가 계획을 만든다
-            if sequence is None:
-                watcher.update(robot, PHYSICS_DT)
-                world.step(render=True)
-                if watcher.settled:
-                    task = TASKS[task_index]
-                    print(f"\n── 작업 {task_index + 1}/{len(TASKS)} ──")
-                    sequence = build_sequence(
-                        solver, robot, pallets[task.pallet_path],
-                        indices, lower_deg, upper_deg, task,
-                    )
-                continue
-
-            sequence.update(PHYSICS_DT)
-            world.step(render=True)
-
-            log_elapsed += PHYSICS_DT
-            if log_elapsed >= LOG_INTERVAL_SECONDS:
-                print(
-                    f"[{sequence.name}] "
-                    f"관절 {np.round(read_joints_deg(robot, indices), 1)}, "
-                    f"팔레트 {np.round(sequence.pallet_position(), 3)}"
-                )
-                log_elapsed = 0.0
-
-            # 이 작업이 끝나면 다음 작업으로. AMR 정지 확인부터 다시 합니다.
-            if sequence.done:
-                task_index += 1
-                sequence = None
-                watcher.reset()
-                if task_index >= len(TASKS):
-                    print("[완료] 모든 작업을 마쳤습니다.")
-
-        except RuntimeError as error:
-            failed = True
-            world.pause()
-            print(f"[중단] {error}")
-            print("원인을 확인하세요. Stop → Play로 처음부터 재시험합니다.")
-
-
-try:
-    main()
-finally:
-    app.close()
+    def _set_solver_base_pose(self):
+        base_position, base_quaternion = self._arm_base.get_world_pose()
+        self._solver.set_robot_base_pose(
+            robot_position=base_position,
+            robot_orientation=base_quaternion,
+        )
+        return base_position, base_quaternion

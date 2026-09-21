@@ -63,3 +63,6 @@ __pycache__/
 nova_carter_sim_optimized.usd
 Collected_smart_farm_nav2/
 omniverse-content-production.s3-us-west-2.amazonaws.com-20260918T083303Z-1-001/
+omniverse-content-production.s3-us-west-2.amazonaws.com/
+robots/
+SubUSDs/
