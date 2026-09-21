@@ -38,7 +38,7 @@ from robot_motion import (
 # ── 파일·로봇 경로 ───────────────────────────────────────
 SCENE_PATH = Path("/home/rokey/Collected_smartfarm_v004/Collected_smartfarm_v004.usd")
 
-M0609_DIR = Path(__file__).resolve().parent.parent.parent / "M0609"
+M0609_DIR = Path(__file__).resolve().parent.parent / "M0609"
 URDF_PATH = M0609_DIR / "doosan-robot2/urdf/m0609_isaac_sim.urdf"
 DESCRIPTION_PATH = M0609_DIR / "descriptor/m0609_description.yaml"
 
