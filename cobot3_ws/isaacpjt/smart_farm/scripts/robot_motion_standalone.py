@@ -10,9 +10,14 @@ Play  : 시작 / 일시정지한 위치에서 재개
 Stop  : 다음 Play에서 처음부터 재시작
 """
 
+import os
+
 from isaacsim import SimulationApp
 
-app = SimulationApp({"headless": False})
+# HEADLESS=1 을 붙이면 창 없이 돕니다. 그냥 실행하면 평소처럼 GUI 입니다.
+#   GUI      : ~/isaacsim/python.sh robot_motion_standalone.py
+#   헤드리스 : HEADLESS=1 ~/isaacsim/python.sh robot_motion_standalone.py
+app = SimulationApp({"headless": os.environ.get("HEADLESS") == "1"})
 
 from pathlib import Path
 
@@ -77,7 +82,8 @@ SHELF_TOP = {1: 0.713, 2: 1.013, 3: 1.313, 4: 1.613, 5: 1.913}
 # 이 월드에서는 Pallet_N 은 빈 Xform 이고 그 안의 Asset 이 강체입니다.
 # 바깥 Xform 을 적으면 강체가 둘로 겹쳐 물리 결과가 흔들립니다.
 TASKS = [
-    Task("/World/SmartFarm/Placed/Pallet_1/Asset", SHELF_TOP[2]),   # 1단 팔레트 → 2단
+    Task("/World/SmartFarm/Placed/Pallet_2/Asset", SHELF_TOP[2]),   # 3단 팔레트 → 2단
+    Task("/World/SmartFarm/Placed/Pallet_3/Asset", SHELF_TOP[3]),   # 4단 팔레트 → 3단 (비워진 자리)
 ]
 
 PHYSICS_DT = 1.0 / 60.0
