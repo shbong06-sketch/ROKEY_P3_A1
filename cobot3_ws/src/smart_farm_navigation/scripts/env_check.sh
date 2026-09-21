@@ -65,13 +65,6 @@ for p in "${parts[@]}"; do
   [[ -n "${ROS_DISTRO:-}" && "$d" != "$ROS_DISTRO" ]] && fail "LD_LIBRARY_PATH 에 다른 배포판 lib: $p"
 done
 
-echo "== 4b. Nav2 관련 패키지 =="
-if command -v ros2 >/dev/null && [[ -n "$sourced" ]]; then
-  for pkg in nav2_bringup nav2_amcl nav2_map_server pointcloud_to_laserscan nav2_simple_commander rviz2; do
-    if ros2 pkg prefix "$pkg" >/dev/null 2>&1; then note "$pkg: 설치됨"; else fail "$pkg 미설치 -> sudo apt install ros-$ROS_DISTRO-$(echo "$pkg" | tr '_' '-')"; fi
-  done
-fi
-
 echo "== 5. 실행 중인 ROS 2 그래프 =="
 if command -v ros2 >/dev/null && [[ -n "$sourced" ]]; then
   n=$(timeout 8 ros2 topic list 2>/dev/null | wc -l)

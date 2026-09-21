@@ -1,11 +1,15 @@
 """Drive the carter to a named station with Nav2 Simple Commander.
 
-    ros2 run smart_farm_navigation go_to_station --ros-args -p station:=INSPECT_ZONE
+    ros2 run smart_farm_navigation go_to_station --ros-args -p station:=INSPECTION_DOCK
 
-Reads config/stations.yaml (map-frame poses).  The AMCL initial pose comes
-from results/robot_spawn.yaml (written by scripts/launch_scene.py) when it
-exists, otherwise from stations.yaml.  Exit code 0 = SUCCEEDED, 2 = FAILED
-or CANCELED, 3 = bad arguments.
+Reads config/stations.yaml (map-frame poses).  nav2.launch.py already gives AMCL its
+initial pose, so this node only re-sends it with set_initial_pose:=true.
+Exit code 0 = SUCCEEDED, 2 = FAILED or CANCELED, 3 = bad arguments.
+
+Reverse-out zones (stations.yaml `reverse_out_zones`): while the carter stands inside a rack
+corridor it must not turn in place (the rear of the rig sweeps 0.66 m and would hit the rack
+and its pallets), so the node first runs Nav2's BackUp behavior straight out of the zone
+(base_link -x = the carter's visible front) and only then sends the NavigateToPose goal.
 """
 
 import math
@@ -19,14 +23,13 @@ from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from rclpy.node import Node
-
-SPAWN_FILE = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/robot_spawn.yaml"
-
+from rclpy.time import Time
+import tf2_ros
 
 def make_pose(nav: BasicNavigator, x: float, y: float, yaw_deg: float) -> PoseStamped:
     p = PoseStamped()
     p.header.frame_id = "map"
-    p.header.stamp = nav.get_clock().now().to_msg()
+    # stamp 0 = "latest available transform"; a wall-clock stamp would never match Isaac's sim-time TF
     p.pose.position.x = float(x)
     p.pose.position.y = float(y)
     half = math.radians(yaw_deg) / 2.0
@@ -35,25 +38,58 @@ def make_pose(nav: BasicNavigator, x: float, y: float, yaw_deg: float) -> PoseSt
     return p
 
 
-def load_initial_pose(stations: dict, log) -> dict:
-    if os.path.exists(SPAWN_FILE):
-        try:
-            sp = yaml.safe_load(open(SPAWN_FILE)) or {}
-            log.info(f"initial pose from {SPAWN_FILE}: {sp}")
-            return {"x": float(sp["x"]), "y": float(sp["y"]), "yaw_deg": float(sp["yaw_deg"])}
-        except Exception as e:  # noqa: BLE001
-            log.warning(f"spawn file unreadable ({e}); using stations.yaml initial_pose")
-    return stations["initial_pose"]
+def current_pose(nav: BasicNavigator, timeout_s: float = 10.0):
+    """(x, y, yaw_deg) of base_link in the map frame, or None."""
+    buf = tf2_ros.Buffer()
+    tf2_ros.TransformListener(buf, nav)
+    end = time.monotonic() + timeout_s
+    while time.monotonic() < end:
+        rclpy.spin_once(nav, timeout_sec=0.1)
+        if buf.can_transform("map", "base_link", Time()):
+            t = buf.lookup_transform("map", "base_link", Time()).transform
+            yaw = 2.0 * math.atan2(t.rotation.z, t.rotation.w)
+            return t.translation.x, t.translation.y, math.degrees(yaw)
+    return None
+
+
+def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
+    """Back straight out of a rack corridor before any turning.  Returns False when the back-up failed."""
+    pose = current_pose(nav)
+    if pose is None:
+        log.warning("map -> base_link not available; skipping the reverse-out check")
+        return True
+    x, y, yaw = pose
+    for z in cfg.get("reverse_out_zones", []):
+        if not (z["x"][0] <= x <= z["x"][1] and z["y"][0] <= y <= z["y"][1]):
+            continue
+        rear = math.radians(yaw) + math.pi                         # direction of base_link -x in the map
+        want = math.radians(z["exit_heading_deg"])
+        off = abs(math.atan2(math.sin(rear - want), math.cos(rear - want)))
+        if off > math.radians(z.get("max_heading_offset_deg", 20.0)):
+            log.warning(f"in zone {z['name']} but the rear points {math.degrees(off):.0f}deg away from the exit; not backing up")
+            return True
+        ex, ey = math.cos(want), math.sin(want)
+        dist = (z["exit_point"][0] - x) * ex + (z["exit_point"][1] - y) * ey
+        if dist <= 0.05:
+            return True
+        speed = float(z.get("speed_mps", 0.25))
+        log.info(f"in zone {z['name']} at ({x:.2f}, {y:.2f}, {yaw:.0f}deg): BackUp {dist:.2f} m at {speed:.2f} m/s before navigating")
+        nav.backup(backup_dist=dist, backup_speed=speed, time_allowance=int(dist / speed * 2 + 10))
+        while not nav.isTaskComplete():
+            time.sleep(0.2)
+        ok = nav.getResult() == TaskResult.SUCCEEDED
+        log.info(f"BackUp {'done' if ok else 'FAILED'}")
+        return ok
+    return True
 
 
 def main() -> None:
     rclpy.init()
     args = Node("go_to_station_args")
-    args.declare_parameter("station", "INSPECT_ZONE")
+    args.declare_parameter("station", "INSPECTION_DOCK")
     args.declare_parameter("stations_file", os.path.join(
         get_package_share_directory("smart_farm_navigation"), "config", "stations.yaml"))
-    args.declare_parameter("set_initial_pose", True)
-    args.declare_parameter("skip_initial_pose_if_localized", True)
+    args.declare_parameter("set_initial_pose", False)
     station = args.get_parameter("station").value
     stations_file = args.get_parameter("stations_file").value
     set_init = bool(args.get_parameter("set_initial_pose").value)
@@ -67,23 +103,37 @@ def main() -> None:
 
     nav = BasicNavigator()
     if set_init:
-        ip = load_initial_pose(cfg, log)
+        ip = cfg["initial_pose"]
         nav.setInitialPose(make_pose(nav, ip["x"], ip["y"], ip["yaw_deg"]))
         log.info(f"initial pose set to ({ip['x']:.2f}, {ip['y']:.2f}, {ip['yaw_deg']:.1f}deg)")
-    nav.waitUntilNav2Active()
+        nav.waitUntilNav2Active()
+    else:
+        # AMCL already has its pose from nav2.launch.py.  BasicNavigator.waitUntilNav2Active(localizer="amcl")
+        # would keep publishing an all-zero /initialpose until /amcl_pose arrives and so move AMCL to (0, 0).
+        nav._waitForNodeToActivate("amcl")
+        nav.waitUntilNav2Active(localizer="robot_localization")
     log.info("Nav2 active")
 
-    goal = make_pose(nav, target["x"], target["y"], target["yaw_deg"])
-    log.info(f"goToPose {station}: ({target['x']:.2f}, {target['y']:.2f}, {target['yaw_deg']:.1f}deg)")
-    nav.goToPose(goal)
-    t0 = time.monotonic(); last = -1.0
-    while not nav.isTaskComplete():
-        fb = nav.getFeedback()
-        if fb and time.monotonic() - last >= 1.0:
-            last = time.monotonic()
-            log.info(f"  remaining {fb.distance_remaining:.2f} m, elapsed {time.monotonic() - t0:.0f}s, recoveries {fb.number_of_recoveries}")
-        time.sleep(0.2)
-    result = nav.getResult()
+    if not reverse_out_if_needed(nav, cfg, log):
+        log.info(f"RESULT FAILED for {station} (reverse-out)")
+        rclpy.shutdown(); sys.exit(2)
+
+    t0 = time.monotonic()
+    result = TaskResult.SUCCEEDED
+    for name in list(target.get("via", [])) + [station]:        # `via` = stations to pass first (e.g. line up before a corridor)
+        wp = cfg["stations"][name]
+        log.info(f"goToPose {name}: ({wp['x']:.2f}, {wp['y']:.2f}, {wp['yaw_deg']:.1f}deg)")
+        nav.goToPose(make_pose(nav, wp["x"], wp["y"], wp["yaw_deg"]))
+        last = -1.0
+        while not nav.isTaskComplete():
+            fb = nav.getFeedback()
+            if fb and time.monotonic() - last >= 1.0:
+                last = time.monotonic()
+                log.info(f"  remaining {fb.distance_remaining:.2f} m, elapsed {time.monotonic() - t0:.0f}s, recoveries {fb.number_of_recoveries}")
+            time.sleep(0.2)
+        result = nav.getResult()
+        if result != TaskResult.SUCCEEDED:
+            break
     code = 0 if result == TaskResult.SUCCEEDED else 2
     log.info(f"RESULT {result.name} for {station} after {time.monotonic() - t0:.0f}s")
     args.destroy_node()

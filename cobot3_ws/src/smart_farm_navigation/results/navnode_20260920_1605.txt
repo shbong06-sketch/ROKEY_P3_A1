@@ -1,0 +1,16 @@
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-20-16-05-34-845881-lwh19180-342399
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [navigation_node-1]: process started with pid [342416]
+[navigation_node-1] [0m[INFO] [1789887935.462113927] [navigation_node]: navigation_node ready; destinations: ['INSPECTION_DOCK', 'RACK_DOCK'][0m
+[navigation_node-1] [0m[INFO] [1789888326.745772081] [navigation_node]: command TEST-CMD-001: INSPECTION_DOCK -> ros2 launch smart_farm_navigation path_smooth.launch.py auto_start:=true params_file:=/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/share/smart_farm_navigation/config/path_runner_smooth.yaml[0m
+[navigation_node-1] [INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-20-16-12-07-198444-lwh19180-345231
+[navigation_node-1] [INFO] [launch]: Default logging verbosity is set to INFO
+[navigation_node-1] [INFO] [path_runner_smooth-1]: process started with pid [345238]
+[navigation_node-1] [path_runner_smooth-1] [0m[INFO] [1789888327.828113911] [path_runner_smooth]: path_runner ready on /cmd_vel; 2 waypoint(s); auto_start=true[0m
+[navigation_node-1] [path_runner_smooth-1] [0m[INFO] [1789888441.168746839] [path_runner_smooth]: path: 136 points, curve from (1.50,0.00) to approach (4.10,-0.45), final (4.90,-0.45) heading 0deg[0m
+[navigation_node-1] [path_runner_smooth-1] [0m[INFO] [1789888441.169380408] [path_runner_smooth]: Phase TRACK at odom x=0.000 y=0.000 heading=0.0deg[0m
+[navigation_node-1] [path_runner_smooth-1] [0m[INFO] [1789888474.768059620] [path_runner_smooth]:   approach point reached at odom x=4.001 y=-0.461 heading=-3.1deg[0m
+[navigation_node-1] [path_runner_smooth-1] [0m[INFO] [1789888474.770397628] [path_runner_smooth]: Phase APPROACH at odom x=4.001 y=-0.461 heading=-3.1deg[0m
+[navigation_node-1] [path_runner_smooth-1] [0m[INFO] [1789888482.875763201] [path_runner_smooth]:   final point reached at odom x=4.851 y=-0.475 heading=-1.0deg; cross-track -0.013 m[0m
+[navigation_node-1] [path_runner_smooth-1] [0m[INFO] [1789888482.877611664] [path_runner_smooth]: Phase FINAL_TURN at odom x=4.851 y=-0.475 heading=-1.0deg[0m
+[navigation_node-1] [path_runner_smooth-1] [0m[INFO] [1789888482.920097295] [path_runner_smooth]: Path COMPLETE at odom x=4.854 y=-0.475 heading=-1.0deg; heading error +1.0deg[0m

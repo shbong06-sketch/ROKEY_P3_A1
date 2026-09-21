@@ -3,7 +3,7 @@
 <package format="3">
   <name>smart_farm_navigation</name>
   <version>0.1.0</version>
-  <description>ROS 2 command nodes for smart_farm_nav2_01.usd.</description>
+  <description>/cmd_vel path runners and scene checks for the smart farm carter (Isaac Sim).</description>
   <maintainer email="shbong06@gmail.com">rokey</maintainer>
   <license>Apache-2.0</license>
 
@@ -11,10 +11,13 @@
   <depend>nav_msgs</depend>
   <depend>rclpy</depend>
   <depend>tf2_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>rosgraph_msgs</depend>
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>nav2_bringup</exec_depend>
   <exec_depend>nav2_simple_commander</exec_depend>
   <exec_depend>pointcloud_to_laserscan</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
 
   <test_depend>ament_flake8</test_depend>

@@ -14,7 +14,8 @@ import os
 
 from isaacsim import SimulationApp
 
-# HEADLESS=1 을 붙이면 창 없이 돕니다. 그냥 실행하면 평소처럼 GUI 입니다.
+# HEADLESS=1: 자동 시작하고 마무리 하강까지 끝나면 종료합니다. 실패 시 예외로 종료합니다.
+# 그냥 실행하면 GUI에서 Play를 기다립니다.
 #   GUI      : ~/isaacsim/python.sh robot_motion_standalone.py
 #   헤드리스 : HEADLESS=1 ~/isaacsim/python.sh robot_motion_standalone.py
 app = SimulationApp({"headless": os.environ.get("HEADLESS") == "1"})
@@ -87,9 +88,24 @@ SHELF_TOP = {1: 0.713, 2: 1.013, 3: 1.313, 4: 1.613, 5: 1.913}
 # 이 월드에서는 Pallet_N 은 빈 Xform 이고 그 안의 Asset 이 강체입니다.
 # 바깥 Xform 을 적으면 강체가 둘로 겹쳐 물리 결과가 흔들립니다.
 TASKS = [
-    Task("/World/SmartFarm/Placed/Pallet_2/Asset", SHELF_TOP[2]),   # 3단 팔레트 → 2단
-    Task("/World/SmartFarm/Placed/Pallet_3/Asset", SHELF_TOP[3]),   # 4단 팔레트 → 3단 (비워진 자리)
+    Task("/World/SmartFarm/Placed/Pallet_2/Asset", SHELF_TOP[2]),               # 3단 → 2단
+    Task("/World/SmartFarm/Placed/Pallet_3/Asset", SHELF_TOP[3]),               # 4단 → 3단
+    Task("/World/SmartFarm/Placed/Pallet_1/Asset", None, pick_only=True),       # 1단 집기만
+    # 2단이 비어 있는 상태에서 시작합니다. 위 칸부터 한 칸씩 내려 채운 뒤,
+    # 맨 아래 팔레트를 집어 든 채로 멈춥니다 (AMR 이 이동할 차례).
 ]
+
+# 모든 작업을 마친 뒤 리프트를 이 층의 작업 높이로 내려둡니다.
+# 다음 사이클(AMR 이 1단에 팔레트를 놓아주는 것)을 바로 받을 수 있게 합니다.
+# None 이면 마지막 작업 높이에 그대로 둡니다.
+PARK_SHELF_TOP = None   # 마지막에 팔레트를 든 채 멈추므로 리프트를 내리지 않습니다
+
+# 화면 갱신 주기. 물리는 매 스텝 계산하고, 그림만 이 간격으로 그립니다.
+# 물리 결과와 로봇 동작은 전혀 바뀌지 않고 보이는 부드러움만 줄어듭니다.
+#   0 이면 아예 안 그림 (헤드리스)
+#   1 이면 매 스텝    (예전 방식)
+#   3 이면 초당 20번   (눈으로는 차이가 거의 없고 시간은 크게 줄어듦)
+RENDER_EVERY = 0 if os.environ.get("HEADLESS") == "1" else 3
 
 PHYSICS_DT = 1.0 / 60.0
 
@@ -180,10 +196,26 @@ def main():
         ),
     )
 
+    step_count = 0
+
+    def step_world():
+        """물리를 한 스텝 진행합니다. 화면은 RENDER_EVERY 간격으로만 그립니다."""
+        nonlocal step_count
+        step_count += 1
+        world.step(
+            render=RENDER_EVERY > 0 and step_count % RENDER_EVERY == 0
+        )
+
     task_index = 0
     needs_reset = True
+    failed = False           # 오류 후에는 Stop → Play 전까지 재개하지 않습니다
+    headless = os.environ.get("HEADLESS") == "1"
+    parking = None          # None / 'going' / 'done'
 
     print(f"작업 {len(TASKS)}개. Play: 시작/재개 | Pause: 대기 | Stop: 처음부터 재시작")
+
+    if headless:
+        world.play()
 
     while app.is_running():
         if world.is_stopped():
@@ -195,27 +227,52 @@ def main():
             world.render()
             continue
 
-        if transfer.state == TransferState.FAILED and not needs_reset:
+        if (failed or transfer.state == TransferState.FAILED) and not needs_reset:
             world.pause()
             continue
 
         try:
             # Stop 후 Play 에서만 처음부터 다시 시작합니다.
             if needs_reset:
-                transfer.cancel()
-                world.reset()
                 needs_reset = False
+                failed = False
+                transfer.cancel()
+                if transfer.state == TransferState.FAILED:
+                    raise RuntimeError(f"초기화 전 정지 실패: {transfer.error}")
+                world.reset()
                 task_index = 0
+                parking = None
 
                 # 리그가 내려앉기를 기다린 뒤에 리프트 기준을 잡습니다.
                 # 건너뛰면 '리프트 값 ↔ 베이스 높이' 관계를 10 cm 넘게 틀리게 잽니다.
                 print(f"[장면] 안정될 때까지 {SETTLE_STEPS} 스텝 기다립니다")
                 for _ in range(SETTLE_STEPS):
-                    world.step(render=True)
+                    step_world()
                 lift.calibrate()
 
             if task_index >= len(TASKS):
-                world.step(render=True)
+                # 작업이 다 끝났습니다. 리프트를 지정한 층 높이로 내려둡니다.
+                if PARK_SHELF_TOP is not None and parking is None:
+                    # 포크가 랙 안에 있으면 리프트를 움직이면 안 됩니다.
+                    check_fork_clear_of_rack(
+                        tine_tip_position(robot)[0], RACK_FRONT_X
+                    )
+                    goal = lift.clamp_height(PARK_SHELF_TOP - BASE_BELOW_SHELF)
+                    lift.start_move(goal)
+                    parking = 'going'
+                    print(f'[마무리] 리프트를 베이스 {goal:.3f} m 로 내립니다')
+
+                if parking == 'going':
+                    lift.update(PHYSICS_DT)
+                    if lift.is_done:
+                        parking = 'done'
+                        print('[마무리] 리프트 하강 완료. 대기합니다.')
+                elif parking == 'done':
+                    lift.hold()
+
+                step_world()
+                if headless and (PARK_SHELF_TOP is None or parking == 'done'):
+                    return
                 continue
 
             if not transfer.is_running:
@@ -224,7 +281,9 @@ def main():
                 transfer.start(task, pallets[task.pallet_path])
 
             transfer.update(PHYSICS_DT)
-            world.step(render=True)
+            if transfer.state == TransferState.FAILED:
+                raise RuntimeError(f"팔레트 이송 실패: {transfer.error}")
+            step_world()
 
             if transfer.state == TransferState.SUCCEEDED:
                 task_index += 1
@@ -232,9 +291,14 @@ def main():
                     print("[완료] 모든 작업을 마쳤습니다.")
 
         except RuntimeError as error:
+            failed = True
             transfer.cancel()
             world.pause()
             print(f"[중단] {error}")
+            if transfer.error is not None:
+                print(f"[정지 오류] {transfer.error}")
+            if headless:
+                raise
             print("원인을 확인하세요. Stop → Play로 처음부터 재시험합니다.")
 
 

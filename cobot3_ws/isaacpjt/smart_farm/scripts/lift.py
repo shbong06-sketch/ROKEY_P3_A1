@@ -118,7 +118,10 @@ class LiftController:
     def clamp_height(self, base_height):
         """요청 높이를 행정 안으로 잘라서 돌려줍니다. 잘랐으면 알려 줍니다."""
         low, high = self.reachable_height_range()
-        clamped = float(np.clip(base_height, low, high))
+        # 경계에 딱 맞추면 start_move 가 조인트 값으로 되돌릴 때
+        # 부동소수점 오차로 한계를 아주 살짝 벗어납니다. 0.1 mm 안쪽으로 잡습니다.
+        inset = min(1e-4, max(0.0, (high - low) / 2))
+        clamped = float(np.clip(base_height, low + inset, high - inset))
         if abs(clamped - base_height) > 1e-6:
             print(
                 f"[리프트] 요청 {base_height:.3f} m 는 행정 밖 → {clamped:.3f} m 로 맞춤 "

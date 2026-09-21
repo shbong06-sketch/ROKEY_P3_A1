@@ -49,7 +49,11 @@ class PalletTransferController:
         self._completed_tasks = 0
 
     def start(self, task, pallet):
-        """팔레트 높이로 리프트 정렬을 시작합니다. 이후 진행은 update()가 합니다."""
+        """팔레트 높이로 리프트 정렬을 시작합니다. 이후 진행은 update()가 합니다.
+
+        RuntimeError는 밖으로 전달하지 않고 FAILED 상태와 error에 기록합니다.
+        호출 뒤 state/error로 시작 실패 여부를 확인하세요.
+        """
         try:
             if self.is_running:
                 raise RuntimeError(f"팔레트 이송이 이미 실행 중입니다: {self._state.value}")
@@ -62,13 +66,17 @@ class PalletTransferController:
             self._fork_clear_check()
 
             pick_shelf_top = float(pallet.get_world_pose()[0][2])
-            self._lift.start_move(pick_shelf_top - self._base_below_shelf)
+            # 행정 밖이면 닿는 데까지 맞춥니다. 모자란 만큼은 팔이 뻗어서
+            # 흡수합니다. 진짜로 못 닿는지는 IK 계획 단계가 판단합니다.
+            self._lift.start_move(
+                self._lift.clamp_height(pick_shelf_top - self._base_below_shelf)
+            )
             self._state = TransferState.LIFT_ALIGN
         except RuntimeError as error:  # LiftError도 RuntimeError입니다.
             self._fail(error)
 
     def update(self, dt):
-        """현재 상태에 해당하는 장치를 물리 한 스텝만큼 진행합니다."""
+        """현재 상태를 한 스텝 진행합니다. RuntimeError는 FAILED/error에 기록합니다."""
         if not self.is_running:
             return
 
@@ -96,6 +104,15 @@ class PalletTransferController:
                 self._lift.hold()
                 self._motion.update(dt)
                 if self._motion.is_done:
+                    if self._task.pick_only:
+                        # 집기만 하는 작업. 팔레트를 든 채로 끝냅니다.
+                        # cancel() 은 부르지 않습니다. 그걸 부르면 팔레트 추적이
+                        # 지워져서, 실제로는 들고 있는데 '운반 중' 표시가 풀립니다.
+                        # 그 상태로 다음 Pick 을 시작하면 막아주지 못합니다.
+                        # 동작이 끝난 뒤에는 구동부가 마지막 명령 자세를 유지합니다.
+                        self._completed_tasks += 1
+                        self._state = TransferState.SUCCEEDED
+                        return
                     self._motion.start_place(self._task.destination_shelf_top)
                     self._state = TransferState.PLACING
                 return
@@ -111,7 +128,7 @@ class PalletTransferController:
             self._fail(error)
 
     def cancel(self):
-        """팔과 리프트를 현재 위치에 멈추고 IDLE로 돌아갑니다."""
+        """팔과 리프트를 멈추고 IDLE로 돌아갑니다. 정지 실패 시 FAILED/error를 유지합니다."""
         stop_error = self._safe_stop()
         self._base_watcher.reset()
         self._task = None
@@ -132,6 +149,7 @@ class PalletTransferController:
 
     @property
     def is_done(self):
+        """성공·실패를 포함한 종료 여부. 성공은 state == TransferState.SUCCEEDED로 확인합니다."""
         return self._state in (TransferState.SUCCEEDED, TransferState.FAILED)
 
     @property
@@ -142,9 +160,9 @@ class PalletTransferController:
         self._error = error
         self._state = TransferState.FAILED
         stop_error = self._safe_stop()
-        if self._error is None:
-            self._error = stop_error
         print(f"[중단] {self._error}")
+        if stop_error is not None:
+            print(f"[정지 오류] {stop_error}")
         print("원인을 확인하세요. Stop → Play로 처음부터 재시험합니다.")
 
     def _safe_stop(self):
