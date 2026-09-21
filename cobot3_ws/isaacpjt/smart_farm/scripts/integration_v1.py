@@ -92,6 +92,7 @@ CONVEYOR_PRIM_PATH = f"{PLACED_PRIM_PATH}/Conveyor"
 CONVEYOR_SEG6_PRIM_NAME = "Seg_6"
 CONVEYOR_SEG6_PRIM_PATH = f"{CONVEYOR_PRIM_PATH}/{CONVEYOR_SEG6_PRIM_NAME}"
 CONVEYOR_SEG6_REPORTED_XY = np.array([2.328, -5.121], dtype=float)
+CONVEYOR_LATERAL_OFFSET_X_M = 0.3
 CONVEYOR_STANDOFF_M = 1.5
 PLACE_PALLET_QUATERNION = np.array(
     [np.sqrt(0.5), 0.0, 0.0, np.sqrt(0.5)], dtype=float
@@ -233,7 +234,7 @@ def find_conveyor_seg6(stage):
 
 
 def conveyor_place_target(stage):
-    """seg_6 중심 XY와 월드 bounding box 상단 Z로 팔레트 안착 pose를 만듭니다."""
+    """Seg_6 접근측 가장자리 안쪽에 팔레트를 안착할 pose를 만듭니다."""
     print("[Integration V1] Conveyor seg_6 Place pose를 계산합니다.")
     seg6 = find_conveyor_seg6(stage)
     seg6_path = str(seg6.GetPath())
@@ -257,7 +258,11 @@ def conveyor_place_target(stage):
         raise RuntimeError(f"seg_6 world bounding box를 계산하지 못했습니다: {seg6_path}")
 
     destination = np.array(
-        [seg6_position[0], seg6_position[1], bounds_max[2]],
+        [
+            seg6_position[0],
+            bounds_max[1] - robot_motion.PALLET_FRONT,
+            bounds_max[2],
+        ],
         dtype=float,
     )
     print(f"[Integration V1] Conveyor seg_6 path: {seg6_path}")
@@ -275,6 +280,12 @@ def conveyor_place_target(stage):
         f"[Integration V1] Place pallet origin: "
         f"position={np.round(destination, 4).tolist()}, "
         f"quaternion(wxyz)={np.round(PLACE_PALLET_QUATERNION, 5).tolist()}"
+    )
+    print(
+        "[Integration V1] Place Y calculation: "
+        f"Seg_6 max_y={bounds_max[1]:.4f} - "
+        f"pallet_half_depth={robot_motion.PALLET_FRONT:.4f} "
+        f"= {destination[1]:.4f}"
     )
     return destination
 
@@ -401,7 +412,7 @@ def main():
 
     print_motion_poses(stage)
     navigation_goal_xy = CONVEYOR_SEG6_REPORTED_XY + np.array(
-        [0.0, CONVEYOR_STANDOFF_M], dtype=float
+        [CONVEYOR_LATERAL_OFFSET_X_M, CONVEYOR_STANDOFF_M], dtype=float
     )
     print(
         f"[Integration V1] Navigation arrival target: "
@@ -512,6 +523,11 @@ def main():
                         base_position, base_quaternion = robot_motion.prim_world_pose(
                             stage, M0609_BASE_LINK_PRIM_PATH
                         )
+                        _, place_fork_quaternion = robot.end_effector.get_world_pose()
+                        print(
+                            "[Integration V1] Place에 운반 자세 link_6 quaternion을 "
+                            f"유지합니다: {np.round(place_fork_quaternion, 5).tolist()}"
+                        )
                         place_position = conveyor_place_target(stage)
                         sequence = robot_motion.build_place_sequence(
                             solver,
@@ -524,6 +540,7 @@ def main():
                             base_quaternion,
                             place_position,
                             PLACE_PALLET_QUATERNION,
+                            place_fork_quaternion,
                         )
                         phase = "PLACE"
                         print(

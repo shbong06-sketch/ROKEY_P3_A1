@@ -580,7 +580,9 @@ def solve_plan(
             raise RuntimeError(
                 f"{name}: {JOINT_NAMES[jump_index]}이 앞 자세 대비 {jump:.1f}° "
                 f"바뀝니다 (한계 {limit:.0f}°). "
-                "자세가 뒤집히거나 크게 휘두르는 경로입니다."
+                "자세가 뒤집히거나 크게 휘두르는 경로입니다. "
+                f"앞 자세={np.round(previous, 2).tolist()}, "
+                f"후보 자세={np.round(joints_deg, 2).tolist()}"
             )
 
         plan.append(segment._replace(joints=joints_deg))
