@@ -135,6 +135,7 @@ TASKS = [
 ]
 
 MAX_SEGMENT_M = 0.06           # 이보다 긴 구간은 잘라서 간다
+PLACE_MAX_SEGMENT_M = 0.02     # Place는 IK branch 유지를 위해 더 촘촘하게 푼다
 
 # 시작할 때 먼저 지나가는 고정 자세. 매번 같은 곳에서 출발하게 합니다.
 # joint_1 만 180도 = 팔을 세운 채 랙 쪽을 보게 돌린 자세라, 장면 시작 자세에서
@@ -454,7 +455,7 @@ def stage_points(pallet, destination_shelf_top):
     return points
 
 
-def split_segments(points):
+def split_segments(points, max_segment_m=MAX_SEGMENT_M):
     """
     긴 구간을 MAX_SEGMENT_M 이하로 자릅니다.
 
@@ -467,7 +468,7 @@ def split_segments(points):
     result = [Step(first_stage, first_stage, first_point, empty, True)]
 
     for (stage, goal), (_, start) in zip(points[1:], points[:-1]):
-        count = max(1, int(np.ceil(np.linalg.norm(goal - start) / MAX_SEGMENT_M)))
+        count = max(1, int(np.ceil(np.linalg.norm(goal - start) / max_segment_m)))
         for k in range(1, count + 1):
             name = stage if count == 1 else f"{stage}_{k}"
             point = start + (goal - start) * k / count
@@ -1021,6 +1022,7 @@ def build_place_sequence(
     base_quaternion,
     destination_position,
     destination_quaternion,
+    fork_quaternion=None,
 ):
     """현재 운반 자세에서 지정된 팔레트 pose로 내려놓고 포크를 뺍니다."""
     solver.set_robot_base_pose(
@@ -1032,10 +1034,14 @@ def build_place_sequence(
     destination_quaternion = np.asarray(destination_quaternion, dtype=float)
     destination_quaternion /= np.linalg.norm(destination_quaternion)
     destination_rotation = quat_to_rot_matrix(destination_quaternion)
-    fork_quaternion = multiply_quaternions_wxyz(
-        destination_quaternion,
-        FORK_QUAT,
-    )
+    if fork_quaternion is None:
+        fork_quaternion = multiply_quaternions_wxyz(
+            destination_quaternion,
+            FORK_QUAT,
+        )
+    else:
+        fork_quaternion = np.asarray(fork_quaternion, dtype=float)
+        fork_quaternion /= np.linalg.norm(fork_quaternion)
     place_points = [
         (
             stage_name,
@@ -1046,6 +1052,9 @@ def build_place_sequence(
     ]
 
     current_joints_deg = read_joints_deg(robot, indices)
+    current_ee_position = np.asarray(
+        robot.end_effector.get_world_pose()[0], dtype=float
+    )
     base_rotation = quat_to_rot_matrix(base_quaternion)
     print(
         f"[Place IK base] position={np.round(base_position, 4).tolist()}, "
@@ -1072,7 +1081,10 @@ def build_place_sequence(
     plan = solve_plan(
         solver,
         robot,
-        split_segments(place_points),
+        split_segments(
+            [("PLACE_START", current_ee_position)] + place_points,
+            PLACE_MAX_SEGMENT_M,
+        ),
         lower_deg,
         upper_deg,
         initial_joints_deg=current_joints_deg,
