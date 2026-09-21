@@ -25,3 +25,7 @@
 
 - Nav2·RViz2 관련 파일(nav2.launch.py, nav2_params.yaml, stations.yaml, maps/, make_map_from_usd.py, go_to_station.py)은 feature/navigation2 에만 있음.
 - `results/` 는 고피 실행 로그, `errored/` 는 초기 오류 기록.
+
+
+## Nav2 트랙 (feature/navigation2)
+- Nav2·RViz2 연동 파일 지도와 절차는 `guidance/guidance2_12차.md` 6절 참고.

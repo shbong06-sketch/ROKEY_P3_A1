@@ -1,4 +1,4 @@
-"""Navigation Node (/cmd_vel 판): 인터페이스 설계의 command/result 계약을 따르는 주행 지시 수신 노드.
+"""Navigation Node (destinations 파일에 따라 /cmd_vel 경로 주행 또는 Nav2 주행): 인터페이스 설계의 command/result 계약을 따르는 주행 지시 수신 노드.
 
   /navigation/command  (std_msgs/String, UTF-8 JSON)  <- Task Manager / 통합 스크립트
       {"command_id": "...", "task_id": "...", "operation": "NAVIGATION", "destination": "INSPECTION_DOCK"}
@@ -85,8 +85,11 @@ class NavigationNode(Node):
         dest = self.dest.get(cmd["destination"])
         if dest is None:
             self._result(cmd, "FAILED", "INVALID_COMMAND", "VALIDATE"); return
-        params = os.path.join(self.share, "config", dest["params"])
-        argv = ["ros2", "launch", "smart_farm_navigation", dest["launch"], "auto_start:=true", f"params_file:={params}"]
+        if "station" in dest:       # Nav2: go_to_station 이 NavigateToPose 액션으로 주행 (exit code 0/2 규약은 path_runner 와 동일)
+            argv = ["ros2", "run", "smart_farm_navigation", "go_to_station", "--ros-args", "-p", f"station:={dest['station']}"]
+        else:                       # /cmd_vel 경로 주행
+            params = os.path.join(self.share, "config", dest["params"])
+            argv = ["ros2", "launch", "smart_farm_navigation", dest["launch"], "auto_start:=true", f"params_file:={params}"]
         self.get_logger().info(f"command {cid}: {cmd['destination']} -> {' '.join(argv)}")
         self.proc = subprocess.Popen(argv)
         self.active = cmd

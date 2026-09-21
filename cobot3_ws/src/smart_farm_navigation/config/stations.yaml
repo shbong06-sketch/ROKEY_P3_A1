@@ -1,0 +1,20 @@
+# map 좌표 = Isaac world 좌표 (지도 Collected_smartfarm_v005.yaml 의 origin 이 world 기준). yaw_deg: 0 = +x, 90 = +y.
+# 기준 장면: Collected_smartfarm_v008.usd. yaw 는 base_link +x 의 방향임.
+#   카터의 "보이는 정면"은 base_link -x 이므로, 보이는 정면이 컨베이어(-y)를 보게 하려면 yaw_deg = +90.
+scene: Collected_smartfarm_v008.usd
+initial_pose: {x: -0.421, y: 1.006, yaw_deg: 90.0}       # LiftRig/Asset/nova_carter_ROS/chassis_link world pose
+stations:
+  RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0, via: [CORRIDOR_EXIT]}  # 시작 위치 = Rack_1 옆 통로 안. 통로 앞에서 방향을 맞춘 뒤 직진 진입
+  CORRIDOR_EXIT:   {x: -0.421, y: -1.20, yaw_deg: 90.0}  # 통로 남단(y 0.27)을 1.5 m 지난 점
+  INSPECTION_DOCK: {x: 3.328, y: -5.251, yaw_deg: 90.0}  # 1차 시연과 같은 자리: 컨베이어 x 2.33~4.33 구간(v008 이름 Seg_4) 가운데, 북쪽 가장자리(y -6.18)에서 0.93 m
+
+# 랙 통로 안에서는 제자리 회전 금지: 리그 뒤쪽이 0.66 m 를 휩쓸어 랙·팔레트(가장자리 x -0.86)에 닿음.
+# 통로 안에 있으면 go_to_station 이 먼저 Nav2 BackUp 으로 base_link -x(카터의 보이는 정면) 방향 직진 탈출한 뒤 목표를 보냄.
+reverse_out_zones:
+  - name: RACK1_CORRIDOR
+    x: [-1.10, 0.90]
+    y: [-0.30, 4.60]
+    exit_heading_deg: -90.0          # 탈출 방향 (map 기준, -y = 컨베이어 쪽)
+    exit_point: [-0.421, -1.20]      # 여기까지 후진 (= CORRIDOR_EXIT)
+    max_heading_offset_deg: 20.0
+    speed_mps: 0.25
