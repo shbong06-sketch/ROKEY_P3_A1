@@ -50,7 +50,7 @@ PALLET_POCKET_CENTER = 0.040   # 포크 틈의 가운데 높이
 # ── 여유 값 (동작을 조정할 때 여기를 바꿉니다) ───────────
 PLATE_CLEARANCE = 0.010        # 포크 판과 팔레트 앞면 사이 여유
 APPROACH_GAP = 0.037           # 진입 직전, 갈래 끝과 앞면 사이
-READY_GAP = 0.187              # 대기 위치, 갈래 끝과 앞면 사이
+READY_GAP = 0.060              # 대기 위치, 갈래 끝과 앞면 사이
 PALLET_LIFT = 0.060            # 인양 높이
 ENTRY_RISE = 0.150             # 랙 앞에서 뜨는 높이 (HOME 과 작업 높이를 잇는 경유점)
                                # 더 키우면 높은 층에서 IK 자세가 뒤집힙니다
@@ -70,6 +70,14 @@ ENTRY_Z = FORK_Z + ENTRY_RISE
 
 # 검사와 연결된 단계 이름은 상수로 둡니다. 오타로 검사가 빠지는 것을 막습니다.
 STAGE_HOME = "HOME"
+STAGE_TUCK = "TUCK"
+
+# HOME 에서 랙 앞 진입점으로 갈 때 거치는 자리. 팔 베이스 기준 상대 좌표입니다.
+# HOME 은 포크가 위를 보는 자세라 ENTRY 까지 직선으로 이을 수 없습니다.
+# 그래서 베이스 가까이·랙 바깥에서 먼저 포크를 수평으로 만든 뒤,
+# 거기서부터 직선으로 내려갑니다. 이 자리를 안 거치면 팔이 큰 호를
+# 그리며 랙과 팔레트를 관통합니다 (낮은 칸일수록 심함).
+TUCK_OFFSET = np.array([-0.35, 0.0, 0.35])   # 앞으로 0.35 m, 위로 0.35 m
 STAGE_PALLET_UP = "PALLET_UP"       # 이 단계 끝에서 '인양 확인'
 STAGE_PALLET_DOWN = "PALLET_DOWN"   # 이 단계 끝에서 '안착 확인'
 
@@ -103,6 +111,9 @@ PLACE_STAGES = [
 class Task(NamedTuple):
     pallet_path: str
     destination_shelf_top: Optional[float]
+    # True 면 집어 올린 뒤 그대로 멈춥니다 (놓지 않음).
+    # 수확 팔레트를 집고 AMR 이 이동할 준비를 하는 단계에 씁니다.
+    pick_only: bool = False
 
 
 MAX_SEGMENT_M = 0.06           # 이보다 긴 구간은 잘라서 간다
@@ -837,6 +848,11 @@ class RobotMotion:
             else read_joints_deg(self._robot, self._indices)
         )
         points = pick_stage_points(tracker.pick_position, tracker.pick_quaternion)
+        if start_from_home:
+            # 첫 좌표를 TUCK 으로 두면 HOME→TUCK 만 관절 이동이고,
+            # TUCK→ENTRY 부터는 직선으로 쪼개집니다.
+            points = [(STAGE_TUCK, base_position + TUCK_OFFSET)] + points
+
         sequence = build_sequence(
             self._solver,
             self._robot,
