@@ -1,0 +1,8 @@
+[INFO] [1789992509.260496209] [nav2_link_check]: listening for 8 s ...
+[INFO] [1789992517.271625322] [nav2_link_check]: [1] /clock              25.1 Hz
+[INFO] [1789992517.273435302] [nav2_link_check]:     sim time now 45.8 s, real-time factor 0.42
+[INFO] [1789992517.275593726] [nav2_link_check]: [2] /tf odom->base_link  24.6 Hz
+[INFO] [1789992517.277533418] [nav2_link_check]: [3] /chassis/odom       24.5 Hz
+[INFO] [1789992517.278336677] [nav2_link_check]: [4] /front_2d_lidar/scan           0.0 Hz,      0.0 kB/s, frame ''
+[INFO] [1789992517.279235830] [nav2_link_check]: [5] /front_3d_lidar/lidar_points  24.6 Hz,   1308.5 kB/s, frame 'front_3d_lidar'
+[INFO] [1789992517.280369329] [nav2_link_check]: RESULT OK - nav2.launch.py scan_mode:=cloud
