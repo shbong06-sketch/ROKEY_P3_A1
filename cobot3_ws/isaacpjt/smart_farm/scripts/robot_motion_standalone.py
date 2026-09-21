@@ -24,7 +24,7 @@ from pathlib import Path
 import omni.usd
 
 from isaacsim.core.api import World
-from isaacsim.core.prims import SingleRigidPrim
+from isaacsim.core.prims import SingleRigidPrim, SingleXFormPrim
 from isaacsim.robot.manipulators.manipulators import SingleManipulator
 from isaacsim.robot_motion.motion_generation import LulaKinematicsSolver
 
@@ -41,9 +41,14 @@ from robot_motion import (
 
 
 # ── 파일·로봇 경로 ───────────────────────────────────────
-SCENE_PATH = Path("/home/rokey/Collected_smartfarm_v004/Collected_smartfarm_v004.usd")
+SCENE_PATH = Path(
+    Path(__file__).resolve().parent.parent
+        / "scenes"
+        / "Collected_smartfarm_v004"
+        / "Collected_smartfarm_v004.usd"
+)
 
-M0609_DIR = Path(__file__).resolve().parent.parent / "M0609"
+M0609_DIR = Path(__file__).resolve().parent.parent.parent / "M0609"
 URDF_PATH = M0609_DIR / "doosan-robot2/urdf/m0609_isaac_sim.urdf"
 DESCRIPTION_PATH = M0609_DIR / "descriptor/m0609_description.yaml"
 
@@ -132,7 +137,7 @@ def create_world():
     )
     # IK 의 기준점. 카터가 움직이거나 리프트가 오르면 이 자리가 따라 움직입니다.
     arm_base = world.scene.add(
-        SingleRigidPrim(prim_path=ARM_BASE_PATH, name="arm_base")
+        SingleXFormPrim(prim_path=ARM_BASE_PATH, name="arm_base")
     )
     # 작업 목록에 나오는 팔레트를 모두 등록합니다 (같은 팔레트는 한 번만).
     pallets = {}
