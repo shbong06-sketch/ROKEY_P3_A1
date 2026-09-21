@@ -14,7 +14,6 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         ("share/" + package_name + "/config", glob("config/*.yaml")),
         ("share/" + package_name + "/launch", glob("launch/*.launch.py")),
-        ("share/" + package_name + "/maps", glob("maps/*")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -24,10 +23,10 @@ setup(
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
-            "escape_controller = smart_farm_navigation.escape_controller:main",
             "scene_check = smart_farm_navigation.scene_check:main",
             "path_runner = smart_farm_navigation.path_runner:main",
-            "go_to_station = smart_farm_navigation.go_to_station:main",
+            "path_runner_smooth = smart_farm_navigation.path_runner_smooth:main",
+            "navigation_node = smart_farm_navigation.navigation_node:main",
         ],
     },
 )

@@ -1,0 +1,6 @@
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-20-16-46-05-518956-IsaacSim03-81187
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [path_runner_smooth-1]: process started with pid [81192]
+[path_runner_smooth-1] [0m[INFO] [1789890365.777510998] [path_runner_smooth]: path_runner ready on /cmd_vel; 2 waypoint(s); auto_start=true[0m
+[path_runner_smooth-1] [0m[INFO] [1789890365.921760715] [path_runner_smooth]: path: 136 points, curve from (1.50,0.00) to approach (4.10,-0.45), final (4.90,-0.45) heading 0deg[0m
+[path_runner_smooth-1] [0m[INFO] [1789890365.921929601] [path_runner_smooth]: Phase TRACK at odom x=-0.000 y=0.000 heading=0.1deg[0m

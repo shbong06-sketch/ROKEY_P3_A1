@@ -1,0 +1,43 @@
+path_runner_smooth:
+  ros__parameters:
+    cmd_vel_topic: /cmd_vel
+    odom_topic: /chassis/odom
+    auto_start: false                 # path_smooth.launch.py auto_start:=true 로 켠다
+    # ---- Collected_smartfarm_v004.usd (2026-09-21 확정) ----
+    # Nova chassis 시작 (-0.4, 1.2), yaw +90도. drive_direction_sign=-1 이므로 실제 주행 정면은 world -Y (카터가 바라보는 방향 그대로 전진).
+    # 경유지 좌표계: X = 주행 정면(world -Y), Y = 주행 기준 왼쪽(world +X). Y 양수 = 화면상 왼쪽으로 꺾임.
+    # 검수 영역(INSPECTION_DOCK) = 컨베이어 그룹 왼쪽 끝 prim Conveyor/Seg_6 의 가운데.
+    #   Seg_6 pivot (2.328, -5.121), 길이 2.0 m -> 중심 x = 3.328. 정차 y = pivot y + 1.5 (standoff, integration_v1.py 와 동일) = -3.621
+    #   정차점 world (3.328, -3.621). X = 1.2 - (-3.621) = 4.821, Y = 3.328 - (-0.4) = 3.728
+    #   (1.5, 0.0)     통로 탈출점. 여기서부터 곡선
+    #   (4.821, 3.728) Seg_6 가운데 앞 정차점. 도착 시 컨베이어(진행 축 = world X)와 수직으로 서서 정면으로 봄
+    waypoints_x: [1.5, 4.821]
+    waypoints_y: [0.0, 3.728]
+    final_heading_deg: 0.0            # 주행 정면(world -Y) 그대로 = 컨베이어를 정면으로, 벨트 방향과 수직
+    approach_length_m: 0.8            # 도착점 앞 0.8 m 지점(도착 축 위)에 먼저 도달한 뒤 직진 접근
+    lookahead_m: 0.5                  # pure pursuit 전방 주시 거리
+    curve_speed_mps: 0.25             # 곡선 구간 속도
+    curve_tangent_scale: 0.5          # 곡선의 접선 길이 비율(클수록 완만하게 출발, 급하게 마무리)
+    path_step_m: 0.05
+
+    drive_direction_sign: -1.0        # 카터가 바라보는 정면 = base_link -x. v004 배치 방향 그대로 전진하려면 -1.0 (1차 시연 확정)
+    drive_speed_mps: 0.4
+    drive_min_speed_mps: 0.08
+    slow_zone_m: 0.5
+    turn_speed_radps: 0.6
+    turn_min_speed_radps: 0.1
+    turn_gain: 1.5
+    heading_tolerance_deg: 2.0
+    waypoint_tolerance_m: 0.05
+    heading_hold_gain: 1.0
+    heading_hold_max_radps: 0.3
+    cross_track_gain: 1.5
+    cross_track_max_angle_rad: 0.7
+    max_cross_track_m: 0.6
+    settle_duration_s: 0.5
+    odom_timeout_s: 1.0
+    phase_timeout_factor: 10.0
+    phase_timeout_min_s: 30.0
+    stall_timeout_s: 4.0
+    stall_min_progress: 0.01
+    stop_hold_duration_s: 1.0
