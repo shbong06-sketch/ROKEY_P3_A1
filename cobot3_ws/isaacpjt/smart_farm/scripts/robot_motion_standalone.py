@@ -45,8 +45,8 @@ from robot_motion import (
 SCENE_PATH = Path(
     Path(__file__).resolve().parent.parent
         / "scenes"
-        / "Collected_smartfarm_v004"
-        / "Collected_smartfarm_v004.usd"
+        / "Collected_smartfarm_v006_lite"
+        / "Collected_smartfarm_v006_lite.usd"
 )
 
 M0609_DIR = Path(__file__).resolve().parent.parent.parent / "M0609"
@@ -77,20 +77,23 @@ SETTLE_STEPS = 120             # Play 후 리그가 내려앉기를 기다리는
 # 위에서부터 순서대로 실행합니다. 한 작업이 끝나면 다음 작업의 계획을 새로 만듭니다.
 #   pallet_path           : 집을 팔레트 prim
 #   destination_shelf_top : 놓을 선반 윗면 높이. None 이면 집은 자리와 같은 층
-#     0.713 = 1단, 1.013 = 2단, 1.313 = 3단, 1.613 = 4단, 1.913 = 5단
+#     v006 실측값. '놓을 때 팔레트 원점이 와야 할 높이' 입니다.
+#     선반 충돌체 윗면(0.7129 등) + 트레이 원점~밑면 거리(0.0259).
+#     v004 는 원점이 밑면이라 선반 윗면과 같았지만 v006 트레이는 다릅니다.
 #
 # 작업 전에 집을 선반 높이에 맞춰 리프트를 움직입니다.
 # 팔로 집고 놓는 동안에는 그 높이를 유지합니다.
 # 닿지 않는 작업을 적으면 계획 단계에서 이유를 말하고 멈춥니다.
-SHELF_TOP = {1: 0.713, 2: 1.013, 3: 1.313, 4: 1.613, 5: 1.913}
+SHELF_TOP = {1: 0.7388, 2: 1.0388, 3: 1.3388, 4: 1.6388, 5: 1.9388}
 
 # 팔레트 prim 은 '강체 그 자체'를 가리켜야 합니다.
-# 이 월드에서는 Pallet_N 은 빈 Xform 이고 그 안의 Asset 이 강체입니다.
+# 이 월드에서는 Pallet_N 은 빈 Xform 이고 그 안의 simple_pallet 이 강체입니다.
+# (v006 부터 Romaine_01~08 상추가 같은 Xform 아래 별도 강체로 올라갑니다)
 # 바깥 Xform 을 적으면 강체가 둘로 겹쳐 물리 결과가 흔들립니다.
 TASKS = [
-    Task("/World/SmartFarm/Placed/Pallet_2/Asset", SHELF_TOP[2]),               # 3단 → 2단
-    Task("/World/SmartFarm/Placed/Pallet_3/Asset", SHELF_TOP[3]),               # 4단 → 3단
-    Task("/World/SmartFarm/Placed/Pallet_1/Asset", None, pick_only=True),       # 1단 집기만
+    Task("/World/SmartFarm/Placed/Pallet_2/simple_pallet", SHELF_TOP[2]),         # 3단 → 2단
+    Task("/World/SmartFarm/Placed/Pallet_3/simple_pallet", SHELF_TOP[3]),         # 4단 → 3단
+    Task("/World/SmartFarm/Placed/Pallet_1/simple_pallet", None, pick_only=True), # 1단 집기만
     # 2단이 비어 있는 상태에서 시작합니다. 위 칸부터 한 칸씩 내려 채운 뒤,
     # 맨 아래 팔레트를 집어 든 채로 멈춥니다 (AMR 이 이동할 차례).
 ]
