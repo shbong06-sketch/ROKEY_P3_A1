@@ -17,6 +17,7 @@ import subprocess
 import time
 
 import rclpy
+import rclpy.executors
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
@@ -31,7 +32,7 @@ class NavigationNode(Node):
         super().__init__("navigation_node")
         share = get_package_share_directory("smart_farm_navigation")
         self.declare_parameter("destinations_file", os.path.join(share, "config", "destinations.yaml"))
-        self.declare_parameter("timeout_s", 180.0)
+        self.declare_parameter("timeout_s", 600.0)   # 벽시계 기준. Isaac 실시간 배율 0.4 에서 왕복이 3~4 분 걸림
         self.declare_parameter("executor", "navigation")
         self.dest = yaml.safe_load(open(self.get_parameter("destinations_file").value))["destinations"]
         self.timeout = float(self.get_parameter("timeout_s").value)
@@ -135,12 +136,13 @@ def main() -> None:
     node = NavigationNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass
     finally:
         node.shutdown()
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():                 # ros2 launch 의 Ctrl+C 는 컨텍스트를 먼저 닫으므로 두 번 shutdown 하지 않음
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

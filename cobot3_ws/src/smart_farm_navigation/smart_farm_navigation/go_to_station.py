@@ -9,7 +9,7 @@ Exit code 0 = SUCCEEDED, 2 = FAILED or CANCELED, 3 = bad arguments.
 Reverse-out zones (stations.yaml `reverse_out_zones`): while the carter stands inside a rack
 corridor it must not turn in place (the rear of the rig sweeps 0.66 m and would hit the rack
 and its pallets), so the node first runs Nav2's BackUp behavior straight out of the zone
-(base_link -x = the carter's visible front) and only then sends the NavigateToPose goal.
+(base_link -x = the carter's rear, caster side) and only then sends the NavigateToPose goal.
 """
 
 import math
@@ -62,7 +62,7 @@ def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
     for z in cfg.get("reverse_out_zones", []):
         if not (z["x"][0] <= x <= z["x"][1] and z["y"][0] <= y <= z["y"][1]):
             continue
-        rear = math.radians(yaw) + math.pi                         # direction of base_link -x in the map
+        rear = math.radians(yaw) + math.pi                         # direction of base_link -x (rear) in the map
         want = math.radians(z["exit_heading_deg"])
         off = abs(math.atan2(math.sin(rear - want), math.cos(rear - want)))
         if off > math.radians(z.get("max_heading_offset_deg", 20.0)):
@@ -86,7 +86,7 @@ def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
 def main() -> None:
     rclpy.init()
     args = Node("go_to_station_args")
-    args.declare_parameter("station", "INSPECTION_DOCK")
+    args.declare_parameter("station", "FEEDER_DOCK")
     args.declare_parameter("stations_file", os.path.join(
         get_package_share_directory("smart_farm_navigation"), "config", "stations.yaml"))
     args.declare_parameter("set_initial_pose", False)

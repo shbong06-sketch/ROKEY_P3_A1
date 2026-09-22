@@ -1,20 +1,34 @@
-# map 좌표 = Isaac world 좌표 (지도 Collected_smartfarm_v005.yaml 의 origin 이 world 기준). yaw_deg: 0 = +x, 90 = +y.
-# 기준 장면: Collected_smartfarm_v008.usd. yaw 는 base_link +x 의 방향임.
-#   카터의 "보이는 정면"은 base_link -x 이므로, 보이는 정면이 컨베이어(-y)를 보게 하려면 yaw_deg = +90.
-scene: Collected_smartfarm_v008.usd
-initial_pose: {x: -0.421, y: 1.006, yaw_deg: 90.0}       # LiftRig/Asset/nova_carter_ROS/chassis_link world pose
+# map 좌표 = Isaac world 좌표 (지도 Collected_smartfarm_v011.yaml 의 origin 이 world 기준). yaw_deg: 0 = +x, 90 = +y.
+# 기준 장면: Collected_smartfarm_v011.usd. yaw 는 base_link +x = 카터의 실제 앞(구동륜 쪽) 방향임.
+# 시작 배치는 카터의 뒤(-x, 캐스터 쪽·M0609 쪽)가 통로 출구를 향함. 이는 랙 P&P 를 위해 팀이 정한 배치라 바꾸지 않음.
+scene: Collected_smartfarm_v011.usd
+initial_pose: {x: -0.421, y: 1.006, yaw_deg: 90.0}       # LiftRig/Asset/nova_carter_ROS/chassis_link world pose (v008 = v011)
 stations:
-  RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0, via: [CORRIDOR_EXIT]}  # 시작 위치 = Rack_1 옆 통로 안. 통로 앞에서 방향을 맞춘 뒤 직진 진입
-  CORRIDOR_EXIT:   {x: -0.421, y: -1.20, yaw_deg: 90.0}  # 통로 남단(y 0.27)을 1.5 m 지난 점
-  INSPECTION_DOCK: {x: 3.328, y: -5.251, yaw_deg: 90.0}  # 1차 시연과 같은 자리: 컨베이어 x 2.33~4.33 구간(v008 이름 Seg_4) 가운데, 북쪽 가장자리(y -6.18)에서 0.93 m
+  RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0, via: [CORRIDOR_EXIT]}  # Rack_1 옆 통로 안. CORRIDOR_EXIT 에서 방향을 맞춘 뒤 직진 진입
+  CORRIDOR_EXIT:   {x: -0.421, y: -1.20, yaw_deg: 90.0}  # 통로 남단(y 0.27)을 1.5 m 지난 점. 후진 탈출이 끝나는 곳
+  # 최종 목적지 (2026-09-22 변경): Conveyor/Feeder 에 붙은 돌출부 TurnTable (x -2.76..-1.61, y -6.32..-3.60) 의 북쪽 끝 = 입구.
+  # 카터의 앞(+x)이 그곳(남쪽)을 보도록 yaw -90. base_link 는 입구 가장자리(y -3.60)에서 0.55 m 북쪽.
+  FEEDER_DOCK:     {x: -2.19, y: -3.05, yaw_deg: -90.0}
+  # 1차 시연 자리 (컨베이어 Seg_4 가운데 앞). 참고용으로 유지
+  INSPECTION_DOCK: {x: 3.328, y: -5.251, yaw_deg: 90.0}
 
-# 랙 통로 안에서는 제자리 회전 금지: 리그 뒤쪽이 0.66 m 를 휩쓸어 랙·팔레트(가장자리 x -0.86)에 닿음.
-# 통로 안에 있으면 go_to_station 이 먼저 Nav2 BackUp 으로 base_link -x(카터의 보이는 정면) 방향 직진 탈출한 뒤 목표를 보냄.
+# 랙 통로 안에서는 제자리 회전 금지: 리그가 0.66 m 를 휩쓸어 랙·팔레트(가장자리 x -0.86)에 닿음.
+# 통로 안에 있으면 go_to_station 이 먼저 Nav2 BackUp(후진 = base_link -x 방향)으로 직진 탈출한 뒤 목표를 보냄.
+# 이 후진은 Nav2 의 경로 계획(RPP)이 아니라 go_to_station 이 명시적으로 지시하는 것이며, 통로 안에서는 항상 실행됨.
 reverse_out_zones:
   - name: RACK1_CORRIDOR
     x: [-1.10, 0.90]
     y: [-0.30, 4.60]
-    exit_heading_deg: -90.0          # 탈출 방향 (map 기준, -y = 컨베이어 쪽)
+    exit_heading_deg: -90.0          # 탈출 방향 (map 기준, -y = 컨베이어 쪽) = 카터 뒤쪽이 향해야 하는 방향
     exit_point: [-0.421, -1.20]      # 여기까지 후진 (= CORRIDOR_EXIT)
     max_heading_offset_deg: 20.0
+    speed_mps: 0.25
+  # Feeder 입구 앞도 같은 이유로 제자리 회전 금지 (TurnTable 이 0.55 m 앞, 리그 뒤쪽 회전 반경 0.66 m).
+  # 도착 자세(yaw -90)에서 뒤(-x)는 북쪽(+y)이므로 북쪽으로 1.2 m 후진한 뒤 목표를 보냄.
+  - name: FEEDER_APRON
+    x: [-2.90, -1.50]
+    y: [-3.50, -2.50]
+    exit_heading_deg: 90.0
+    exit_point: [-2.19, -1.85]
+    max_heading_offset_deg: 25.0
     speed_mps: 0.25

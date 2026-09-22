@@ -1,4 +1,4 @@
-"""Isaac Sim standalone launcher for the Nav2 test (default scene: Collected_smartfarm_v008.usd).
+"""Isaac Sim standalone launcher for the Nav2 test (default scene: Collected_smartfarm_v011.usd).
 
 Opens the scene, enables the ROS 2 bridge, adds a /clock publisher graph when the
 scene has none (Nav2 runs with use_sim_time, so /clock is mandatory), presses Play,
@@ -13,7 +13,7 @@ import signal
 import sys
 
 DEFAULT_SCENE = ("/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/"
-                 "Collected_smartfarm_v008/Collected_smartfarm_v008.usd")
+                 "Collected_smartfarm_v011/Collected_smartfarm_v011.usd")
 scene = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SCENE
 
 from isaacsim import SimulationApp  # noqa: E402  (must precede other omni imports)

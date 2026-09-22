@@ -1,7 +1,7 @@
 """ros2 launch smart_farm_navigation nav2.launch.py [scan_mode:=auto|scan2d|cloud] [use_rviz:=true]
 
 Nav2 (map_server + AMCL + planner/controller/behaviors + RViz2) for the carter in
-Collected_smartfarm_v008.usd.  Runs on the PC that does NOT run Isaac Sim; the only
+Collected_smartfarm_v011.usd.  Runs on the PC that does NOT run Isaac Sim; the only
 things it needs from Isaac over DDS are /clock, /tf, /chassis/odom and one lidar topic.
 
 /scan source (scan_mode):
@@ -26,7 +26,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-DEFAULT_MAP = "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v005.yaml"
+DEFAULT_MAP = "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v011.yaml"
 SCAN2D_TOPIC = "/front_2d_lidar/scan"
 CLOUD_TOPIC = "/front_3d_lidar/lidar_points"
 
