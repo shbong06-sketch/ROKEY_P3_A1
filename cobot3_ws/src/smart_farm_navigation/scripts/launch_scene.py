@@ -14,8 +14,36 @@ Also (all at runtime only, the USD on disk is never modified):
 """
 
 import argparse
+import datetime
+import faulthandler
+import os
 import signal
 import sys
+
+# Every print goes to the terminal AND to results/launch_scene_<time>.log; a native crash (segfault inside
+# PhysX/Kit) leaves a Python stack dump in the same file via faulthandler.
+_LOG_DIR = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results"
+os.makedirs(_LOG_DIR, exist_ok=True)
+_LOG_PATH = os.path.join(_LOG_DIR, f"launch_scene_{datetime.datetime.now():%Y%m%d_%H%M}.log")
+_log_file = open(_LOG_PATH, "a", buffering=1)
+faulthandler.enable(file=_log_file, all_threads=True)
+
+
+class _Tee:
+    def __init__(self, *streams): self.streams = streams
+    def write(self, data):
+        for st in self.streams:
+            try: st.write(data); st.flush()
+            except Exception: pass
+    def flush(self):
+        for st in self.streams:
+            try: st.flush()
+            except Exception: pass
+
+
+sys.stdout = _Tee(sys.__stdout__, _log_file)
+sys.stderr = _Tee(sys.__stderr__, _log_file)
+print(f"[launch_scene] log -> {_LOG_PATH}  argv={sys.argv[1:]}", flush=True)
 
 DEFAULT_SCENE = ("/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/"
                  "Collected_smartfarm_v011/Collected_smartfarm_v011.usd")
@@ -198,19 +226,30 @@ try:
             import omni.usd as _ou4
             from pxr import UsdPhysics as _UP4
             _st4 = _ou4.get_context().get_stage()
-            applied = []
+            drives = []          # (DriveAPI, start, goal, label)
             if arm_deg is not None:
                 for i, d in enumerate(arm_deg, 1):
                     drv = _UP4.DriveAPI.Get(_st4.GetPrimAtPath(f"{ARM_PATH}/joints/joint_{i}"), "angular")
-                    drv.GetTargetPositionAttr().Set(float(d)); applied.append(f"joint_{i}={d:.1f}deg")
+                    cur = float(drv.GetTargetPositionAttr().Get() or 0.0)
+                    drives.append((drv, cur, float(d), f"joint_{i}"))
             if lift_m is not None:
                 drv = _UP4.DriveAPI.Get(_st4.GetPrimAtPath(f"{LIFT_JOINT}"), "linear")
                 drv.GetStiffnessAttr().Set(max(float(drv.GetStiffnessAttr().Get() or 0.0), 1e6))
                 drv.GetDampingAttr().Set(max(float(drv.GetDampingAttr().Get() or 0.0), 1e4))
-                drv.GetTargetPositionAttr().Set(float(lift_m)); applied.append(f"lift={lift_m:.3f}m")
-            for _ in range(240):        # let the drives settle before anyone measures self-returns
+                cur = float(drv.GetTargetPositionAttr().Get() or 0.0)
+                drives.append((drv, cur, float(lift_m), "lift"))
+            print("[launch_scene] pose ramp start: " + ", ".join(f"{n} {c:.2f}->{g:.2f}" for _, c, g, n in drives), flush=True)
+            # Ramp the drive targets over POSE_RAMP_STEPS frames (about 8 s of sim) instead of jumping: with the
+            # team's stiffness (1e8) a jump swings the arm into the lift and can crash PhysX.
+            POSE_RAMP_STEPS = 480
+            for k in range(1, POSE_RAMP_STEPS + 1):
+                f = k / POSE_RAMP_STEPS
+                for drv, c, g, _n in drives:
+                    drv.GetTargetPositionAttr().Set(c + (g - c) * f)
                 app.update()
-            print("[launch_scene] pose targets applied: " + ", ".join(applied), flush=True)
+            for _ in range(120):
+                app.update()
+            print("[launch_scene] pose targets applied: " + ", ".join(f"{n}={g:.2f}" for _, _c, g, n in drives), flush=True)
         except BaseException as exc:  # noqa: BLE001
             import traceback as _tb
             print(f"[launch_scene] arm/lift pose FAILED: {exc}\n{_tb.format_exc()}", flush=True)
