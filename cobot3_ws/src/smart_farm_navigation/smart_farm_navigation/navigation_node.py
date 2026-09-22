@@ -1,146 +1,403 @@
-"""Navigation Node (destinations 파일에 따라 /cmd_vel 경로 주행 또는 Nav2 주행): 인터페이스 설계의 command/result 계약을 따르는 주행 지시 수신 노드.
+"""Task Manager의 Navigation 명령을 실제 /cmd_vel 주행으로 실행하는 노드.
 
-  /navigation/command  (std_msgs/String, UTF-8 JSON)  <- Task Manager / 통합 스크립트
-      {"command_id": "...", "task_id": "...", "operation": "NAVIGATION", "destination": "INSPECTION_DOCK"}
-  /navigation/result   (std_msgs/String, JSON)        -> 요청 ID 를 그대로 되돌림
-      {"command_id", "task_id", "operation", "status": SUCCEEDED|FAILED|TIMEOUT, "phase", "reason", "reached_station"}
-  /navigation/status   (std_msgs/String, JSON, TRANSIENT_LOCAL) state READY|BUSY|ERROR
+인터페이스:
+  /navigation/command
+      smart_farm_interfaces/msg/TaskCommand
 
-명령을 받으면 config/destinations.yaml 에 적힌 launch 를 자식 프로세스로 띄우고(path_runner_smooth 등),
-종료 코드로 결과를 만든다. 한 번에 하나만 실행하며 BUSY 중 새 명령은 FAILED/BUSY 로 응답한다.
-smart_farm_interfaces 에 TaskCommand/TaskResult 메시지가 생기면 이 노드의 파서만 바꾸면 된다.
+  /navigation/result
+      smart_farm_interfaces/msg/TaskResult
+
+  /navigation/status
+      smart_farm_interfaces/msg/ExecutorStatus
+
+TaskCommand를 받으면 destinations.yaml에 등록된 launch를 자식 프로세스로
+실행한다. 자식 프로세스의 종료 코드를 TaskResult로 변환한다.
+
+한 번에 하나의 명령만 실행하며, 실행 중 새로운 명령은 FAILED/BUSY로
+응답한다. 같은 command_id를 다시 수신하면 작업을 재실행하지 않고
+이전에 저장한 결과를 다시 발행한다.
 """
 
-import json
 import os
 import subprocess
 import time
 
 import rclpy
+import rclpy.executors
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
-from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
-from std_msgs.msg import String
 
-REQUIRED = ("command_id", "task_id", "destination")
+from smart_farm_interfaces.msg import (
+    ExecutorStatus,
+    TaskCommand,
+    TaskResult,
+)
 
 
 class NavigationNode(Node):
     def __init__(self) -> None:
         super().__init__("navigation_node")
         share = get_package_share_directory("smart_farm_navigation")
+
         self.declare_parameter("destinations_file", os.path.join(share, "config", "destinations.yaml"))
-        self.declare_parameter("timeout_s", 180.0)
+        self.declare_parameter("timeout_s", 110.0)
         self.declare_parameter("executor", "navigation")
-        self.dest = yaml.safe_load(open(self.get_parameter("destinations_file").value))["destinations"]
+
+        destinations_file = str(
+            self.get_parameter("destinations_file").value
+        )
+
+        with open(destinations_file, encoding="utf-8") as file:
+            config = yaml.safe_load(file) or {}
+
+        self.dest = config.get("destinations", {})
+
+        if not self.dest:
+            raise ValueError(
+                f"No destinations configured: {destinations_file}"
+            )
+        
         self.timeout = float(self.get_parameter("timeout_s").value)
-        self.executor_name = self.get_parameter("executor").value
+        self.executor_name = str(
+            self.get_parameter("executor").value
+        )
+
         self.share = share
 
-        cmd_qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE)
-        status_qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        self.create_subscription(String, "/navigation/command", self._on_command, cmd_qos)
-        self.result_pub = self.create_publisher(String, "/navigation/result", cmd_qos)
-        self.status_pub = self.create_publisher(String, "/navigation/status", status_qos)
+        self.status_state = "READY"
+        self.status_task_id = ""
+        self.status_command_id = ""
+        self.status_operation = "NAVIGATION"
+        self.status_phase = "IDLE"
+        self.status_detail = "waiting for /navigation/command"
 
-        self.active = None          # dict of the running command
+        self.command_sub = self.create_subscription(
+            TaskCommand,
+            "/navigation/command",
+            self._on_command,
+            10
+        )
+        
+        self.result_pub = self.create_publisher(
+            TaskResult,
+            "/navigation/result",
+            10
+        )
+
+        self.status_pub = self.create_publisher(
+            ExecutorStatus,
+            "/navigation/status",
+            10
+        )
+
+        self.active = None          # TaskCommand currently being executed
         self.proc = None
         self.started_at = 0.0
-        self.done_ids = {}          # command_id -> result json (재수신 시 재발행)
-        self.create_timer(0.2, self._poll)
-        self._status("READY", "", "", "IDLE", "waiting for /navigation/command")
+        self.done_ids = {}
+
+        self.status_tiemr = self.create_timer(
+            0.5,
+            self._publish_status,
+        )
+
+        self.poll_timer = self.create_timer(
+            0.2,
+            self._poll,
+        )
+        
+        self._status(
+            state="READY",
+            phase="IDLE",
+            detail="waiting for /navigation/command",
+        )
         self.get_logger().info(f"navigation_node ready; destinations: {list(self.dest)}")
 
     # ---------- publish helpers ----------
-    def _status(self, state, task_id, command_id, phase, detail) -> None:
-        self.status_pub.publish(String(data=json.dumps({
-            "executor": self.executor_name, "state": state, "task_id": task_id, "command_id": command_id,
-            "operation": "NAVIGATION", "phase": phase, "detail": detail}, ensure_ascii=False)))
+    def _status(
+            self,
+            state,
+            task_id="",
+            command_id="",
+            phase="IDLE",
+            detail=""
+        ) -> None:
+        self.status_state = state
+        self.status_task_id = task_id
+        self.status_command_id = command_id
+        self.status_phase = phase
+        self.status_detail = detail
 
-    def _result(self, cmd, status, reason, phase, reached="") -> None:
-        payload = {"command_id": cmd.get("command_id", ""), "task_id": cmd.get("task_id", ""),
-                   "operation": "NAVIGATION", "status": status, "phase": phase, "reason": reason,
-                   "safe_to_navigate": False, "reached_station": reached}
-        self.done_ids[payload["command_id"]] = payload
-        self.result_pub.publish(String(data=json.dumps(payload, ensure_ascii=False)))
-        self.get_logger().info(f"result {status}/{reason} for {payload['command_id']} (phase {phase})")
+        self._publish_status()
 
-    # ---------- command handling ----------
-    def _on_command(self, msg: String) -> None:
-        try:
-            cmd = json.loads(msg.data)
-        except json.JSONDecodeError:
-            self.get_logger().error(f"invalid JSON on /navigation/command: {msg.data[:120]}")
+    def _publish_status(self) -> None:
+        message = ExecutorStatus()
+        message.executor = self.executor_name
+        message.state = self.status_state
+        message.task_id = self.status_task_id
+        message.command_id = self.status_command_id
+        message.operation = self.status_operation
+        message.phase = self.status_phase
+        message.detail = self.status_detail
+
+        self.status_pub.publish(message)
+
+    def _result(
+        self,
+        command: TaskCommand,
+        status: str,
+        reason: str,
+        phase: str,
+        reached_station: str = "",
+    ) -> None:
+        message = TaskResult()
+
+        message.task_id = command.task_id
+        message.command_id = command.command_id
+        message.operation = command.operation or "NAVIGATION"
+
+        message.status = status
+        message.phase = phase
+        message.reason = reason
+
+        message.safe_to_navigate = False
+        message.reached_station = reached_station
+
+        message.completed_units = []
+        message.defect_slots = []
+        message.unknown_slots = []
+
+        self.done_ids[command.command_id] = message
+        self.result_pub.publish(message)
+
+        self.get_logger().info(
+            f"result {status}/{reason} "
+            f"for {command.command_id} "
+            f"(phase {phase})"
+        )
+
+    def _on_command(
+        self,
+        command: TaskCommand,
+    ) -> None:
+        if (
+            not command.task_id
+            or not command.command_id
+            or not command.destination
+        ):
+            self._result(
+                command,
+                status="FAILED",
+                reason="INVALID_COMMAND",
+                phase="VALIDATE",
+            )
             return
-        if not all(k in cmd for k in REQUIRED):
-            self._result(cmd, "FAILED", "INVALID_COMMAND", "VALIDATE"); return
-        if cmd.get("operation", "NAVIGATION") != "NAVIGATION":
-            self._result(cmd, "FAILED", "INVALID_COMMAND", "VALIDATE"); return
-        cid = cmd["command_id"]
-        if cid in self.done_ids:                       # 완료된 명령 재수신: 재실행하지 않고 결과 재발행
-            self.result_pub.publish(String(data=json.dumps(self.done_ids[cid], ensure_ascii=False))); return
+
+        if command.operation != "NAVIGATION":
+            self._result(
+                command,
+                status="FAILED",
+                reason="INVALID_COMMAND",
+                phase="VALIDATE",
+            )
+            return
+
+        cached_result = self.done_ids.get(
+            command.command_id
+        )
+
+        if cached_result is not None:
+            self.result_pub.publish(cached_result)
+            self.get_logger().info(
+                "Cached result republished: "
+                f"{command.command_id}"
+            )
+            return
+
         if self.active is not None:
-            self._result(cmd, "FAILED", "BUSY", "VALIDATE"); return
-        dest = self.dest.get(cmd["destination"])
-        if dest is None:
-            self._result(cmd, "FAILED", "INVALID_COMMAND", "VALIDATE"); return
-        if "station" in dest:       # Nav2: go_to_station 이 NavigateToPose 액션으로 주행 (exit code 0/2 규약은 path_runner 와 동일)
-            argv = ["ros2", "run", "smart_farm_navigation", "go_to_station", "--ros-args", "-p", f"station:={dest['station']}"]
-        else:                       # /cmd_vel 경로 주행
-            params = os.path.join(self.share, "config", dest["params"])
-            argv = ["ros2", "launch", "smart_farm_navigation", dest["launch"], "auto_start:=true", f"params_file:={params}"]
-        self.get_logger().info(f"command {cid}: {cmd['destination']} -> {' '.join(argv)}")
-        self.proc = subprocess.Popen(argv)
-        self.active = cmd
+            self._result(
+                command,
+                status="FAILED",
+                reason="BUSY",
+                phase="VALIDATE",
+            )
+            return
+
+        destination = self.dest.get(
+            command.destination
+        )
+
+        if destination is None:
+            self._result(
+                command,
+                status="FAILED",
+                reason="INVALID_COMMAND",
+                phase="VALIDATE",
+            )
+            return
+
+        if "station" in destination:
+            # Nav2 모드 (destinations_nav2.yaml): go_to_station 이 NavigateToPose 로 주행. exit code 0/2 규약은 동일.
+            argv = [
+                "ros2", "run", "smart_farm_navigation", "go_to_station",
+                "--ros-args", "-p", f"station:={destination['station']}",
+            ]
+        else:
+            params = os.path.join(
+                self.share,
+                "config",
+                destination["params"],
+            )
+
+            argv = [
+                "ros2",
+                "launch",
+                "smart_farm_navigation",
+                destination["launch"],
+                "auto_start:=true",
+                f"params_file:={params}",
+            ]
+
+        self.get_logger().info(
+            f"command {command.command_id}: "
+            f"{command.destination} -> {' '.join(argv)}"
+        )
+
+        try:
+            process = subprocess.Popen(argv)
+        except OSError as error:
+            self.get_logger().error(
+                "Failed to launch navigation process: "
+                f"{type(error).__name__}: {error}"
+            )
+
+            self._result(
+                command,
+                status="FAILED",
+                reason="NAV_FAILED",
+                phase="LAUNCH",
+            )
+            return
+
+        self.proc = process
+        self.active = command
         self.started_at = time.monotonic()
-        self._status("BUSY", cmd["task_id"], cid, "DRIVING", cmd["destination"])
+
+        self._status(
+            state="EXECUTING",
+            task_id=command.task_id,
+            command_id=command.command_id,
+            phase="DRIVING",
+            detail=command.destination,
+        )
 
     def _poll(self) -> None:
-        if self.active is None:
+        if self.active is None or self.proc is None:
             return
-        rc = self.proc.poll()
-        if rc is None:
-            if time.monotonic() - self.started_at > self.timeout:
+
+        return_code = self.proc.poll()
+
+        if return_code is None:
+            elapsed = time.monotonic() - self.started_at
+
+            if elapsed > self.timeout:
                 self.proc.terminate()
+
                 try:
                     self.proc.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     self.proc.kill()
-                self._finish("TIMEOUT", "RESULT_TIMEOUT", "DRIVING")
-            return
-        if rc == 0:
-            self._finish("SUCCEEDED", "NONE", "ARRIVED", self.active["destination"])
-        elif rc == 2:
-            self._finish("FAILED", "NAV_FAILED", "DRIVING")
-        else:
-            self._finish("FAILED", "NAV_FAILED", "LAUNCH")
+                    self.proc.wait()
 
-    def _finish(self, status, reason, phase, reached="") -> None:
-        cmd, self.active, self.proc = self.active, None, None
-        self._result(cmd, status, reason, phase, reached)
-        self._status("READY", "", "", "IDLE", f"last {status}")
+                self._finish(
+                    status="TIMEOUT",
+                    reason="RESULT_TIMEOUT",
+                    phase="DRIVING",
+                )
+
+            return
+
+        if return_code == 0:
+            self._finish(
+                status="SUCCEEDED",
+                reason="NONE",
+                phase="ARRIVED",
+                reached_station=self.active.destination,
+            )
+
+        elif return_code == 2:
+            self._finish(
+                status="FAILED",
+                reason="NAV_FAILED",
+                phase="DRIVING",
+            )
+
+        else:
+            self._finish(
+                status="FAILED",
+                reason="NAV_FAILED",
+                phase="LAUNCH",
+            )
+    
+    def _finish(
+        self,
+        status: str,
+        reason: str,
+        phase: str,
+        reached_station: str = "",
+    ) -> None:
+        command = self.active
+
+        if command is None:
+            self.get_logger().warning(
+                "Finish requested without active command"
+            )
+            return
+
+        self.active = None
+        self.proc = None
+
+        self._result(
+            command,
+            status=status,
+            reason=reason,
+            phase=phase,
+            reached_station=reached_station,
+        )
+
+        self._status(
+            state="READY",
+            phase="IDLE",
+            detail=f"last {status}",
+        )
 
     def shutdown(self) -> None:
-        if self.proc is not None and self.proc.poll() is None:
+        if (
+            self.proc is not None
+            and self.proc.poll() is None
+        ):
             self.proc.terminate()
+
             try:
                 self.proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 self.proc.kill()
+                self.proc.wait()
 
 
 def main() -> None:
     rclpy.init()
     node = NavigationNode()
+    
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass
     finally:
         node.shutdown()
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():                 # ros2 launch 의 Ctrl+C 는 컨텍스트를 먼저 닫으므로 두 번 shutdown 하지 않음
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":

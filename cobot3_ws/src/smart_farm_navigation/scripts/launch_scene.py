@@ -1,20 +1,33 @@
-"""Isaac Sim standalone launcher for the Nav2 test (default scene: Collected_smartfarm_v008.usd).
+"""Isaac Sim standalone launcher for the Nav2 test (default scene: Collected_smartfarm_v011.usd).
 
 Opens the scene, enables the ROS 2 bridge, adds a /clock publisher graph when the
 scene has none (Nav2 runs with use_sim_time, so /clock is mandatory), presses Play,
 and keeps the simulation running until SIGTERM/SIGINT.  Run with Isaac Sim's python:
 
-    ~/isaacsim/python.sh launch_scene.py [scene.usd]
+    ~/isaacsim/python.sh launch_scene.py [scene.usd] [--pose carry | --arm-joints 270,0,0,0,0,0] [--lift 0.35]
 
-The scene file on disk is never modified; the clock graph lives only in this session.
+Also (all at runtime only, the USD on disk is never modified):
+  * the 3D lidar helper is switched to fullScan so /front_3d_lidar/lidar_points comes at the
+    sensor scan rate (10 Hz) instead of once per rendered frame (20-60 Hz);
+  * --pose <name> / --arm-joints / --lift move the M0609 joints and the lift to a preset from
+    config/arm_poses.yaml after Play (guidance2 14차 test 2: carry pose without a pallet).
 """
 
+import argparse
 import signal
 import sys
 
 DEFAULT_SCENE = ("/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/"
-                 "Collected_smartfarm_v008/Collected_smartfarm_v008.usd")
-scene = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SCENE
+                 "Collected_smartfarm_v011/Collected_smartfarm_v011.usd")
+_ap = argparse.ArgumentParser()
+_ap.add_argument("scene", nargs="?", default=DEFAULT_SCENE)
+_ap.add_argument("--pose", default="", help="preset name in config/arm_poses.yaml (e.g. carry)")
+_ap.add_argument("--arm-joints", default="", help="6 joint angles in degrees, comma separated (joint_1..joint_6)")
+_ap.add_argument("--lift", type=float, default=None, help="lift_prismatic_joint position in metres (0..0.61)")
+_ap.add_argument("--cloud-full-scan", default="true", help="true: publish the 3D cloud once per full scan (10 Hz)")
+args, _unknown = _ap.parse_known_args()
+scene = args.scene
+ARM_POSES = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/config/arm_poses.yaml"
 
 from isaacsim import SimulationApp  # noqa: E402  (must precede other omni imports)
 
@@ -124,11 +137,65 @@ try:
     except Exception as exc:  # noqa: BLE001
         print(f"[launch_scene] /clock graph creation FAILED: {exc}", flush=True)
 
+    # 3D lidar: one message per full scan (sensor scanRateBaseHz = 10) instead of one per rendered frame.
+    try:
+        import omni.usd as _ou3
+        from pxr import Usd as _U3
+        _st = _ou3.get_context().get_stage()
+        n_set = 0
+        for prim in _st.Traverse():
+            if prim.GetTypeName() == "OmniGraphNode" and str(prim.GetAttribute("node:type").Get() or "").endswith("ROS2RtxLidarHelper"):
+                if str(prim.GetAttribute("inputs:type").Get() or "") == "point_cloud":
+                    prim.GetAttribute("inputs:fullScan").Set(args.cloud_full_scan.lower() == "true")
+                    n_set += 1
+        print(f"[launch_scene] 3D lidar fullScan={args.cloud_full_scan.lower() == 'true'} on {n_set} helper node(s) -> about 10 Hz", flush=True)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[launch_scene] lidar fullScan setting FAILED: {exc}", flush=True)
+
     signal.signal(signal.SIGTERM, _request_stop)
     signal.signal(signal.SIGINT, _request_stop)
 
     omni.timeline.get_timeline_interface().play()
     print("[launch_scene] PLAY", flush=True)
+    for _ in range(30):
+        app.update()
+
+    # Optional arm / lift pose (guidance2 14차 test 2).  Targets are held by the joint drives.
+    arm_deg, lift_m = None, args.lift
+    if args.pose:
+        import yaml as _yaml
+        preset = (_yaml.safe_load(open(ARM_POSES)) or {}).get("poses", {}).get(args.pose)
+        if preset is None:
+            print(f"[launch_scene] pose '{args.pose}' not in {ARM_POSES}", flush=True)
+        else:
+            arm_deg = [float(v) for v in preset.get("arm_joints_deg", [])] or None
+            lift_m = preset.get("lift_m", lift_m) if lift_m is None else lift_m
+    if args.arm_joints:
+        arm_deg = [float(v) for v in args.arm_joints.split(",")]
+    if arm_deg is not None or lift_m is not None:
+        try:
+            import math as _m2
+            import numpy as _np
+            from isaacsim.core.prims import SingleArticulation
+            rig = "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS"
+            art = SingleArticulation(prim_path=rig + "/chassis_link", name="rig")
+            art.initialize()
+            names, targets = [], []
+            if arm_deg is not None:
+                for i, d in enumerate(arm_deg, 1):
+                    names.append(f"joint_{i}"); targets.append(_m2.radians(d))
+            if lift_m is not None:
+                names.append("lift_prismatic_joint"); targets.append(float(lift_m))
+            idx = [art.get_dof_index(n) for n in names]
+            art.set_joint_position_targets(_np.array(targets), joint_indices=_np.array(idx))
+            for _ in range(240):        # let the drives settle before anyone measures self-returns
+                app.update()
+            cur = art.get_joint_positions(joint_indices=_np.array(idx))
+            print("[launch_scene] pose applied: " + ", ".join(
+                f"{n}={(_m2.degrees(c) if n.startswith('joint_') else c):.2f}" for n, c in zip(names, cur)), flush=True)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[launch_scene] arm/lift pose FAILED: {exc}", flush=True)
+
     while app.is_running() and running:
         app.update()
     print("[launch_scene] stopping", flush=True)

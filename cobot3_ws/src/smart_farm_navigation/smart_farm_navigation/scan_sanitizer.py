@@ -12,6 +12,7 @@ the map.  Returns closer than `self_min_range_m` inside the rear sector are set 
 import math
 
 import rclpy
+import rclpy.executors
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
@@ -62,7 +63,7 @@ def main() -> None:
     node = ScanSanitizer()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass
     finally:
         node.destroy_node()

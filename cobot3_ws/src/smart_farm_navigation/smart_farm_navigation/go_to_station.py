@@ -9,7 +9,7 @@ Exit code 0 = SUCCEEDED, 2 = FAILED or CANCELED, 3 = bad arguments.
 Reverse-out zones (stations.yaml `reverse_out_zones`): while the carter stands inside a rack
 corridor it must not turn in place (the rear of the rig sweeps 0.66 m and would hit the rack
 and its pallets), so the node first runs Nav2's BackUp behavior straight out of the zone
-(base_link -x = the carter's visible front) and only then sends the NavigateToPose goal.
+(base_link -x = the carter's rear, caster side) and only then sends the NavigateToPose goal.
 """
 
 import math
@@ -52,6 +52,38 @@ def current_pose(nav: BasicNavigator, timeout_s: float = 10.0):
     return None
 
 
+def run_backup(nav: BasicNavigator, log, dist: float, speed: float, what: str, tries: int = 3) -> bool:
+    """Nav2 BackUp with retries.  Right after bring-up the behavior server may still read sim time 0 and
+    abort at once with 'Exceeded time allowance'; the local costmap may also not be filled yet."""
+    allowance = int(dist / speed * 3 + 60)
+    for attempt in range(1, tries + 1):
+        t0 = time.monotonic()
+        nav.backup(backup_dist=dist, backup_speed=speed, time_allowance=allowance)
+        while not nav.isTaskComplete():
+            time.sleep(0.2)
+        if nav.getResult() == TaskResult.SUCCEEDED:
+            log.info(f"{what} done")
+            return True
+        log.warning(f"{what} attempt {attempt}/{tries} failed after {time.monotonic() - t0:.1f} s"
+                    + ("; retrying in 3 s" if attempt < tries else ""))
+        time.sleep(3.0)
+    return False
+
+
+def wait_for_costmap(nav: BasicNavigator, log, timeout_s: float = 20.0) -> None:
+    """Block until /local_costmap/costmap has been published once (behaviors check collisions against it)."""
+    from nav_msgs.msg import OccupancyGrid
+    from rclpy.qos import DurabilityPolicy, QoSProfile
+    got = []
+    sub = nav.create_subscription(OccupancyGrid, "/local_costmap/costmap", lambda m: got.append(1),
+                                  QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+    end = time.monotonic() + timeout_s
+    while not got and time.monotonic() < end:
+        rclpy.spin_once(nav, timeout_sec=0.2)
+    nav.destroy_subscription(sub)
+    log.info("local costmap available" if got else "local costmap not seen within timeout; continuing")
+
+
 def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
     """Back straight out of a rack corridor before any turning.  Returns False when the back-up failed."""
     pose = current_pose(nav)
@@ -62,7 +94,7 @@ def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
     for z in cfg.get("reverse_out_zones", []):
         if not (z["x"][0] <= x <= z["x"][1] and z["y"][0] <= y <= z["y"][1]):
             continue
-        rear = math.radians(yaw) + math.pi                         # direction of base_link -x in the map
+        rear = math.radians(yaw) + math.pi                         # direction of base_link -x (rear) in the map
         want = math.radians(z["exit_heading_deg"])
         off = abs(math.atan2(math.sin(rear - want), math.cos(rear - want)))
         if off > math.radians(z.get("max_heading_offset_deg", 20.0)):
@@ -74,25 +106,22 @@ def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
             return True
         speed = float(z.get("speed_mps", 0.25))
         log.info(f"in zone {z['name']} at ({x:.2f}, {y:.2f}, {yaw:.0f}deg): BackUp {dist:.2f} m at {speed:.2f} m/s before navigating")
-        nav.backup(backup_dist=dist, backup_speed=speed, time_allowance=int(dist / speed * 2 + 10))
-        while not nav.isTaskComplete():
-            time.sleep(0.2)
-        ok = nav.getResult() == TaskResult.SUCCEEDED
-        log.info(f"BackUp {'done' if ok else 'FAILED'}")
-        return ok
+        return run_backup(nav, log, dist, speed, "BackUp (reverse-out)")
     return True
 
 
 def main() -> None:
     rclpy.init()
     args = Node("go_to_station_args")
-    args.declare_parameter("station", "INSPECTION_DOCK")
+    args.declare_parameter("station", "FEEDER_DOCK")
     args.declare_parameter("stations_file", os.path.join(
         get_package_share_directory("smart_farm_navigation"), "config", "stations.yaml"))
     args.declare_parameter("set_initial_pose", False)
+    args.declare_parameter("pure_nav2", True)      # True: NavigateToPose 하나로 감 (Hybrid-A* 가 후진 구간까지 계획). False: 스크립트가 BackUp 을 먼저 지시
     station = args.get_parameter("station").value
     stations_file = args.get_parameter("stations_file").value
     set_init = bool(args.get_parameter("set_initial_pose").value)
+    pure = bool(args.get_parameter("pure_nav2").value)
     log = args.get_logger()
 
     cfg = yaml.safe_load(open(stations_file))
@@ -113,14 +142,19 @@ def main() -> None:
         nav._waitForNodeToActivate("amcl")
         nav.waitUntilNav2Active(localizer="robot_localization")
     log.info("Nav2 active")
+    wait_for_costmap(nav, log)
 
-    if not reverse_out_if_needed(nav, cfg, log):
+    if pure:
+        log.info("pure_nav2: no scripted BackUp/via; one NavigateToPose from the current pose (planner must handle reversing)")
+    elif not reverse_out_if_needed(nav, cfg, log):
         log.info(f"RESULT FAILED for {station} (reverse-out)")
         rclpy.shutdown(); sys.exit(2)
 
     t0 = time.monotonic()
     result = TaskResult.SUCCEEDED
-    for name in list(target.get("via", [])) + [station]:        # `via` = stations to pass first (e.g. line up before a corridor)
+    reverse_in = None if pure else target.get("reverse_in")   # {from: <station>, distance_m: d}: drive to `from`, then back up d into the dock
+    goals = [station] if pure else list(target.get("via", [])) + ([reverse_in["from"]] if reverse_in else [station])
+    for name in goals:                                 # `via` = stations to pass first (e.g. line up before a corridor)
         wp = cfg["stations"][name]
         log.info(f"goToPose {name}: ({wp['x']:.2f}, {wp['y']:.2f}, {wp['yaw_deg']:.1f}deg)")
         nav.goToPose(make_pose(nav, wp["x"], wp["y"], wp["yaw_deg"]))
@@ -134,6 +168,10 @@ def main() -> None:
         result = nav.getResult()
         if result != TaskResult.SUCCEEDED:
             break
+    if result == TaskResult.SUCCEEDED and reverse_in:
+        d, sp = float(reverse_in["distance_m"]), float(reverse_in.get("speed_mps", 0.2))
+        log.info(f"reverse_in: BackUp {d:.2f} m at {sp:.2f} m/s into {station} (rear = arm side toward the dock)")
+        result = TaskResult.SUCCEEDED if run_backup(nav, log, d, sp, "BackUp (reverse-in)") else TaskResult.FAILED
     code = 0 if result == TaskResult.SUCCEEDED else 2
     log.info(f"RESULT {result.name} for {station} after {time.monotonic() - t0:.0f}s")
     args.destroy_node()

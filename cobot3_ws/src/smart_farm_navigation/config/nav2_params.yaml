@@ -2,6 +2,7 @@
 # Derived from NVIDIA carter_navigation multi_robot params (Apache-2.0): namespace removed.
 # Every layer reads the single /scan topic that nav2.launch.py produces (scan_sanitizer or pointcloud_to_laserscan),
 # speeds and inflation reduced for the 1.72 m rack corridor.
+# 2026-09-22: 고피 실측(guidance2_12차) 반영 - PoseProgressChecker, max_angular_accel, goal tolerance, 감속 완화, local costmap 4 m.
 # Footprint: rig measured in the base_link frame is x -0.59..0.15, y -0.24..0.24 (stock carter footprint covers it).
 amcl:
   ros__parameters:
@@ -61,7 +62,7 @@ bt_navigator:
     robot_base_frame: base_link
     odom_topic: /chassis/odom
     bt_loop_duration: 10
-    default_server_timeout: 20
+    default_server_timeout: 200   # ms. 20 이면 부하 시 follow_path 응답 지연으로 goal 이 즉시 실패함 (내피 모의에서 재현)
     wait_for_service_timeout: 1000
     action_server_result_timeout: 900.0
     navigators: ["navigate_to_pose", "navigate_through_poses"]
@@ -144,14 +145,16 @@ controller_server:
     controller_plugins: ["FollowPath"]
     use_realtime_priority: false
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
+      # 제자리 회전도 진행으로 인정 (SimpleProgressChecker 는 이동 거리만 봐서 회전 중 "Failed to make progress" 로 끊었음)
+      plugin: "nav2_controller::PoseProgressChecker"
       required_movement_radius: 0.3
-      movement_time_allowance: 15.0
+      required_movement_angle: 0.3
+      movement_time_allowance: 20.0
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.15
-      yaw_goal_tolerance: 0.10
+      xy_goal_tolerance: 0.25             # 실측: 0.16 m 에서 수렴 못 함. 팔 배치는 M0609 쪽에서 보정
+      yaw_goal_tolerance: 0.15
     # Regulated Pure Pursuit: 제자리 회전 -> 경로 추종 -> 도착 후 제자리 회전. 차동 구동에 맞고 도착점 근처에서 흔들리지 않음.
     # (1차 Nav2 시험은 DWB 였음. 도착점 0.6 m 안에서 좌우 회전을 반복해 교체함.)
     FollowPath:
@@ -163,20 +166,20 @@ controller_server:
       lookahead_time: 1.5
       use_velocity_scaled_lookahead_dist: false
       rotate_to_heading_angular_vel: 0.8
-      max_angular_accel: 2.0
+      max_angular_accel: 20.0              # 실측: 2.0 이면 Isaac odom 속도 기준 가속 제한에 걸려 회전이 기어감(정지처럼 보임). Isaac 쪽 DifferentialController 가 실제 가속을 제한함
       transform_tolerance: 0.5            # 두 PC 사이 지연 여유
-      min_approach_linear_velocity: 0.05
-      approach_velocity_scaling_dist: 0.6
+      min_approach_linear_velocity: 0.1
+      approach_velocity_scaling_dist: 0.3   # 도착 직전 감속 구간 축소
       use_collision_detection: true
       max_allowed_time_to_collision_up_to_carrot: 1.0
-      use_regulated_linear_velocity_scaling: true
+      use_regulated_linear_velocity_scaling: false   # 곡선·장애물 근접 감속 끔 (사용자 요청: 느려짐 최소화)
       use_cost_regulated_linear_velocity_scaling: false
       regulated_linear_scaling_min_radius: 0.9
       regulated_linear_scaling_min_speed: 0.25
       use_fixed_curvature_lookahead: false
-      use_rotate_to_heading: true
+      use_rotate_to_heading: false         # Hybrid-A* 경로는 자세까지 맞으므로 제자리 회전 대신 경로를 따라감
       rotate_to_heading_min_angle: 0.785
-      allow_reversing: false
+      allow_reversing: true                # 경로의 후진 구간(cusp)을 그대로 따라감
       max_robot_pose_search_dist: 10.0
 
 local_costmap:
@@ -189,8 +192,8 @@ local_costmap:
       global_frame: odom
       robot_base_frame: base_link
       rolling_window: true
-      width: 5
-      height: 5
+      width: 4
+      height: 4                         # 실측 피드백: 5 -> 4 (4/5 수준)
       resolution: 0.05
       transform_tolerance: 0.3
       footprint: "[ [0.14, 0.25], [0.14, -0.25], [-0.607, -0.25], [-0.607, 0.25] ]"
@@ -218,7 +221,7 @@ local_costmap:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: True
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 0.45
 
 global_costmap:
   global_costmap:
@@ -253,7 +256,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 0.45           # 0.70 으로 올리면 Hybrid-A* 경고는 사라지나 통로 안 복귀가 99 s 로 늘어남(발자국 검사 경고는 무시)
       always_send_full_costmap: True
 
 collision_monitor:
@@ -273,7 +276,7 @@ collision_monitor:
       type: "polygon"
       action_type: "approach"
       footprint_topic: "local_costmap/published_footprint"
-      time_before_collision: 1.2
+      time_before_collision: 0.8            # 장애물 접근 감속 시작을 늦춤
       simulation_time_step: 0.1
       min_points: 6
       visualize: False
@@ -304,11 +307,39 @@ planner_server:
     use_sim_time: True
     expected_planner_frequency: 10.0
     planner_plugins: ["GridBased"]
+    # Smac Hybrid-A* (Reeds-Shepp): 후진 구간을 포함한 자세(SE2) 경로를 Nav2 가 직접 계획함.
+    # 시작(랙 통로 안, 뒤가 출구)에서 뒤로 빠져나오고 Feeder 앞에서 뒤로 들어가는 경로를 NavigateToPose 하나로 만들기 위함 (튜터 조건: Nav2 로만).
+    # NavFn 은 자세를 무시해 통로 안 제자리 회전 경로를 내므로 쓰지 않음.
     GridBased:
-      plugin: "nav2_navfn_planner::NavfnPlanner"
-      tolerance: 0.3
-      use_astar: false
+      plugin: "nav2_smac_planner::SmacPlannerHybrid"
+      tolerance: 0.25
+      downsample_costmap: false
+      downsampling_factor: 1
       allow_unknown: true
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      max_planning_time: 5.0
+      motion_model_for_search: "REEDS_SHEPP"
+      angle_quantization_bins: 72
+      analytic_expansion_ratio: 3.5
+      analytic_expansion_max_length: 3.0
+      minimum_turning_radius: 0.35
+      reverse_penalty: 1.0              # 후진을 전진과 같은 비용으로 (통로 탈출·Feeder 도킹은 후진이 정답)
+      change_penalty: 0.0
+      non_straight_penalty: 1.2
+      cost_penalty: 2.0
+      retrospective_penalty: 0.015
+      lookup_table_size: 20.0
+      cache_obstacle_heuristic: false
+      allow_reverse_expansion: true
+      smooth_path: true
+      smoother:
+        max_iterations: 1000
+        w_smooth: 0.3
+        w_data: 0.2
+        tolerance: 1.0e-10
+        do_refinement: true
+        refinement_num: 2
 
 smoother_server:
   ros__parameters:

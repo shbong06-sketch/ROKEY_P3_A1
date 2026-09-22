@@ -13,6 +13,10 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(rosidl_cmake REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/TaskCommand.msg"
+  "msg/TaskResult.msg"
+  "msg/ExecutorStatus.msg"
+  "msg/CycleStatus.msg"
   "srv/StartCycle.srv"
 )
 
