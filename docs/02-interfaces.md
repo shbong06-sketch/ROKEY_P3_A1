@@ -251,7 +251,7 @@ status 값:
 - command_id: TASK-YYYYMMDD-NNN-CMD-NNN
 - pallet_id: PALLET_001, PALLET_002, …
 - rack slot: RACK_L1 ~ RACK_L4
-- plant slot: SLOT_01 ~ SLOT_08
+- plant slot: SLOT_01 ~ SLOT_06
 - navigation station: RACK_DOCK, INSPECTION_DOCK
 - pallet station: INSPECT_STATION, PACK_OUT
 
@@ -308,7 +308,7 @@ Task Manager가 task_id와 command_id를 생성한다. 모든 결과는 요청�
 | PICK_HARVEST | Sim Task Executor | pallet_id=PALLET_004, source=RACK_L4 | safe_to_navigate=true |
 | NAVIGATION | Navigation Node | destination=INSPECTION_DOCK | reached_station=INSPECTION_DOCK |
 | PLACE_INSPECT | Sim Task Executor | pallet_id=PALLET_004, destination=INSPECT_STATION | VERIFY_PLACE 통과 |
-| INSPECT | Inspection Node | pallet_id=PALLET_004 | SLOT_01~SLOT_08 결과, unknown_slots 없음 |
+| INSPECT | Inspection Node | pallet_id=PALLET_004 | SLOT_01~SLOT_06 결과, unknown_slots 없음 |
 | CULL | Sim Task Executor | pallet_id와 target_slots | 모든 대상 슬롯 제거 확인 |
 | CONVEYOR_OUT | Sim Task Executor | pallet_id, destination=PACK_OUT | 출구 감지와 작업 기록 완료 |
 
@@ -358,7 +358,7 @@ reason: NONE
 safe_to_navigate: false
 reached_station: ""
 completed_units: []
-defect_slots: [SLOT_03, SLOT_07]
+defect_slots: [SLOT_03, SLOT_06]
 unknown_slots: []
 ```
 
@@ -373,7 +373,7 @@ unknown_slots: []
   "pallet_id": "PALLET_004",
   "source": "INSPECT_STATION",
   "destination": "INSPECT_STATION",
-  "target_slots": ["SLOT_03", "SLOT_07"]
+  "target_slots": ["SLOT_03", "SLOT_06"]
 }
 ```
 
@@ -441,7 +441,7 @@ CHECK_PALLET_ON_CONVEYOR → START_CONVEYOR → MONITOR_EXIT → STOP_CONVEYOR �
 - INSPECT 명령을 받은 후 해당 task_id와 command_id에 속하는 검사 세션을 시작한다.
 - 현재 color_detector는 reference 구현으로만 사용한다.
 - 최종 구현은 YOLO 기반 위치 검출과 이상탐지 모델을 결합한다.
-- 결과는 SLOT_01~SLOT_08 단위로 생성한다.
+- 결과는 SLOT_01~SLOT_06 단위로 생성한다.
 - 미검출, 중복 검출, 신뢰도 부족은 정상으로 처리하지 않고 unknown_slots에 포함한다.
 - unknown_slots가 하나라도 존재하면 SUCCEEDED를 반환하지 않는다.
 - 모델 구현이 바뀌어도 TaskCommand와 TaskResult 계약은 유지한다.

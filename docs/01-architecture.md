@@ -40,7 +40,7 @@
 
 - 팔레트 ID: PALLET_001, PALLET_002, …
 - 랙 슬롯: RACK_L1 ~ RACK_L4
-- 식물 슬롯: SLOT_01 ~ SLOT_08
+- 식물 슬롯: SLOT_01 ~ SLOT_06
 - AMR 도킹점: RACK_DOCK, INSPECTION_DOCK
 - 팔레트 배치점: INSPECT_STATION, PACK_OUT
 - 작업 실행 ID: TASK-YYYYMMDD-NNN
@@ -124,7 +124,7 @@ PREFLIGHT를 포함한 총 8개 상태이며, 실제 공정은 7개 실행 단�
 | 2 | PICK_HARVEST | Sim Task Executor | 수확 팔레트 L4 PICK, 인출, 운송 자세·높이 | safe_to_navigate=true |
 | 3 | NAVIGATION | Navigation Node | Nav2로 INSPECTION_DOCK 이동 | Nav2 성공 및 목적지 일치 |
 | 4 | PLACE_INSPECT | Sim Task Executor | 베이스 정지 확인 후 검사대 위 PLACE | 팔레트 안착 확인 |
-| 5 | INSPECT | Inspection Node | 카메라 인식과 SLOT_01~SLOT_08 검사 | 슬롯별 결과 생성, 미판정 없음 |
+| 5 | INSPECT | Inspection Node | 카메라 인식과 SLOT_01~SLOT_06 검사 | 슬롯별 결과 생성, 미판정 없음 |
 | 6 | CULL | Sim Task Executor | 불량 슬롯 순차 솎아내기 | 대상 슬롯 제거 확인 |
 | 7 | CONVEYOR_OUT | Sim Task Executor | 컨베이어 가동, 출구 이동, 작업 기록 | 출구 감지 또는 목표 위치 도달 |
 
