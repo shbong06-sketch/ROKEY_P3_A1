@@ -22,13 +22,16 @@ app = SimulationApp({"headless": os.environ.get("HEADLESS") == "1"})
 
 from pathlib import Path
 
+import carb
 import omni.usd
+from pxr import Gf, UsdGeom
 
 from isaacsim.core.api import World
 from isaacsim.core.prims import SingleRigidPrim, SingleXFormPrim
 from isaacsim.robot.manipulators.manipulators import SingleManipulator
 from isaacsim.robot_motion.motion_generation import LulaKinematicsSolver
 
+from conveyor import ConveyorController, prepare_world
 from lift import LiftController, check_fork_clear_of_rack
 from pallet_transfer import PalletTransferController, TransferState
 from robot_motion import (
@@ -45,8 +48,8 @@ from robot_motion import (
 SCENE_PATH = Path(
     Path(__file__).resolve().parent.parent
         / "scenes"
-        / "Collected_smartfarm_v008"
-        / "Collected_smartfarm_v008.usd"
+        / "Collected_smartfarm_v011"
+        / "Collected_smartfarm_v011.usd"
 )
 
 M0609_DIR = Path(__file__).resolve().parent.parent.parent / "M0609"
@@ -121,6 +124,26 @@ RENDER_EVERY = 0 if os.environ.get("HEADLESS") == "1" else 3
 PHYSICS_DT = 1.0 / 60.0
 
 
+# ── 컨베이어 ────────────────────────────────────────────
+# 로봇 작업과 무관하게 Play 중 계속 돌아갑니다. 랙 팔레트(TASKS)와는 다른
+# 팔레트라 서로 간섭하지 않습니다.
+CONVEYOR_PALLETS = (
+    "/World/SmartFarm/Placed/Pallet_Inspect",
+    "/World/SmartFarm/Placed/Pallet_Inspect_01",
+    "/World/SmartFarm/Placed/Pallet_Inspect_02",
+    "/World/SmartFarm/Placed/Pallet_Inspect_03",
+)
+# 시작할 때 세워 둘 자리 (줄기 서쪽 빈 바닥). 벨트 구역 밖입니다.
+CONVEYOR_PARK = (-3.40, -5.60, 0.03)
+CONVEYOR_PARK_GAP = 0.60
+# 한 장은 줄기에 올려 두고 시작합니다. 로봇이 일하는 동안 컨베이어도 도는 것을
+# 보기 위해서입니다. None 이면 벨트를 비운 채 시작합니다.
+CONVEYOR_DROP = (-2.19, -4.00, 0.796)
+# 비전룸 정지 시간과 정지 위치는 conveyor.py 맨 위 두 상수로 조절합니다.
+#   VISION_X            : 어디서 세울지
+#   AUTO_RESUME_SECONDS : 검사 신호 없이 얼마 뒤에 다시 내보낼지
+
+
 def open_scene():
     """파일과 프림을 확인하고, 수정 대상이 세션 레이어인 stage를 반환합니다."""
     if not SCENE_PATH.is_file():
@@ -144,6 +167,32 @@ def open_scene():
             raise RuntimeError(f"Prim이 없습니다: {path}")
 
     return stage
+
+
+def enable_mouse_grab():
+    """Play 중에 마우스로 물체를 집어 옮길 수 있게 합니다 (PhysX 마우스 상호작용).
+
+    시뮬레이션이 도는 동안에는 물리가 위치를 쥐고 있어서, 기즈모로 끌면
+    제자리로 돌아가거나 그대로 멈춰 버립니다. 이 기능을 켜면 힘으로 끌 수 있습니다.
+    """
+    settings = carb.settings.get_settings()
+    settings.set("/physics/mouseInteractionEnabled", True)
+    settings.set("/physics/mouseGrab", True)
+    settings.set("/physics/forceGrab", True)
+
+
+def place_conveyor_pallets(stage):
+    """컨베이어 팔레트를 벨트 밖에 세우고, 한 장만 줄기에 올려 둡니다."""
+    for index, path in enumerate(CONVEYOR_PALLETS):
+        target = (CONVEYOR_PARK[0],
+                  CONVEYOR_PARK[1] + index * CONVEYOR_PARK_GAP,
+                  CONVEYOR_PARK[2])
+        if index == 0 and CONVEYOR_DROP is not None:
+            target = CONVEYOR_DROP
+        for op in UsdGeom.Xformable(stage.GetPrimAtPath(path)).GetOrderedXformOps():
+            if op.GetOpName() == "xformOp:translate":
+                op.Set(Gf.Vec3d(*target))
+                break
 
 
 def create_world():
@@ -182,8 +231,21 @@ def create_world():
 
 def main():
     stage = open_scene()
+    if os.environ.get("HEADLESS") != "1":
+        enable_mouse_grab()
     brake_wheels(stage, RIG_PATH)
+
+    # 컨베이어 준비는 반드시 world.reset() 전에 끝내야 합니다.
+    # create_world() 안에서 reset 이 돌기 때문에 여기서 먼저 합니다.
+    prepare_world(stage)
+    conveyor = ConveyorController(stage)
+    conveyor.build()
+    for path in CONVEYOR_PALLETS:
+        conveyor.watch(path)
+    place_conveyor_pallets(stage)
+
     world, robot, arm_base, pallets = create_world()
+    conveyor.attach()               # 롤러·팔레트 핸들은 reset 뒤에 잡습니다
 
     # 관절 인덱스는 초기화 뒤에야 읽히므로 여기서 만듭니다.
     # 기준 잡기(calibrate)는 아래 루프에서 reset 직후에 합니다.
@@ -210,8 +272,13 @@ def main():
     step_count = 0
 
     def step_world():
-        """물리를 한 스텝 진행합니다. 화면은 RENDER_EVERY 간격으로만 그립니다."""
+        """물리를 한 스텝 진행합니다. 화면은 RENDER_EVERY 간격으로만 그립니다.
+
+        컨베이어도 여기서 돌립니다. 물리 스텝마다 불리는 유일한 자리라,
+        로봇이 무슨 상태든 벨트는 계속 돌아갑니다.
+        """
         nonlocal step_count
+        conveyor.update(PHYSICS_DT)
         step_count += 1
         world.step(
             render=RENDER_EVERY > 0 and step_count % RENDER_EVERY == 0
@@ -250,7 +317,9 @@ def main():
                 transfer.cancel()
                 if transfer.state == TransferState.FAILED:
                     raise RuntimeError(f"초기화 전 정지 실패: {transfer.error}")
+                conveyor.reset()
                 world.reset()
+                conveyor.attach()
                 task_index = 0
                 parking = None
 
