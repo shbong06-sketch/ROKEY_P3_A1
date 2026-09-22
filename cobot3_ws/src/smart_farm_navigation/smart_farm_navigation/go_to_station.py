@@ -117,9 +117,11 @@ def main() -> None:
     args.declare_parameter("stations_file", os.path.join(
         get_package_share_directory("smart_farm_navigation"), "config", "stations.yaml"))
     args.declare_parameter("set_initial_pose", False)
+    args.declare_parameter("pure_nav2", True)      # True: NavigateToPose 하나로 감 (Hybrid-A* 가 후진 구간까지 계획). False: 스크립트가 BackUp 을 먼저 지시
     station = args.get_parameter("station").value
     stations_file = args.get_parameter("stations_file").value
     set_init = bool(args.get_parameter("set_initial_pose").value)
+    pure = bool(args.get_parameter("pure_nav2").value)
     log = args.get_logger()
 
     cfg = yaml.safe_load(open(stations_file))
@@ -142,14 +144,16 @@ def main() -> None:
     log.info("Nav2 active")
     wait_for_costmap(nav, log)
 
-    if not reverse_out_if_needed(nav, cfg, log):
+    if pure:
+        log.info("pure_nav2: no scripted BackUp/via; one NavigateToPose from the current pose (planner must handle reversing)")
+    elif not reverse_out_if_needed(nav, cfg, log):
         log.info(f"RESULT FAILED for {station} (reverse-out)")
         rclpy.shutdown(); sys.exit(2)
 
     t0 = time.monotonic()
     result = TaskResult.SUCCEEDED
-    reverse_in = target.get("reverse_in")            # {from: <station>, distance_m: d}: drive to `from`, then back up d into the dock
-    goals = list(target.get("via", [])) + ([reverse_in["from"]] if reverse_in else [station])
+    reverse_in = None if pure else target.get("reverse_in")   # {from: <station>, distance_m: d}: drive to `from`, then back up d into the dock
+    goals = [station] if pure else list(target.get("via", [])) + ([reverse_in["from"]] if reverse_in else [station])
     for name in goals:                                 # `via` = stations to pass first (e.g. line up before a corridor)
         wp = cfg["stations"][name]
         log.info(f"goToPose {name}: ({wp['x']:.2f}, {wp['y']:.2f}, {wp['yaw_deg']:.1f}deg)")

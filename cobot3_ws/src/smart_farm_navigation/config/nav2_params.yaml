@@ -177,9 +177,9 @@ controller_server:
       regulated_linear_scaling_min_radius: 0.9
       regulated_linear_scaling_min_speed: 0.25
       use_fixed_curvature_lookahead: false
-      use_rotate_to_heading: true
+      use_rotate_to_heading: false         # Hybrid-A* 경로는 자세까지 맞으므로 제자리 회전 대신 경로를 따라감
       rotate_to_heading_min_angle: 0.785
-      allow_reversing: false
+      allow_reversing: true                # 경로의 후진 구간(cusp)을 그대로 따라감
       max_robot_pose_search_dist: 10.0
 
 local_costmap:
@@ -256,7 +256,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.45
+        inflation_radius: 0.45           # 0.70 으로 올리면 Hybrid-A* 경고는 사라지나 통로 안 복귀가 99 s 로 늘어남(발자국 검사 경고는 무시)
       always_send_full_costmap: True
 
 collision_monitor:
@@ -307,11 +307,39 @@ planner_server:
     use_sim_time: True
     expected_planner_frequency: 10.0
     planner_plugins: ["GridBased"]
+    # Smac Hybrid-A* (Reeds-Shepp): 후진 구간을 포함한 자세(SE2) 경로를 Nav2 가 직접 계획함.
+    # 시작(랙 통로 안, 뒤가 출구)에서 뒤로 빠져나오고 Feeder 앞에서 뒤로 들어가는 경로를 NavigateToPose 하나로 만들기 위함 (튜터 조건: Nav2 로만).
+    # NavFn 은 자세를 무시해 통로 안 제자리 회전 경로를 내므로 쓰지 않음.
     GridBased:
-      plugin: "nav2_navfn_planner::NavfnPlanner"
-      tolerance: 0.3
-      use_astar: false
+      plugin: "nav2_smac_planner::SmacPlannerHybrid"
+      tolerance: 0.25
+      downsample_costmap: false
+      downsampling_factor: 1
       allow_unknown: true
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      max_planning_time: 5.0
+      motion_model_for_search: "REEDS_SHEPP"
+      angle_quantization_bins: 72
+      analytic_expansion_ratio: 3.5
+      analytic_expansion_max_length: 3.0
+      minimum_turning_radius: 0.35
+      reverse_penalty: 1.0              # 후진을 전진과 같은 비용으로 (통로 탈출·Feeder 도킹은 후진이 정답)
+      change_penalty: 0.0
+      non_straight_penalty: 1.2
+      cost_penalty: 2.0
+      retrospective_penalty: 0.015
+      lookup_table_size: 20.0
+      cache_obstacle_heuristic: false
+      allow_reverse_expansion: true
+      smooth_path: true
+      smoother:
+        max_iterations: 1000
+        w_smooth: 0.3
+        w_data: 0.2
+        tolerance: 1.0e-10
+        do_refinement: true
+        refinement_num: 2
 
 smoother_server:
   ros__parameters:
