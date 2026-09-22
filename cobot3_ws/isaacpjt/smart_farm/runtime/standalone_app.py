@@ -370,6 +370,23 @@ def open_scene(scene_path):
         raise RuntimeError(f"USD Scene을 열지 못했습니다: {scene_path}")
 
     stage.SetEditTarget(stage.GetSessionLayer())
+
+    # [navigation 2026-09-22] 3D 라이다를 프레임마다 60도 조각이 아니라 한 바퀴(10 Hz)마다 발행하게 함.
+    # 조각 발행이면 Nav2 의 /scan 이 한 방향만 담겨 AMCL 방향이 흔들리고 Feeder 도킹 면 검출이 안 됨.
+    # 세션 레이어에만 적용되며 USD 파일은 바뀌지 않음. (launch_scene.py 와 같은 설정)
+    try:
+        n_set = 0
+        for prim in stage.Traverse():
+            if prim.GetTypeName() == "OmniGraphNode" and str(
+                prim.GetAttribute("node:type").Get() or ""
+            ).endswith("ROS2RtxLidarHelper") and str(
+                prim.GetAttribute("inputs:type").Get() or ""
+            ) == "point_cloud":
+                prim.GetAttribute("inputs:fullScan").Set(True)
+                n_set += 1
+        print(f"[라이다] 3D 라이다 fullScan=True ({n_set}개 helper) -> 약 10 Hz 전체 스캔", flush=True)
+    except Exception as error:  # noqa: BLE001
+        print(f"[라이다] fullScan 설정 실패 (무시): {error}", flush=True)
     return stage
 
 
