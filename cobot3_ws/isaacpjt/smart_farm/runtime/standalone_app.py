@@ -117,22 +117,44 @@ def configure_ros_environment():
         for item in os.environ.get("LD_LIBRARY_PATH", "").split(":")
         if item
     ]
-    needs_reexec = (
-        str(ros_lib) not in current_paths
-        and os.environ.get("SMARTFARM_ROS_REEXEC") != "1"
-    )
-    if needs_reexec:
-        os.environ["LD_LIBRARY_PATH"] = ":".join(
-            [*current_paths, str(ros_lib)]
-        )
-        os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
-        os.environ["SMARTFARM_ROS_REEXEC"] = "1"
 
-        print(
-            f"[ROS2] LD_LIBRARY_PATH에 {ros_lib}를 추가하고 다시 실행합니다.",
-            flush=True,
-        )
-        os.execv(sys.executable, [sys.executable, *sys.argv])
+    # 시스템 ROS(/opt/ros/...)와 Isaac 번들에는 같은 이름의 .so가 둘 다 있습니다.
+    # 터미널에서 setup.bash를 source한 뒤 실행하면 /opt/ros/jazzy/lib가 앞에 있어
+    # 그쪽 .so가 먼저 잡히고, Python 쪽 rclpy는 Isaac 번들에서 옵니다.
+    # 그러면 Node를 만드는 순간
+    #   librcl_interfaces__rosidl_generator_py.so!..._convert_from_py → __assert_fail
+    # 으로 abort 합니다. 시스템 ROS 경로는 빼고 번들을 맨 앞에 둡니다.
+    system_ros = [item for item in current_paths if item.startswith("/opt/ros/")]
+    wanted = [str(ros_lib)] + [
+        item
+        for item in current_paths
+        if item != str(ros_lib) and not item.startswith("/opt/ros/")
+    ]
+
+    if current_paths != wanted:
+        os.environ["LD_LIBRARY_PATH"] = ":".join(wanted)
+        os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
+
+        if os.environ.get("SMARTFARM_ROS_REEXEC") == "1":
+            # 다시 실행했는데도 어긋나 있으면 더 손대지 않고 알리기만 합니다.
+            print(
+                "[ROS2] 경고 — LD_LIBRARY_PATH를 바로잡지 못했습니다. "
+                "ROS를 source하지 않은 터미널에서 실행해 보세요.",
+                flush=True,
+            )
+        else:
+            os.environ["SMARTFARM_ROS_REEXEC"] = "1"
+            if system_ros:
+                print(
+                    f"[ROS2] 시스템 ROS 경로 {len(system_ros)}개를 빼고 "
+                    "Isaac 번들을 씁니다. 필요한 rclpy·std_msgs는 번들에 있습니다.",
+                    flush=True,
+                )
+            print(
+                f"[ROS2] LD_LIBRARY_PATH 맨 앞에 {ros_lib}를 두고 다시 실행합니다.",
+                flush=True,
+            )
+            os.execv(sys.executable, [sys.executable, *sys.argv])
 
     # 시스템 Jazzy는 Python 3.12용이므로 Isaac Sim Python 3.11에서는
     # 반드시 Isaac Sim에 포함된 rclpy를 먼저 import해야 한다.

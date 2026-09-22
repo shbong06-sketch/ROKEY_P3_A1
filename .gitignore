@@ -61,5 +61,8 @@ __pycache__/
 
 rosbag2_*
 
-/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/media_log/*
-/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags/*
+/cobot3_ws/src/smart_farm_navigation/results/media_log/*
+/cobot3_ws/src/smart_farm_navigation/results/bags/*
+/cobot3_ws/isaacpjt/smart_farm/scripts/lift_stroke.py
+/cobot3_ws/records/
+/cobot3_ws/src/smart_farm_monitor/
