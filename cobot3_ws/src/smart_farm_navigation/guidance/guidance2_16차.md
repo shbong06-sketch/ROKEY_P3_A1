@@ -14,6 +14,8 @@
 - 내피 모의(60° 조각 20 Hz 로 흉내)에서 합치기만으로 도킹 성공: `face_dist 1.024 m, yaw_err 0.06°, lat −0.007 m`.
 - Isaac 을 다시 실행하면 터미널 3 도 다시 실행해야 함(18:26 로그 끝의 TF 오류가 그 경우임).
 
+**19:06 실측 (fullScan 적용 후)**: 라이다는 정상(41,000점)이었고 `feeder_dock` 이 도착 2 s 뒤 면을 찾아(`d=1.92 yaw=+12.7 len=1.06`) 시작했으나 6 s 뒤 `FACE_NOT_FOUND` 로 실패, 수동 재시작도 후진 도중 같은 이유로 실패함. bag 재생 결과 검출은 모든 스캔에서 성공했음. 원인은 시간 기준임: 노드가 벽시계로 "0.6 s 안에 새 스캔" 을 요구했는데 고피 실시간 배율 0.33 에서는 스캔이 벽시계 0.9 s 간격으로 와서 늘 "오래된 값" 으로 취급되어 정지·실패함. 시뮬레이션 시계(`use_sim_time`) 기준으로 바꾸고 신선 기준 1.0 s, 미검출 실패 8 s 로 고침. 내피 모의(배율 0.33 재현)에서 도킹 성공: `face_dist 1.028 m, yaw_err 0.18°, lat 0.012 m`. 절차 변경 없음(내피 재빌드만).
+
 ## 1. 고피 터미널 1 (팀 통합 standalone, 시험 3 과 동일)
 ```bash
 isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay

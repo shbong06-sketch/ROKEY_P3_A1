@@ -142,12 +142,18 @@ class FeederDock(Node):
         self.last_why = why
         self.face = face
         if face is not None:
-            self.face_stamp = time.monotonic()
+            self.face_stamp = self._now()
+
+    def _now(self) -> float:
+        """Seconds on the node clock (= Isaac sim time with use_sim_time).  Wall time must not be used:
+        at real-time factor 0.3 the scans arrive 0.9 s apart on the wall clock and every wall-clock
+        freshness/timeout check fires (2026-09-22 19:06 run: face detected on every scan, docking failed anyway)."""
+        return self.get_clock().now().nanoseconds * 1e-9
 
     def _on_amcl(self, m):  self.amcl_xy = (m.pose.pose.position.x, m.pose.pose.position.y)
     def _on_cmd(self, m):
         if self.phase in ("IDLE", "DONE", "FAILED") and (abs(m.linear.x) > 0.01 or abs(m.angular.z) > 0.01):
-            self.last_ext_cmd = time.monotonic()
+            self.last_ext_cmd = self._now()
 
     def _report(self):
         if self.phase != "IDLE":
@@ -158,19 +164,19 @@ class FeederDock(Node):
         f = self.face
         self.get_logger().info(
             f"idle: amcl dist to FEEDER_APPROACH {near if near is None else round(near, 2)} m, "
-            f"nav2 idle {time.monotonic() - self.last_ext_cmd > 2.0}, face "
+            f"nav2 idle {self._now() - self.last_ext_cmd > 2.0}, face "
             + (f"d={f[0]:.2f} yaw={math.degrees(f[1]):+.1f} len={f[6]:.2f}" if f else f"NOT FOUND ({self.last_why})"))
 
     # ---------- state machine ----------
     def _status(self, phase, detail=""):
-        self.phase = phase; self.t_phase = time.monotonic()
+        self.phase = phase; self.t_phase = self._now()
         self.status_pub.publish(String(data=json.dumps({"phase": phase, "detail": detail}, ensure_ascii=False)))
         self.get_logger().info(f"[{phase}] {detail}")
 
     def _start(self, how):
         if self.phase not in ("IDLE", "DONE", "FAILED"):
             return
-        self.done = False; self.t_start = time.monotonic()
+        self.done = False; self.t_start = self._now()
         self._status("ALIGN_TO_GOAL", f"started ({how})")
 
     def _finish(self, ok, reason):
@@ -193,8 +199,8 @@ class FeederDock(Node):
         return w
 
     def _tick(self):
-        now = time.monotonic()
-        fresh = self.face is not None and now - self.face_stamp < 0.6
+        now = self._now()
+        fresh = self.face is not None and now - self.face_stamp < 1.0      # sim seconds (scan comes every 0.1-0.3 s sim)
         if self.phase in ("IDLE", "DONE", "FAILED"):
             if self.auto and self.phase == "IDLE" and self.amcl_xy is not None:
                 near = math.hypot(self.amcl_xy[0] - self.arm[0], self.amcl_xy[1] - self.arm[1]) < self.arm_r
@@ -211,7 +217,7 @@ class FeederDock(Node):
             self._finish(False, "TIMEOUT"); return
         if not fresh:
             self._pub(0.0, 0.0)
-            if now - self.t_phase > 5.0:
+            if now - self.t_phase > 8.0:
                 self._finish(False, "FACE_NOT_FOUND")
             return
         dist, yaw_err, lat, cx, cy, n, length = self.face
