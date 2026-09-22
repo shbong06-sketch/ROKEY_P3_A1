@@ -32,6 +32,7 @@ setup(
             "cloud_self_filter = smart_farm_navigation.cloud_self_filter:main",
             "go_to_station = smart_farm_navigation.go_to_station:main",
             "nav2_link_check = smart_farm_navigation.nav2_link_check:main",
+            "station_markers = smart_farm_navigation.station_markers:main",
         ],
     },
 )
