@@ -1,0 +1,12 @@
+# written by launch_scene.py 2026-09-22 13:45:02
+scene: /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v011/Collected_smartfarm_v011.usd
+prim: /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS
+x: -0.4210
+y: 1.0060
+yaw_deg: 90.00
+robots:
+  - name: carter1
+    prim: /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS
+    x: -0.4210
+    y: 1.0060
+    yaw_deg: 90.00
