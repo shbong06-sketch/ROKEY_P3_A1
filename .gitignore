@@ -60,3 +60,6 @@ __pycache__/
 .DS_Store
 
 rosbag2_*
+
+# Vision model weights
+cobot3_ws/src/smart_farm_vision/resource/*.pt

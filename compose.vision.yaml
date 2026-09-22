@@ -1,0 +1,28 @@
+services:
+  vision:
+    build:
+      context: ./cobot3_ws/src
+      dockerfile: smart_farm_vision/Dockerfile
+
+    image: smart-farm-vision:jazzy-cu124
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+
+    network_mode: host
+    shm_size: "2gb"
+
+    environment:
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-0}"
+      ROS_LOCALHOST_ONLY: "0"
+
+    volumes:
+      - ./cobot3_ws/src/smart_farm_vision/resource:/models:ro
+      - ./cobot3_ws/src/smart_farm_vision/config:/config:ro
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
