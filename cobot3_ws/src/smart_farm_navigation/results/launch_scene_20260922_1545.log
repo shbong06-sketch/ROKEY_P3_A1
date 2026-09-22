@@ -1,0 +1,28 @@
+[launch_scene] log -> /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/launch_scene_20260922_1545.log  argv=['--pose', 'carry']
+Traceback (most recent call last):
+  File "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/launch_scene.py", line 72, in <module>
+    app = SimulationApp({"headless": False}, **_kw)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rokey/isaacsim/exts/isaacsim.simulation_app/isaacsim/simulation_app/simulation_app.py", line 162, in __init__
+    faulthandler.enable()
+AttributeError: '_Tee' object has no attribute 'fileno'
+Exception ignored in: <function SimulationApp.__del__ at 0x7c10b7deb380>
+Traceback (most recent call last):
+  File "/home/rokey/isaacsim/exts/isaacsim.simulation_app/isaacsim/simulation_app/simulation_app.py", line 369, in __del__
+    if self._exiting is False and sys.meta_path is None:
+       ^^^^^^^^^^^^^
+AttributeError: 'SimulationApp' object has no attribute '_exiting'
+[launch_scene] log -> /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/launch_scene_20260922_1545.log  argv=['--pose', 'carry']
+Traceback (most recent call last):
+  File "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/launch_scene.py", line 72, in <module>
+    app = SimulationApp({"headless": False}, **_kw)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rokey/isaacsim/exts/isaacsim.simulation_app/isaacsim/simulation_app/simulation_app.py", line 162, in __init__
+    faulthandler.enable()
+AttributeError: '_Tee' object has no attribute 'fileno'
+Exception ignored in: <function SimulationApp.__del__ at 0x70c0f49e7380>
+Traceback (most recent call last):
+  File "/home/rokey/isaacsim/exts/isaacsim.simulation_app/isaacsim/simulation_app/simulation_app.py", line 369, in __del__
+    if self._exiting is False and sys.meta_path is None:
+       ^^^^^^^^^^^^^
+AttributeError: 'SimulationApp' object has no attribute '_exiting'
