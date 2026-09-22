@@ -25,7 +25,8 @@
 - Navigation Node는 내부적으로 `BasicNavigator`와 `NavigateToPose` Action을 사용한다.
 - Isaac Sim 내부 ROS 콜백은 명령을 검증·저장하기만 한다. 실제 물리 동작은 Standalone 프레임 루프의 `update(dt)`에서 수행한다.
 - 장시간 동작을 Service 콜백이나 Topic 수신 콜백 안에서 블로킹 실행하지 않는다.
-- Sim Task Executor 경계는 `std_msgs/msg/String`에 JSON object를 담아 사용하고, Navigation·Inspection 경계는 `smart_farm_interfaces` 사용자 정의 메시지를 사용한다.
+- Task Manager와 Navigation·Inspection 사이의 기존 계약은 `smart_farm_interfaces` 메시지를 유지한다.
+- Isaac Sim 내부 Executor와 연결되는 모든 경계는 `std_msgs/msg/String` JSON을 사용하며, 이를 위한 새 사용자 정의 메시지는 만들지 않는다.
 
 ## 2. 통신 구조
 
@@ -42,6 +43,7 @@ flowchart LR
     TM -->|"/inspection/command"| INS["Inspection Node"]
     INS -->|"/inspection/result"| TM
     INS -->|"/inspection/status"| TM
+    INS -->|"/inspection/detections_2d String JSON"| SIM
     TM -->|"/cycle/status"| OBS["사용자·기록"]
 
 ```
@@ -60,6 +62,7 @@ flowchart LR
 | `/inspection/command` | TaskCommand Topic | Task Manager → Inspection Node | 팔레트 슬롯별 검사 요청 |
 | `/inspection/result` | TaskResult Topic | Inspection Node → Task Manager | 불량 슬롯과 미판정 슬롯 결과 |
 | `/inspection/status` | ExecutorStatus Topic | Inspection Node → Task Manager·관찰자 | 모델 준비, 영상 대기, 추론 중 상태 |
+| `/inspection/detections_2d` | std_msgs/msg/String JSON Topic | Inspection Node → Sim Task Executor | RGB pixel 기준 bbox·중심점과 슬롯·클래스 전달 |
 | `/cycle/status` | CycleStatus Topic | Task Manager → 관찰자 | 현재 공정 단계와 사이클 최종 결과 |
 | `NavigateToPose` | Nav2 Action | Navigation Node → Nav2 | map 기준 PoseStamped 목표와 주행 결과 |
 | `/cmd_vel` | geometry_msgs/Twist | Nav2 → Isaac Sim | Nova Carter 속도 명령 |
@@ -157,6 +160,51 @@ state 값:
 - ERROR
 
 status Topic은 진행 관찰과 PREFLIGHT에 사용한다. Task Manager의 단계 전이는 status가 아니라 terminal TaskResult를 기준으로 한다.
+
+### Inspection detections String/JSON
+
+`/inspection/detections_2d`의 ROS 타입은 `std_msgs/msg/String`이다.
+`String.data`에는 아래 구조의 UTF-8 JSON object 한 개를 넣는다.
+
+```json
+{
+  "header": {
+    "stamp": {
+      "sec": 1790074056,
+      "nanosec": 123456789
+    },
+    "frame_id": "camera_rgb"
+  },
+  "task_id": "TASK-20260922-001",
+  "command_id": "TASK-20260922-001-CMD-005",
+  "pallet_id": "PALLET_004",
+  "image_width": 1280,
+  "image_height": 720,
+  "detections": [
+    {
+      "slot_id": "SLOT_01",
+      "class_name": "lettuce_dark_green",
+      "confidence": 0.93,
+      "center_u": 214.5,
+      "center_v": 181.0,
+      "bbox_x_min": 170.0,
+      "bbox_y_min": 120.0,
+      "bbox_x_max": 259.0,
+      "bbox_y_max": 242.0
+    }
+  ]
+}
+```
+
+- `header` 값은 추론에 사용한 원본 RGB Image의 stamp와 frame_id를 복사한다.
+- 좌표와 bbox는 resize 이전 원본 RGB 영상의 pixel 좌표다.
+- `slot_id`는 bbox 중심점이 속한 정규화 ROI로 판정하며, 어느 ROI에도 속하지 않거나 ROI가 겹치면 빈 문자열이다.
+- 허용 slot은 `SLOT_01~SLOT_06`뿐이다.
+- `image_width`와 `image_height`는 원본 RGB 영상 해상도다.
+- 같은 명령의 `/inspection/result`보다 `/inspection/detections_2d`를 먼저 발행한다.
+- Task Manager는 이 Topic을 구독하거나 공정 상태 판단에 사용하지 않는다.
+- Isaac Sim 내부 Executor는 JSON을 파싱하고 2D 중심점과 동기화된 Depth로 로봇 좌표를 계산한다.
+- 이 경계를 위해 새로운 ROS 사용자 정의 메시지를 추가하지 않는다.
 
 ### Sim Task String/JSON
 
@@ -439,11 +487,19 @@ CHECK_PALLET_ON_CONVEYOR → START_CONVEYOR → MONITOR_EXIT → STOP_CONVEYOR �
 ## 13. Inspection Node 계약
 
 - INSPECT 명령을 받은 후 해당 task_id와 command_id에 속하는 검사 세션을 시작한다.
-- 현재 color_detector는 reference 구현으로만 사용한다.
-- 최종 구현은 YOLO 기반 위치 검출과 이상탐지 모델을 결합한다.
+- task_id, command_id, pallet_id가 비어 있으면 FAILED/INVALID_ID를 발행한다.
+- INSPECT 이외 operation은 FAILED/INVALID_COMMAND를 발행한다.
+- 명령 수신 이후 도착한 fresh RGB frame만 추론한다.
+- callback은 명령 검증과 작업 등록만 수행하고 YOLO 추론은 단일 worker에서 수행한다.
+- BUSY 중 새 명령은 해당 ID로 FAILED/BUSY를 발행한다.
+- 완료한 command_id가 재수신되면 추론하지 않고 캐시한 terminal result를 재발행한다.
+- 모델 초기화 중 STARTING, 모델과 영상 준비 후 READY, 명령 처리 중 BUSY 상태를 약 1 Hz로 발행한다.
 - 결과는 SLOT_01~SLOT_06 단위로 생성한다.
-- 미검출, 중복 검출, 신뢰도 부족은 정상으로 처리하지 않고 unknown_slots에 포함한다.
-- unknown_slots가 하나라도 존재하면 SUCCEEDED를 반환하지 않는다.
+- 미검출, 중복 검출, ROI 충돌 또는 분류 불가 슬롯은 unknown_slots에 포함한다.
+- unknown_slots가 하나라도 존재하면 FAILED/UNKNOWN_SLOT을 발행하며, 6개 슬롯이 모두 판정되어야 SUCCEEDED를 반환한다.
+- fresh frame timeout은 FAILED/IMAGE_TIMEOUT, 추론 실패는 FAILED/INSPECTION_FAILED로 종료한다.
+- `/inspection/detections_2d`는 terminal `/inspection/result`보다 먼저 발행한다.
+- 정상·불량·미판정 class 매핑은 YAML 설정으로 관리하고 판정 코드에 하드코딩하지 않는다.
 - 모델 구현이 바뀌어도 TaskCommand와 TaskResult 계약은 유지한다.
 
 ## 14. QoS·시간·준비 정책

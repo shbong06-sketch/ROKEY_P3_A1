@@ -1,25 +1,23 @@
 # smart_farm_vision
 
-스마트팜 검사 노드를 위한 ROS 2 Jazzy/NVIDIA GPU Docker 실행 환경이다.
-현재 이미지는 `smart_farm_interfaces`와 `smart_farm_vision`을 빌드하고 실행 환경만 유지한다.
-YOLO 추론 노드와 카메라 구독 코드는 아직 포함하지 않는다.
+스마트팜 검사를 위한 ROS 2 Jazzy/NVIDIA GPU Docker 환경과 YOLO 기반 Inspection Executor다.
+이미지 빌드 시 `smart_farm_interfaces`와 `smart_farm_vision`을 함께 빌드한다.
 
 ## 현재 상태
 
-Vision Docker 실행 환경 구축과 다음 검증을 완료했다.
-
-- Docker Compose 문법 검사 및 이미지 빌드
-- NVIDIA GPU 접근과 CUDA PyTorch 동작
-- OpenCV, Ultralytics, `rclpy`, `sensor_msgs`, `cv_bridge` import
-- `smart_farm_interfaces` 이후 `smart_farm_vision` 빌드
-- 두 ROS 패키지 조회와 `TaskCommand` 인터페이스 확인
-- `smart_farm_interfaces.msg` Python import
+- ROS 2 Jazzy, CUDA PyTorch, OpenCV, Ultralytics 실행 환경
+- YOLO 모델 단일 로드와 GPU 추론 worker
+- ROS Image 구독, encoding별 BGR 변환, camera timeout 감지
+- `/inspection/command` 기반 fresh frame 검사
+- `/inspection/result`, `/inspection/status`, `/inspection/detections_2d` 발행
+- `SLOT_01~SLOT_06` ROI와 YAML 기반 NORMAL/DEFECT/UNKNOWN 판정
+- 원본 RGB header·해상도·pixel 좌표를 유지한 2D detection
+- ROI, bbox, class, confidence, 슬롯 판정을 포함한 debug image
 - ROS 및 `/vision_ws/install` 자동 소싱
 - 모델과 설정의 read-only runtime volume 연결
 
-현재 완료 범위는 Vision 노드를 개발하고 실행할 컨테이너 기반 환경까지다.
-다음 단계는 `/inspection/command`, `/inspection/result`, `/inspection/status` 계약을
-구현하는 Inspection Node이며, 카메라 구독과 YOLO 추론은 그 이후에 추가한다.
+Task Manager는 `TaskResult`의 검사 결과만 관리한다. 동적 Pick에 필요한 Depth와
+로봇 좌표 계산은 `/inspection/detections_2d`를 받는 Isaac Sim 내부 Executor의 책임이다.
 
 ## 실행 구조
 
@@ -59,26 +57,17 @@ docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi
 
 ## 모델과 설정 준비
 
-저장소 루트에서 필요한 디렉터리를 만든다.
+모델 파일만 별도로 준비한다.
 
 ```bash
 mkdir -p cobot3_ws/src/smart_farm_vision/resource
-mkdir -p cobot3_ws/src/smart_farm_vision/config
+# best.pt를 아래 경로에 복사
+# cobot3_ws/src/smart_farm_vision/resource/best.pt
 ```
 
-모델과 설정 파일을 다음 위치에 배치한다.
-
-```text
-cobot3_ws/src/smart_farm_vision/resource/best.pt
-cobot3_ws/src/smart_farm_vision/config/inspection.yaml
-```
-
-컨테이너에서는 다음 경로로 접근한다.
-
-```text
-/models/best.pt
-/config/inspection.yaml
-```
+`config/object_detection.yaml`은 Git으로 관리하며 ROI와 class 판정을 포함한다.
+컨테이너에서는 모델을 `/models/best.pt`, 설정을
+`/config/object_detection.yaml`로 읽는다.
 
 `*.pt` 파일은 Git과 Docker 이미지에서 제외된다. 모델 파일을 커밋하지 않는다.
 
@@ -104,7 +93,7 @@ smart_farm_vision
 
 ## 실행
 
-호스트의 다른 ROS 2 노드와 같은 Domain ID를 지정한다.
+호스트의 다른 ROS 2 노드와 같은 Domain ID를 지정하고 컨테이너를 시작한다.
 
 ```bash
 export ROS_DOMAIN_ID=0
@@ -112,8 +101,27 @@ docker compose -f compose.vision.yaml up -d vision
 docker compose -f compose.vision.yaml ps
 ```
 
-현재 기본 명령은 `sleep infinity`다. 이는 노드 구현 전까지 컨테이너를
-개발 및 검증 환경으로 유지하기 위한 설정이다.
+Compose 기본 명령은 개발·검증을 위해 `sleep infinity`를 유지한다.
+Inspection Executor는 entrypoint를 통해 실행한다.
+
+```bash
+docker compose -f compose.vision.yaml exec vision \
+  /entrypoint.sh ros2 launch smart_farm_vision object_detection.launch.py \
+  config_file:=/config/object_detection.yaml
+```
+
+주요 Topic을 별도 터미널에서 확인한다.
+
+```bash
+docker compose -f compose.vision.yaml exec vision \
+  /entrypoint.sh ros2 topic echo /inspection/status
+docker compose -f compose.vision.yaml exec vision \
+  /entrypoint.sh ros2 topic echo /inspection/result
+docker compose -f compose.vision.yaml exec vision \
+  /entrypoint.sh ros2 topic echo /inspection/detections_2d
+docker compose -f compose.vision.yaml exec vision \
+  /entrypoint.sh ros2 topic info /inspection/debug_image --verbose
+```
 
 로그와 종료 명령:
 
@@ -163,7 +171,7 @@ docker compose -f compose.vision.yaml exec vision \
 
 1. 저장소의 `feature/Inspection` 브랜치를 받는다.
 2. NVIDIA 드라이버, Docker, Compose plugin, NVIDIA Container Toolkit을 설치한다.
-3. `resource/best.pt`와 `config/inspection.yaml`을 별도로 전달받아 배치한다.
+3. `resource/best.pt`를 별도로 전달받아 배치하고 Git의 `config/object_detection.yaml`을 환경에 맞게 검토한다.
 4. Isaac Sim/Task Manager와 같은 `ROS_DOMAIN_ID`를 지정한다.
 5. 이미지를 빌드하고 서비스를 실행한다.
 6. 위 smoke test로 GPU, 패키지, 사용자 정의 메시지를 확인한다.

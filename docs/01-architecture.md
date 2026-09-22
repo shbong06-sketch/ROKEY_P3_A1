@@ -22,7 +22,7 @@
 - Task Manager는 전체 공정 단계만 관리하며 관절값, 리프트 높이, TCP 경로 같은 세부 모션은 지시하지 않는다.
 - Sim Task Executor는 고수준 작업 명령을 받아 리프트와 로봇팔의 복합 동작을 프레임 단위로 실행한다.
 - Navigation Node는 작업점 이름을 map 좌표로 변환하고 Nav2 결과를 Task Manager가 사용하는 작업 결과로 변환한다.
-- Inspection Node는 OpenCV 색 기반 검출기를 대체 가능한 구조로 두며, 최종적으로 YOLO와 이상탐지 모델을 사용해 슬롯별 불량을 판정한다.
+- Inspection Node는 YOLO 검출 결과를 슬롯별 검사 결과와 원본 RGB pixel 기준 2D detection으로 변환한다. Depth와 로봇 좌표 계산은 Isaac Sim 내부 Executor가 담당한다.
 - 현재 시연은 한 번에 하나의 공정 명령만 수행한다. 중간 실패 시 자동 재시도하지 않고 정지 후 장면과 논리 상태를 함께 초기화한다.
 
 ## 2. 시스템 범위와 용어
@@ -73,6 +73,7 @@ Standalone"]
     TM --> INS["Inspection Node
 외부 ROS 2"]
     SIM -->|"카메라 영상"| INS
+    INS -->|"2D detection"| EXEC
     INS -->|"슬롯별 검사 결과"| TM
     TM --> EXEC["Sim Task Executor
 Isaac Sim 내부 ROS 2"]
@@ -93,8 +94,8 @@ Isaac Sim 내부 ROS 2"]
 | Task Manager | 외부 ROS 2 | PREFLIGHT와 7개 실행 단계 진행, ID 생성·대조, 타임아웃, 논리 상태, 최종 결과 | 관절 제어, 리프트 높이 계산, Nav2 경로 계산, 영상 추론 |
 | Navigation Node | 외부 ROS 2 | 작업점 좌표 변환, BasicNavigator 호출, Nav2 결과 변환 | 직접 cmd_vel 계산·발행 |
 | Nav2 | 외부 ROS 2 | 지도 기반 경로 계획, 위치 추정 연계, 주행 제어 | 팔·리프트·컨베이어 제어 |
-| Inspection Node | 외부 ROS 2 | 검사 요청 단위 영상 수집, 슬롯별 정상·불량·미판정 결과 생성 | 솎아내기 물리 동작 |
-| Sim Task Executor | Isaac Sim 프로세스 내부 | 고수준 명령 수신, 내부 Routine 선택, 프레임별 동작, 물리 성공 판정 | 전체 시나리오 순서 결정 |
+| Inspection Node | 외부 ROS 2 | 검사 요청 단위 영상 수집, 슬롯별 정상·불량·미판정 결과와 2D bbox·중심점 생성 | Depth·로봇 좌표 계산, 솎아내기 물리 동작 |
+| Sim Task Executor | Isaac Sim 프로세스 내부 | 고수준 명령 수신, 2D detection과 Depth로 동적 Pick 좌표 계산, 내부 Routine 선택, 프레임별 동작, 물리 성공 판정 | 전체 시나리오 순서와 검사 결과 관리 |
 | Motion/Controller 모듈 | Isaac Sim 프로세스 내부 | M0609, 리프트, 솎아내기, 컨베이어 제어 | ROS 전체 공정 상태 관리 |
 | Isaac Sim 장면 | Isaac Sim 5.1 | 물리, 센서, 로봇 상태, 카메라 영상, 팔레트 상태 | 비즈니스 시나리오 결정 |
 
@@ -173,7 +174,8 @@ CHECK_PALLET_ON_CONVEYOR → START_CONVEYOR → MONITOR_EXIT → STOP_CONVEYOR �
 | AMR 위치 | Nav2·AMCL·Isaac Sim | 도착한 작업점 이름과 결과 |
 | 리프트·관절 상태 | Sim Task Executor | 단계 완료 여부만 수신 |
 | 검사 결과 | Inspection Node | defect_slots, unknown_slots |
-| 컨베이어 출구 도달 | Sim Task Executor | 최종 성공 여부 |
+| 검사 2D 위치 | Inspection Node | Task Manager는 보관하지 않음 |
+| Depth·로봇 좌표와 컨베이어 출구 도달 | Sim Task Executor | 최종 성공 여부만 수신 |
 
 Task Manager의 팔레트 위치는 명령 결과에 기반한 기대 상태다. 실제 장면 상태와 동일하다고 자동 가정하지 않는다.
 

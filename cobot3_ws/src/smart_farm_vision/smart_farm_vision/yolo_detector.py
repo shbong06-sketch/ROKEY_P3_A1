@@ -102,7 +102,7 @@ class YoloDetector:
         self._validate_model_classes(self.class_names)
 
     def detect(self, image: np.ndarray) -> list[Detection]:
-        """OpenCV BGR 이미지를 추론하고 내부 검출 구조로 반환한다."""
+        """Run inference and return detector-independent results."""
         self._validate_image(image)
 
         try:
