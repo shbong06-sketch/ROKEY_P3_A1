@@ -2,6 +2,7 @@ FROM ros:jazzy-ros-base-noble
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-pip \
+        python3-rosdep \
         python3-colcon-common-extensions \
         ros-jazzy-rclpy \
         ros-jazzy-sensor-msgs \
@@ -26,9 +27,23 @@ RUN python3 -c \
 
 WORKDIR /vision_ws
 
+COPY smart_farm_interfaces /vision_ws/src/smart_farm_interfaces
 COPY smart_farm_vision /vision_ws/src/smart_farm_vision
-COPY smart_farm_vision/docker-entrypoint.sh /entrypoint.sh
 
+RUN rosdep update \
+    && rosdep install \
+        --from-paths src \
+        --ignore-src \
+        --rosdistro jazzy \
+        -y
+
+RUN . /opt/ros/jazzy/setup.sh \
+    && colcon build \
+        --packages-select \
+        smart_farm_interfaces \
+        smart_farm_vision
+
+COPY smart_farm_vision/docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

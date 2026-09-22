@@ -14,6 +14,7 @@ services:
     environment:
       ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-0}"
       ROS_LOCALHOST_ONLY: "0"
+      YOLO_CONFIG_DIR: "/tmp/"
 
     volumes:
       - ./cobot3_ws/src/smart_farm_vision/resource:/models:ro
