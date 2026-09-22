@@ -4,138 +4,479 @@
 기록일: 2026년 9월 16일
 날짜: 2026년 9월 16일
 담당자: 봉승현
-마지막 수정: 2026년 9월 17일 오전 12:08
+마지막 수정: 2026년 9월 19일 오후 11:43
 분야: IsaacSim, ROS2
 분류: 설계 결정
 생성일: 2026년 9월 16일 오후 7:30
-작성 상태: 작성 중
+요약: Task Manager와 실행 노드 간 command/result Topic, 공통 메시지, operation별 입력·결과, 오류·QoS·초기화 정책을 정의한 통합 인터페이스 계약
+작성 상태: 정리 완료
 
-# 인터페이스 설계 — 1차 MVP
+# 인터페이스 설계 — 통합 시연 기준
 
-> 기준 아키텍처: [시스템 아키텍쳐](https://app.notion.com/p/3dd0f4c1b9cc80a2a1a2e624fa2f7c2c?pvs=21). 외부 ROS 2의 Nav2 기반 이동과 Isaac Sim 내부 M0617 제어를 연결하는 최소 계약이다. 이름·시간 제한·메시지 형식은 단독 시험 후 확정한다.
+> 기준 아키텍처: [시스템 아키텍처](https://app.notion.com/p/3dd0f4c1b9cc80a2a1a2e624fa2f7c2c?pvs=21). 상위 통합 통신은 command/result Topic으로 단순화하고, Navigation Node 내부에서만 Nav2의 NavigateToPose Action을 사용한다. 모든 실행 노드는 한 번에 하나의 명령만 수행한다.
 > 
 
-## 1. 통신 경계
+## 1. 통신 원칙
 
-- `task_manager` ↔ `navigation_node` 및 `transport_arm_node`: 작업 명령과 결과를 ROS 2 Topic으로 교환한다. 각각 한 번에 하나의 요청만 실행한다.
-- `navigation_node` ↔ Nav2: `BasicNavigator`가 내부적으로 `NavigateToPose` Action을 사용한다. `navigation_node`가 직접 주행 경로나 `/mir100/cmd_vel`을 계산·발행하지 않는다.
-- Nav2 ↔ Isaac Sim: Nav2의 속도 명령을 MiR100 구동에 연결하고, Isaac Sim은 Nav2에 필요한 지도·위치 추정용 로봇 TF, 오도메트리, 주행 센서와 `/clock`을 제공한다.
-- `transport_arm_node` ↔ M0617: Isaac Sim 프로세스 내부에서 `motion`이 관절 Action을 직접 적용하고 현재 관절값을 읽는다. 외부 `/m0617/joint_command`, 필수 `/m0617/joint_states` 통신은 사용하지 않는다.
-- 팔레트 TF·위치 Topic, DB, `conveyor_node`, M0609 검사·비전은 1차 계약에서 제외한다. **팔레트 TF 제외는 Nav2에 필요한 로봇 TF 제외와 다르다.**
+- 시연 시작은 `/start_cycle` Service로 요청한다.
+- Task Manager와 Navigation Node, Sim Task Executor, Inspection Node 사이는 `command/result` Topic을 사용한다.
+- 실행 중 세부 단계와 준비 여부는 각 Executor의 status Topic으로 발행한다.
+- Task Manager는 하나의 terminal result를 받기 전 다음 공정 명령을 보내지 않는다.
+- Navigation Node는 내부적으로 `BasicNavigator`와 `NavigateToPose` Action을 사용한다.
+- Isaac Sim 내부 ROS 콜백은 명령을 검증·저장하기만 한다. 실제 물리 동작은 Standalone 프레임 루프의 `update(dt)`에서 수행한다.
+- 장시간 동작을 Service 콜백이나 Topic 수신 콜백 안에서 블로킹 실행하지 않는다.
+- Sim Task Executor 경계는 `std_msgs/msg/String`에 JSON object를 담아 사용하고, Navigation·Inspection 경계는 `smart_farm_interfaces` 사용자 정의 메시지를 사용한다.
 
-## 2. 인터페이스 목록: 입력과 출력
+## 2. 통신 구조
 
-| 구분·이름 | 송신 → 수신 | 입력 데이터 | 출력 데이터 |
-| --- | --- | --- | --- |
-| `/start_cycle` · Service | 실행자 → task_manager | Request: scenario_id | Response: accepted, task_id, reason; 작업 수락만 표시 |
-| `/navigation/command` · Topic | task_manager → navigation_node | command_id, task_id, destination | 명령 메시지 발행; 동기 응답 없음 |
-| `/navigation/result` · Topic | navigation_node → task_manager | 실행한 명령의 command_id, task_id와 Nav2 결과 | command_id, task_id, status, reason, reached_station 발행 |
-| `/transport_arm/command` · Topic | task_manager → transport_arm_node | command_id, task_id, pallet_id, operation, station | 명령 메시지 발행; 동기 응답 없음 |
-| `/transport_arm/result` · Topic | transport_arm_node → task_manager | 실행한 명령의 ID·작업 결과 | command_id, task_id, pallet_id, operation, status, reason 발행 |
-| `NavigateToPose` · Nav2 Action | navigation_node → Nav2 | `map` 기준 PoseStamped 목표 | 목표 수락·주행 피드백·SUCCEEDED/FAILED/CANCELED 결과 |
-| MiR100 주행 Topic | Nav2 ↔ Isaac Sim | Nav2 속도 명령; 장면의 센서·로봇 상태 | 속도 구동과 로봇 TF·오도메트리·LiDAR 등 발행 |
-| M0617 내부 API | transport_arm_node ↔ motion·장면 | 고정 작업점 자세, 팔레트 ID, 현재 베이스 자세 | apply_action() 명령; get_joint_positions() 및 팔레트 상태 확인 |
-| `/clock` · Topic | Isaac Sim → 외부 ROS 2 | 장면 시뮬레이션 시간 | rosgraph_msgs/Clock; 응답 없음 |
-
-Topic의 출력 칸은 **해당 송신자가 발행하는 데이터**를 뜻하며 즉시 반환되는 응답이 아니다. 최초 통합은 `std_msgs/msg/String` JSON으로 작업 명령·결과를 표현한다. 필드가 확정되면 사용자 정의 메시지로 교체할 수 있다. 센서·Nav2 Topic 이름과 네임스페이스는 에셋·launch 구성에서 실제 값을 확인해 통일한다.
-
-## 3. 공통 데이터 규칙
-
-- `task_id`: 랙 순환 실행 1회의 ID. `task_manager`가 생성한다.
-- `command_id`: 개별 이동 또는 팔 명령의 고유 ID. 한 `task_id` 안에서 요청마다 새로 생성하고 결과에 그대로 되돌린다.
-- `pallet_id`: `PALLET_01`~`PALLET_04`, `PALLET_SEED`. 요청 대상의 논리 ID이며 자동 인식 결과가 아니다.
-- `destination` / `station`: `RACK_L1`~`RACK_L4`, `SEED_PICKUP`, `INSPECT_ZONE`. 지도 좌표는 `navigation_node` 설정, 팔 자세·접근점은 `motion` 설정에 저장한다. 실측 좌표는 보류한다.
-- `operation`: `PICK` 또는 `PLACE`. 한 명령에 한 작업만 수행한다.
-- `status`: `SUCCEEDED`, `FAILED`, `CANCELED`, `TIMEOUT`. 실제 구현하지 않은 취소 기능은 발행하지 않는다.
-- `reason`: `NONE`, `INVALID_COMMAND`, `BUSY`, `SIM_NOT_READY`, `NO_FEEDBACK`, `NAV_FAILED`, `MOTION_FAILED`, `TIMEOUT` 등을 시작값으로 사용한다.
-- 명령 수신자는 작업 중 새 명령을 실행하지 않고 동일 `command_id`로 `FAILED/BUSY` 결과를 보낸다. 이미 완료한 `command_id`의 재전송은 재실행하지 않는다. 최초 MVP에서 재시작 후 중복 기록은 유지하지 않는다.
-
-## 4. 작업 계층
-
-### 4.1 전체 시작: StartCycle.srv
+```mermaid
+flowchart LR
+    START["시연 실행자"] -->|"/start_cycle Service"| TM["Task Manager"]
+    TM -->|"/sim_task/command"| SIM["Sim Task Executor"]
+    SIM -->|"/sim_task/result"| TM
+    SIM -->|"/sim_task/status"| TM
+    TM -->|"/navigation/command"| NAV["Navigation Node"]
+    NAV -->|"/navigation/result"| TM
+    NAV -->|"/navigation/status"| TM
+    NAV -->|"NavigateToPose Action"| NAV2["Nav2"]
+    TM -->|"/inspection/command"| INS["Inspection Node"]
+    INS -->|"/inspection/result"| TM
+    INS -->|"/inspection/status"| TM
+    TM -->|"/cycle/status"| OBS["사용자·기록"]
 
 ```
-# Request
+
+## 3. 인터페이스 목록
+
+| 이름 | 타입 | 송신 → 수신 | 목적 |
+| --- | --- | --- | --- |
+| `/start_cycle` | smart_farm_interfaces/srv/StartCycle | 실행자 → Task Manager | 시나리오 시작 요청과 수락 |
+| `/sim_task/command` | std_msgs/msg/String JSON Topic | Task Manager → Sim Task Executor | TRANSFER, PICK_HARVEST, PLACE_INSPECT, CULL, CONVEYOR_OUT 요청 |
+| `/sim_task/result` | std_msgs/msg/String JSON Topic | Sim Task Executor → Task Manager | Sim 작업 최종 성공·실패 결과 |
+| `/sim_task/status` | std_msgs/msg/String JSON Topic | Sim Task Executor → Task Manager·관찰자 | 준비 여부, 실행 중 operation과 내부 phase |
+| `/navigation/command` | TaskCommand Topic | Task Manager → Navigation Node | INSPECTION_DOCK 이동 요청 |
+| `/navigation/result` | TaskResult Topic | Navigation Node → Task Manager | Nav2 최종 결과와 도착 작업점 |
+| `/navigation/status` | ExecutorStatus Topic | Navigation Node → Task Manager·관찰자 | Nav2 준비, 이동 중, 남은 거리 또는 내부 상태 |
+| `/inspection/command` | TaskCommand Topic | Task Manager → Inspection Node | 팔레트 슬롯별 검사 요청 |
+| `/inspection/result` | TaskResult Topic | Inspection Node → Task Manager | 불량 슬롯과 미판정 슬롯 결과 |
+| `/inspection/status` | ExecutorStatus Topic | Inspection Node → Task Manager·관찰자 | 모델 준비, 영상 대기, 추론 중 상태 |
+| `/cycle/status` | CycleStatus Topic | Task Manager → 관찰자 | 현재 공정 단계와 사이클 최종 결과 |
+| `NavigateToPose` | Nav2 Action | Navigation Node → Nav2 | map 기준 PoseStamped 목표와 주행 결과 |
+| `/cmd_vel` | geometry_msgs/Twist | Nav2 → Isaac Sim | Nova Carter 속도 명령 |
+| `/tf`, `/tf_static` | tf2_msgs/TFMessage | Isaac Sim·AMCL → Nav2 | map→odom→base_link 및 센서 변환 |
+| 오도메트리 | nav_msgs/Odometry | Isaac Sim → Nav2 | Nova Carter 위치·속도 |
+| LiDAR | sensor_msgs/LaserScan 또는 PointCloud2 | Isaac Sim → Nav2 | 장애물 인식 |
+| 검사 영상 | sensor_msgs/Image | Isaac Sim → Inspection Node | 슬롯별 검사 입력 |
+| `/clock` | rosgraph_msgs/Clock | Isaac Sim → 외부 ROS 2 | 시뮬레이션 시간 |
+
+실제 오도메트리, LiDAR, cmd_vel, 카메라 Topic 이름은 최종 장면과 launch 설정에서 확정한다.
+
+## 4. StartCycle.srv
+
+```
 string scenario_id
 ---
-# Response
 bool accepted
 string task_id
 string reason
 ```
 
-`RACK_CYCLE_01`만 허용한다. `accepted=true`는 작업 시작 수락을 뜻한다. 전체 성공은 별도 `task_manager` 로그·시험 기록으로 확인한다. 이미 실행 중이면 즉시 `accepted=false`, `reason=BUSY`.
+- 허용 scenario_id: DEMO_HARVEST_01
+- accepted=true는 시작 요청이 수락되었음을 의미하며 전체 공정 성공을 의미하지 않는다.
+- 이미 사이클이 실행 중이면 accepted=false, reason=BUSY를 반환한다.
+- 최종 결과는 /cycle/status에서 확인한다.
 
-### 4.2 이동 명령과 결과
+## 5. 메시지 및 JSON 계약
+
+Navigation·Inspection은 아래 사용자 정의 메시지를 사용한다. Task Manager 내부 상태 머신과 Sim Task JSON도 같은 필드 의미를 공유한다.
+
+### TaskCommand.msg
+
+```
+string task_id
+string command_id
+string operation
+string recipe_id
+string pallet_id
+string source
+string destination
+string[] target_slots
+```
+
+- task_id: 전체 시연 사이클 식별자
+- command_id: 개별 공정 명령 식별자
+- operation: 실행할 고수준 작업
+- recipe_id: Executor 내부 복합 동작 레시피
+- pallet_id: 대상 팔레트
+- source, destination: 논리 작업점
+- target_slots: 솎아내기 대상 식물 슬롯
+
+사용하지 않는 선택 필드는 빈 문자열 또는 빈 배열로 보낸다. Sim Task 명령에서는 같은 필드 이름을 JSON key로 사용한다.
+
+### TaskResult.msg
+
+```
+string task_id
+string command_id
+string operation
+string status
+string phase
+string reason
+bool safe_to_navigate
+string reached_station
+string[] completed_units
+string[] defect_slots
+string[] unknown_slots
+```
+
+- status는 terminal 결과만 표현한다.
+- phase는 성공 또는 실패가 확정된 내부 단계다.
+- safe_to_navigate는 PICK_HARVEST 결과에서 운송 준비 완료를 나타낸다.
+- reached_station은 NAVIGATION 결과에서 사용한다.
+- completed_units는 TRANSFER 중 완료된 단위 이동을 기록한다.
+- defect_slots와 unknown_slots는 INSPECT 결과에서 사용한다.
+
+### ExecutorStatus.msg
+
+```
+string executor
+string state
+string task_id
+string command_id
+string operation
+string phase
+string detail
+```
+
+state 값:
+
+- STARTING
+- READY
+- BUSY
+- PAUSED
+- ERROR
+
+status Topic은 진행 관찰과 PREFLIGHT에 사용한다. Task Manager의 단계 전이는 status가 아니라 terminal TaskResult를 기준으로 한다.
+
+### Sim Task String/JSON
+
+`/sim_task/command`, `/sim_task/result`, `/sim_task/status`의 ROS 타입은 모두
+`std_msgs/msg/String`이다. `String.data`에는 UTF-8 JSON object 한 개를 넣는다.
+최상위 배열이나 JSON이 아닌 문자열은 허용하지 않는다.
+
+명령 예시:
 
 ```json
-{"command_id":"c-01","task_id":"t-01","destination":"RACK_L2"}
+{
+  "task_id": "TASK-20260921-001",
+  "command_id": "TASK-20260921-001-CMD-001",
+  "operation": "TRANSFER",
+  "recipe_id": "RACK_REARRANGE_01",
+  "pallet_id": "",
+  "source": "",
+  "destination": "",
+  "target_slots": []
+}
 ```
+
+결과 예시:
 
 ```json
-{"command_id":"c-01","task_id":"t-01","status":"SUCCEEDED","reason":"NONE","reached_station":"RACK_L2"}
+{
+  "task_id": "TASK-20260921-001",
+  "command_id": "TASK-20260921-001-CMD-001",
+  "operation": "TRANSFER",
+  "status": "SUCCEEDED",
+  "phase": "RESULT",
+  "reason": "NONE",
+  "safe_to_navigate": false,
+  "reached_station": "",
+  "completed_units": [
+    "PALLET_002:RACK_L2:RACK_L3",
+    "PALLET_001:RACK_L1:RACK_L2"
+  ],
+  "defect_slots": [],
+  "unknown_slots": []
+}
 ```
 
-`navigation_node`는 작업점 좌표를 `map` 기준 PoseStamped로 변환하고 `BasicNavigator.goToPose()`로 보낸다. `isTaskComplete()`, `getResult()`로 완료를 확인한다. Nav2의 `TaskResult.SUCCEEDED`만 이동 성공으로 변환한다. `last_pose` 같은 마지막 피드백 좌표는 최종 도킹 위치를 독립적으로 증명하지 않는다. 지도 기준 도킹 오차가 꼭 필요하면 `/amcl_pose` 등 지도 좌표 추정값과 목표를 비교하는 검증을 추가한다; `/odom` 좌표를 지도 목표와 직접 비교하지 않는다.
-
-### 4.3 팔 명령과 결과
+상태 예시:
 
 ```json
-{"command_id":"c-02","task_id":"t-01","pallet_id":"PALLET_02","operation":"PICK","station":"RACK_L2"}
+{
+  "executor": "sim_task",
+  "state": "READY",
+  "task_id": "",
+  "command_id": "",
+  "operation": "",
+  "phase": "IDLE",
+  "detail": "sim task executor ready"
+}
 ```
+
+명령의 `task_id`, `command_id`, `operation`은 비어 있지 않은 문자열이어야 한다.
+결과는 여기에 `status`가 추가로 필요하다. 상태는 `executor`와 `state`가 필요하며
+`executor`는 반드시 `sim_task`여야 한다. Boolean과 배열은 JSON 고유 타입을 사용한다.
+선택 필드가 없으면 빈 문자열, `false`, 빈 배열을 기본값으로 사용한다.
+
+Task Manager는 JSON 구문 오류, 최상위 object가 아닌 값, 필수 필드 누락 및 필드 타입
+불일치 메시지를 경고와 함께 무시한다. 잘못된 메시지는 상태 전이나 heartbeat 갱신에
+사용하지 않는다.
+
+### CycleStatus.msg
+
+```
+string task_id
+string scenario_id
+string state
+string active_command_id
+string status
+string reason
+```
+
+status 값:
+
+- ACCEPTED
+- RUNNING
+- SUCCEEDED
+- FAILED
+- TIMEOUT
+- RESET_REQUIRED
+
+## 6. 공통 데이터 규칙
+
+### ID
+
+- task_id: TASK-YYYYMMDD-NNN
+- command_id: TASK-YYYYMMDD-NNN-CMD-NNN
+- pallet_id: PALLET_001, PALLET_002, …
+- rack slot: RACK_L1 ~ RACK_L4
+- plant slot: SLOT_01 ~ SLOT_08
+- navigation station: RACK_DOCK, INSPECTION_DOCK
+- pallet station: INSPECT_STATION, PACK_OUT
+
+Task Manager가 task_id와 command_id를 생성한다. 모든 결과는 요청의 두 ID를 그대로 반환해야 한다.
+
+### operation
+
+- TRANSFER
+- PICK_HARVEST
+- NAVIGATION
+- PLACE_INSPECT
+- INSPECT
+- CULL
+- CONVEYOR_OUT
+
+### TaskResult status
+
+- SUCCEEDED
+- FAILED
+- CANCELED
+- TIMEOUT
+
+### 공통 reason 시작값
+
+- NONE
+- INVALID_COMMAND
+- INVALID_ID
+- BUSY
+- NOT_READY
+- SIM_NOT_READY
+- NAV_NOT_READY
+- INSPECTION_NOT_READY
+- BASE_NOT_STOPPED
+- DOCKING_ERROR
+- LIFT_FAILED
+- MOTION_FAILED
+- PICK_VERIFY_FAILED
+- PLACE_VERIFY_FAILED
+- TRANSPORT_NOT_SAFE
+- NAV_FAILED
+- IMAGE_TIMEOUT
+- INSPECTION_FAILED
+- UNKNOWN_SLOT
+- CULL_FAILED
+- CONVEYOR_FAILED
+- RESULT_TIMEOUT
+- RESET_REQUIRED
+
+## 7. operation별 계약
+
+| operation | 수신 노드 | 필수 입력 | 성공 결과의 필수 조건 |
+| --- | --- | --- | --- |
+| TRANSFER | Sim Task Executor | recipe_id=RACK_REARRANGE_01 | L2→L3와 L1→L2 완료, completed_units 2개 |
+| PICK_HARVEST | Sim Task Executor | pallet_id=PALLET_004, source=RACK_L4 | safe_to_navigate=true |
+| NAVIGATION | Navigation Node | destination=INSPECTION_DOCK | reached_station=INSPECTION_DOCK |
+| PLACE_INSPECT | Sim Task Executor | pallet_id=PALLET_004, destination=INSPECT_STATION | VERIFY_PLACE 통과 |
+| INSPECT | Inspection Node | pallet_id=PALLET_004 | SLOT_01~SLOT_08 결과, unknown_slots 없음 |
+| CULL | Sim Task Executor | pallet_id와 target_slots | 모든 대상 슬롯 제거 확인 |
+| CONVEYOR_OUT | Sim Task Executor | pallet_id, destination=PACK_OUT | 출구 감지와 작업 기록 완료 |
+
+INSPECT 결과 defect_slots가 비어 있으면 Task Manager는 CULL 명령을 보내지 않고 CONVEYOR_OUT으로 전이한다.
+
+## 8. 주요 명령 예시
+
+### TRANSFER
 
 ```json
-{"command_id":"c-02","task_id":"t-01","pallet_id":"PALLET_02","operation":"PICK","status":"SUCCEEDED","reason":"NONE"}
+{
+  "task_id": "TASK-20260919-001",
+  "command_id": "TASK-20260919-001-CMD-001",
+  "operation": "TRANSFER",
+  "recipe_id": "RACK_REARRANGE_01",
+  "pallet_id": "",
+  "source": "",
+  "destination": "",
+  "target_slots": []
+}
 ```
 
-`transport_arm_node`는 Isaac Sim 내부의 `motion`을 호출한다. PICK: 접근 → 포크 삽입 → 상승·인출 → 운송 자세. PLACE: 접근 → 하강·안착 → 포크 이탈 → 안전 자세. 시뮬레이션 루프에서 명령 수신과 동작을 프레임별로 진행한다. 긴 PICK/PLACE를 ROS 수신 콜백 안에서 블로킹 호출하지 않는다. 현재 관절 위치는 내부 `get_joint_positions()`로 확인하고 필요한 경우 TCP 목표 수렴을 평가한다. 관절 동작 완료와 실제 팔레트 파지·안착은 구분한다.
+### PICK_HARVEST
 
-### 4.4 task_manager 호출 순서
-
+```json
+{
+  "task_id": "TASK-20260919-001",
+  "command_id": "TASK-20260919-001-CMD-002",
+  "operation": "PICK_HARVEST",
+  "recipe_id": "HARVEST_RACK_L4",
+  "pallet_id": "PALLET_004",
+  "source": "RACK_L4",
+  "destination": "CARRY",
+  "target_slots": []
+}
 ```
-navigation/command(출발지) → navigation/result(SUCCEEDED)
-transport_arm/command(PICK) → transport_arm/result(SUCCEEDED; 운송 자세 포함)
-navigation/command(목적지) → navigation/result(SUCCEEDED)
-transport_arm/command(PLACE) → transport_arm/result(SUCCEEDED)
+
+### INSPECT 결과
+
+```yaml
+task_id: TASK-20260919-001
+command_id: TASK-20260919-001-CMD-005
+operation: INSPECT
+status: SUCCEEDED
+phase: INSPECTION_COMPLETE
+reason: NONE
+safe_to_navigate: false
+reached_station: ""
+completed_units: []
+defect_slots: [SLOT_03, SLOT_07]
+unknown_slots: []
 ```
 
-이 패턴을 `PALLET_01`→`INSPECT_ZONE`, `PALLET_02` L2→L1, `PALLET_03` L3→L2, `PALLET_04` L4→L3, `PALLET_SEED`→L4에 적용한다. 각 명령의 결과 ID를 검증한 뒤 다음 단계로 간다. 실패·시간초과 후 자동 재시도하지 않는다.
+### CULL
 
-## 5. Nav2 ↔ Isaac Sim 장치 계층
+```json
+{
+  "task_id": "TASK-20260919-001",
+  "command_id": "TASK-20260919-001-CMD-006",
+  "operation": "CULL",
+  "recipe_id": "CULL_DEFECT_SLOTS",
+  "pallet_id": "PALLET_004",
+  "source": "INSPECT_STATION",
+  "destination": "INSPECT_STATION",
+  "target_slots": ["SLOT_03", "SLOT_07"]
+}
+```
 
-| 항목 | 방향·형식 | 구성·검증 |
-| --- | --- | --- |
-| 지도 | map_server → Nav2; `nav_msgs/OccupancyGrid` | 장면의 고정 점유 지도를 생성·저장하고 `map` 기준 작업점 좌표와 일치시킨다 |
-| 위치 추정·TF | 로봇·위치 추정 → Nav2; `/tf`, `/tf_static` 등 | `map→odom→base_link` 및 센서 프레임 변환을 사용할 수 있어야 한다. 팔레트 TF는 발행하지 않는다 |
-| 오도메트리 | Isaac Sim → Nav2; `nav_msgs/Odometry` | 로봇 위치·속도와 frame_id·시간을 확인한다. 실제 토픽명은 장면 구성에 맞춘다 |
-| 주행 센서 | Isaac Sim → Nav2; `sensor_msgs/LaserScan` 등 | 로컬 장애물 인식에 필요한 센서와 프레임·QoS를 맞춘다 |
-| 속도 명령 | Nav2 → Isaac Sim; `geometry_msgs/Twist` | Nav2가 발행하고 장면이 MiR100 구동기로 변환한다. 실제 이름은 예: `/mir100/cmd_vel`; navigation_node가 직접 발행하지 않는다 |
-| 시간 | Isaac Sim → ROS 2; `/clock` | 외부 관련 노드의 `use_sim_time`과 시각을 일치시킨다 |
+## 9. Task Manager 처리 규칙
 
-이 항목들은 예제의 다른 로봇에서 제공되는 기능을 MiR100 에셋에 자동 보장하지 않는다. Isaac Sim 장면 그래프, 로봇 차륜 구동, 지도·위치 추정 launch를 구성해야 한다. `BasicNavigator.setInitialPose()`는 실제 시작 위치에 맞춰 한 번 설정한다.
+1. /start_cycle 요청을 수락하면 task_id를 생성하고 PREFLIGHT를 실행한다.
+2. 각 명령을 발행할 때 새로운 command_id를 생성하고 active_command로 저장한다.
+3. Sim Task 결과는 JSON object로 파싱·검증한 뒤, 결과의 task_id, command_id, operation이 active_command와 모두 일치할 때만 처리한다.
+4. SUCCEEDED 결과를 수신하면 논리 상태를 갱신하고 다음 단계 명령을 발행한다.
+5. FAILED, CANCELED, TIMEOUT 또는 ID 불일치 결과를 수신하면 다음 단계로 진행하지 않는다.
+6. 단계별 제한시간을 실제 경과 시간 기준으로 감시한다.
+7. TRANSFER, PICK_HARVEST, PLACE_INSPECT, CULL 실패는 물리 상태가 변경되었을 수 있으므로 자동 재시도하지 않는다.
+8. INSPECT에서 defect_slots가 비어 있으면 CULL을 생략한다.
+9. CONVEYOR_OUT 성공 후 /cycle/status에 SUCCEEDED를 발행한다.
 
-## 6. M0617 내부 제어와 관절 상태
+## 10. Executor 처리 규칙
 
-- `motion`은 `controller.forward()` → `robot.apply_action()` 방식으로 목표를 매 프레임 적용하고, `robot.get_joint_positions()`와 TCP 위치로 종료를 판단한다.
-- 이동 후에는 MiR100 위 M0617 베이스의 **현재** 월드 자세를 RMPflow에 갱신한다. 고정된 시작 베이스 자세를 계속 쓰지 않는다.
-- 팔레트 실제 들림·지지·안착의 자동 검사가 필요하면 Isaac Sim 내부의 대상 prim 위치·물리 상태를 조회하는 로직을 별도로 구현한다. 1차에 이 검사를 구현하지 못했다면 결과는 **팔 동작 완료**만 의미하고 화면 관찰 기록을 별도로 남긴다.
-- 관절 상태를 외부 시각화할 필요가 생기면 Isaac Sim `ROS2 Publish Joint State`를 추가해 `/m0617/joint_states`를 발행할 수 있다. 기본 작업 결과 판정에 필수는 아니다. 내부 `apply_action()`과 외부 관절 명령을 동시에 같은 관절에 적용하지 않는다.
+- 하나의 Executor는 한 번에 하나의 명령만 실행한다.
+- BUSY 상태에서 새 명령을 받으면 실제 동작을 시작하지 않고 동일 command_id로 FAILED/BUSY 결과를 발행한다.
+- 이미 완료한 command_id가 같은 프로세스 실행 중 재수신되면 재실행하지 않고 이전 terminal 결과를 다시 발행한다.
+- 지원하지 않는 operation은 FAILED/INVALID_COMMAND로 응답한다.
+- 수신 콜백은 명령을 저장하고 즉시 반환한다.
+- 실제 동작은 timer 또는 Isaac Sim 프레임 update에서 비동기적으로 진행한다.
+- 내부 phase가 바뀌면 status Topic을 갱신한다.
+- terminal 결과는 명령마다 정확히 한 번 확정한다.
 
-## 7. 오류·제한시간·실행 준비
+## 11. Sim Task Executor 내부 phase
 
-- Topic은 수신 준비 전 발행된 명령이 소실될 수 있다. 장면·Nav2·두 실행 노드를 먼저 띄운 뒤 `/start_cycle`을 호출한다. 첫 통합에서 노드 준비 여부 확인을 시험 항목으로 둔다.
-- `navigation_node`는 ROS 명령 수신을 막지 않도록 요청을 큐에 전달하고, 주행 실행 흐름에서 BasicNavigator를 사용한다. `goToPose()`와 결과 대기를 단순 수신 콜백 안에 넣지 않는다.
-- `task_manager`는 결과의 `command_id`, `task_id`와 필요시 팔레트 ID를 비교하고 제한시간을 감시한다. 실패 또는 결과 없음 시 다음 명령을 보내지 않는다. Nav2 목표가 살아 있으면 취소 요청·정지 확인을 시도한다.
-- 시뮬레이션 정지 중에도 무기한 대기하지 않도록 바깥에서 측정한 실제 시간 기준 제한시간을 둔다. 값은 단독 시험으로 정한다.
-- 도킹 위치 5 cm·방향 5°, 정지 0.5초, 관절 오차 0.03 rad은 **시험용 시작값**이며 Nav2 성공 판정과 별개로 검증할 때만 적용한다.
+### TRANSFER
 
-## 8. 통합 시험 및 남은 확인
+CHECK_BASE_STOPPED → TRANSFER_UNIT_01/LIFT_TO_PROFILE → ARM_PICK → VERIFY_PICK → ARM_RETRACT → ARM_PLACE → VERIFY_PLACE → ARM_SAFE → TRANSFER_UNIT_02/LIFT_TO_PROFILE → ARM_PICK → VERIFY_PICK → ARM_RETRACT → ARM_PLACE → VERIFY_PLACE → ARM_SAFE → RESULT
 
-1. 고정 장면, 지도·로봇 TF·오도메트리·주행 센서·`/clock`, MiR100 구동 연결을 확인한다.
-2. BasicNavigator 단독으로 작업점 이동과 Nav2 성공·실패 결과를 검증한다.
-3. Isaac Sim 내부 팔 제어로 M0617 PICK/PLACE와 이동 후 베이스 자세 갱신을 검증한다.
-4. 네 작업 Topic의 요청·응답 및 `command_id` 짝짓기·BUSY·TIMEOUT을 확인한다.
-5. `task_manager`가 수확 팔레트 인계와 랙 순환을 순차 실행하도록 연결한다.
-6. 반복 시험에서 ROS 작업 완료, 물리 파지·안착, 운반 중 낙하, 컨베이어 연출을 구분해 기록한다.
+각 단위 작업에서 PICK과 PLACE는 같은 리프트 높이에서 수행한다.
 
-**확정 전 항목:** MiR100 로봇 모델·차륜 구동과 Nav2 launch, 센서/Topic 실제 명칭, `map` 작업점 좌표, M0617 관절 이름·URDF/RMPflow 설정, 운반 안정성, 물리 성공 판정 범위와 제한시간.
+### PICK_HARVEST
+
+CHECK_BASE_STOPPED → LIFT_TO_PROFILE → ARM_PICK → VERIFY_PICK → ARM_RETRACT → ARM_TRANSPORT_POSE → LIFT_TO_TRAVEL → VERIFY_TRANSPORT_READY → RESULT
+
+### PLACE_INSPECT
+
+CHECK_BASE_STOPPED → CHECK_INSPECTION_DOCK → LIFT_TO_PROFILE → ARM_PLACE → VERIFY_PLACE → ARM_SAFE → RESULT
+
+### CULL
+
+VALIDATE_TARGET_SLOTS → MOVE_TO_SLOT → REMOVE_DEFECT → VERIFY_REMOVAL → ARM_SAFE → RESULT
+
+### CONVEYOR_OUT
+
+CHECK_PALLET_ON_CONVEYOR → START_CONVEYOR → MONITOR_EXIT → STOP_CONVEYOR → RECORD_CYCLE → RESULT
+
+## 12. Navigation Node 계약
+
+- destination을 stations.yaml의 map 기준 x, y, yaw로 변환한다.
+- BasicNavigator.goToPose()로 Nav2 목표를 전송한다.
+- navigation command 수신 콜백에서 결과 대기 루프를 실행하지 않는다.
+- timer 또는 별도 실행 흐름에서 isTaskComplete()를 확인한다.
+- Nav2 TaskResult.SUCCEEDED만 NAVIGATION 성공으로 변환한다.
+- 마지막 feedback pose를 최종 도킹 증거로 사용하지 않는다.
+- 필요한 경우 /amcl_pose 등 map 기준 추정값으로 도킹 오차를 검증한다.
+- /odom을 map 기준 목표와 직접 비교하지 않는다.
+- Task Manager가 아닌 Nav2만 /cmd_vel을 발행한다.
+
+## 13. Inspection Node 계약
+
+- INSPECT 명령을 받은 후 해당 task_id와 command_id에 속하는 검사 세션을 시작한다.
+- 현재 color_detector는 reference 구현으로만 사용한다.
+- 최종 구현은 YOLO 기반 위치 검출과 이상탐지 모델을 결합한다.
+- 결과는 SLOT_01~SLOT_08 단위로 생성한다.
+- 미검출, 중복 검출, 신뢰도 부족은 정상으로 처리하지 않고 unknown_slots에 포함한다.
+- unknown_slots가 하나라도 존재하면 SUCCEEDED를 반환하지 않는다.
+- 모델 구현이 바뀌어도 TaskCommand와 TaskResult 계약은 유지한다.
+
+## 14. QoS·시간·준비 정책
+
+- command/result Topic: RELIABLE, KEEP_LAST, depth 10
+- status Topic: RELIABLE, VOLATILE, KEEP_LAST, depth 10
+- 검사 영상 Topic: 센서 특성에 맞춰 BEST_EFFORT 사용 가능
+- 모든 ROS 2 노드의 use_sim_time 설정을 통일한다.
+- Task Manager의 결과 대기 timeout은 시뮬레이션 Pause 중 무한 대기를 방지할 수 있도록 실제 경과 시간 기준으로 관리한다.
+- PREFLIGHT는 sim_task, navigation, inspection의 READY 상태를 확인한다.
+- 명령 Topic은 수신 준비 전에 발행하지 않는다.
+
+## 15. 실패와 초기화
+
+- 실패 후 Nav2 목표가 남아 있으면 취소하고 정지를 확인한다.
+- Sim Task Executor는 팔, 리프트, 컨베이어에 추가 명령을 보내지 않고 안전 정지 또는 현재 위치 유지 상태로 전환한다.
+- TRANSFER 중 일부 단위 작업만 완료된 경우 completed_units를 결과에 포함한다.
+- 실패 후 Task Manager의 논리 위치와 Isaac Sim 실제 상태가 다를 수 있으므로 중간 재개하지 않는다.
+- 모든 Executor가 정지한 뒤 Isaac Sim 장면과 Task Manager 상태를 함께 초기화한다.
+- 초기화 후 새로운 task_id로 사이클을 다시 시작한다.
+
+## 16. 통합 검증 항목
+
+1. /start_cycle 수락과 최종 /cycle/status 결과가 구분되는가.
+2. PREFLIGHT가 준비되지 않은 Executor를 정확히 탐지하는가.
+3. command_id 중복 시 물리 동작이 재실행되지 않는가.
+4. TRANSFER 두 단위 작업의 phase와 completed_units가 기록되는가.
+5. PICK_HARVEST 성공 전 NAVIGATION이 시작되지 않는가.
+6. safe_to_navigate=false이면 이동이 차단되는가.
+7. Nav2 성공 후 베이스 정지 검증 없이 PLACE가 시작되지 않는가.
+8. 검사 결과가 팔레트와 슬롯 ID에 연결되는가.
+9. unknown_slots를 정상으로 처리하지 않는가.
+10. 불량이 없을 때 CULL을 안전하게 생략하는가.
+11. 컨베이어가 출구 도달 후 정지하는가.
+12. 잘못된 Sim Task JSON이 무시되고 상태나 heartbeat를 갱신하지 않는가.
+13. 실패·TIMEOUT 후 다음 단계 명령이 발행되지 않는가.

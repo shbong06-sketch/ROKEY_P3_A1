@@ -58,3 +58,5 @@ CATKIN_IGNORE
 venv/
 __pycache__/
 .DS_Store
+
+rosbag2_*
