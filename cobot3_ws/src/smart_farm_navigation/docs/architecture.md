@@ -129,7 +129,71 @@ stateDiagram-v2
 | `results/` | 실측 로그(`link_*`, `nav2_*`, `goto_*`, `launch_scene_*`), `bags/`(git 제외), `robot_spawn.yaml` |
 | `errored/` | 사용자 실측 피드백. `guidance/` 는 차수별 절차, `guidance/past/` 이전 판 |
 
-## 6. 좌표계 요약
+## 6. 핵심 변수 (값을 바꿀 때 무엇이 달라지는지)
+
+### 6-1. `feeder_dock` (정밀 도킹) — `ros2 run … feeder_dock --ros-args -p <이름>:=<값>` 또는 launch 인자
+| 변수 | 기본값 | 뜻 · 바꾸면 |
+|---|---|---|
+| `standoff_m` | 0.90 | 도킹 완료 시 base_link ↔ TurnTable 앞면 거리. 팔 밑동은 여기서 0.42 m 뒤. 0.75 아래면 차체 뒤끝이 면에 0.15 m 이내로 붙음 |
+| `arm_x`, `arm_y`, `arm_radius_m` | −2.19, −1.55, 0.6 | 자동 시작 조건: AMCL 위치가 이 점(=FEEDER_APPROACH) 반경 안. `stations.yaml` 을 바꾸면 같이 바꿔야 함 |
+| `auto_start` | true | false 면 `/feeder_dock/start`(Empty) 로만 시작 |
+| `search_x`, `search_y` | [−3.4, −0.5], [−1.3, 1.3] | base_link 기준 면을 찾는 창(뒤쪽). 접근 지점이 면에서 3 m 넘게 멀어지면 `search_x[0]` 을 늘림 |
+| `face_min_len_m`, `face_max_len_m` | 0.6, 1.6 | 인정하는 직선 길이. TurnTable 앞면 1.15 m 기준. 다른 도킹 대상이면 그 폭에 맞춤 |
+| `reverse_speed_mps`, `creep_speed_mps` | 0.15, 0.05 | 후진 속도, 마지막 거리 맞춤 속도 |
+| `turn_speed_radps`, `turn_min_radps` | 0.35, 0.08 | 제자리 회전 최대·최소 각속도. Isaac 배율이 낮을수록 화면상 더 느려 보임 |
+| `yaw_tol_deg`, `dist_tol_m` | 1.5, 0.03 | 직각·거리 허용 오차 = 완료 판정 |
+| `k_yaw`, `k_lat` | 1.5, 1.2 | 회전·후진 조향 비례 이득. 흔들리면 낮춤 |
+| `timeout_s` | 120 (시뮬 초) | 전체 제한. 단계별 45 s, 면 미검출 8 s 는 코드 상수 |
+| (코드 상수) 면 신선도 2.5 s, RANSAC 내점 3 cm·120회, 법선 허용 ±60°, 최근접점 반경 1.5 m | | 검출 민감도. 옆면에 붙는 오검출이 보이면 법선 허용을 ±40° 로 줄이는 것이 첫 후보 |
+
+### 6-2. `cloud_self_filter` (라이다 자기 반사·합침)
+| 변수 | 기본값 | 뜻 · 바꾸면 |
+|---|---|---|
+| `box_x`, `box_y`, `box_z` | [−0.85, 0.6], [−0.6, 0.6], [−0.2, 2.6] | base_link 기준 결합카터 부피(팔·리프트·든 팔레트). **`box_x[0]` 은 `standoff_m` 보다 작게(더 뒤로) 두면 도킹 면이 지워짐** |
+| `accumulate_s` | 0.25 (시뮬 초) | 합치는 시간창. 늘리면 섹터 누락에 강하지만 이동 중 점이 번짐(0.6 m/s 에서 0.25 s = 15 cm) |
+| `partial_max_points` | 20000 | 이보다 적으면 "조각 발행" 경고만 냄 |
+
+### 6-3. `nav2.launch.py` 인자와 `/scan` 변환
+| 변수 | 기본값 | 뜻 |
+|---|---|---|
+| `scan_mode` | auto | `scan2d`(2D 라이다) / `cloud`(3D 점군). 고피는 2D 가 안 나와 항상 cloud |
+| `dock_auto` | true | `feeder_dock` 자동 시작. false 면 터미널에서 따로 띄움 |
+| `record`, `record_cloud` | true, false | rosbag 기록, 점군 포함 여부 |
+| `map`, `initial_x/y/yaw_deg` | v011 지도, stations.yaml 초기 위치 | 지도·AMCL 초기 위치 |
+| pointcloud_to_laserscan `min_height`/`max_height` | −0.35 / 1.5 (라이다 기준 m) | 바닥 제외, TurnTable(1.17 m)·랙 포함 |
+| pointcloud_to_laserscan `range_min` | 0.3 | 라이다 0.3 m 안은 버림 |
+
+### 6-4. `nav2_params.yaml` 에서 실제로 손댄 값
+| 노드.변수 | 값 | 이유 |
+|---|---|---|
+| planner `GridBased.plugin` | SmacPlannerHybrid, `motion_model_for_search: REEDS_SHEPP`, `allow_reverse_expansion: true`, `reverse_penalty: 1.0`, `minimum_turning_radius: 0.35` | 통로 후진 탈출을 경로 자체에 넣기 위해. `reverse_penalty` 를 올리면 전진을 선호해 방향 전환(cusp)이 생김 |
+| controller `FollowPath` (RPP) `desired_linear_vel` / `allow_reversing` / `use_rotate_to_heading` / `max_angular_accel` | 0.6 / true / false / 20 | 후진 추종. `max_angular_accel` 2.0 이면 Isaac odom 기준 회전이 기어감 |
+| `progress_checker.plugin` | PoseProgressChecker (`required_movement_angle` 0.3, 20 s) | 회전을 진행으로 인정 |
+| `general_goal_checker.xy_goal_tolerance` / `yaw_goal_tolerance` | 0.25 m / 0.5 rad | 도착 판정. 방향은 `feeder_dock` 이 맞추므로 느슨히 |
+| amcl `alpha1~4` / `z_hit` / `z_rand` / `sigma_hit` | 0.1 / 0.8 / 0.2 / 0.1 | Isaac odom 이 정확하므로 주행 잡음↓, 레이저 신뢰↑ |
+| local_costmap `width`/`height` / `inflation_radius` | 4 m / 0.45 | 부하와 통로 폭. global inflation 0.70 으로 올리면 통로 복귀 99 s |
+| collision_monitor `time_before_collision` | 0.8 s | 장애물 접근 감속 시점 |
+| velocity_smoother `max_velocity` / `max_accel` | [0.6, 0, 0.8] / [0.8, 0, 1.2] | 팔레트 미끄러짐 방지로 가감속은 낮춤 |
+| bt_navigator `default_server_timeout` | 200 ms | 부하 시 goal 즉시 실패 방지 |
+| 모든 노드 `use_sim_time` | true | Isaac `/clock` 기준. Isaac 재실행 시 Nav2 재실행 필요 |
+
+### 6-5. `stations.yaml`
+| 항목 | 값 | 뜻 |
+|---|---|---|
+| `initial_pose` | (−0.421, 1.006, 90°) | AMCL 초기 위치 = 장면의 카터 배치. 장면이 바뀌면 `launch_scene.py` 출력값으로 갱신 |
+| `FEEDER_APPROACH` | (−2.19, −1.55, 90°) | Nav2 Goal 클릭 지점, `feeder_dock` 자동 시작 기준점 |
+| `FEEDER_DOCK` | (−2.19, −2.60, 90°) | 참고값(마커 표시). 실제 정지 위치는 `feeder_dock` 의 `standoff_m` 가 정함 |
+| `reverse_out_zones` | 통로 구역, 출구 방향 −90°, 2.2 m | `go_to_station -p pure_nav2:=false` 때만 사용 |
+
+### 6-6. `launch_scene.py` (단위 시험용 Isaac 실행)
+| 항목 | 값 | 뜻 |
+|---|---|---|
+| `--pose`, `--arm-joints`, `--lift` | `config/arm_poses.yaml` 의 `carry` = joint_1 270°, lift 0.243 m | 팔레트 없이 운반 자세. 480 프레임(약 8 s) 램프 |
+| M0609 드라이브 강성/감쇠/최대힘 | 1e8 / 1e4 / 1e8 | 팀 `setup_arm_drives` 와 동일. 없으면 팔이 처져 라이다에 잡힘 |
+| `--cloud-full-scan` | true | 3D 라이다 한 바퀴 단위 발행(10 Hz). 팀 앱에는 `open_scene()` 에 같은 설정이 들어감 |
+| `LIDAR_X`(공통 상수) | −0.232 (z 0.526) | XT-32 의 base_link 위치. `feeder_dock`·`cloud_self_filter`·`nav2_link_check` 가 같은 값을 씀 |
+
+## 7. 좌표계 요약
 | 좌표계 | 정의 |
 |---|---|
 | map = Isaac world | 지도 origin 이 world 기준이라 동일. +x 는 컨베이어 진행 방향, −y 는 랙 → 컨베이어 방향 |
