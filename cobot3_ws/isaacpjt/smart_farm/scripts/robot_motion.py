@@ -43,8 +43,8 @@ FORK_TINE_TIP = 0.294          # 갈래 끝        (0.135 + 0.220/2) x 1.2
 FORK_PLATE_FRONT = 0.030       # 판 앞면        (0.0125 + 0.025/2) x 1.2
 
 # 팔레트: prim 원점에서 잰 거리 (simple_pallet.usd 깊이 0.30 기준 실측)
-PALLET_FRONT = 0.147           # 앞면(로봇 쪽)
-PALLET_POCKET_CENTER = 0.0141   # 포크 틈의 가운데 높이
+PALLET_FRONT = 0.1261           # 앞면(로봇 쪽)
+PALLET_POCKET_CENTER = 0.0140   # 포크 틈의 가운데 높이
 
 
 # ── 여유 값 (동작을 조정할 때 여기를 바꿉니다) ───────────
