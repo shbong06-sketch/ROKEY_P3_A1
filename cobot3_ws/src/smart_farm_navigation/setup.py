@@ -19,7 +19,7 @@ setup(
     zip_safe=True,
     maintainer="rokey",
     maintainer_email="shbong06@gmail.com",
-    description="Carter navigation for the smart farm scenes: Nav2 bring-up and /cmd_vel path runners.",
+    description="ROS 2 command nodes for smart_farm_nav2_01.usd.",
     license="Apache-2.0",
     entry_points={
         "console_scripts": [
@@ -27,9 +27,6 @@ setup(
             "path_runner = smart_farm_navigation.path_runner:main",
             "path_runner_smooth = smart_farm_navigation.path_runner_smooth:main",
             "navigation_node = smart_farm_navigation.navigation_node:main",
-            "scan_sanitizer = smart_farm_navigation.scan_sanitizer:main",
-            "go_to_station = smart_farm_navigation.go_to_station:main",
-            "nav2_link_check = smart_farm_navigation.nav2_link_check:main",
         ],
     },
 )
