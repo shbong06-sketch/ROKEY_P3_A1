@@ -1,5 +1,7 @@
 # Isaac Sim 연동 Navigation Executor 통합 검증 절차
 
+> 이 문서는 `mock_sim_task_executor + 실제 Navigation Executor` 조합을 검증한다. 실제 Standalone Sim Executor까지 함께 연결하는 시험은 [Standalone 연결 테스트](./standalone_task_manager_navigation_test.md)를 따른다.
+
 ## 1. 문서 목적
 
 이 문서는 Isaac Sim이 없는 환경에서 다음 검증을 완료한 이후 수행하는 실환경 통합 검증 절차를 정의한다.

@@ -4,6 +4,8 @@
 
 관련 설계는 [시스템 아키텍처](./01-architecture.md)와 [인터페이스 설계](./02-interfaces.md)를 함께 참고한다.
 
+실제 Isaac Sim Standalone Sim Executor와 Navigation Executor를 함께 연결하는 절차는 [Standalone 연결 테스트](./standalone_task_manager_navigation_test.md)를 따른다.
+
 ## 1. 현재 통합 범위
 
 현재 Task Manager는 다음 ROS 2 인터페이스를 제공한다.
