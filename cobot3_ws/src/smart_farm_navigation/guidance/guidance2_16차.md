@@ -5,6 +5,15 @@
 - 원리: 도킹 구간은 AMCL·Nav2 를 쓰지 않음. `feeder_dock` 노드가 `/scan`(자기 반사 제거된 3D 라이다 단면)에서 TurnTable 북쪽 앞면(길이 1.15 m 직선)을 RANSAC 으로 찾아, 그 면의 가운데 법선 위 1.00 m 지점을 목표로 삼고 `/cmd_vel` 로 (1) 제자리 회전 → (2) 후진 → (3) 면과 직각 맞추기 → (4) 3 cm 이내 거리 미세 조정을 함. 지도 오차·AMCL 방향 흔들림과 무관함.
 - 내피 모의: 도킹 결과 위치 오차 3 cm, 방향 1° (`face_dist 1.027 m, yaw_err 0.3°, lat 0.004 m`).
 
+## 0. 18:26 실측에서 도킹이 시작되지 않은 원인 (bag `nav2_20260922_1826` 분석)
+- 팀 앱(`standalone_app.py`)으로 띄운 Isaac 은 3D 라이다를 **프레임마다 60° 조각(약 6,900점, 20 Hz)** 으로 발행함(`fullScan` 꺼짐). `launch_scene.py` 는 한 바퀴(41,000점, 10 Hz)로 발행함.
+- 조각 하나로 만든 `/scan` 은 723개 방향 중 121개만 값이 있고 나머지는 비어 있음. 그래서 (1) AMCL 이 한 방향 조각으로 위치를 맞춰 도착 방향이 흔들렸고(110° 등), (2) `feeder_dock` 은 뒤쪽 점이 0개라 TurnTable 면을 못 찾아 시작하지 않았음. 카터 위 기물이나 팔레트 때문이 아님(자기 반사 0점).
+- 조치 두 가지: (a) `cloud_self_filter` 가 조각을 0.35 s 동안 모아 한 바퀴로 합친 뒤 `/scan` 을 만듦(Isaac 설정과 무관하게 동작). (b) 팀 앱 `standalone_app.py` 의 `open_scene()` 에 `fullScan=True` 6줄을 추가함(세션에만 적용, USD 불변). 팀 파일이므로 병합 시 사라지면 (a) 만으로도 됨.
+- `nav2_link_check` 가 `[5] … points/msg` 뒤에 `PARTIAL SLICES` 를 표시하면 (b) 가 빠진 것임. 진행은 가능함.
+- `feeder_dock` 은 대기 중 5 s 마다 `idle: amcl dist … , nav2 idle …, face …` 를 찍으므로 왜 시작하지 않는지 터미널 3 에서 바로 볼 수 있음.
+- 내피 모의(60° 조각 20 Hz 로 흉내)에서 합치기만으로 도킹 성공: `face_dist 1.024 m, yaw_err 0.06°, lat −0.007 m`.
+- Isaac 을 다시 실행하면 터미널 3 도 다시 실행해야 함(18:26 로그 끝의 TF 오류가 그 경우임).
+
 ## 1. 고피 터미널 1 (팀 통합 standalone, 시험 3 과 동일)
 ```bash
 isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay

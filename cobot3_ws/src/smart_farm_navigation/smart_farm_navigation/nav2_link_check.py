@@ -97,7 +97,9 @@ def main() -> None:
     log.info(f"[3] /chassis/odom     {hz['odom']:6.1f} Hz" + ("" if hz["odom"] > 5 else "   <- MISSING"))
     ok = hz["clock"] > 1 and hz["tf"] > 5 and hz["odom"] > 5
     log.info(f"[4] /front_2d_lidar/scan         {hz['scan2d']:5.1f} Hz, {node.bytes['scan2d'] / WINDOW_S / 1e3:8.1f} kB/s, frame '{node.scan_frame}'")
-    log.info(f"[5] /front_3d_lidar/lidar_points {hz['cloud']:5.1f} Hz, {node.bytes['cloud'] / WINDOW_S / 1e3:8.1f} kB/s, frame '{node.cloud_frame}'")
+    pps = node.cloud_pts / node.n["cloud"] if node.n["cloud"] else 0
+    log.info(f"[5] /front_3d_lidar/lidar_points {hz['cloud']:5.1f} Hz, {node.bytes['cloud'] / WINDOW_S / 1e3:8.1f} kB/s, frame '{node.cloud_frame}', {pps:.0f} points/msg"
+             + ("   <- PARTIAL SLICES (fullScan off): cloud_self_filter merges them; AMCL/docking work but set fullScan in the Isaac script" if 0 < pps < 20000 else ""))
     if node.n["cloud"]:
         per = node.self_pts / node.n["cloud"]
         log.info(f"[6] self returns inside the rig box: {per:.0f} of {node.cloud_pts / node.n['cloud']:.0f} points/scan "

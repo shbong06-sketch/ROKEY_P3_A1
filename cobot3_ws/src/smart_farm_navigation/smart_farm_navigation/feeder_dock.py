@@ -36,6 +36,64 @@ def wrap(a: float) -> float:
     return math.atan2(math.sin(a), math.cos(a))
 
 
+def detect_face(ranges, angle_min, angle_inc, search_x, search_y, len_lim, seed=0, debug=False):
+    """Fit the TurnTable face line in the base_link frame from one LaserScan.
+    Returns (dist, yaw_err, lat, cx, cy, n_pts, length) or None; with debug=True also a reason string."""
+    r = np.asarray(ranges, dtype=float)
+    a = angle_min + np.arange(len(r)) * angle_inc
+    ok = np.isfinite(r) & (r > 0.05) & (r < 6.0)
+    x = r[ok] * np.cos(a[ok]) + LIDAR_X; y = r[ok] * np.sin(a[ok])
+    sel = (x > search_x[0]) & (x < search_x[1]) & (y > search_y[0]) & (y < search_y[1])
+    x, y = x[sel], y[sel]
+    if len(x) < 8:
+        return (None, f"only {len(x)} points in search window") if debug else None
+    rng = np.hypot(x, y)
+    i0 = int(np.argmin(rng))
+    near = np.hypot(x - x[i0], y - y[i0]) < 1.5
+    px, py = x[near], y[near]
+    if len(px) < 8:
+        return (None, f"only {len(px)} points near nearest ({x[i0]:.2f},{y[i0]:.2f})") if debug else None
+    pts = np.stack([px, py], axis=1)
+    rs = np.random.default_rng(seed)
+    best = None; rejected = {"short": 0, "normal": 0}
+    for _ in range(120):
+        i, j = rs.choice(len(pts), 2, replace=False)
+        t = pts[j] - pts[i]
+        nrm = np.hypot(*t)
+        if nrm < 0.15:
+            continue
+        t /= nrm; nvec = np.array([-t[1], t[0]])
+        inl = np.abs((pts - pts[i]) @ nvec) < 0.03
+        cnt = int(inl.sum())
+        if cnt < 8:
+            rejected["short"] += 1; continue
+        centre = pts[inl].mean(axis=0)
+        if nvec @ centre > 0:
+            nvec = -nvec
+        if nvec[0] < math.cos(math.radians(60)):
+            rejected["normal"] += 1; continue
+        if best is None or cnt > best[0]:
+            best = (cnt, inl)
+    if best is None:
+        return (None, f"no line: {len(pts)} pts, rejected {rejected}, nearest ({x[i0]:.2f},{y[i0]:.2f})") if debug else None
+    cnt, inl = best
+    px, py = pts[inl, 0], pts[inl, 1]
+    cx, cy = px.mean(), py.mean()
+    u = np.stack([px - cx, py - cy], axis=1)
+    w, v = np.linalg.eigh(u.T @ u); tdir = v[:, 1]; ndir = np.array([-tdir[1], tdir[0]])
+    proj = u @ tdir
+    length = float(proj.max() - proj.min())
+    centre = np.array([cx, cy]) + tdir * float((proj.max() + proj.min()) / 2.0)
+    if ndir @ centre > 0:
+        ndir = -ndir
+    if not (len_lim[0] <= length <= len_lim[1]):
+        return (None, f"line length {length:.2f} outside {len_lim} (centre {centre[0]:.2f},{centre[1]:.2f}, {cnt} pts)") if debug else None
+    yaw_err = wrap(math.atan2(ndir[1], ndir[0]))
+    dist = float(abs(ndir @ centre))
+    face = (dist, yaw_err, float(centre[1]), float(centre[0]), float(centre[1]), int(cnt), length)
+    return (face, "ok") if debug else face
+
+
 class FeederDock(Node):
     def __init__(self) -> None:
         super().__init__("feeder_dock")
@@ -69,78 +127,39 @@ class FeederDock(Node):
         self.create_subscription(Twist, "/cmd_vel", self._on_cmd, 10)
 
         self.face = None           # (d, yaw_err, lat, cx, cy, n_pts, length)
+        self.last_why = ""
         self.face_stamp = 0.0
         self.amcl_xy = None; self.last_ext_cmd = 0.0; self.near_since = None
         self.phase = "IDLE"; self.t_phase = 0.0; self.t_start = 0.0; self.done = False
         self.create_timer(0.05, self._tick)
+        self.create_timer(5.0, self._report)
         self._status("IDLE", "waiting" + (" (auto: arms within %.1f m of FEEDER_APPROACH)" % self.arm_r if self.auto else ""))
 
     # ---------- perception ----------
     def _on_scan(self, m: LaserScan) -> None:
-        r = np.asarray(m.ranges, dtype=float)
-        a = m.angle_min + np.arange(len(r)) * m.angle_increment
-        ok = np.isfinite(r) & (r > 0.05) & (r < 6.0)
-        x = r[ok] * np.cos(a[ok]) + LIDAR_X; y = r[ok] * np.sin(a[ok])
-        sel = (x > self.sx[0]) & (x < self.sx[1]) & (y > self.sy[0]) & (y < self.sy[1])
-        x, y = x[sel], y[sel]
-        if len(x) < 8:
-            self.face = None; return
-        # candidate points: within 1.5 m of the nearest point behind the robot (the face is ~1.15 m long,
-        # its side edges run away from the robot and get rejected by the normal-direction check below)
-        rng = np.hypot(x, y)
-        i0 = int(np.argmin(rng))
-        near = np.hypot(x - x[i0], y - y[i0]) < 1.5
-        px, py = x[near], y[near]
-        if len(px) < 8:
-            self.face = None; return
-        # RANSAC line: 2-point hypotheses, 3 cm inliers, best = most inliers whose normal faces the robot
-        pts = np.stack([px, py], axis=1)
-        rs = np.random.default_rng(int(m.header.stamp.nanosec) & 0xFFFF)
-        best = None
-        for _ in range(80):
-            i, j = rs.choice(len(pts), 2, replace=False)
-            t = pts[j] - pts[i]
-            nrm = np.hypot(*t)
-            if nrm < 0.15:
-                continue
-            t /= nrm; nvec = np.array([-t[1], t[0]])
-            dline = (pts - pts[i]) @ nvec
-            inl = np.abs(dline) < 0.03
-            cnt = int(inl.sum())
-            if cnt < 8:
-                continue
-            # normal must point roughly toward the robot's rear direction (face is behind us): angle(normal, +x) < 60 deg
-            centre = pts[inl].mean(axis=0)
-            if nvec @ centre > 0:
-                nvec = -nvec
-            if nvec[0] < math.cos(math.radians(60)):
-                continue
-            if best is None or cnt > best[0]:
-                best = (cnt, inl, t.copy(), nvec.copy())
-        if best is None:
-            self.face = None; return
-        cnt, inl, tdir, ndir = best
-        px, py = pts[inl, 0], pts[inl, 1]
-        cx, cy = px.mean(), py.mean()
-        u = np.stack([px - cx, py - cy], axis=1)
-        w, v = np.linalg.eigh(u.T @ u); tdir = v[:, 1]; ndir = np.array([-tdir[1], tdir[0]])
-        proj = u @ tdir
-        length = float(proj.max() - proj.min())
-        if not (self.len_lim[0] <= length <= self.len_lim[1]):
-            self.face = None; return
-        centre = np.array([cx, cy]) + tdir * float((proj.max() + proj.min()) / 2.0)
-        if ndir @ centre > 0:
-            ndir = -ndir
-        yaw_err = wrap(math.atan2(ndir[1], ndir[0]))          # 0 when the robot is square to the face (normal along +x)
-        dist = float(abs(ndir @ centre))                      # perpendicular distance base_link -> face line
-        lat = float(centre[1])                                # face centre lateral offset in base frame (left +)
-        self.face = (dist, yaw_err, lat, float(centre[0]), float(centre[1]), int(len(px)), length)
-        self.face_stamp = time.monotonic()
+        face, why = detect_face(m.ranges, m.angle_min, m.angle_increment, self.sx, self.sy, self.len_lim,
+                                seed=int(m.header.stamp.nanosec) & 0xFFFF, debug=True)
+        self.last_why = why
+        self.face = face
+        if face is not None:
+            self.face_stamp = time.monotonic()
 
     def _on_amcl(self, m):  self.amcl_xy = (m.pose.pose.position.x, m.pose.pose.position.y)
     def _on_cmd(self, m):
         if self.phase in ("IDLE", "DONE", "FAILED") and (abs(m.linear.x) > 0.01 or abs(m.angular.z) > 0.01):
             self.last_ext_cmd = time.monotonic()
+
+    def _report(self):
+        if self.phase != "IDLE":
+            return
+        near = None
+        if self.amcl_xy is not None:
+            near = math.hypot(self.amcl_xy[0] - self.arm[0], self.amcl_xy[1] - self.arm[1])
+        f = self.face
+        self.get_logger().info(
+            f"idle: amcl dist to FEEDER_APPROACH {near if near is None else round(near, 2)} m, "
+            f"nav2 idle {time.monotonic() - self.last_ext_cmd > 2.0}, face "
+            + (f"d={f[0]:.2f} yaw={math.degrees(f[1]):+.1f} len={f[6]:.2f}" if f else f"NOT FOUND ({self.last_why})"))
 
     # ---------- state machine ----------
     def _status(self, phase, detail=""):
