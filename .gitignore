@@ -62,3 +62,4 @@ __pycache__/
 rosbag2_*
 
 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/media_log/*
+/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags/*

@@ -89,3 +89,12 @@ ros2 action send_goal \
     use_start: false
   }"
 ---
+
+고피에 "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py" 고친것을 적용하고 가이던스2 16차대로 실측시작해서 Nav2 상에서 Nav2 goal을 FEEDER_APPROACH에 클릭하고 북쪽(위쪽) 방향을 향해 떼기를 수행했지만, 카터 도착한뒤 여전히 가만히 있었음. 파악하고 해결할 것.
+
+---
+
+FEEDER_APPROACH로 Nav2 goal 한 번 했을때 FEEDER_DOCK을 바라보도록 정렬은 했지만 그 앞까지 전진하지 않음. 들고 있는 Pallet을 FEEDER_DOCK 입구 부분에 place하기 위해선 충분히 다가가야함. erroed/와 rosbag 파일 최근 생성된 2개 및 로그들 파악해서 해결할 것.
+
+---
+
