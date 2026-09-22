@@ -148,3 +148,26 @@
   - 반대로 전진·후진 → `drive_direction_sign` 만 바꿈.
   - 오른쪽으로 꺾임 → `waypoints_y[1]` 부호만 바꿈.
   - 두 개를 동시에 바꾸지 않음. 하나씩 바꾸고 재빌드 후 다시 봄.
+
+
+---
+
+## 5. Nav2 + 정밀 도킹 트랙 (feature/navigation2, 2026-09-21 ~ 23)
+
+| 증상 | 원인 | 조치 |
+|---|---|---|
+| 후진 탈출 뒤 카터가 2~3분 정지 후 출발 | RPP 회전 명령이 odom 각속도 기준 가속 제한(2.0)에 걸려 0.1 rad/s 로 기어감. 진행 판정기가 회전을 무시해 15 s 마다 중단 | `max_angular_accel` 20, `PoseProgressChecker` |
+| 도착 0.16 m 앞에서 흔들림 | goal 허용 0.15 m | 0.25 m |
+| 통로 안 제자리 회전 → 랙 충돌 | NavFn 이 자세를 무시 | Smac Hybrid-A*(Reeds-Shepp, 후진) + RPP `allow_reversing` |
+| 출발 직후 `collision ahead`, AMCL 0.5 m 오차 | `launch_scene.py` 가 M0609 드라이브를 잡지 않아 팔이 처져 라이다에 잡힘 | 관절 드라이브 고정(강성 1e8), 자기 반사 상자 확대 |
+| 곡선 경로 끝에서 도착 방향 30° 오차 | RPP 는 후진 허용 시 제자리 회전 불가 | 마지막 구간 직선(경유점) → 최종적으로 `feeder_dock` 으로 대체 |
+| 팀 앱으로 띄우면 AMCL 방향 흔들림, 도킹 시작 안 됨 | 3D 라이다가 프레임마다 60° 조각(6,900점)만 발행 → `/scan` 한 방향만 유효 | 팀 앱에 `fullScan=True`, `cloud_self_filter` 점군 합침 |
+| 도킹 시작 후 6 s 만에 `FACE_NOT_FOUND` | 벽시계 기준 신선도 0.6 s. 실시간 배율 0.33 에서 스캔이 0.9 s 간격 | 시뮬레이션 시계 기준, 신선 2.5 s |
+| 정렬 후 전진 안 함 | fullScan 이어도 일부 스캔에서 뒤쪽 30~60° 섹터가 비어 옴 | 최근 0.25 s 점군 항상 합침 |
+| `launch_scene.py --pose` 로 Isaac 즉시 종료 | (1) 관절 목표를 한 번에 주어 팔이 리프트와 충돌, (2) stdout 가로채기에 `fileno` 누락 | 8 s 램프 + DriveAPI 목표, `_Tee.fileno()` |
+| 시험 3 파지 명령 무반응 | 팀 앱 `/sim_task/command` 는 `std_msgs/String` JSON | 명령 형식 정정 |
+| `ros2 topic pub --once` 를 노드가 놓침 | bag 기록기도 같은 토픽을 구독해 첫 매칭에서 발행 종료 | `-t 3 -r 1` |
+| Isaac 재실행 후 `Goal failed`/TF 오류 | 시뮬레이션 시계가 0 으로 돌아감 | Nav2 도 재실행 |
+| `Timed out waiting for action server to acknowledge` | BT 응답 대기 20 ms | 200 ms |
+
+**미해결(2026-09-22 22시 녹화 중 1회)**: 도킹 후진 중 방향이 틀어지며 앞으로 나감. 같은 조건 3회 중 1회. 가설: 후진 중 면 검출이 한 스캔에서 다른 직선(TurnTable 옆면 등)에 붙어 목표점 G 가 튀었을 가능성. 대책 후보: 직전 면과 거리 0.4 m·각 20° 이상 다른 검출을 버리는 연속성 검사(`feeder_dock.detect_face` 뒤 한 줄). 재현 bag(`results/bags/nav2_20260922_2134` 또는 `2142`)으로 `detect_face` 를 재생해 확인할 것.

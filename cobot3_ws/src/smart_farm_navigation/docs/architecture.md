@@ -1,222 +1,138 @@
-# smart_farm_navigation 노드 구성도 및 흐름도
+# smart_farm_navigation 아키텍처 (Nav2 + 정밀 도킹 판)
 
-기준: feature/navigation, 2026-09-19. 대상 장면 smart_farm_nav2_01.usd, ROS 2 Jazzy, ROS_DOMAIN_ID 101.
-GitHub 또는 VS Code(Markdown Preview Mermaid Support)에서 그림으로 렌더링된다.
+- 기준: `feature/navigation2`, 2026-09-23. 장면 `Collected_smartfarm_v011.usd`, 지도 `maps/Collected_smartfarm_v011.yaml`, ROS 2 Jazzy, `ROS_DOMAIN_ID` **102**(고피2 기준. 이전 고피는 101).
+- 확정 동작(2026-09-22 실측): 팀 `standalone_app.py` 로 Isaac 실행 → 내피 Nav2 → `PICK_HARVEST` 로 Pallet_01 파지 → RViz2 에서 `FEEDER_APPROACH` 한 번 클릭 → 도착 약 2 s 뒤 `feeder_dock` 이 자동으로 `FEEDER_DOCK` 앞(면에서 0.90 m)에 뒤(팔 쪽)를 면과 직각으로 맞춰 정지.
+- 그림은 GitHub 또는 VS Code(Markdown Preview Mermaid Support)에서 렌더링됨.
 
----
-
-## 1. 배치도: 내피 · GitHub · 고피
-
-```mermaid
-flowchart LR
-    subgraph NAEPI["내피 (코드 작성, ROS 2 Jazzy 있음, Isaac Sim 없음)"]
-        DEV["코드·가이드 작성<br>내피 통합 시험<br>(fake odom 노드)"]
-    end
-    subgraph GH["GitHub  shbong06-sketch/ROKEY_P3_A1<br>branch: feature/navigation"]
-        REPO[("저장소")]
-    end
-    subgraph GOPI["고피 (Isaac Sim 5.1 + ROS 2 Jazzy)"]
-        T1["터미널 1<br>Isaac Sim + 장면 Play"]
-        T2["터미널 2<br>colcon build · scene_check"]
-        T3["터미널 3<br>ros2 launch escape.launch.py"]
-        RES["results/*.txt"]
-    end
-    DEV -->|"commit · push"| REPO
-    REPO -->|"git pull (사용자)"| T2
-    T1 <-->|"DDS (domain 101)"| T2
-    T1 <-->|"DDS (domain 101)"| T3
-    T2 --> RES
-    T3 --> RES
-    RES -->|"commit · push (사용자)"| REPO
-```
-
----
-
-## 2. 노드·토픽 그래프 (rqt_graph 형식)
-
-타원 = 노드, 사각형 = 토픽. 화살표 방향이 발행(→토픽) / 구독(토픽→)이다.
-Isaac Sim 안의 노드 이름은 Action Graph 경로에서 자동 생성된 것이다.
+## 1. 배치: 고피(Isaac) ↔ 내피(Nav2)
 
 ```mermaid
 flowchart LR
-    subgraph ISAAC["Isaac Sim  smart_farm_nav2_01.usd  (ROS2 Bridge)"]
-        SUB(["_World_nova_carter_ROS_differential_drive_ros2_subscribe_twist"])
-        DC["DifferentialController<br>wheelRadius 0.14 · wheelDistance 0.413<br>max 1.0 m/s · 1.2 rad/s"]
-        ODOMN(["ros2_publish_odometry<br>(IsaacComputeOdometry)"])
-        TFN(["ros2_publish_transform_tree ×3"])
-        LID(["ros2 RTX lidar / camera / imu helpers"])
+    subgraph GOPI["고피2 · Isaac Sim 5.1 (ROS_DOMAIN_ID 102)"]
+        APP["runtime/standalone_app.py (팀)<br>장면 열기 · rclpy 노드 · 팔레트 P&P<br>+ 3D 라이다 fullScan 설정"]
+        USD["Collected_smartfarm_v011.usd<br>Nova_Carter_ROS Action Graph<br>(cmd_vel, odom, tf, lidar, clock)"]
+        APP --> USD
     end
-
-    CMD["/cmd_vel<br>geometry_msgs/Twist"]
-    ODOM["/chassis/odom<br>nav_msgs/Odometry<br>odom → base_link, 60 Hz"]
-    TF["/tf<br>tf2_msgs/TFMessage"]
-    PC["/front_3d_lidar/lidar_points<br>sensor_msgs/PointCloud2"]
-    IMG["/front_stereo_camera/*/image_raw<br>/…/imu"]
-
-    ESC(["/escape_controller<br>(escape_controller.py)"])
-    CHK(["/scene_check<br>(scene_check.py)"])
-    CLI(["ros2 topic / rviz2<br>(관측용)"])
-
-    ESC -->|"20 Hz"| CMD
-    CMD --> SUB --> DC
-    ODOMN --> ODOM
-    TFN --> TF
-    LID --> PC
-    LID --> IMG
-    ODOM --> ESC
-    ODOM --> CHK
-    TF --> CHK
-    PC --> CLI
-    ODOM --> CLI
-
-    classDef topic fill:#fff7d6,stroke:#b8860b,color:#000;
-    class CMD,ODOM,TF,PC,IMG topic;
-```
-
-현재 장면에서 발행되지 않는 것: `/clock`, `/tf_static`, `/front_2d_lidar/scan`. 에셋의 `/ros_clock` 그래프가 defaultPrim 밖에 있어 참조에 포함되지 않기 때문이며, Nav2 단계에서 `/World/ros_clock` 참조 추가로 해결한다.
-
-### 2.1 TF 트리 (현재)
-
-```mermaid
-flowchart TB
-    odom --> base_link
-    base_link --> nova_carter
-    nova_carter --> wheel_left
-    nova_carter --> wheel_right
-    nova_carter --> nova_carter_caster_frame_base
-    base_link --> front_3d_lidar
-    base_link --> front_2d_lidar
-    base_link --> back_2d_lidar
-    base_link --> cams["front/left/right/rear stereo · fisheye 카메라 프레임"]
-    base_link --> chassis_imu
-    map -.->|"Nav2 단계에서 AMCL 이 발행 (미구현)"| odom
-```
-
----
-
-## 3. escape_controller 상태 머신
-
-```mermaid
-stateDiagram-v2
-    [*] --> WAITING : 노드 시작, zero Twist 발행
-    WAITING --> WAITING : auto_start=false 또는 파라미터 미설정 또는 odom 없음
-    WAITING --> ARC_REVERSE : auto_start=true 이고 신선한 odom 수신, 시작 자세·중앙선 기록
-    ARC_REVERSE --> ARC_STOP : 누적 yaw 변화가 turn_angle_rad 도달
-    ARC_REVERSE --> ABORTED : 경로가 reverse_max_distance_m 초과, 또는 stall_timeout_s 동안 yaw 정체, 또는 단계 제한시간 초과
-    ARC_STOP --> FORWARD : settle_duration_s 경과
-    FORWARD --> COMPLETE : 중앙선 방향 진행거리가 forward_distance_m 도달
-    FORWARD --> ABORTED : stall_timeout_s 동안 거리 정체, 또는 단계 제한시간 초과
-    ARC_REVERSE --> ABORTED : odom_timeout_s 동안 odom 없음
-    FORWARD --> ABORTED : odom_timeout_s 동안 odom 없음
-    COMPLETE --> [*] : zero Twist 를 stop_hold_duration_s 유지 후 종료 코드 0
-    ABORTED --> [*] : zero Twist 를 stop_hold_duration_s 유지 후 종료 코드 2
-
-    note right of ARC_REVERSE
-        linear.x = -drive_direction_sign × reverse_speed_mps
-        angular.z = sign(turn_angle_rad) × turn_speed_radps
-        회전반경 = reverse_speed / turn_speed = 0.4 m
-    end note
-    note right of FORWARD
-        linear.x = drive_direction_sign × forward_speed_mps
-        angular.z = _follow_line():
-          횡오차 e → 접근각 atan(cross_track_gain × e)
-          → 진행방향 오차 × heading_hold_gain (상한 heading_hold_max_radps)
-    end note
-```
-
-### 3.1 매 tick(0.05 s) 판정 순서
-
-```mermaid
-flowchart TD
-    A["타이머 tick"] --> B{"COMPLETE 또는 ABORTED ?"}
-    B -->|"예"| B1["zero Twist 발행<br>stop_hold 경과 시 finished=true"] --> Z["끝"]
-    B -->|"아니오"| C{"auto_start ?"}
-    C -->|"false"| C1["zero Twist 발행"] --> Z
-    C -->|"true"| D{"파라미터 유효 ?"}
-    D -->|"아니오"| D1["zero Twist 발행<br>오류 로그 1회"] --> Z
-    D -->|"예"| E{"odom 신선 ?"}
-    E -->|"아니오, WAITING"| Z
-    E -->|"아니오, 주행 중"| E1["_abort(odom timeout)"] --> Z
-    E -->|"예"| F{"현재 Phase"}
-    F -->|"WAITING"| F0["시작 자세·중앙선 기록<br>_enter(ARC_REVERSE)"] --> Z
-    F -->|"ARC_REVERSE"| F1["후진+회전 발행<br>각도 도달 → ARC_STOP<br>거리 초과·정체·시간 초과 → ABORTED"] --> Z
-    F -->|"ARC_STOP"| F2["정지 발행<br>settle 경과 → FORWARD"] --> Z
-    F -->|"FORWARD"| F3["직진+중앙선 조향 발행<br>거리 도달 → COMPLETE<br>정체·시간 초과 → ABORTED"] --> Z
-```
-
-### 3.2 기하 (odom 좌표계, 시작 자세 = 원점, yaw 0)
-
-```mermaid
-flowchart LR
-    subgraph CORR["통로 (안쪽 폭 4.0 m, y −7.5 … +7.5)"]
-        direction TB
-        W1["/World/Cube  x = −2.5"]
-        S["시작 (0, 0)<br>보이는 정면 = −x"]
-        W2["/World/Cube_01  x = +2.5"]
+    subgraph NAEPI["내피 · ROS 2 Jazzy (ROS_DOMAIN_ID 102)"]
+        L["launch/nav2.launch.py"]
+        F["cloud_self_filter"] --> P["pointcloud_to_laserscan"] --> S["/scan"]
+        S --> AMCL["Nav2: map_server · AMCL"]
+        S --> CM["Nav2: costmaps · planner(Hybrid-A*) · controller(RPP) · behaviors · collision_monitor"]
+        S --> D["feeder_dock (정밀 도킹)"]
+        M["station_markers"] --> RV["RViz2 (nav2_smartfarm.rviz)"]
+        B["ros2 bag record"]
+        NN["navigation_node (팀 TaskCommand) → go_to_station"]
     end
-    S -->|"① 원호 후진 (후단이 우측으로)<br>반경 0.4 m, yaw +90°"| P1["(+0.4, +0.4)"]
-    P1 -->|"② 정지 0.5 s"| P1
-    P1 -->|"③ 중앙선 x=0 으로 복귀 후<br>−y 방향 9.0 m 직진"| P2["(0, −9.0)"]
+    USD -- "/front_3d_lidar/lidar_points<br>/chassis/odom /tf /clock" --> F
+    USD -- "/chassis/odom /tf /clock" --> AMCL
+    RV -- "/goal_pose (Nav2 Goal 클릭)" --> CM
+    CM -- "/cmd_vel" --> USD
+    D -- "/cmd_vel (도킹 구간)" --> USD
+    NN -. "/sim_task/command (String JSON)" .-> APP
 ```
 
----
+- `/cmd_vel` 은 두 발행자가 있음: Nav2 (collision_monitor 출력) 와 `feeder_dock`. 동시에 내지 않도록 `feeder_dock` 은 Nav2 가 2 s 이상 조용할 때만 시작함.
+- 두 PC 는 `ROS_DOMAIN_ID` 와 FastDDS 화이트리스트(`~/.ros/fastdds_whitelist.xml`, 상대 PC IP 포함)가 맞아야 토픽이 보임.
 
-## 4. 실행 절차 시퀀스 (터미널 3개)
+## 2. 한 번의 운반 시퀀스
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant U as 사용자
-    participant T1 as 터미널 1
-    participant SIM as Isaac Sim
-    participant T2 as 터미널 2
-    participant T3 as 터미널 3
-    participant ESC as escape_controller
-
-    U->>T1: ros_set · isaac_ros · env_check.sh
-    T1-->>U: 판정 OK / WARN (CONFLICT 면 중단)
-    U->>T1: isaac_python launch_scene.py
-    T1->>SIM: SimulationApp → bridge 확장 → open_stage → Play
-    SIM-->>T1: "[launch_scene] PLAY"
-    Note over SIM: /chassis/odom, /tf, 센서 발행 시작<br>/cmd_vel 구독 대기
-
-    U->>T2: ros_set · isaac_ros · env_check.sh
-    U->>T2: colcon build → source → ros2 pkg executables
-    U->>T2: ros2 run smart_farm_navigation scene_check
-    T2->>SIM: /cmd_vel 구독자 수 조회, odom · tf 구독
-    SIM-->>T2: odom 60 Hz, tf
-    T2-->>U: [1]~[4] 점검 로그, RESULT: OK
-
-    U->>T3: ros_set · isaac_ros · env_check.sh · source
-    U->>T3: ros2 launch escape.launch.py auto_start:=true
-    T3->>ESC: 노드 시작 (YAML + auto_start 인자)
-    loop 20 Hz
-        SIM-->>ESC: /chassis/odom
-        ESC->>SIM: /cmd_vel (Twist)
-    end
-    ESC-->>T3: Phase ARC_REVERSE → ARC_STOP → FORWARD → COMPLETE
-    ESC-->>T3: 종료 코드 0 (중단 시 2)
-    U->>T3: Ctrl+C (launch 종료)
-    U->>T1: Ctrl+C (Isaac Sim 종료, 재실행 시 초기 자세 복원)
-    U->>U: results/*.txt 커밋 · 푸시
+    participant U as 사용자(RViz2/터미널)
+    participant APP as standalone_app.py (Isaac)
+    participant N2 as Nav2 (내피)
+    participant FD as feeder_dock (내피)
+    U->>APP: /sim_task/command PICK_HARVEST (String JSON)
+    APP-->>U: /sim_task/result SUCCEEDED, safe_to_navigate=true (바퀴 브레이크 해제)
+    U->>N2: Nav2 Goal 클릭 = FEEDER_APPROACH (-2.19,-1.55, 북쪽)
+    N2->>APP: /cmd_vel (Hybrid-A* 후진 경로, RPP allow_reversing)
+    N2-->>U: Goal succeeded
+    Note over FD: AMCL 이 FEEDER_APPROACH 0.6 m 안 + Nav2 2 s 정지 + 면 검출 → 자동 시작
+    FD->>APP: /cmd_vel: ALIGN_TO_GOAL(제자리 회전) → REVERSE(후진) → SQUARE(직각) → CREEP(거리 0.90±0.03 m)
+    FD-->>U: /feeder_dock/result {"status":"SUCCEEDED","face_dist_m","yaw_err_deg","lat_m"}
+    Note over APP: 이후 팀 절차: 팔레트 Place
 ```
 
----
-
-## 5. 향후 Nav2 단계에서의 위치 (참고, 미구현)
-
-escape_controller 자리에 Nav2 스택이 들어가고, 상위에 task_manager · navigation_node 가 붙는다. Isaac Sim 쪽 토픽은 그대로 재사용한다.
+## 3. `/scan` 생성 파이프라인 (라이다 처리)
 
 ```mermaid
 flowchart LR
-    TM(["task_manager"]) -->|"/navigation/command"| NAV(["navigation_node<br>BasicNavigator"])
-    NAV -->|"NavigateToPose action"| N2["Nav2<br>map_server · amcl · planner · controller"]
-    N2 -->|"/cmd_vel"| SIM["Isaac Sim<br>nova_carter_ROS"]
-    SIM -->|"/chassis/odom · /tf · LiDAR"| N2
-    SIM -.->|"/clock (추가 필요)"| N2
-    N2 -->|"map → odom TF (AMCL)"| N2
-    NAV -->|"/navigation/result"| TM
-    RV(["rviz2"]) -.->|"Nav2 Goal · costmap 확인"| N2
+    C["/front_3d_lidar/lidar_points<br>XT-32, fullScan 10 Hz(시뮬) · 약 41,000점"] --> F
+    subgraph F["cloud_self_filter.py"]
+        F1["결합카터 자체 부피 제거<br>base_link 상자 x −0.85~0.6, y ±0.6, z −0.2~2.6"] --> F2["최근 0.25 s(시뮬) 점군 2~3장 합침<br>(섹터 누락·조각 발행 대응)"]
+    end
+    F --> PL["pointcloud_to_laserscan<br>frame front_3d_lidar, 높이 −0.35~1.5 m, range_min 0.3"] --> SC["/scan (723방향, 0.5°)"]
 ```
 
-선결 과제: `/clock` 발행 추가, `use_sim_time` 통일, 지도 YAML의 image 경로 수정, 로봇의 보이는 정면(chassis −x)과 base_link +x 불일치 해소.
+- 라이다 위치: base_link (−0.232, 0, 0.526). 앞(+x)은 구동륜 쪽, 뒤(−x)는 리프트·M0609 쪽.
+- 왜 필요한가: 리프트 기둥·팔·팔레트가 라이다 옆에 있어 그대로 두면 costmap 에 "발밑 장애물" 이 찍히고, 고피 렌더링이 느리면 스캔 일부 섹터가 통째로 비어 옴.
+
+## 4. feeder_dock 상태 기계
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> ALIGN_TO_GOAL: auto (AMCL 이 FEEDER_APPROACH 0.6 m 안, Nav2 2 s 정지, 면 검출) 또는 /feeder_dock/start
+    ALIGN_TO_GOAL --> REVERSE: 뒤축이 목표점 G 를 가리킴 (±1.5°)
+    REVERSE --> SQUARE: |G| < 0.06 m 또는 면 거리 ≤ standoff+0.02
+    SQUARE --> CREEP: 뒤가 면과 직각 (±1.5°)
+    CREEP --> DONE: 면 거리 = standoff 0.90 ± 0.03 m
+    ALIGN_TO_GOAL --> FAILED: 면 2.5 s 미검출 8 s 지속 / 단계 45 s / 전체 120 s
+    REVERSE --> FAILED
+    SQUARE --> FAILED
+    CREEP --> FAILED
+    DONE --> [*]
+    FAILED --> ALIGN_TO_GOAL: /feeder_dock/start (재시도)
+```
+
+- 면 검출: `/scan` 을 base_link 로 바꾼 뒤 뒤쪽 창(x −3.4~−0.5, |y|<1.3)에서 가장 가까운 점 주변 1.5 m 의 점에 RANSAC 직선(3 cm 내점)을 맞춤. 길이 0.6~1.6 m, 법선이 뒤쪽 ±60° 안이어야 TurnTable 앞면으로 인정. 목표점 G = 면 가운데 법선 위 `standoff_m`.
+- 시간 기준은 전부 시뮬레이션 시계(`use_sim_time`). 실시간 배율 0.3 에서 벽시계로 판단하면 스캔이 늘 "오래된 값" 이 됨.
+
+## 5. 파일 목록과 역할
+
+### 실행 시작점
+| 파일 | 어디서 | 역할 |
+|---|---|---|
+| `isaacpjt/smart_farm/runtime/standalone_app.py` (팀) | 고피 | Isaac 장면 실행, `/sim_task/command` 로 P&P. 내가 넣은 것: `open_scene()` 의 3D 라이다 `fullScan=True` 6줄 |
+| `scripts/launch_scene.py` | 고피 | 팀 앱 없이 장면만 띄우는 단위 시험용. `/clock` 그래프 보강, M0609 관절 고정, fullScan, `--pose carry` 자세, 실행 로그 `results/launch_scene_*.log` |
+| `launch/nav2.launch.py` | 내피 | Nav2 bringup + RViz2 + `/scan` 파이프라인 + `feeder_dock` + `station_markers` + rosbag. 인자: `scan_mode`, `dock_auto`, `record`, `record_cloud`, `map`, `initial_*` |
+| `launch/navigation_node.launch.py` | 내피 | 팀 통합용 `navigation_node` (`mode:=nav2` → `go_to_station`) |
+
+### 노드 (`smart_farm_navigation/`)
+| 파일 | 역할 |
+|---|---|
+| `cloud_self_filter.py` | 3D 점군에서 결합카터 부피 제거 + 최근 0.25 s 점군 합침 → `/front_3d_lidar/lidar_points/filtered` |
+| `scan_sanitizer.py` | 2D 라이다(`/front_2d_lidar/scan`)용 자기 반사 제거. 고피에서 2D 는 발행되지 않아 현재 미사용 |
+| `feeder_dock.py` | 라이다 면 검출 정밀 후진 도킹(4절). `detect_face()` 는 bag 재생으로 단독 시험 가능 |
+| `nav2_link_check.py` | Isaac → 내피 토픽 도달률, 점군 점수(조각 발행 경고), 리그 상자 안 자기 반사 개수 |
+| `station_markers.py` | `config/stations.yaml` 작업점을 `/stations_markers` (MarkerArray) 로 발행 → RViz2 클릭 위치 표시 |
+| `go_to_station.py` | 작업점 이름으로 NavigateToPose 순차 실행(`pure_nav2`). 팀 통합(`navigation_node`)용. 실측은 RViz2 클릭 |
+| `navigation_node.py` (팀) | `/navigation/command` TaskCommand → `go_to_station` 실행 → `/navigation/result` |
+| `path_runner.py`, `path_runner_smooth.py`, `geometry.py`, `scene_check.py` | 1차 시연(/cmd_vel 경로 주행) 판. Nav2 트랙에서는 미사용, 팀 `destinations.yaml` 경로로만 남음 |
+
+### 설정 (`config/`)
+| 파일 | 내용 |
+|---|---|
+| `nav2_params.yaml` | AMCL(odom 신뢰↑), Smac Hybrid-A*(Reeds-Shepp, 후진 허용), RPP(0.6 m/s, `allow_reversing`, `max_angular_accel` 20), PoseProgressChecker, goal 허용 0.25 m/0.5 rad, local costmap 4 m/inflation 0.45, collision_monitor, BT 응답 대기 200 ms, velocity_smoother 가감속 0.8 |
+| `stations.yaml` | 초기 위치, `FEEDER_APPROACH`(−2.19,−1.55,90°), `FEEDER_DOCK`(참고값), `RACK_DOCK`, 후진 탈출 구역(`pure_nav2:=false` 때만) |
+| `destinations_nav2.yaml`, `destinations.yaml` | `navigation_node` 목적지 → station / launch 매핑 |
+| `arm_poses.yaml` | `launch_scene.py --pose` 프리셋(home, carry) |
+| `carter2_dock.yaml`, `path_runner*.yaml` | 1차 시연 판(미사용) |
+
+### 기타
+| 파일 | 내용 |
+|---|---|
+| `rviz/nav2_smartfarm.rviz` | 지도·/scan·경로·발자국·local costmap·작업점 마커만 표시(점군·카메라 제외) |
+| `scripts/make_map_from_usd.py` | USD prim bbox → 지도 png/yaml (`maps/Collected_smartfarm_v011.*` 생성) |
+| `scripts/env_check.sh` | 터미널 환경 점검(ROS 배포판, 화이트리스트, 브리지 라이브러리 충돌) |
+| `maps/Collected_smartfarm_v011.{png,yaml}` (isaacpjt) | Nav2 정적 지도. origin (−4.525, −10.025), 0.05 m/px |
+| `results/` | 실측 로그(`link_*`, `nav2_*`, `goto_*`, `launch_scene_*`), `bags/`(git 제외), `robot_spawn.yaml` |
+| `errored/` | 사용자 실측 피드백. `guidance/` 는 차수별 절차, `guidance/past/` 이전 판 |
+
+## 6. 좌표계 요약
+| 좌표계 | 정의 |
+|---|---|
+| map = Isaac world | 지도 origin 이 world 기준이라 동일. +x 는 컨베이어 진행 방향, −y 는 랙 → 컨베이어 방향 |
+| base_link | 카터 섀시. +x 구동륜(앞), −x 캐스터·리프트·M0609(뒤). 초기 배치 yaw 90°(앞이 북쪽, 뒤가 통로 출구) |
+| odom | Isaac 시작 시 base_link 위치가 원점. AMCL 이 map→odom 을 보정 |
+| 도킹(feeder_dock) | 지도를 쓰지 않음. TurnTable 앞면 직선을 기준으로 base_link 상대량(거리·각·좌우)만 사용 |

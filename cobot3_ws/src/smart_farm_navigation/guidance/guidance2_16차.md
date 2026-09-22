@@ -22,11 +22,11 @@
 ```bash
 isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay
 ```
-`[READY] …` 와 `[대기] /sim_task/command …` 확인. Isaac 의 Stop 은 누르지 않음(팀 앱 crash).
+`[READY] …` 와 `[대기] /sim_task/command …` 확인. Isaac 의 Stop 은 누르지 않음(팀 앱 crash). 고피2 셸의 `ROS_DOMAIN_ID` 는 102.
 
 ## 2. 내피 터미널 2 (빌드 + 연결 점검)
 ```bash
-export ROS_DOMAIN_ID=101
+export ROS_DOMAIN_ID=102
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
 source /opt/ros/jazzy/setup.bash
@@ -39,7 +39,7 @@ ros2 run smart_farm_navigation nav2_link_check 2>&1 | tee /home/rokey/ROKEY_P3_A
 
 ## 3. 내피 터미널 3 (Nav2 + RViz2 + 도킹 노드 + bag)
 ```bash
-export ROS_DOMAIN_ID=101
+export ROS_DOMAIN_ID=102
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
 source /opt/ros/jazzy/setup.bash
@@ -50,7 +50,7 @@ ros2 launch smart_farm_navigation nav2.launch.py 2>&1 | tee /home/rokey/ROKEY_P3
 
 ## 4. 내피 터미널 4 (파지 명령)
 ```bash
-export ROS_DOMAIN_ID=101
+export ROS_DOMAIN_ID=102
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
 source /opt/ros/jazzy/setup.bash
