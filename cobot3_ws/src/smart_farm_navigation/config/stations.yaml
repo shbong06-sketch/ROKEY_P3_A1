@@ -4,7 +4,7 @@
 scene: Collected_smartfarm_v011.usd
 initial_pose: {x: -0.421, y: 1.006, yaw_deg: 90.0}       # LiftRig/Asset/nova_carter_ROS/chassis_link world pose (v008 = v011)
 stations:
-  RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0, via: [CORRIDOR_EXIT]}  # Rack_1 옆 통로 안. CORRIDOR_EXIT 에서 방향을 맞춘 뒤 직진 진입
+  RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0}  # Rack_1 옆 통로 안. Hybrid-A* 가 통로 진입 경로를 직접 계획함 (경유점을 두면 경유점 방향 오차로 20 s 이상 멈추는 일이 있었음)
   CORRIDOR_EXIT:   {x: -0.421, y: -1.20, yaw_deg: 90.0}  # 통로 남단(y 0.27)을 1.5 m 지난 점. 후진 탈출이 끝나는 곳
   # 최종 목적지 (2026-09-22): Conveyor/Feeder 에 붙은 돌출부 TurnTable (x -2.76..-1.61, y -6.32..-3.60) 의 북쪽 끝 = 입구.
   # 리프트 자체 충돌 때문에 팔(M0609, 카터 뒤쪽 -x)이 입구를 봐야 하므로 카터는 **후진으로** 진입함:
@@ -12,8 +12,10 @@ stations:
   #   도킹 완료 시 base_link 는 입구 가장자리(y -3.60)에서 0.88 m: 차체 뒤끝(-0.607)이 가장자리에서 0.27 m 남음
   #   (Nav2 BackUp 은 발자국이 inflation 안쪽 반경 0.25 m 안에 들어가면 충돌로 보고 중단하므로 이보다 가까이는 못 감).
   #   팔 밑동(base_link x -0.42)은 가장자리에서 약 0.46 m. 복귀는 앞(북쪽)으로 그냥 출발함.
+  #   2026-09-22 실측: 곡선 경로 끝에서 33도 돌아간 채 멈춤(RPP 는 후진 허용 시 제자리 회전을 못 함). 그래서 pure_nav2 에서도
+  #   FEEDER_APPROACH 를 먼저 목표로 보내고(via) 마지막 1.05 m 는 직선 후진이 되게 함. 도킹 y 는 −2.72 → −2.60 (뒤끝 여유 0.39 m).
   FEEDER_APPROACH: {x: -2.19, y: -1.55, yaw_deg: 90.0}
-  FEEDER_DOCK:     {x: -2.19, y: -2.72, yaw_deg: 90.0, reverse_in: {from: FEEDER_APPROACH, distance_m: 1.17, speed_mps: 0.2}}
+  FEEDER_DOCK:     {x: -2.19, y: -2.60, yaw_deg: 90.0, via: [FEEDER_APPROACH], reverse_in: {from: FEEDER_APPROACH, distance_m: 1.05, speed_mps: 0.2}}
   # 1차 시연 자리 (컨베이어 Seg_4 가운데 앞). 참고용으로 유지
   INSPECTION_DOCK: {x: 3.328, y: -5.251, yaw_deg: 90.0}
 

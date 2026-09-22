@@ -145,7 +145,7 @@ def main() -> None:
     wait_for_costmap(nav, log)
 
     if pure:
-        log.info("pure_nav2: no scripted BackUp/via; one NavigateToPose from the current pose (planner must handle reversing)")
+        log.info("pure_nav2: no scripted BackUp; every leg is NavigateToPose (Hybrid-A* plans the reversing)")
     elif not reverse_out_if_needed(nav, cfg, log):
         log.info(f"RESULT FAILED for {station} (reverse-out)")
         rclpy.shutdown(); sys.exit(2)
@@ -153,7 +153,8 @@ def main() -> None:
     t0 = time.monotonic()
     result = TaskResult.SUCCEEDED
     reverse_in = None if pure else target.get("reverse_in")   # {from: <station>, distance_m: d}: drive to `from`, then back up d into the dock
-    goals = [station] if pure else list(target.get("via", [])) + ([reverse_in["from"]] if reverse_in else [station])
+    # pure_nav2: every leg is a NavigateToPose (via points keep the last leg straight); otherwise the dock is a scripted BackUp
+    goals = list(target.get("via", [])) + ([reverse_in["from"]] if reverse_in else [station])
     for name in goals:                                 # `via` = stations to pass first (e.g. line up before a corridor)
         wp = cfg["stations"][name]
         log.info(f"goToPose {name}: ({wp['x']:.2f}, {wp['y']:.2f}, {wp['yaw_deg']:.1f}deg)")

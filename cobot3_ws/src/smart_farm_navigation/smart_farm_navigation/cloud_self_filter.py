@@ -5,8 +5,8 @@
 The XT-32 sits at base_link (-0.232, 0, 0.526) with no rotation, so a point (x, y, z) in the
 lidar frame is (x - 0.232, y, z + 0.526) in base_link.  Everything inside `box_*` (base_link
 metres) is removed; the box covers the carter body, the lift, the arm in carry pose and a pallet
-held above the rig.  Real obstacles that close to the rig are still seen by the static map and
-by the collision monitor's footprint polygon once the rig moves.
+held above the rig, with margin for the arm drooping sideways (box x -1.1..0.6, y +-0.6).
+Real obstacles that close to the rig are still in the static map.
 
     ros2 run smart_farm_navigation cloud_self_filter
 """
@@ -27,8 +27,8 @@ class CloudSelfFilter(Node):
         super().__init__("cloud_self_filter")
         self.declare_parameter("input_topic", "/front_3d_lidar/lidar_points")
         self.declare_parameter("output_topic", "/front_3d_lidar/filtered")
-        self.declare_parameter("box_x", [-1.00, 0.30])
-        self.declare_parameter("box_y", [-0.45, 0.45])
+        self.declare_parameter("box_x", [-1.10, 0.60])
+        self.declare_parameter("box_y", [-0.60, 0.60])
         self.declare_parameter("box_z", [-0.20, 2.60])
         self.bx = [float(v) for v in self.get_parameter("box_x").value]
         self.by = [float(v) for v in self.get_parameter("box_y").value]
