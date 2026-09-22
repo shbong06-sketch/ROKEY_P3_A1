@@ -39,6 +39,7 @@ BAG_TOPICS = [
     "/plan", "/local_costmap/costmap", "/global_costmap/costmap", "/local_costmap/published_footprint",
     "/behavior_tree_log", "/diagnostics",
     "/navigation/command", "/navigation/result", "/navigation/status",
+    "/goal_pose", "/stations_markers",
 ]
 DEFAULT_MAP = "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v011.yaml"
 SCAN2D_TOPIC = "/front_2d_lidar/scan"
@@ -141,6 +142,8 @@ def _setup(context):
         LogInfo(msg=f"[nav2.launch] scan_mode {picked}; AMCL initial pose ({x:.3f}, {y:.3f}, {yaw_deg:.1f}deg) "
                     f"from {source}; map {map_yaml}"),
         *( [self_filter, scan_node] if mode == "cloud" else [scan_node] ),
+        Node(package="smart_farm_navigation", executable="station_markers", name="station_markers", output="screen",
+             parameters=[{"use_sim_time": True, "stations_file": LaunchConfiguration("stations_file").perform(context)}]),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(bringup, "bringup_launch.py")),
             launch_arguments={
