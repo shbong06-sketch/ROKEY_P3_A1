@@ -31,7 +31,7 @@ from isaacsim.core.prims import SingleRigidPrim, SingleXFormPrim
 from isaacsim.robot.manipulators.manipulators import SingleManipulator
 from isaacsim.robot_motion.motion_generation import LulaKinematicsSolver
 
-from conveyor import ConveyorController, prepare_world
+from conveyor import install as install_conveyor
 from lift import LiftController, check_fork_clear_of_rack
 from pallet_transfer import PalletTransferController, TransferState
 from robot_motion import (
@@ -139,9 +139,9 @@ CONVEYOR_PARK_GAP = 0.60
 # 한 장은 줄기에 올려 두고 시작합니다. 로봇이 일하는 동안 컨베이어도 도는 것을
 # 보기 위해서입니다. None 이면 벨트를 비운 채 시작합니다.
 CONVEYOR_DROP = (-2.19, -4.00, 0.796)
-# 비전룸 정지 시간과 정지 위치는 conveyor.py 맨 위 두 상수로 조절합니다.
-#   VISION_X            : 어디서 세울지
-#   AUTO_RESUME_SECONDS : 검사 신호 없이 얼마 뒤에 다시 내보낼지
+# 비전룸 정지 위치·시간은 install_conveyor() 인자로 줍니다. 기본값은
+# conveyor.py 맨 위 VISION_X / AUTO_RESUME_SECONDS 입니다.
+#   install_conveyor(stage, CONVEYOR_PALLETS, vision_x=..., auto_resume=...)
 
 
 def open_scene():
@@ -237,11 +237,7 @@ def main():
 
     # 컨베이어 준비는 반드시 world.reset() 전에 끝내야 합니다.
     # create_world() 안에서 reset 이 돌기 때문에 여기서 먼저 합니다.
-    prepare_world(stage)
-    conveyor = ConveyorController(stage)
-    conveyor.build()
-    for path in CONVEYOR_PALLETS:
-        conveyor.watch(path)
+    conveyor = install_conveyor(stage, CONVEYOR_PALLETS)
     place_conveyor_pallets(stage)
 
     world, robot, arm_base, pallets = create_world()

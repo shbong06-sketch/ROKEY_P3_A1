@@ -73,6 +73,14 @@ def _quat_mul(one, many):
     ], axis=1)
 
 
+class RollerError(RuntimeError):
+    """롤러 에셋을 찾지 못했을 때.
+
+    맵의 컨베이어 구조가 바뀌면 여기서 걸립니다. 조용히 안 도는 것보다
+    시작할 때 멈추는 편이 낫습니다 — 안 돌면 원인을 찾기가 매우 어렵습니다.
+    """
+
+
 class RollerGroup:
     """
     같은 축으로 도는 롤러 묶음.
@@ -101,7 +109,7 @@ class RollerGroup:
         self._quat = None
 
         cache = UsdGeom.BBoxCache(0, [UsdGeom.Tokens.default_])
-        pivots = []
+        pivots, corners = [], []
         for prim in prims:
             UsdPhysics.RigidBodyAPI.Apply(prim).CreateKinematicEnabledAttr().Set(True)
             api = PhysxSchema.PhysxSurfaceVelocityAPI.Apply(prim)
@@ -115,7 +123,13 @@ class RollerGroup:
             rng = cache.ComputeWorldBound(prim).ComputeAlignedRange()
             lo, hi = rng.GetMin(), rng.GetMax()
             pivots.append(((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2))
+            corners.append((lo[0], lo[1], lo[2]))
+            corners.append((hi[0], hi[1], hi[2]))
         self._pivot = np.array(pivots, dtype=np.float64)
+
+        # 이 묶음이 실제로 차지하는 범위. 맵이 바뀌었는지 대조하는 데 씁니다.
+        box = np.array(corners, dtype=np.float64) if corners else None
+        self.extent = None if box is None else (box.min(axis=0), box.max(axis=0))
 
     def __len__(self):
         return len(self._paths)
@@ -205,6 +219,17 @@ class RollerDrive:
         self.cross = RollerGroup("교차점휠", self._find_feeder("_Wheel"), "y", WHEEL_RADIUS)
         self.cross_band = RollerGroup("교차점밴드", self._find_feeder("_Band"), "y", None)
         self.line = RollerGroup("가로줄기", self._prepare_line_rollers(), "y", ROLLER_RADIUS)
+
+        # 빈 묶음은 조용히 사라집니다 (groups 가 걸러 냅니다). 그러면 그 구간만
+        # 안 도는데 에러가 없어서, 원인을 찾는 데 한참 걸립니다. 여기서 막습니다.
+        empty = [label for label, group in (
+            ("줄기", self.stem), ("교차점롤러", self.sorter), ("교차점휠", self.cross),
+            ("교차점밴드", self.cross_band), ("가로줄기", self.line)) if not len(group)]
+        if empty:
+            raise RollerError(
+                f"롤러를 하나도 찾지 못한 묶음이 있습니다: {', '.join(empty)}\n"
+                f"  에셋 이름이 바뀌었을 수 있습니다 ({CONV} 아래를 확인하세요).")
+
         print("[롤러] " + " · ".join(f"{g.label} {len(g)}개" for g in self.groups))
 
     # ── world.reset() 뒤에 ──────────────────────────
@@ -270,12 +295,22 @@ class RollerDrive:
             group.spin(dt)
 
     # ── 부품 찾기 ───────────────────────────────────
+    def _parent(self, path):
+        """부품이 들어 있는 프림. 없으면 맵 구조가 바뀐 것이라 멈춥니다."""
+        prim = self._stage.GetPrimAtPath(path)
+        if not prim or not prim.IsValid():
+            raise RollerError(
+                f"컨베이어 에셋을 찾지 못했습니다: {path}\n"
+                f"  맵의 컨베이어 구조가 바뀌었다면 conveyor_rollers.py 의 "
+                f"CONV · LINE_SEGMENTS 를 새 경로로 고쳐야 합니다.")
+        return prim
+
     def _find_stem(self):
-        parent = self._stage.GetPrimAtPath(f"{CONV}/TurnTable/Geometry")
+        parent = self._parent(f"{CONV}/TurnTable/Geometry")
         return [p for p in parent.GetChildren() if "_Roller" in p.GetName()]
 
     def _find_feeder(self, keyword):
-        parent = self._stage.GetPrimAtPath(f"{CONV}/Feeder/Geometry")
+        parent = self._parent(f"{CONV}/Feeder/Geometry")
         found = []
         for prim in Usd.PrimRange(parent, Usd.TraverseInstanceProxies(Usd.PrimAllPrimsPredicate)):
             if prim.GetTypeName() != "Mesh":
@@ -301,9 +336,7 @@ class RollerDrive:
         """
         rollers = []
         for index in LINE_SEGMENTS:
-            parent = self._stage.GetPrimAtPath(f"{CONV}/Seg_{index}/Asset/Rollers")
-            if not parent:
-                continue
+            parent = self._parent(f"{CONV}/Seg_{index}/Asset/Rollers")
             parent.RemoveAPI(UsdPhysics.RigidBodyAPI)
             UsdPhysics.CollisionAPI(parent).CreateCollisionEnabledAttr().Set(False)
             for child in parent.GetChildren():

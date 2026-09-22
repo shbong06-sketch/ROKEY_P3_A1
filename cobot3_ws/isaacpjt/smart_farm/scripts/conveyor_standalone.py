@@ -36,7 +36,7 @@ from pxr import Gf, UsdGeom
 
 import carb
 
-from conveyor import ConveyorController, Zone, prepare_world
+from conveyor import Zone, install as install_conveyor
 
 
 SCENE_PATH = (
@@ -123,12 +123,7 @@ def main():
     stage = open_scene()
     if not HEADLESS:
         enable_mouse_grab()
-    prepare_world(stage)          # 옆가이드 · 통로 점검 (월드당 한 번)
-
-    conveyor = ConveyorController(stage)
-    conveyor.build()
-    for path in PALLET_PATHS:
-        conveyor.watch(path)
+    conveyor = install_conveyor(stage, PALLET_PATHS)   # world.reset() 전에
     place_all(stage)
 
     if AUTO_DROP:
@@ -171,7 +166,8 @@ def main():
         #   if conveyor.inspecting:
         #       ...
         #       conveyor.inspection_done()
-        # 지금은 conveyor.AUTO_RESUME_SECONDS 가 대신 내보냅니다.
+        # 지금은 install_conveyor(auto_resume=...) 가 대신 내보냅니다.
+        # 비전 노드를 붙이면 auto_resume=None 으로 두세요.
 
         step_count += 1
         render = RENDER_EVERY > 0 and step_count % RENDER_EVERY == 0
