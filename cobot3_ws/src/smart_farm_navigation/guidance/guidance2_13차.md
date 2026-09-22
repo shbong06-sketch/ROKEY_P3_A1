@@ -1,6 +1,6 @@
 # guidance2_13차 — Collected_smartfarm_v011.usd 에서 Nav2 로 Feeder 입구까지 자율주행 (다중 PC)
 
-- 작성일: 2026-09-22, 브랜치: `feature/navigation2`. 12차 고피 실측 피드백(`errored/error_260921_2100.md`) 반영판.
+- 작성일: 2026-09-22, 브랜치: `feature/navigation2`. 12차 고피 실측 피드백(`errored/error_260921_2100.md`) 반영판 + rosbag 자동 기록 추가.
 - 목적: 고피는 Isaac Sim 만 실행하고, 내피에서 Nav2·RViz2 를 실행하여 카터를 랙 통로(RACK_DOCK) → Feeder 입구(FEEDER_DOCK) 로 보냄. 복귀(FEEDER_DOCK → RACK_DOCK)도 같은 명령으로 함.
 - 기준 장면: `/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v011/Collected_smartfarm_v011.usd`
 - 기준 지도: `/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v011.yaml` (이번에 v011 에서 새로 생성. v005 지도는 TurnTable 이 기울어져 그려져 있어 새 목적지와 어긋남)
@@ -65,7 +65,9 @@ ros2 run smart_farm_navigation nav2_link_check 2>&1 | tee /home/rokey/ROKEY_P3_A
 ros2 launch smart_farm_navigation nav2.launch.py 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/nav2_$(date +%Y%m%d_%H%M).txt
 ```
 
-기대: `[nav2.launch] scan_mode auto -> cloud; AMCL initial pose (-0.421, 1.006, 90.0deg) …; map …/Collected_smartfarm_v011.yaml`, 이어서 `Managed nodes are active`. RViz2 지도에서 카터가 Rack_1·Rack_4 사이 통로에 있고, 스캔 점이 랙·컨베이어·TurnTable 가장자리에 붙어 있어야 함.
+기대: `[nav2.launch] rosbag -> …/results/bags/nav2_YYYYmmdd_HHMM  (22 topics)`, `[nav2.launch] scan_mode auto -> cloud; AMCL initial pose (-0.421, 1.006, 90.0deg) …; map …/Collected_smartfarm_v011.yaml`, 이어서 `Managed nodes are active`.
+
+이 명령 하나로 **rosbag 기록도 같이 시작됨** (자세한 내용은 6절). 터미널 3 을 Ctrl+C 로 끝내면 기록도 같이 닫힘. RViz2 지도에서 카터가 Rack_1·Rack_4 사이 통로에 있고, 스캔 점이 랙·컨베이어·TurnTable 가장자리에 붙어 있어야 함.
 
 ## 4. 내피 — 터미널 4 (주행 지시)
 
@@ -121,20 +123,50 @@ ros2 topic echo /navigation/result --once --full-length
 | `in zone … rear points NNdeg away from the exit; not backing up` | 카터 뒤가 출구를 안 봄(장면 배치가 바뀜). 1절/`stations.yaml` 의 `exit_heading_deg` 확인 |
 | 초기 위치가 다름 | 2절 출력 값으로: `ros2 launch smart_farm_navigation nav2.launch.py initial_x:=… initial_y:=… initial_yaw_deg:=…` |
 
-## 6. 파일 지도
+## 6. rosbag 기록 (실측마다 자동)
+
+**통합 기록 방식(기본)**: 실측 항목(연결 점검 → Nav2 → 주행 지시 A/B)을 따로따로 녹화하지 않고, 터미널 3 의 `nav2.launch.py` 가 뜨는 순간부터 Ctrl+C 로 내릴 때까지 **한 세션을 한 bag** 으로 기록함. 방법 A 든 B 든, 주행을 몇 번 시키든 같은 bag 에 시간순으로 들어감. 이유는 Nav2 의 모든 노드와 지시 토픽이 같은 시뮬레이션 시계(`/clock`)를 쓰므로 한 파일에 있어야 재생 시 시간 관계가 유지되기 때문임.
+
+- 저장 위치: `/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags/nav2_YYYYmmdd_HHMM/` (mcap 형식). git 에는 올라가지 않음(`.gitignore`). 필요하면 디렉터리를 통째로 복사해서 전달함.
+- 기록 토픽(22개): `/clock`, `/tf`, `/tf_static`, `/chassis/odom`, `/scan`, `/cmd_vel`·`/cmd_vel_nav`·`/cmd_vel_smoothed`, `/collision_monitor_state`, `/amcl_pose`, `/particle_cloud`, `/initialpose`, `/map`, `/plan`, local/global costmap, footprint, `/behavior_tree_log`, `/diagnostics`, `/navigation/command`·`result`·`status`. 크기는 실시간 1분당 약 12 MB.
+- 3D 점군까지 넣으려면(1분당 약 80 MB 추가): `ros2 launch smart_farm_navigation nav2.launch.py record_cloud:=true`
+- 기록을 끄려면: `ros2 launch smart_farm_navigation nav2.launch.py record:=false`
+- 카메라 영상은 기록하지 않음(너무 큼). 필요하면 아래 수동 방식으로 따로 켬.
+
+**bag 확인·재생** (내피, 같은 5줄 환경 후):
+
+```bash
+ros2 bag info /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags/nav2_YYYYmmdd_HHMM
+```
+
+```bash
+ros2 bag play --clock /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags/nav2_YYYYmmdd_HHMM
+```
+
+재생 중 다른 터미널에서 `rviz2` 를 열고(Fixed Frame `map`, `use_sim_time` 켬) `/map`, `/scan`, `/plan`, `/amcl_pose`, `/local_costmap/costmap` 을 추가하면 Isaac 없이 주행을 되돌려 볼 수 있음. Nav2 를 재생 bag 위에서 다시 돌리는 것은 안 됨(`/cmd_vel` 이 이미 들어 있고 로봇이 없음). 문제 보고 시에는 `results/*.txt` 와 함께 해당 bag 디렉터리 이름을 적어 주면 됨.
+
+**수동 기록 방식(선택)**: 통합 기록과 별개로 특정 구간만, 또는 카메라 같은 다른 토픽을 따로 담고 싶을 때 터미널 5 에서:
+
+```bash
+ros2 bag record --use-sim-time -o /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags/manual_$(date +%Y%m%d_%H%M) /clock /tf /tf_static /chassis/odom /scan /cmd_vel /amcl_pose /front_stereo_camera/left/image_raw
+```
+
+Ctrl+C 로 끝냄. 토픽 이름은 `ros2 topic list` 에서 고름. `-a` 는 전체 토픽인데 카메라 8대 영상이 포함돼 수 GB 가 되므로 쓰지 않음.
+
+## 7. 파일 지도
 
 | 파일 | 실행 위치 | 역할 |
 |---|---|---|
 | `scripts/launch_scene.py` | 고피 | v011 열기, `/clock` 그래프 런타임 추가, Play |
 | `scripts/make_map_from_usd.py` | 내피(usd-core 파이썬) | USD 에서 지도 생성. `maps/Collected_smartfarm_v011.{png,yaml}` 을 만들었음 |
-| `launch/nav2.launch.py` | 내피 | Nav2 bringup + RViz2 + /scan 생성 |
+| `launch/nav2.launch.py` | 내피 | Nav2 bringup + RViz2 + /scan 생성 + rosbag 기록(`record`, `record_cloud`) |
 | `config/nav2_params.yaml` | 내피 | 이번 수정 항목은 0절 표 참고 |
 | `config/stations.yaml` | 내피 | 초기 위치, FEEDER_DOCK 등 작업점, 후진 탈출 구역 2개 |
 | `smart_farm_navigation/go_to_station.py` | 내피 | 후진 탈출 + 경유점 + NavigateToPose |
 | `smart_farm_navigation/nav2_link_check.py` | 내피 | Isaac → 내피 토픽 도달 점검 |
 | `config/destinations_nav2.yaml`, `launch/navigation_node.launch.py` | 내피 | 방법 B |
 
-## 7. 내피 모의 시험 결과와 한계
+## 8. 내피 모의 시험 결과와 한계
 
 - 12차 실측의 "느린 회전" 을 모의 로봇에서 odom 각속도를 0 으로 고정해 재현한 뒤, 수정 후 FEEDER_DOCK 왕복 2회 모두 `SUCCEEDED`, recovery 0, 편도 8~12 s(실시간 배율 1 기준)였음. 방법 B 도 `SUCCEEDED`.
 - 모의 도착 위치는 목표에서 0.2 m, 6° 안쪽이었음. 팔 Place 정밀도가 부족하면 도착 허용 오차를 다시 줄이거나, Nav2 도착 후 짧은 직진 보정 단계를 추가할 수 있음.

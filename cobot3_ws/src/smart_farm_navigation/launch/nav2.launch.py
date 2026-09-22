@@ -1,4 +1,9 @@
-"""ros2 launch smart_farm_navigation nav2.launch.py [scan_mode:=auto|scan2d|cloud] [use_rviz:=true]
+"""ros2 launch smart_farm_navigation nav2.launch.py [scan_mode:=auto|scan2d|cloud] [use_rviz:=true] [record:=true] [record_cloud:=false]
+
+record:=true (default) starts `ros2 bag record` alongside Nav2 into
+results/bags/nav2_<YYYYmmdd_HHMM>/ with every topic needed to replay the run
+(clock, tf, odom, /scan, cmd_vel chain, AMCL pose, costmaps, plan, BT log, /navigation/*).
+record_cloud:=true adds the raw 3D point cloud (about 1.3 MB/s).
 
 Nav2 (map_server + AMCL + planner/controller/behaviors + RViz2) for the carter in
 Collected_smartfarm_v011.usd.  Runs on the PC that does NOT run Isaac Sim; the only
@@ -20,12 +25,21 @@ import time
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, LogInfo, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+BAG_DIR = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags"
+BAG_TOPICS = [
+    "/clock", "/tf", "/tf_static", "/chassis/odom", "/scan",
+    "/cmd_vel", "/cmd_vel_nav", "/cmd_vel_smoothed", "/collision_monitor_state",
+    "/amcl_pose", "/particle_cloud", "/initialpose", "/map",
+    "/plan", "/local_costmap/costmap", "/global_costmap/costmap", "/local_costmap/published_footprint",
+    "/behavior_tree_log", "/diagnostics",
+    "/navigation/command", "/navigation/result", "/navigation/status",
+]
 DEFAULT_MAP = "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v011.yaml"
 SCAN2D_TOPIC = "/front_2d_lidar/scan"
 CLOUD_TOPIC = "/front_3d_lidar/lidar_points"
@@ -108,8 +122,18 @@ def _setup(context):
             }],
         )
 
+    actions = []
+    if LaunchConfiguration("record").perform(context).lower() in ("true", "1", "yes"):
+        topics = BAG_TOPICS + ([CLOUD_TOPIC] if LaunchConfiguration("record_cloud").perform(context).lower() in ("true", "1", "yes") else [])
+        bag = os.path.join(BAG_DIR, time.strftime("nav2_%Y%m%d_%H%M"))
+        os.makedirs(BAG_DIR, exist_ok=True)
+        actions.append(LogInfo(msg=f"[nav2.launch] rosbag -> {bag}  ({len(topics)} topics{', with 3D cloud' if CLOUD_TOPIC in topics else ''})"))
+        actions.append(ExecuteProcess(
+            cmd=["ros2", "bag", "record", "--use-sim-time", "-o", bag] + topics,
+            output="log", name="rosbag_record"))
+
     bringup = os.path.join(get_package_share_directory("nav2_bringup"), "launch")
-    return [
+    return actions + [
         LogInfo(msg=f"[nav2.launch] scan_mode {picked}; AMCL initial pose ({x:.3f}, {y:.3f}, {yaw_deg:.1f}deg) "
                     f"from {source}; map {map_yaml}"),
         scan_node,
@@ -143,6 +167,8 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("rviz_config", default_value=os.path.join(
             get_package_share_directory("nav2_bringup"), "rviz", "nav2_default_view.rviz")),
         DeclareLaunchArgument("use_composition", default_value="False"),
+        DeclareLaunchArgument("record", default_value="true"),
+        DeclareLaunchArgument("record_cloud", default_value="false"),
         DeclareLaunchArgument("initial_x", default_value=""),
         DeclareLaunchArgument("initial_y", default_value=""),
         DeclareLaunchArgument("initial_yaw_deg", default_value=""),
