@@ -52,6 +52,38 @@ def current_pose(nav: BasicNavigator, timeout_s: float = 10.0):
     return None
 
 
+def run_backup(nav: BasicNavigator, log, dist: float, speed: float, what: str, tries: int = 3) -> bool:
+    """Nav2 BackUp with retries.  Right after bring-up the behavior server may still read sim time 0 and
+    abort at once with 'Exceeded time allowance'; the local costmap may also not be filled yet."""
+    allowance = int(dist / speed * 3 + 60)
+    for attempt in range(1, tries + 1):
+        t0 = time.monotonic()
+        nav.backup(backup_dist=dist, backup_speed=speed, time_allowance=allowance)
+        while not nav.isTaskComplete():
+            time.sleep(0.2)
+        if nav.getResult() == TaskResult.SUCCEEDED:
+            log.info(f"{what} done")
+            return True
+        log.warning(f"{what} attempt {attempt}/{tries} failed after {time.monotonic() - t0:.1f} s"
+                    + ("; retrying in 3 s" if attempt < tries else ""))
+        time.sleep(3.0)
+    return False
+
+
+def wait_for_costmap(nav: BasicNavigator, log, timeout_s: float = 20.0) -> None:
+    """Block until /local_costmap/costmap has been published once (behaviors check collisions against it)."""
+    from nav_msgs.msg import OccupancyGrid
+    from rclpy.qos import DurabilityPolicy, QoSProfile
+    got = []
+    sub = nav.create_subscription(OccupancyGrid, "/local_costmap/costmap", lambda m: got.append(1),
+                                  QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+    end = time.monotonic() + timeout_s
+    while not got and time.monotonic() < end:
+        rclpy.spin_once(nav, timeout_sec=0.2)
+    nav.destroy_subscription(sub)
+    log.info("local costmap available" if got else "local costmap not seen within timeout; continuing")
+
+
 def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
     """Back straight out of a rack corridor before any turning.  Returns False when the back-up failed."""
     pose = current_pose(nav)
@@ -74,12 +106,7 @@ def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
             return True
         speed = float(z.get("speed_mps", 0.25))
         log.info(f"in zone {z['name']} at ({x:.2f}, {y:.2f}, {yaw:.0f}deg): BackUp {dist:.2f} m at {speed:.2f} m/s before navigating")
-        nav.backup(backup_dist=dist, backup_speed=speed, time_allowance=int(dist / speed * 2 + 10))
-        while not nav.isTaskComplete():
-            time.sleep(0.2)
-        ok = nav.getResult() == TaskResult.SUCCEEDED
-        log.info(f"BackUp {'done' if ok else 'FAILED'}")
-        return ok
+        return run_backup(nav, log, dist, speed, "BackUp (reverse-out)")
     return True
 
 
@@ -113,6 +140,7 @@ def main() -> None:
         nav._waitForNodeToActivate("amcl")
         nav.waitUntilNav2Active(localizer="robot_localization")
     log.info("Nav2 active")
+    wait_for_costmap(nav, log)
 
     if not reverse_out_if_needed(nav, cfg, log):
         log.info(f"RESULT FAILED for {station} (reverse-out)")
@@ -120,7 +148,9 @@ def main() -> None:
 
     t0 = time.monotonic()
     result = TaskResult.SUCCEEDED
-    for name in list(target.get("via", [])) + [station]:        # `via` = stations to pass first (e.g. line up before a corridor)
+    reverse_in = target.get("reverse_in")            # {from: <station>, distance_m: d}: drive to `from`, then back up d into the dock
+    goals = list(target.get("via", [])) + ([reverse_in["from"]] if reverse_in else [station])
+    for name in goals:                                 # `via` = stations to pass first (e.g. line up before a corridor)
         wp = cfg["stations"][name]
         log.info(f"goToPose {name}: ({wp['x']:.2f}, {wp['y']:.2f}, {wp['yaw_deg']:.1f}deg)")
         nav.goToPose(make_pose(nav, wp["x"], wp["y"], wp["yaw_deg"]))
@@ -134,6 +164,10 @@ def main() -> None:
         result = nav.getResult()
         if result != TaskResult.SUCCEEDED:
             break
+    if result == TaskResult.SUCCEEDED and reverse_in:
+        d, sp = float(reverse_in["distance_m"]), float(reverse_in.get("speed_mps", 0.2))
+        log.info(f"reverse_in: BackUp {d:.2f} m at {sp:.2f} m/s into {station} (rear = arm side toward the dock)")
+        result = TaskResult.SUCCEEDED if run_backup(nav, log, d, sp, "BackUp (reverse-in)") else TaskResult.FAILED
     code = 0 if result == TaskResult.SUCCEEDED else 2
     log.info(f"RESULT {result.name} for {station} after {time.monotonic() - t0:.0f}s")
     args.destroy_node()

@@ -62,7 +62,7 @@ bt_navigator:
     robot_base_frame: base_link
     odom_topic: /chassis/odom
     bt_loop_duration: 10
-    default_server_timeout: 20
+    default_server_timeout: 200   # ms. 20 이면 부하 시 follow_path 응답 지연으로 goal 이 즉시 실패함 (내피 모의에서 재현)
     wait_for_service_timeout: 1000
     action_server_result_timeout: 900.0
     navigators: ["navigate_to_pose", "navigate_through_poses"]

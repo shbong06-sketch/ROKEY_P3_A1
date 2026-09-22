@@ -6,9 +6,14 @@ initial_pose: {x: -0.421, y: 1.006, yaw_deg: 90.0}       # LiftRig/Asset/nova_ca
 stations:
   RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0, via: [CORRIDOR_EXIT]}  # Rack_1 옆 통로 안. CORRIDOR_EXIT 에서 방향을 맞춘 뒤 직진 진입
   CORRIDOR_EXIT:   {x: -0.421, y: -1.20, yaw_deg: 90.0}  # 통로 남단(y 0.27)을 1.5 m 지난 점. 후진 탈출이 끝나는 곳
-  # 최종 목적지 (2026-09-22 변경): Conveyor/Feeder 에 붙은 돌출부 TurnTable (x -2.76..-1.61, y -6.32..-3.60) 의 북쪽 끝 = 입구.
-  # 카터의 앞(+x)이 그곳(남쪽)을 보도록 yaw -90. base_link 는 입구 가장자리(y -3.60)에서 0.55 m 북쪽.
-  FEEDER_DOCK:     {x: -2.19, y: -3.05, yaw_deg: -90.0}
+  # 최종 목적지 (2026-09-22): Conveyor/Feeder 에 붙은 돌출부 TurnTable (x -2.76..-1.61, y -6.32..-3.60) 의 북쪽 끝 = 입구.
+  # 리프트 자체 충돌 때문에 팔(M0609, 카터 뒤쪽 -x)이 입구를 봐야 하므로 카터는 **후진으로** 진입함:
+  #   FEEDER_APPROACH (입구에서 2.05 m 북쪽, 앞이 북쪽 = 뒤가 입구) 까지 Nav2 로 간 뒤, go_to_station 이 BackUp 1.17 m 로 도킹.
+  #   도킹 완료 시 base_link 는 입구 가장자리(y -3.60)에서 0.88 m: 차체 뒤끝(-0.607)이 가장자리에서 0.27 m 남음
+  #   (Nav2 BackUp 은 발자국이 inflation 안쪽 반경 0.25 m 안에 들어가면 충돌로 보고 중단하므로 이보다 가까이는 못 감).
+  #   팔 밑동(base_link x -0.42)은 가장자리에서 약 0.46 m. 복귀는 앞(북쪽)으로 그냥 출발함.
+  FEEDER_APPROACH: {x: -2.19, y: -1.55, yaw_deg: 90.0}
+  FEEDER_DOCK:     {x: -2.19, y: -2.72, yaw_deg: 90.0, reverse_in: {from: FEEDER_APPROACH, distance_m: 1.17, speed_mps: 0.2}}
   # 1차 시연 자리 (컨베이어 Seg_4 가운데 앞). 참고용으로 유지
   INSPECTION_DOCK: {x: 3.328, y: -5.251, yaw_deg: 90.0}
 
@@ -22,13 +27,4 @@ reverse_out_zones:
     exit_heading_deg: -90.0          # 탈출 방향 (map 기준, -y = 컨베이어 쪽) = 카터 뒤쪽이 향해야 하는 방향
     exit_point: [-0.421, -1.20]      # 여기까지 후진 (= CORRIDOR_EXIT)
     max_heading_offset_deg: 20.0
-    speed_mps: 0.25
-  # Feeder 입구 앞도 같은 이유로 제자리 회전 금지 (TurnTable 이 0.55 m 앞, 리그 뒤쪽 회전 반경 0.66 m).
-  # 도착 자세(yaw -90)에서 뒤(-x)는 북쪽(+y)이므로 북쪽으로 1.2 m 후진한 뒤 목표를 보냄.
-  - name: FEEDER_APRON
-    x: [-2.90, -1.50]
-    y: [-3.50, -2.50]
-    exit_heading_deg: 90.0
-    exit_point: [-2.19, -1.85]
-    max_heading_offset_deg: 25.0
     speed_mps: 0.25

@@ -11,7 +11,7 @@ things it needs from Isaac over DDS are /clock, /tf, /chassis/odom and one lidar
 
 /scan source (scan_mode):
   scan2d  /front_2d_lidar/scan -> scan_sanitizer -> /scan            (about 30 kB/s, fine over Wi-Fi)
-  cloud   /front_3d_lidar/lidar_points -> pointcloud_to_laserscan -> /scan   (several MB/s)
+  cloud   /front_3d_lidar/lidar_points -> cloud_self_filter -> pointcloud_to_laserscan -> /scan
   auto    listen 6 s for /front_2d_lidar/scan; use scan2d when it arrives, cloud otherwise
 
 AMCL initial pose: launch args initial_x/initial_y/initial_yaw_deg > config/stations.yaml initial_pose.
@@ -101,10 +101,14 @@ def _setup(context):
                          "self_min_range_m": 0.60, "self_sector_deg": 85.0}],
         )
     else:
+        self_filter = Node(
+            package="smart_farm_navigation", executable="cloud_self_filter", name="cloud_self_filter", output="screen",
+            parameters=[{"use_sim_time": True, "input_topic": CLOUD_TOPIC, "output_topic": CLOUD_TOPIC + "/filtered"}],
+        )
         scan_node = Node(
             package="pointcloud_to_laserscan", executable="pointcloud_to_laserscan_node",
             name="pointcloud_to_laserscan", output="screen",
-            remappings=[("cloud_in", CLOUD_TOPIC), ("scan", "/scan")],
+            remappings=[("cloud_in", CLOUD_TOPIC + "/filtered"), ("scan", "/scan")],
             parameters=[{
                 "use_sim_time": True,
                 "target_frame": "front_3d_lidar",
@@ -115,7 +119,7 @@ def _setup(context):
                 "angle_max": 3.14159,
                 "angle_increment": 0.0087,
                 "scan_time": 0.1,
-                "range_min": 0.4,             # lift posts and side plates are <= 0.31 m from the XT-32
+                "range_min": 0.3,             # rig self returns are removed by cloud_self_filter (base_link box)
                 "range_max": 20.0,
                 "use_inf": True,
                 "inf_epsilon": 1.0,
@@ -136,7 +140,7 @@ def _setup(context):
     return actions + [
         LogInfo(msg=f"[nav2.launch] scan_mode {picked}; AMCL initial pose ({x:.3f}, {y:.3f}, {yaw_deg:.1f}deg) "
                     f"from {source}; map {map_yaml}"),
-        scan_node,
+        *( [self_filter, scan_node] if mode == "cloud" else [scan_node] ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(bringup, "bringup_launch.py")),
             launch_arguments={
@@ -164,8 +168,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("stations_file", default_value=os.path.join(share, "config", "stations.yaml")),
         DeclareLaunchArgument("scan_mode", default_value="auto"),
         DeclareLaunchArgument("use_rviz", default_value="true"),
-        DeclareLaunchArgument("rviz_config", default_value=os.path.join(
-            get_package_share_directory("nav2_bringup"), "rviz", "nav2_default_view.rviz")),
+        DeclareLaunchArgument("rviz_config", default_value=os.path.join(share, "rviz", "nav2_smartfarm.rviz")),
         DeclareLaunchArgument("use_composition", default_value="False"),
         DeclareLaunchArgument("record", default_value="true"),
         DeclareLaunchArgument("record_cloud", default_value="false"),

@@ -1,0 +1,12 @@
+# launch_scene.py --pose <name> 용 M0609 관절·리프트 프리셋 (guidance2 14차 시험 2: 팔레트 없이 운반 자세만).
+# arm_joints_deg: joint_1..joint_6 (deg). lift_m: lift_prismatic_joint (0 .. 0.61 m).
+# 팀 standalone_app.py 의 PICK_HARVEST 는 집기 자세에서 joint_1 을 +90 도 돌린 뒤(CARRY_ROTATE_DEG) 리프트를
+# TRAVEL_BASE_HEIGHT(베이스 높이 1.0388 m) 로 올림. 그 최종 관절값은 IK 결과라 상수가 없으므로 아래 carry 는
+# "팔을 뒤쪽 위로 접어 팔레트 자리를 카터 위에 두는" 근사값임. 시험 3 로그의 실제 자세와 다르면 팀 값으로 바꿀 것.
+poses:
+  home:
+    arm_joints_deg: [180.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    lift_m: 0.0
+  carry:
+    arm_joints_deg: [270.0, -35.0, 100.0, 0.0, 25.0, 0.0]
+    lift_m: 0.30
