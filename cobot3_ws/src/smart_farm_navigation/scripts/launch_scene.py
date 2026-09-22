@@ -28,6 +28,9 @@ _ap.add_argument("--cloud-full-scan", default="true", help="true: publish the 3D
 args, _unknown = _ap.parse_known_args()
 scene = args.scene
 ARM_POSES = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/config/arm_poses.yaml"
+RIG_PATH = "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS"
+ARM_PATH = RIG_PATH + "/m0609_with_fork"
+LIFT_JOINT = RIG_PATH + "/lift_v3_physics/lift_prismatic_joint"
 
 from isaacsim import SimulationApp  # noqa: E402  (must precede other omni imports)
 
@@ -137,6 +140,24 @@ try:
     except Exception as exc:  # noqa: BLE001
         print(f"[launch_scene] /clock graph creation FAILED: {exc}", flush=True)
 
+    # Hold the M0609 joints where the scene saved them (same drive values as the team's robot_motion.setup_arm_drives).
+    # Without this the arm sags under gravity within a minute, its links leave the self-filter box and the local
+    # costmap gets lethal cells on the rig itself (2026-09-22 test 1: 114 -> 313 self points/scan, "collision ahead").
+    try:
+        import omni.usd as _ou5
+        from pxr import UsdPhysics as _UP5
+        _st5 = _ou5.get_context().get_stage()
+        n_drv = 0
+        for i in range(1, 7):
+            prim = _st5.GetPrimAtPath(f"{ARM_PATH}/joints/joint_{i}")
+            if not prim:
+                continue
+            drv = _UP5.DriveAPI.Get(prim, "angular")
+            drv.GetStiffnessAttr().Set(1e8); drv.GetDampingAttr().Set(1e4); drv.GetMaxForceAttr().Set(1e8); n_drv += 1
+        print(f"[launch_scene] M0609 joint drives held ({n_drv} joints, stiffness 1e8)", flush=True)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[launch_scene] arm drive hold FAILED: {exc}", flush=True)
+
     # 3D lidar: one message per full scan (sensor scanRateBaseHz = 10) instead of one per rendered frame.
     try:
         import omni.usd as _ou3
@@ -160,7 +181,7 @@ try:
     for _ in range(30):
         app.update()
 
-    # Optional arm / lift pose (guidance2 14차 test 2).  Targets are held by the joint drives.
+    # Optional arm / lift pose (guidance2 14차 test 2): joint drive targets (USD DriveAPI, degrees / metres).
     arm_deg, lift_m = None, args.lift
     if args.pose:
         import yaml as _yaml
@@ -174,27 +195,25 @@ try:
         arm_deg = [float(v) for v in args.arm_joints.split(",")]
     if arm_deg is not None or lift_m is not None:
         try:
-            import math as _m2
-            import numpy as _np
-            from isaacsim.core.prims import SingleArticulation
-            rig = "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS"
-            art = SingleArticulation(prim_path=rig + "/chassis_link", name="rig")
-            art.initialize()
-            names, targets = [], []
+            import omni.usd as _ou4
+            from pxr import UsdPhysics as _UP4
+            _st4 = _ou4.get_context().get_stage()
+            applied = []
             if arm_deg is not None:
                 for i, d in enumerate(arm_deg, 1):
-                    names.append(f"joint_{i}"); targets.append(_m2.radians(d))
+                    drv = _UP4.DriveAPI.Get(_st4.GetPrimAtPath(f"{ARM_PATH}/joints/joint_{i}"), "angular")
+                    drv.GetTargetPositionAttr().Set(float(d)); applied.append(f"joint_{i}={d:.1f}deg")
             if lift_m is not None:
-                names.append("lift_prismatic_joint"); targets.append(float(lift_m))
-            idx = [art.get_dof_index(n) for n in names]
-            art.set_joint_position_targets(_np.array(targets), joint_indices=_np.array(idx))
+                drv = _UP4.DriveAPI.Get(_st4.GetPrimAtPath(f"{LIFT_JOINT}"), "linear")
+                drv.GetStiffnessAttr().Set(max(float(drv.GetStiffnessAttr().Get() or 0.0), 1e6))
+                drv.GetDampingAttr().Set(max(float(drv.GetDampingAttr().Get() or 0.0), 1e4))
+                drv.GetTargetPositionAttr().Set(float(lift_m)); applied.append(f"lift={lift_m:.3f}m")
             for _ in range(240):        # let the drives settle before anyone measures self-returns
                 app.update()
-            cur = art.get_joint_positions(joint_indices=_np.array(idx))
-            print("[launch_scene] pose applied: " + ", ".join(
-                f"{n}={(_m2.degrees(c) if n.startswith('joint_') else c):.2f}" for n, c in zip(names, cur)), flush=True)
-        except Exception as exc:  # noqa: BLE001
-            print(f"[launch_scene] arm/lift pose FAILED: {exc}", flush=True)
+            print("[launch_scene] pose targets applied: " + ", ".join(applied), flush=True)
+        except BaseException as exc:  # noqa: BLE001
+            import traceback as _tb
+            print(f"[launch_scene] arm/lift pose FAILED: {exc}\n{_tb.format_exc()}", flush=True)
 
     while app.is_running() and running:
         app.update()

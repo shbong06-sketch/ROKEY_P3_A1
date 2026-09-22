@@ -122,11 +122,11 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: false
     feedback: "OPEN_LOOP"
-    max_velocity: [0.5, 0.0, 0.8]
-    min_velocity: [-0.5, 0.0, -0.8]
+    max_velocity: [0.6, 0.0, 0.8]      # 2026-09-22: 0.5 -> 0.6 (팔레트·엽채류 유지를 위해 살짝만)
+    min_velocity: [-0.6, 0.0, -0.8]
     velocity_timeout: 1.0
-    max_accel: [1.0, 0.0, 1.5]
-    max_decel: [-1.0, 0.0, -1.5]
+    max_accel: [0.8, 0.0, 1.2]         # 가감속은 오히려 낮춤: 들고 있는 팔레트가 밀리지 않게
+    max_decel: [-0.8, 0.0, -1.2]
     odom_topic: "/chassis/odom"
     odom_duration: 0.1
 
@@ -154,12 +154,12 @@ controller_server:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25             # 실측: 0.16 m 에서 수렴 못 함. 팔 배치는 M0609 쪽에서 보정
-      yaw_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.5              # RPP 는 후진 허용 시 제자리 회전을 못 함. 경유점(CORRIDOR_EXIT 등)에서 방향 오차로 20 s 멈추던 것을 막음. 도킹 방향은 마지막 직선 후진 구간이 맞춤
     # Regulated Pure Pursuit: 제자리 회전 -> 경로 추종 -> 도착 후 제자리 회전. 차동 구동에 맞고 도착점 근처에서 흔들리지 않음.
     # (1차 Nav2 시험은 DWB 였음. 도착점 0.6 m 안에서 좌우 회전을 반복해 교체함.)
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.5
+      desired_linear_vel: 0.6
       lookahead_dist: 0.6
       min_lookahead_dist: 0.3
       max_lookahead_dist: 0.9

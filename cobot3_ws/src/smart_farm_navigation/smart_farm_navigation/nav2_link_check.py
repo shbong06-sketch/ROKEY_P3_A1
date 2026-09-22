@@ -69,7 +69,7 @@ class LinkCheck(Node):
         if pts.size == 0:
             return
         x = pts[:, 0] - 0.232; y = pts[:, 1]; z = pts[:, 2] + 0.526      # lidar -> base_link
-        inside = (x > -1.0) & (x < 0.3) & (np.abs(y) < 0.45) & (z > -0.2) & (z < 2.6)
+        inside = (x > -1.1) & (x < 0.6) & (np.abs(y) < 0.6) & (z > -0.2) & (z < 2.6)
         self.cloud_pts += len(pts); self.self_pts += int(inside.sum())
         if inside.any():
             xi, zi = x[inside], z[inside]
