@@ -232,6 +232,16 @@ def brake_wheels(stage, rig_path):
     print(f"[브레이크] 카터 바퀴 {len(WHEEL_JOINT_NAMES)}개 고정")
 
 
+def release_wheels(stage, rig_path):
+    """주행 제어기가 바퀴 속도를 구동할 수 있도록 주차 브레이크를 풉니다."""
+    for name in WHEEL_JOINT_NAMES:
+        drive = UsdPhysics.DriveAPI.Get(
+            stage.GetPrimAtPath(f"{rig_path}/{name}"), "angular"
+        )
+        drive.GetStiffnessAttr().Set(0.0)
+    print(f"[브레이크] 카터 바퀴 {len(WHEEL_JOINT_NAMES)}개 해제")
+
+
 def joint_limits_deg(stage, arm_path):
     """USD에 적힌 관절 한계를 degree로 읽습니다."""
     lower, upper = [], []
@@ -868,6 +878,33 @@ class RobotMotion:
         tracker.pick_end_target = np.array(points[-1][1], dtype=float)
         self._pallet_tracker = tracker
         self._sequence = sequence
+        self._reset_start_state()
+
+    def start_carry_rotate(self, base_delta_deg=90.0):
+        """마지막 Pick 자세에서 joint_1만 회전해 운반 자세로 이동합니다."""
+        self._require_initialized()
+        self._require_idle()
+        if not self._is_carrying:
+            raise RuntimeError("팔레트를 운반 중일 때만 운반 자세로 전환할 수 있습니다.")
+
+        start_deg = read_joints_deg(self._robot, self._indices)
+        goal = start_deg.copy()
+        goal[0] += float(base_delta_deg)
+        if not self._lower_deg[0] <= goal[0] <= self._upper_deg[0]:
+            raise RuntimeError(
+                f"CARRY_ROTATE: joint_1 목표 {goal[0]:+.1f}°가 한계를 벗어납니다."
+            )
+
+        plan = [Step("CARRY_ROTATE", "CARRY_ROTATE", None, goal, True)]
+        print_plan(plan)
+        self._sequence = JointSequence(
+            self._robot,
+            self._indices,
+            plan,
+            pallet_tracker=self._pallet_tracker,
+            done_message="[DONE] 운반 자세에 도달했습니다.",
+            start_wait_seconds=0.0,
+        )
         self._reset_start_state()
 
     def start_place(self, destination_shelf_top):
