@@ -33,8 +33,10 @@ class CloudSelfFilter(Node):
         # Isaac's ROS2RtxLidarHelper without fullScan publishes one ~60 deg slice per rendered frame (about 6,900
         # points at 20 Hz for the XT-32).  A LaserScan made from one slice covers one sector only, which breaks
         # AMCL and the Feeder face detection.  Slices arriving within `accumulate_s` are merged into one cloud.
-        self.declare_parameter("accumulate_s", 0.35)
-        self.declare_parameter("partial_max_points", 20000)     # a cloud with fewer points than this is treated as a slice
+        # 2026-09-22 19:41 bag: even fullScan clouds sometimes miss whole 30-60 deg sectors (rendering at 3 fps), so the
+        # rear sector vanishes for seconds.  Therefore ALL clouds within `accumulate_s` (sim seconds) are merged.
+        self.declare_parameter("accumulate_s", 0.25)
+        self.declare_parameter("partial_max_points", 20000)     # below this the cloud is a slice (only changes the log)
         self.bx = [float(v) for v in self.get_parameter("box_x").value]
         self.by = [float(v) for v in self.get_parameter("box_y").value]
         self.bz = [float(v) for v in self.get_parameter("box_z").value]
@@ -57,13 +59,14 @@ class CloudSelfFilter(Node):
         inside = (x > self.bx[0]) & (x < self.bx[1]) & (y > self.by[0]) & (y < self.by[1]) & (z > self.bz[0]) & (z < self.bz[1])
         keep = pts[~inside]
         t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-        if len(pts) < self.partial_max:                        # slice -> merge with the slices of the last accumulate_s
-            if not self.merged_mode:
-                self.merged_mode = True
-                self.get_logger().warning(f"partial lidar slices detected ({len(pts)} points/msg): merging {self.acc_s:.2f} s of slices per output cloud")
-            self.slices.append((t, keep))
-            self.slices = [(ts, p) for ts, p in self.slices if t - ts <= self.acc_s]
-            keep = np.concatenate([p for _, p in self.slices], axis=0) if self.slices else keep
+        if len(pts) < self.partial_max and not self.merged_mode:
+            self.merged_mode = True
+            self.get_logger().warning(f"partial lidar slices detected ({len(pts)} points/msg)")
+        self.slices.append((t, keep))
+        self.slices = [(ts, p) for ts, p in self.slices if 0.0 <= t - ts <= self.acc_s]
+        if not self.slices:
+            self.slices = [(t, keep)]
+        keep = np.concatenate([p for _, p in self.slices], axis=0)
         out = pc2.create_cloud_xyz32(msg.header, keep.astype(np.float32))
         self.pub.publish(out)
         self.n_msgs += 1; self.n_in += len(pts); self.n_removed += int(inside.sum())
@@ -73,7 +76,7 @@ class CloudSelfFilter(Node):
             self.get_logger().warning("no PointCloud2 received in the last 5 s")
         else:
             self.get_logger().info(f"{self.n_msgs / 5.0:.1f} Hz, {self.n_in / self.n_msgs:.0f} points/scan"
-                                   + (" (partial slices, merged)" if self.merged_mode else "")
+                                   + (" (partial slices)" if self.merged_mode else "") + f", merged {len(self.slices)} msgs"
                                    + f", {self.n_removed / self.n_msgs:.0f} self points removed/scan")
         self.n_msgs = self.n_in = self.n_removed = 0
 

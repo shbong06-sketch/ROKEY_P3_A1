@@ -1,8 +1,8 @@
 # guidance2_16차 — 팔레트를 든 카터를 FEEDER_DOCK 에 정확한 위치·자세로 도킹 (라이다 면 검출 기반)
 
 - 작성일: 2026-09-22, 브랜치 `feature/navigation2`. 15차는 `guidance/past/`.
-- 목표: 시험 3 상태(Pallet_01 파지)의 카터를 RViz2 에서 `FEEDER_APPROACH` 에 Nav2 Goal 로 보낸 뒤, 정밀 도킹 노드가 자동으로 `FEEDER_DOCK` (−2.19, −2.60), 카터 뒤(팔 쪽)가 TurnTable 앞면을 정면으로 보는 자세(yaw 90°)에 세움.
-- 원리: 도킹 구간은 AMCL·Nav2 를 쓰지 않음. `feeder_dock` 노드가 `/scan`(자기 반사 제거된 3D 라이다 단면)에서 TurnTable 북쪽 앞면(길이 1.15 m 직선)을 RANSAC 으로 찾아, 그 면의 가운데 법선 위 1.00 m 지점을 목표로 삼고 `/cmd_vel` 로 (1) 제자리 회전 → (2) 후진 → (3) 면과 직각 맞추기 → (4) 3 cm 이내 거리 미세 조정을 함. 지도 오차·AMCL 방향 흔들림과 무관함.
+- 목표: 시험 3 상태(Pallet_01 파지)의 카터를 RViz2 에서 `FEEDER_APPROACH` 에 Nav2 Goal 로 보낸 뒤, 정밀 도킹 노드가 자동으로 `FEEDER_DOCK` 앞 (−2.19, −2.70; 면에서 0.90 m), 카터 뒤(팔 쪽)가 TurnTable 앞면을 정면으로 보는 자세(yaw 90°)에 세움.
+- 원리: 도킹 구간은 AMCL·Nav2 를 쓰지 않음. `feeder_dock` 노드가 `/scan`(자기 반사 제거된 3D 라이다 단면)에서 TurnTable 북쪽 앞면(길이 1.15 m 직선)을 RANSAC 으로 찾아, 그 면의 가운데 법선 위 0.90 m 지점을 목표로 삼고 `/cmd_vel` 로 (1) 제자리 회전 → (2) 후진 → (3) 면과 직각 맞추기 → (4) 3 cm 이내 거리 미세 조정을 함. 지도 오차·AMCL 방향 흔들림과 무관함.
 - 내피 모의: 도킹 결과 위치 오차 3 cm, 방향 1° (`face_dist 1.027 m, yaw_err 0.3°, lat 0.004 m`).
 
 ## 0. 18:26 실측에서 도킹이 시작되지 않은 원인 (bag `nav2_20260922_1826` 분석)
@@ -15,6 +15,8 @@
 - Isaac 을 다시 실행하면 터미널 3 도 다시 실행해야 함(18:26 로그 끝의 TF 오류가 그 경우임).
 
 **19:06 실측 (fullScan 적용 후)**: 라이다는 정상(41,000점)이었고 `feeder_dock` 이 도착 2 s 뒤 면을 찾아(`d=1.92 yaw=+12.7 len=1.06`) 시작했으나 6 s 뒤 `FACE_NOT_FOUND` 로 실패, 수동 재시작도 후진 도중 같은 이유로 실패함. bag 재생 결과 검출은 모든 스캔에서 성공했음. 원인은 시간 기준임: 노드가 벽시계로 "0.6 s 안에 새 스캔" 을 요구했는데 고피 실시간 배율 0.33 에서는 스캔이 벽시계 0.9 s 간격으로 와서 늘 "오래된 값" 으로 취급되어 정지·실패함. 시뮬레이션 시계(`use_sim_time`) 기준으로 바꾸고 신선 기준 1.0 s, 미검출 실패 8 s 로 고침. 내피 모의(배율 0.33 재현)에서 도킹 성공: `face_dist 1.028 m, yaw_err 0.18°, lat 0.012 m`. 절차 변경 없음(내피 재빌드만).
+
+**19:40 실측**: 도착 후 정렬(제자리 회전)은 했으나 전진하지 않고 `FACE_NOT_FOUND`. bag `nav2_20260922_1941` 을 보면 fullScan(41,000점)이어도 스캔 중 일부가 뒤쪽 30~60° 섹터를 통째로 비운 채(723방향 중 350개만 유효) 들어와, 그 동안 TurnTable 면이 사라졌음(고피 렌더링 3 fps 에서 한 바퀴가 온전히 모이지 않는 것으로 봄). 조치: `cloud_self_filter` 가 최근 0.25 s(시뮬레이션 시간)의 점군 2~3장을 항상 합쳐서 `/scan` 을 만들고, `feeder_dock` 의 면 유효 시간을 2.5 s 로 늘림. 도킹 거리는 팔 도달을 위해 `standoff_m` 1.00 → 0.90 (base_link y −2.70, 차체 뒤끝은 면에서 0.29 m, 팔 밑동 0.48 m). 내피 모의(배율 0.33 + 섹터 무작위 누락 재현)에서 도킹 성공: 최종 (−2.16, −2.67) 방향 90°. 절차 변경 없음(내피 재빌드만).
 
 ## 1. 고피 터미널 1 (팀 통합 standalone, 시험 3 과 동일)
 ```bash
@@ -71,7 +73,7 @@ Nav2 Goal 도구로 **파란 `FEEDER_APPROACH` 화살표** 위에서 북쪽(+y)�
 [feeder_dock]: [CREEP] square (yaw +1.3); d=1.055 target 1.00
 [feeder_dock]: [DONE] {"status": "SUCCEEDED", "face_dist_m": 1.0x, "yaw_err_deg": 0.x, "lat_m": 0.0x}
 ```
-`face_dist_m` 은 base_link 와 TurnTable 앞면의 거리(목표 1.00 ± 0.03 m), `yaw_err_deg` 는 뒤가 면과 직각에서 벗어난 각(목표 ±1.5°), `lat_m` 은 면 가운데에서의 좌우 어긋남임. 이 세 값을 결과로 기록함.
+`face_dist_m` 은 base_link 와 TurnTable 앞면의 거리(목표 0.90 ± 0.03 m), `yaw_err_deg` 는 뒤가 면과 직각에서 벗어난 각(목표 ±1.5°), `lat_m` 은 면 가운데에서의 좌우 어긋남임. 이 세 값을 결과로 기록함.
 
 같은 터미널 4 에서 결과를 다시 보려면:
 ```bash
@@ -84,7 +86,7 @@ ros2 topic echo /feeder_dock/result std_msgs/msg/String --once
 | Nav2 도착 후 `feeder_dock` 이 시작하지 않음 | AMCL 위치가 `FEEDER_APPROACH` 에서 0.6 m 밖. 터미널 4 에서 수동 시작: `ros2 topic pub --once /feeder_dock/start std_msgs/msg/Empty '{}'` |
 | `[FAILED] … FACE_NOT_FOUND` | 뒤쪽 0.5~3.4 m 안에 길이 0.6~1.6 m 직선이 안 보임. RViz2 `/scan` 에서 TurnTable 앞면 점이 보이는지 확인. 카터 뒤가 TurnTable 을 대략(±60°) 향하도록 Nav2 Goal 을 다시 찍은 뒤 수동 시작 |
 | `PHASE_TIMEOUT_*` / `TIMEOUT` | 45 s 안에 단계가 안 끝남. `/cmd_vel` 이 다른 노드와 겹치는지(`ros2 topic info /cmd_vel`), 바퀴 브레이크가 풀렸는지(`safe_to_navigate`) 확인 |
-| 도킹 위치가 너무 가깝거나 멂 | `nav2.launch.py` 에 인자 없이 `ros2 run smart_farm_navigation feeder_dock --ros-args -p standoff_m:=1.10` 처럼 따로 띄워 재시험 (launch 의 것은 `dock_auto:=false` 로 끔) |
+| 도킹 위치가 너무 가깝거나 멂(팔이 안 닿음) | `ros2 launch smart_farm_navigation nav2.launch.py dock_auto:=false` 로 띄우고 터미널 4 에서 `ros2 run smart_farm_navigation feeder_dock --ros-args -p use_sim_time:=true -p standoff_m:=0.80` 처럼 거리를 바꿔 실행. 0.75 m 아래는 차체 뒤끝이 면에 0.15 m 이내로 붙으므로 두지 않음 |
 | Isaac 재실행 | 터미널 3 도 재실행 |
 
 ## 7. 파일

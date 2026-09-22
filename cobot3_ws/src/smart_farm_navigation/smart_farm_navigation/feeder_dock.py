@@ -101,7 +101,7 @@ class FeederDock(Node):
         d("scan_topic", "/scan"); d("cmd_vel_topic", "/cmd_vel")
         d("auto_start", True)
         d("arm_x", -2.19); d("arm_y", -1.55); d("arm_radius_m", 0.6)     # FEEDER_APPROACH (map)
-        d("standoff_m", 1.00)                     # base_link -> face distance at the dock (v011: face y -3.60, dock y -2.60)
+        d("standoff_m", 0.90)                     # base_link -> face distance at the dock (v011 face y -3.60 -> base_link y -2.70; rear edge 0.29 m from the face, arm base 0.48 m)
         d("face_min_len_m", 0.6); d("face_max_len_m", 1.6)
         d("search_x", [-3.4, -0.5]); d("search_y", [-1.3, 1.3])
         d("reverse_speed_mps", 0.15); d("creep_speed_mps", 0.05)
@@ -200,7 +200,7 @@ class FeederDock(Node):
 
     def _tick(self):
         now = self._now()
-        fresh = self.face is not None and now - self.face_stamp < 1.0      # sim seconds (scan comes every 0.1-0.3 s sim)
+        fresh = self.face is not None and now - self.face_stamp < 2.5      # sim seconds; the rear sector drops out of single scans for up to ~1 s
         if self.phase in ("IDLE", "DONE", "FAILED"):
             if self.auto and self.phase == "IDLE" and self.amcl_xy is not None:
                 near = math.hypot(self.amcl_xy[0] - self.arm[0], self.amcl_xy[1] - self.arm[1]) < self.arm_r
