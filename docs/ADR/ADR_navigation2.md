@@ -20,6 +20,7 @@
     - 이미지 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v005.png"
 1.3. **Nova_Carter 지칭**:
     1.3.1. 나는 Nova Carter를 프롬프트상에서 카터라고 부르겠으며, 카터가 2대 이상 존재할 경우 구현된 순서대로 카터1, 카터2, ... 카터n과 같이 지칭함. 만약 USD 상에서 지정된 namespace가 있다면 나에게 일러줄 것.
-    2.3.2. m0609와 lift가 카터에 결합된 상태인 LiftRig prim은 '결합카터'라고 지칭함.
+    2.3.2. m0609와 lift가 카터에 결합된 상태인 LiftRig prim은 '카터'라고 지칭함.
+    2.3.3. 결합되지 않은 카터를 콕 집어 말할때는 '그냥 카터'라고 지칭함.
 
 ---

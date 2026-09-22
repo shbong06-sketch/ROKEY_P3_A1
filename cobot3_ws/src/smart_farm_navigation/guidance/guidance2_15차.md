@@ -80,8 +80,10 @@ RViz2 위쪽 도구 모음의 **Nav2 Goal** 을 누른 뒤, 지도 위 작업점
 ```bash
 isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/launch_scene.py --pose carry
 ```
-기대: 1-1 의 출력 + `pose targets applied: joint_1=270.0deg, joint_2=-35.0deg, …, lift=0.300m`. `pose FAILED` 가 나오면 그 아래 traceback 을 `errored/` 에 두고 시험 2 는 건너뜀.
-- 자세는 `config/arm_poses.yaml` 의 `carry` 근사값임. 시험 3 화면의 실제 운반 자세와 눈에 띄게 다르면 그 파일 값을 고쳐 다시 실행(재빌드 불필요).
+기대: 1-1 의 출력 + `pose ramp start: joint_1 180.00->270.00, … lift 0.00->0.24` → 약 8 초 동안 팔이 서서히 90° 돌고 리프트가 올라감 → `pose targets applied: …`.
+- 자세 값은 팀 `standalone_app.py` 기준임: HOME [180,0,0,0,0,0] 에서 `CARRY_ROTATE_DEG` 만큼 joint_1 +90°, 리프트는 `TRAVEL_BASE_HEIGHT` 1.0388 m(조인트 0.243 m). 집기 자세의 나머지 관절값은 IK 결과라 상수가 없어 0 으로 둠. `config/arm_poses.yaml` 에서 바꿀 수 있음(재빌드 불필요).
+- 이전에는 목표를 한 번에 주어 팔이 강성 1e8 로 순간 이동하며 리프트와 부딪혀 Isaac 이 종료된 것으로 봄. 이제는 8 초에 걸쳐 움직임.
+- **또 종료되면**: 이번부터 실행 기록이 `/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/launch_scene_YYYYmmdd_HHMM.log` 에 남고(네이티브 crash 도 스택이 기록됨), 이 파일을 `errored/` 로 옮겨 주면 됨. 시험 2 는 건너뛰고 시험 3 으로 진행함.
 
 ### 2-2 ~ 2-5
 1-2, 1-3(블록 복사), 1-4(RViz2 클릭), 1-5 와 동일. 기록 항목 동일.
