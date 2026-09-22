@@ -11,16 +11,15 @@
 
 ---
 
-## 1. 
+## 1.
 
 1.1. **메인 장면 standalone USD파일**: 
-  - 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v008/Collected_smartfarm_v008.USD"
-1.2. **Occupancy Grid Map 설정값 및 이미지 백업 경로**:
-    - 설정값 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v005.yaml"
-    - 이미지 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v005.png"
+  - 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v###/"의 Collected_smartfarm_v###.usd의 형태로 들어가있음. 최신화될 때마다 버전값이 유동적으로 바뀔 수 있음.
+1.2. **메인 씬의 map 및 yaml 설정값**: 
+    - 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/"에서 Collected_smartfarm_v###의 이름으로 png 혹은 yaml파일로 존재함.
 1.3. **Nova_Carter 지칭**:
     1.3.1. 나는 Nova Carter를 프롬프트상에서 카터라고 부르겠으며, 카터가 2대 이상 존재할 경우 구현된 순서대로 카터1, 카터2, ... 카터n과 같이 지칭함. 만약 USD 상에서 지정된 namespace가 있다면 나에게 일러줄 것.
-    2.3.2. m0609와 lift가 카터에 결합된 상태인 LiftRig prim은 '카터'라고 지칭함.
+    2.3.2. m0609와 lift가 카터에 결합된 상태인 LiftRig prim 또한 카터라고 지칭함.
     2.3.3. 결합되지 않은 카터를 콕 집어 말할때는 '그냥 카터'라고 지칭함.
 
 ---
