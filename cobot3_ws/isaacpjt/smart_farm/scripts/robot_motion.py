@@ -43,8 +43,8 @@ FORK_TINE_TIP = 0.294          # 갈래 끝        (0.135 + 0.220/2) x 1.2
 FORK_PLATE_FRONT = 0.030       # 판 앞면        (0.0125 + 0.025/2) x 1.2
 
 # 팔레트: prim 원점에서 잰 거리 (simple_pallet.usd 깊이 0.30 기준 실측)
-PALLET_FRONT = 0.147           # 앞면(로봇 쪽)
-PALLET_POCKET_CENTER = 0.0141   # 포크 틈의 가운데 높이
+PALLET_FRONT = 0.1261           # 앞면(로봇 쪽)
+PALLET_POCKET_CENTER = 0.0140   # 포크 틈의 가운데 높이
 
 
 # ── 여유 값 (동작을 조정할 때 여기를 바꿉니다) ───────────
@@ -230,6 +230,16 @@ def brake_wheels(stage, rig_path):
         drive.GetTargetPositionAttr().Set(0.0)
         drive.GetTargetVelocityAttr().Set(0.0)
     print(f"[브레이크] 카터 바퀴 {len(WHEEL_JOINT_NAMES)}개 고정")
+
+
+def release_wheels(stage, rig_path):
+    """주행 제어기가 바퀴 속도를 구동할 수 있도록 주차 브레이크를 풉니다."""
+    for name in WHEEL_JOINT_NAMES:
+        drive = UsdPhysics.DriveAPI.Get(
+            stage.GetPrimAtPath(f"{rig_path}/{name}"), "angular"
+        )
+        drive.GetStiffnessAttr().Set(0.0)
+    print(f"[브레이크] 카터 바퀴 {len(WHEEL_JOINT_NAMES)}개 해제")
 
 
 def joint_limits_deg(stage, arm_path):
@@ -870,6 +880,33 @@ class RobotMotion:
         self._sequence = sequence
         self._reset_start_state()
 
+    def start_carry_rotate(self, base_delta_deg=90.0):
+        """마지막 Pick 자세에서 joint_1만 회전해 운반 자세로 이동합니다."""
+        self._require_initialized()
+        self._require_idle()
+        if not self._is_carrying:
+            raise RuntimeError("팔레트를 운반 중일 때만 운반 자세로 전환할 수 있습니다.")
+
+        start_deg = read_joints_deg(self._robot, self._indices)
+        goal = start_deg.copy()
+        goal[0] += float(base_delta_deg)
+        if not self._lower_deg[0] <= goal[0] <= self._upper_deg[0]:
+            raise RuntimeError(
+                f"CARRY_ROTATE: joint_1 목표 {goal[0]:+.1f}°가 한계를 벗어납니다."
+            )
+
+        plan = [Step("CARRY_ROTATE", "CARRY_ROTATE", None, goal, True)]
+        print_plan(plan)
+        self._sequence = JointSequence(
+            self._robot,
+            self._indices,
+            plan,
+            pallet_tracker=self._pallet_tracker,
+            done_message="[DONE] 운반 자세에 도달했습니다.",
+            start_wait_seconds=0.0,
+        )
+        self._reset_start_state()
+
     def start_place(self, destination_shelf_top):
         """CARRYING 팔레트에 대해 PLACE_STAGES만 계획하고 실행합니다."""
         self._require_initialized()
@@ -970,6 +1007,11 @@ class RobotMotion:
     @property
     def current_stage(self):
         return "IDLE" if self._sequence is None else self._sequence.name
+
+    @property
+    def is_carrying(self):
+        """팔레트가 Pick 검증을 마치고 운반 상태인지 반환합니다."""
+        return self._is_carrying
 
     def _reset_start_state(self):
         self._log_elapsed = 0.0
