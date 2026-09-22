@@ -91,7 +91,7 @@ SHELF_TOP = {1: 0.7388, 2: 1.0388, 3: 1.3388, 4: 1.6388, 5: 1.9388}
 # (v006 부터 Romaine_01~08 상추가 같은 Xform 아래 별도 강체로 올라갑니다)
 # 바깥 Xform 을 적으면 강체가 둘로 겹쳐 물리 결과가 흔들립니다.
 PALLET_ASSET_NAME = (
-    "palette2_palete_tray_romaine_8_hole_physics_1__01"
+    "Cube_011_001"
 )
 PALLET_1_PATH = f"/World/SmartFarm/Placed/Pallet_01/{PALLET_ASSET_NAME}"
 PALLET_2_PATH = f"/World/SmartFarm/Placed/Pallet_02/{PALLET_ASSET_NAME}"

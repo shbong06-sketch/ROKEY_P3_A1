@@ -24,8 +24,8 @@ SCRIPTS_DIR = PROJECT_DIR / "scripts"
 DEFAULT_SCENE_PATH = (
     PROJECT_DIR
     / "scenes"
-    / "Collected_smartfarm_v008"
-    / "Collected_smartfarm_v008.usd"
+    / "Collected_smartfarm_v011"
+    / "Collected_smartfarm_v011.usd"
 )
 
 PHYSICS_DT = 1.0 / 60.0
@@ -51,7 +51,7 @@ SHELF_TOP = {
 }
 
 PALLET_ASSET_NAME = (
-    "palette2_palete_tray_romaine_8_hole_physics_1__01"
+    "Cube_011_001"
 )
 PALLET_1_PATH = f"/World/SmartFarm/Placed/Pallet_01/{PALLET_ASSET_NAME}"
 PALLET_2_PATH = f"/World/SmartFarm/Placed/Pallet_02/{PALLET_ASSET_NAME}"
@@ -155,6 +155,7 @@ app = SimulationApp(
 
 import omni.usd  # noqa: E402
 import rclpy  # noqa: E402
+from pxr import UsdPhysics  # noqa: E402
 from std_msgs.msg import String  # noqa: E402
 from isaacsim.core.api import World  # noqa: E402
 from isaacsim.core.prims import (  # noqa: E402
@@ -377,7 +378,9 @@ def require_prims(stage, paths):
             parent = stage.GetPrimAtPath(parent_path)
             if parent.IsValid():
                 children = ", ".join(
-                    child.GetName() for child in parent.GetChildren()
+                    f"{child.GetName()}(type={child.GetTypeName()}, "
+                    f"rigid={child.HasAPI(UsdPhysics.RigidBodyAPI)})"
+                    for child in parent.GetChildren()
                 )
                 print(
                     f"[시작] {parent_path} 하위 prim: {children}",
