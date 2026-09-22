@@ -31,6 +31,10 @@ faulthandler.enable(file=_log_file, all_threads=True)
 
 class _Tee:
     def __init__(self, *streams): self.streams = streams
+    def fileno(self): return self.streams[0].fileno()          # SimulationApp calls faulthandler.enable() on sys.stderr
+    def isatty(self): return self.streams[0].isatty()
+    @property
+    def encoding(self): return getattr(self.streams[0], "encoding", "utf-8")
     def write(self, data):
         for st in self.streams:
             try: st.write(data); st.flush()

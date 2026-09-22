@@ -39,7 +39,7 @@ BAG_TOPICS = [
     "/plan", "/local_costmap/costmap", "/global_costmap/costmap", "/local_costmap/published_footprint",
     "/behavior_tree_log", "/diagnostics",
     "/navigation/command", "/navigation/result", "/navigation/status",
-    "/goal_pose", "/stations_markers",
+    "/goal_pose", "/stations_markers", "/feeder_dock/status", "/feeder_dock/result",
 ]
 DEFAULT_MAP = "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v011.yaml"
 SCAN2D_TOPIC = "/front_2d_lidar/scan"
@@ -142,6 +142,8 @@ def _setup(context):
         LogInfo(msg=f"[nav2.launch] scan_mode {picked}; AMCL initial pose ({x:.3f}, {y:.3f}, {yaw_deg:.1f}deg) "
                     f"from {source}; map {map_yaml}"),
         *( [self_filter, scan_node] if mode == "cloud" else [scan_node] ),
+        Node(package="smart_farm_navigation", executable="feeder_dock", name="feeder_dock", output="screen",
+             parameters=[{"use_sim_time": True, "auto_start": LaunchConfiguration("dock_auto").perform(context).lower() == "true"}]),
         Node(package="smart_farm_navigation", executable="station_markers", name="station_markers", output="screen",
              parameters=[{"use_sim_time": True, "stations_file": LaunchConfiguration("stations_file").perform(context)}]),
         IncludeLaunchDescription(
@@ -174,6 +176,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("rviz_config", default_value=os.path.join(share, "rviz", "nav2_smartfarm.rviz")),
         DeclareLaunchArgument("use_composition", default_value="False"),
         DeclareLaunchArgument("record", default_value="true"),
+        DeclareLaunchArgument("dock_auto", default_value="true"),     # feeder_dock arms itself near FEEDER_APPROACH
         DeclareLaunchArgument("record_cloud", default_value="false"),
         DeclareLaunchArgument("initial_x", default_value=""),
         DeclareLaunchArgument("initial_y", default_value=""),
