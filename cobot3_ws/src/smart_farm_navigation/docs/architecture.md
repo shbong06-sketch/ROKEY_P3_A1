@@ -81,17 +81,18 @@ stateDiagram-v2
     [*] --> IDLE
     IDLE --> ALIGN_TO_GOAL: auto (AMCL 이 FEEDER_APPROACH 0.6 m 안, Nav2 2 s 정지, 면 검출) 또는 /feeder_dock/start
     ALIGN_TO_GOAL --> REVERSE: 뒤축이 목표점 G 를 가리킴 (±1.5°)
-    REVERSE --> SQUARE: |G| < 0.06 m 또는 면 거리 ≤ standoff+0.02
-    SQUARE --> CREEP: 뒤가 면과 직각 (±1.5°)
-    CREEP --> DONE: 면 거리 = standoff 0.90 ± 0.03 m
-    ALIGN_TO_GOAL --> FAILED: 면 2.5 s 미검출 8 s 지속 / 단계 45 s / 전체 120 s
-    REVERSE --> FAILED
-    SQUARE --> FAILED
-    CREEP --> FAILED
+    REVERSE --> CHECK: |G| < 0.06 m 또는 면 거리 ≤ standoff+0.02
+    CHECK --> CREEP: 뒤가 면과 직각 (±3°)
+    CHECK --> BACKOFF: 3° 초과 (도킹 지점에서는 회전하지 않는다)
+    BACKOFF --> ALIGN_TO_GOAL: 면에서 standoff+0.6 m 까지 물러남
+    CREEP --> DONE: 면 거리 = standoff ± 0.03 m
+    CHECK --> FAILED: 재시도 2회 초과 (YAW_OFF)
+    REVERSE --> FAILED: 멈춤 3 s (STALLED) / 면 미검출 / 시간 초과
     DONE --> [*]
     FAILED --> ALIGN_TO_GOAL: /feeder_dock/start (재시도)
 ```
 
+- 후진 조향은 거리에 따라 목표점 추종과 직각 맞추기를 섞고 상한 0.20 rad/s 로 제한한다. 도킹 지점에서 제자리 회전을 하면 팔이 든 팔레트가 구조물에 걸린다(2026-09-23 실측).
 - 면 검출: `/scan` 을 base_link 로 바꾼 뒤 뒤쪽 창(x −3.4~−0.5, |y|<1.3)에서 가장 가까운 점 주변 1.5 m 의 점에 RANSAC 직선(3 cm 내점)을 맞춤. 길이 0.6~1.6 m, 법선이 뒤쪽 ±60° 안이어야 TurnTable 앞면으로 인정. 목표점 G = 면 가운데 법선 위 `standoff_m`.
 - 시간 기준은 전부 시뮬레이션 시계(`use_sim_time`). 실시간 배율 0.3 에서 벽시계로 판단하면 스캔이 늘 "오래된 값" 이 됨.
 
