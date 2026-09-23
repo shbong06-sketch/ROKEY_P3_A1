@@ -168,7 +168,7 @@ ros2 topic echo /inspection/result smart_farm_interfaces/msg/TaskResult
 | --- | --- |
 | `TRANSFER` | `completed_units`에 `PALLET_002:RACK_L3:RACK_L2`, `PALLET_003:RACK_L4:RACK_L3` 포함 |
 | `PICK_HARVEST` | `safe_to_navigate: true` |
-| `NAVIGATION` | `reached_station: INSPECTION_DOCK` |
+| `NAVIGATION` | `reached_station: FEEDER_DOCK` |
 | `PLACE_INSPECT` | `status: SUCCEEDED` |
 | `INSPECT` | 유효한 `defect_slots`, 비어 있는 `unknown_slots` |
 | `CULL` | 요청한 모든 `target_slots`가 `completed_units`에 포함 |
@@ -248,9 +248,9 @@ ros2 topic info /navigation/result --verbose
 
 ### 6.2 Navigation Executor
 
-- `operation: NAVIGATION`과 `destination: INSPECTION_DOCK`을 처리한다.
+- `operation: NAVIGATION`과 `destination: FEEDER_DOCK`을 처리한다.
 - Nav2 action server가 준비된 뒤 `READY`가 되어야 한다.
-- Nav2 성공과 최종 정지/도킹을 확인한 뒤 `reached_station: INSPECTION_DOCK`을 반환한다.
+- Nav2 성공과 최종 정지/도킹을 확인한 뒤 `reached_station: FEEDER_DOCK`을 반환한다.
 - 실패, cancel, timeout을 `TaskResult.status`와 `reason`으로 변환한다.
 
 ### 6.3 Sim Task Executor
@@ -338,7 +338,7 @@ ros2 topic pub --once /navigation/result \
   smart_farm_interfaces/msg/TaskResult \
   "{task_id: WRONG_TASK, command_id: WRONG_COMMAND, operation: NAVIGATION,
     status: SUCCEEDED, phase: RESULT, reason: NONE,
-    safe_to_navigate: false, reached_station: INSPECTION_DOCK,
+    safe_to_navigate: false, reached_station: FEEDER_DOCK,
     completed_units: [], defect_slots: [], unknown_slots: []}"
 ```
 

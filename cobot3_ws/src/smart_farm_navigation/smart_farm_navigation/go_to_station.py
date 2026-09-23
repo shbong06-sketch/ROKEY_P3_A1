@@ -1,6 +1,6 @@
 """Drive the carter to a named station with Nav2 Simple Commander.
 
-    ros2 run smart_farm_navigation go_to_station --ros-args -p station:=INSPECTION_DOCK
+    ros2 run smart_farm_navigation go_to_station --ros-args -p station:=FEEDER_APPROACH
 
 Reads config/stations.yaml (map-frame poses).  nav2.launch.py already gives AMCL its
 initial pose, so this node only re-sends it with set_initial_pose:=true.
@@ -23,19 +23,13 @@ from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from rclpy.node import Node
+
+from smart_farm_navigation import stations as stations_lib
 from rclpy.time import Time
 import tf2_ros
 
 def make_pose(nav: BasicNavigator, x: float, y: float, yaw_deg: float) -> PoseStamped:
-    p = PoseStamped()
-    p.header.frame_id = "map"
-    # stamp 0 = "latest available transform"; a wall-clock stamp would never match Isaac's sim-time TF
-    p.pose.position.x = float(x)
-    p.pose.position.y = float(y)
-    half = math.radians(yaw_deg) / 2.0
-    p.pose.orientation.z = math.sin(half)
-    p.pose.orientation.w = math.cos(half)
-    return p
+    return stations_lib.pose(x, y, yaw_deg)
 
 
 def current_pose(nav: BasicNavigator, timeout_s: float = 10.0):
@@ -113,9 +107,8 @@ def reverse_out_if_needed(nav: BasicNavigator, cfg: dict, log) -> bool:
 def main() -> None:
     rclpy.init()
     args = Node("go_to_station_args")
-    args.declare_parameter("station", "FEEDER_DOCK")
-    args.declare_parameter("stations_file", os.path.join(
-        get_package_share_directory("smart_farm_navigation"), "config", "stations.yaml"))
+    args.declare_parameter("station", "FEEDER_APPROACH")
+    args.declare_parameter("stations_file", stations_lib.default_path())
     args.declare_parameter("set_initial_pose", False)
     args.declare_parameter("pure_nav2", True)      # True: NavigateToPose 하나로 감 (Hybrid-A* 가 후진 구간까지 계획). False: 스크립트가 BackUp 을 먼저 지시
     station = args.get_parameter("station").value

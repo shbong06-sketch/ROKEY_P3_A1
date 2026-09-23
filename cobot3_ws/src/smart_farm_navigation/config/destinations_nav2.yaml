@@ -1,6 +1,6 @@
-# navigation_node (mode:=nav2): destination 이름 -> config/stations.yaml 의 station. Nav2 가 먼저 떠 있어야 함 (nav2.launch.py).
+# navigation_node 목적지 -> config/stations.yaml 의 작업점.
+#   approach 가 있으면 그 작업점까지 Nav2 로 간 뒤 feeder_dock 으로 정밀 도킹한다.
 destinations:
-  FEEDER_DOCK:     {station: FEEDER_DOCK}
-  INSPECTION_DOCK: {station: INSPECTION_DOCK}
-  RACK_DOCK:       {station: RACK_DOCK}
-  CORRIDOR_EXIT:   {station: CORRIDOR_EXIT}
+  FEEDER_DOCK:   {station: FEEDER_DOCK, approach: FEEDER_APPROACH}
+  RACK_DOCK:     {station: RACK_DOCK}
+  CORRIDOR_EXIT: {station: CORRIDOR_EXIT}

@@ -12,7 +12,7 @@ that line: (1) turn in place so the rear points at the goal point on the face's 
 
 Geometry (base_link, x forward = drive wheels, rear = -x = M0609 side):
   face line fitted to scan points 0.5..3.2 m behind the robot; the face is ~1.15 m long.
-  goal: base_link `standoff_m` (default 1.00 m) in front of the face on the normal through the face centre,
+  goal: base_link `standoff_m` (default 0.75 m) in front of the face on the normal through the face centre,
         rear square to the face  ->  world (-2.19, -2.60, 90 deg) for the v011 scene.
 """
 
@@ -27,7 +27,7 @@ from geometry_msgs.msg import PoseWithCovarianceStamped, Twist
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Empty, String
+from std_msgs.msg import String
 
 LIDAR_X = -0.232          # XT-32 in base_link
 
@@ -99,9 +99,10 @@ class FeederDock(Node):
         super().__init__("feeder_dock")
         d = self.declare_parameter
         d("scan_topic", "/scan"); d("cmd_vel_topic", "/cmd_vel")
-        d("auto_start", True)
+        d("auto_start", False)          # 통합은 명령으로 시작한다. RViz2 수동 절차는 launch 인자 dock_auto:=true
         d("arm_x", -2.19); d("arm_y", -1.55); d("arm_radius_m", 0.6)     # FEEDER_APPROACH (map)
-        d("standoff_m", 0.90)                     # base_link -> face distance at the dock (v011 face y -3.60 -> base_link y -2.70; rear edge 0.29 m from the face, arm base 0.48 m)
+        d("standoff_m", 0.75)                     # base_link ~ TurnTable 앞면 거리. v011 면 y -3.60 -> base_link y -2.85.
+        #   팔 밑동에서 place 대상(y -3.91)까지 직선 0.90 m 로 M0609 도달 한계와 같다. 역기구학이 실패하면 0.70 으로 내린다.
         d("face_min_len_m", 0.6); d("face_max_len_m", 1.6)
         d("search_x", [-3.4, -0.5]); d("search_y", [-1.3, 1.3])
         d("reverse_speed_mps", 0.15); d("creep_speed_mps", 0.05)
@@ -122,7 +123,7 @@ class FeederDock(Node):
         self.status_pub = self.create_publisher(String, "/feeder_dock/status", latched)
         self.result_pub = self.create_publisher(String, "/feeder_dock/result", latched)
         self.create_subscription(LaserScan, p("scan_topic"), self._on_scan, qos_profile_sensor_data)
-        self.create_subscription(Empty, "/feeder_dock/start", lambda m: self._start("manual"), 10)
+        self.create_subscription(String, "/feeder_dock/start", lambda m: self._start(m.data or "manual"), 10)
         self.create_subscription(PoseWithCovarianceStamped, "/amcl_pose", self._on_amcl, 10)
         self.create_subscription(Twist, "/cmd_vel", self._on_cmd, 10)
 
@@ -131,6 +132,8 @@ class FeederDock(Node):
         self.face_stamp = 0.0
         self.amcl_xy = None; self.last_ext_cmd = 0.0; self.near_since = None
         self.phase = "IDLE"; self.t_phase = 0.0; self.t_start = 0.0; self.done = False
+        self.run_id = ""          # 명령을 보낸 쪽이 준 실행 식별자. 결과에 그대로 담아 과거 결과와 구분한다.
+        self.auto_seq = 0
         self.create_timer(0.05, self._tick)
         self.create_timer(5.0, self._report)
         self._status("IDLE", "waiting" + (" (auto: arms within %.1f m of FEEDER_APPROACH)" % self.arm_r if self.auto else ""))
@@ -173,16 +176,18 @@ class FeederDock(Node):
         self.status_pub.publish(String(data=json.dumps({"phase": phase, "detail": detail}, ensure_ascii=False)))
         self.get_logger().info(f"[{phase}] {detail}")
 
-    def _start(self, how):
+    def _start(self, run_id):
         if self.phase not in ("IDLE", "DONE", "FAILED"):
+            self.get_logger().warning(f"start '{run_id}' 무시: 이미 {self.phase}")
             return
-        self.done = False; self.t_start = self._now()
-        self._status("ALIGN_TO_GOAL", f"started ({how})")
+        self.done = False; self.t_start = self._now(); self.run_id = run_id
+        self._status("ALIGN_TO_GOAL", f"started (run_id={run_id})")
 
     def _finish(self, ok, reason):
         self._pub(0.0, 0.0)
         f = self.face
-        res = {"status": "SUCCEEDED" if ok else "FAILED", "reason": reason,
+        res = {"run_id": self.run_id,
+               "status": "SUCCEEDED" if ok else "FAILED", "reason": reason,
                "face_dist_m": round(f[0], 3) if f else None, "yaw_err_deg": round(math.degrees(f[1]), 2) if f else None,
                "lat_m": round(f[2], 3) if f else None}
         self.result_pub.publish(String(data=json.dumps(res)))
@@ -209,7 +214,8 @@ class FeederDock(Node):
                     if self.near_since is None:
                         self.near_since = now
                     elif now - self.near_since > 1.0:
-                        self._start("auto: near FEEDER_APPROACH and Nav2 idle")
+                        self.auto_seq += 1
+                        self._start(f"auto-{self.auto_seq}")
                 else:
                     self.near_since = None
             return
@@ -264,6 +270,9 @@ def main() -> None:
         rclpy.spin(node)
     except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass
+    except Exception:                  # 종료 신호로 컨텍스트가 닫히며 나는 오류는 무시한다
+        if rclpy.ok():
+            raise
     finally:
         try: node._pub(0.0, 0.0)
         except Exception: pass

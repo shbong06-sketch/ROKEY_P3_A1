@@ -41,7 +41,7 @@
 - 팔레트 ID: PALLET_001, PALLET_002, …
 - 랙 슬롯: RACK_L1 ~ RACK_L4
 - 식물 슬롯: SLOT_01 ~ SLOT_06
-- AMR 도킹점: RACK_DOCK, INSPECTION_DOCK
+- AMR 도킹점: RACK_DOCK, FEEDER_DOCK
 - 팔레트 배치점: INSPECT_STATION, PACK_OUT
 - 작업 실행 ID: TASK-YYYYMMDD-NNN
 - 개별 명령 ID: TASK-YYYYMMDD-NNN-CMD-NNN
@@ -122,7 +122,7 @@ PREFLIGHT를 포함한 총 8개 상태이며, 실제 공정은 7개 실행 단�
 | 0 | PREFLIGHT | Task Manager | Sim·Navigation·Inspection 준비, 초기 랙 점유와 장면 확인 | 모든 Executor READY, RACK_L2 공석 |
 | 1 | TRANSFER | Sim Task Executor | PALLET_002 L3→L2 이동 후 PALLET_003 L4→L3 이동 | 두 단위 이동 모두 성공 |
 | 2 | PICK_HARVEST | Sim Task Executor | PALLET_001을 L1에서 PICK, 인출, 운송 자세·높이 | safe_to_navigate=true |
-| 3 | NAVIGATION | Navigation Node | Nav2로 INSPECTION_DOCK 이동 | Nav2 성공 및 목적지 일치 |
+| 3 | NAVIGATION | Navigation Node | Nav2로 FEEDER_DOCK 이동 | Nav2 성공 및 목적지 일치 |
 | 4 | PLACE_INSPECT | Sim Task Executor | 베이스 정지 확인 후 검사대 위 PLACE | 팔레트 안착 확인 |
 | 5 | INSPECT | Inspection Node | 카메라 인식과 SLOT_01~SLOT_06 검사 | 슬롯별 결과 생성, 미판정 없음 |
 | 6 | CULL | Sim Task Executor | 불량 슬롯 순차 솎아내기 | 대상 슬롯 제거 확인 |
@@ -151,7 +151,7 @@ VERIFY_TRANSPORT_READY는 팔레트 상승·인출, 미끄러짐, 팔 운송 자
 
 ### PLACE_INSPECT
 
-CHECK_BASE_STOPPED → CHECK_INSPECTION_DOCK → LIFT_TO_PROFILE(PLACE_INSPECTION) → ARM_PLACE(INSPECT_STATION) → VERIFY_PLACE → ARM_SAFE → RESULT
+CHECK_BASE_STOPPED → CHECK_FEEDER_DOCK → LIFT_TO_PROFILE(PLACE_INSPECTION) → ARM_PLACE(INSPECT_STATION) → VERIFY_PLACE → ARM_SAFE → RESULT
 
 ### CULL
 
@@ -239,7 +239,7 @@ ROKEY_P3_A1/
 
 ## 12. 확정 전 실측·구현 항목
 
-- 작업점 map 좌표와 INSPECTION_DOCK 도킹 허용 오차
+- 작업점 map 좌표와 FEEDER_DOCK 도킹 허용 오차
 - 각 리프트 프로파일의 실제 높이
 - M0609 TCP, 포크 삽입·인출 거리와 충돌 여유
 - 수확 팔레트 운송 자세와 이동 중 안정성

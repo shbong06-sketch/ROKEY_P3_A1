@@ -117,7 +117,8 @@ def _setup(context):
     else:
         self_filter = Node(
             package="smart_farm_navigation", executable="cloud_self_filter", name="cloud_self_filter", output="screen",
-            parameters=[{"use_sim_time": True, "input_topic": CLOUD_TOPIC, "output_topic": CLOUD_TOPIC + "/filtered", "accumulate_s": 0.5, "self_box_x_m": 0.6, "self_box_y_m": 0.6, "self_box_z_m": 1.0}],
+            parameters=[{"use_sim_time": True, "input_topic": CLOUD_TOPIC, "output_topic": CLOUD_TOPIC + "/filtered", "accumulate_s": 0.5,
+                         "self_box_x": [-0.60, 0.60], "self_box_y": [-0.60, 0.60], "self_box_z": [-0.20, 2.60]}],
         )
         scan_node = Node(
             package="pointcloud_to_laserscan", executable="pointcloud_to_laserscan_node",
@@ -189,7 +190,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("rviz_config", default_value=os.path.join(share, "rviz", "nav2_smartfarm.rviz")),
         DeclareLaunchArgument("use_composition", default_value="False"),
         DeclareLaunchArgument("record", default_value="false"),
-        DeclareLaunchArgument("dock_auto", default_value="true"),     # feeder_dock arms itself near FEEDER_APPROACH
+        DeclareLaunchArgument("dock_auto", default_value="false"),    # 통합은 navigation_node 가 명령으로 시작한다. RViz2 수동 절차만 true
         DeclareLaunchArgument("record_cloud", default_value="false"),
         DeclareLaunchArgument("initial_x", default_value=""),
         DeclareLaunchArgument("initial_y", default_value=""),

@@ -28,7 +28,7 @@
 ## 2. 당신(사용자인 내가 아니고, ADR을 열람하는 당신)의 입장에서 명시한 ADR
 
 2.1. **환경 상수 (글로벌)**
-- 현재 `ROS_DOMAIN_ID` 는 **102**(고피2). 모든 내피 터미널 블록은 아래 5줄로 시작하며, 가이던스에서 "위와 같은 5줄" 같은 참조로 줄이지 않음.
+- `ROS_DOMAIN_ID` 는 그때 사용하는 고피에 맞춘다(고피1 101, 고피2 102). 고피는 유동적으로 바뀌므로 값을 고정해 두지 말고, 작업 시작 시 현재 쓰는 고피를 확인해 내피의 모든 터미널과 비전 컨테이너에 같은 값을 적용한다. 모든 내피 터미널 블록은 아래 5줄로 시작하며, 가이던스에서 "위와 같은 5줄" 같은 참조로 줄이지 않음(아래 번호는 예시이며 가이던스에는 그때의 실제 값을 적는다).
   export ROS_DOMAIN_ID=102
   export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
   export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml

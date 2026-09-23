@@ -27,9 +27,9 @@ class CloudSelfFilter(Node):
         super().__init__("cloud_self_filter")
         self.declare_parameter("input_topic", "/front_3d_lidar/lidar_points")
         self.declare_parameter("output_topic", "/front_3d_lidar/filtered")
-        self.declare_parameter("box_x", [-0.85, 0.60])   # rear edge must stay clear of the Feeder face at the 1.0 m dock standoff
-        self.declare_parameter("box_y", [-0.60, 0.60])
-        self.declare_parameter("box_z", [-0.20, 2.60])
+        self.declare_parameter("self_box_x", [-0.60, 0.60])   # [뒤, 앞]. 뒤 경계는 도킹 거리(standoff_m)보다 앞이어야 도킹 면이 지워지지 않는다
+        self.declare_parameter("self_box_y", [-0.60, 0.60])
+        self.declare_parameter("self_box_z", [-0.20, 2.60])   # 상한은 들고 있는 팔레트까지 덮는다
         # Isaac's ROS2RtxLidarHelper without fullScan publishes one ~60 deg slice per rendered frame (about 6,900
         # points at 20 Hz for the XT-32).  A LaserScan made from one slice covers one sector only, which breaks
         # AMCL and the Feeder face detection.  Slices arriving within `accumulate_s` are merged into one cloud.
@@ -37,9 +37,9 @@ class CloudSelfFilter(Node):
         # rear sector vanishes for seconds.  Therefore ALL clouds within `accumulate_s` (sim seconds) are merged.
         self.declare_parameter("accumulate_s", 0.25)
         self.declare_parameter("partial_max_points", 20000)     # below this the cloud is a slice (only changes the log)
-        self.bx = [float(v) for v in self.get_parameter("box_x").value]
-        self.by = [float(v) for v in self.get_parameter("box_y").value]
-        self.bz = [float(v) for v in self.get_parameter("box_z").value]
+        self.bx = [float(v) for v in self.get_parameter("self_box_x").value]
+        self.by = [float(v) for v in self.get_parameter("self_box_y").value]
+        self.bz = [float(v) for v in self.get_parameter("self_box_z").value]
         self.pub = self.create_publisher(PointCloud2, self.get_parameter("output_topic").value, qos_profile_sensor_data)
         self.create_subscription(PointCloud2, self.get_parameter("input_topic").value, self._on_cloud, qos_profile_sensor_data)
         self.acc_s = float(self.get_parameter("accumulate_s").value)
