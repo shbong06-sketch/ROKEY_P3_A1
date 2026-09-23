@@ -1,0 +1,7 @@
+publisher: beginning loop
+publishing #1: std_msgs.msg.String(data='{"task_id": "TASK-20260923-001", "command_id": "TASK-20260923-001-CMD-001", "operation": "PICK_HARVEST", "recipe_id": "HARVEST_RACK_L1", "pallet_id": "PALLET_001", "source": "RACK_L1", "destination": "CARRY"}')
+
+data: '{"task_id":"TASK-20260923-001","command_id":"TASK-20260923-001-CMD-001","operation":"PICK_HARVEST","status":"SUCCEEDED","phase":...'
+---
+The passed message type is invalid
+The passed message type is invalid
