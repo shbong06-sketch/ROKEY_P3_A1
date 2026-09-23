@@ -5,6 +5,7 @@
 #   ./runtime/run_isaac_docker.sh --keep-pose          # /rgb 발행
 #   ./runtime/run_isaac_docker.sh --keep-pose --bridge # + 검출 -> base 좌표
 #   ./runtime/run_isaac_docker.sh --shell              # 컨테이너 셸 (디버깅)
+#   SCRIPT=scene_probe.py ./runtime/run_isaac_docker.sh # 씬 조사 (읽기 전용)
 #
 # 나머지 인자는 vision_functest.py 로 그대로 넘어간다.
 #
@@ -18,6 +19,7 @@
 #   PROJECT (이 스크립트의 상위 폴더) · M0609 (PROJECT 옆의 M0609)
 #   LULA_DIR (~/Downloads/.../lula) · ISAAC_CACHE (~/docker/isaac-sim)
 #   ISAAC_USER (비우면 이미지 기본 사용자) · ROS_DOMAIN_ID (0)
+#   INSPECTION_CONFIG_DIR (저장소의 cobot3_ws/src/smart_farm_vision/config)
 set -euo pipefail
 
 IMAGE=${IMAGE:-nvcr.io/nvidia/isaac-sim:5.1.0}
@@ -56,7 +58,13 @@ for d in "${CACHE_DIRS[@]}"; do
   CACHE_ARGS+=(-v "$host:$IMG_HOME/$d:rw")
 done
 
+# Inspection Node 와 같은 검사 설정 (브리지가 불량 판정을 재현하는 데 씀).
+INSPECTION_CONFIG_DIR=${INSPECTION_CONFIG_DIR:-$(dirname "$PROJECT")/../src/smart_farm_vision/config}
 MOUNT_ARGS=(-v "$PROJECT:$WS/$PROJECT_NAME:ro")
+if [[ -f "$INSPECTION_CONFIG_DIR/object_detection.yaml" ]]; then
+  INSPECTION_CONFIG_DIR=$(cd "$INSPECTION_CONFIG_DIR" && pwd)
+  MOUNT_ARGS+=(-v "$INSPECTION_CONFIG_DIR:$WS/inspection_config:ro")
+fi
 [[ -d "$M0609" ]] && MOUNT_ARGS+=(-v "$M0609:$WS/M0609:ro")
 [[ -d "$LULA_DIR" ]] && MOUNT_ARGS+=(-v "$LULA_DIR:$WS/lula:ro")
 
@@ -67,13 +75,16 @@ ENV_ARGS=(
   # 컨테이너와 호스트는 사용자가 달라 공유메모리 전송이 조용히 실패할 수 있다.
   -e FASTDDS_BUILTIN_TRANSPORTS=UDPv4
   -e M0609_LULA_DESC="$WS/lula/m0609_robot_description.yaml"
+  -e INSPECTION_CONFIG="$WS/inspection_config/object_detection.yaml"
 )
 [[ -n "${ROS_AUTOMATIC_DISCOVERY_RANGE:-}" ]] && \
   ENV_ARGS+=(-e ROS_AUTOMATIC_DISCOVERY_RANGE="$ROS_AUTOMATIC_DISCOVERY_RANGE")
 
 BASE_ARGS=(--rm --gpus all --network=host "${USER_ARGS[@]}"
            "${ENV_ARGS[@]}" "${MOUNT_ARGS[@]}" "${CACHE_ARGS[@]}")
-FUNCTEST="$WS/$PROJECT_NAME/runtime/vision_functest.py"
+# SCRIPT 로 runtime/ 안의 다른 스크립트를 돌릴 수 있다 (예: SCRIPT=scene_probe.py).
+SCRIPT=${SCRIPT:-vision_functest.py}
+FUNCTEST="$WS/$PROJECT_NAME/runtime/$SCRIPT"
 # 터미널이 아닐 때(-t 불가) 도 돌도록.
 if [[ -t 0 && -t 1 ]]; then TTY=(-it); else TTY=(-i); fi
 
@@ -81,11 +92,14 @@ check() {
   local ok=1
   say "이미지 $IMAGE · 컨테이너 사용자 uid=$IMG_UID home=$IMG_HOME"
   say "프로젝트 $PROJECT -> $WS/$PROJECT_NAME"
-  [[ -f "$PROJECT/runtime/vision_functest.py" ]] || { say "없음: runtime/vision_functest.py"; ok=0; }
+  [[ -f "$PROJECT/runtime/$SCRIPT" ]] || { say "없음: runtime/$SCRIPT"; ok=0; }
   [[ -f "$PROJECT/runtime/vision_bridge.py" ]] || say "경고: vision_bridge.py 없음 (--bridge 불가)"
   [[ -f "$PROJECT/scenes/Collected_smartfarm_v013/Collected_smartfarm_v013.usd" ]] \
     || { say "없음: 기본 씬 USD (다른 씬이면 --scene 지정)"; ok=0; }
   [[ -d "$M0609" ]] && say "M0609 $M0609" || say "경고: M0609 폴더 없음 (IK 모드 불가, --keep-pose 는 가능)"
+  [[ -f "$INSPECTION_CONFIG_DIR/object_detection.yaml" ]] \
+    && say "검사 설정 $INSPECTION_CONFIG_DIR/object_detection.yaml" \
+    || say "경고: 검사 설정 없음 (--bridge 가 불량 판정 없이 모든 슬롯 좌표를 냄)"
   [[ -f "$LULA_DIR/m0609_robot_description.yaml" ]] && say "Lula $LULA_DIR" \
     || say "경고: Lula YAML 없음 (IK 모드 불가, --keep-pose 는 가능)"
   docker run "${BASE_ARGS[@]}" --entrypoint bash "$IMAGE" -c "

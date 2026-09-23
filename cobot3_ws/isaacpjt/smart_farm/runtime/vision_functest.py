@@ -10,8 +10,9 @@ best.pt 학습 조건을 재현해 `/rgb` 를 내보낸다. 조건 출처는
     (기본)         학습 분포 안에서 IK 로 자세를 찾음
     --sweep        팔은 두고 트레이만 옮겨 ROI 여유 측정 (물리 컨베이어 시험 아님)
     --rig-camera   팔 대신 트레이 위 수직 카메라 사용
-    --bridge       /inspection/detections_2d 를 받아 base 좌표로 바꿔
-                   /inspection/targets_3d 로 낸다 (같은 폴더 vision_bridge.py 필요)
+    --bridge       /inspection/detections_2d 를 받아 불량(DEFECT) 슬롯만
+                   base 좌표로 바꿔 /inspection/targets_3d 로 낸다
+                   (같은 폴더 vision_bridge.py + object_detection.yaml 필요)
     --strict       자세가 학습 분포를 벗어나면 중단
 
 네이티브:
@@ -56,6 +57,9 @@ DEFAULT_SCENE = _env_path("FUNCTEST_SCENE", PROJECT_DIR / "scenes"
                           / "Collected_smartfarm_v013.usd")
 DEFAULT_URDF = _env_path("M0609_URDF", PROJECT_DIR.parent / "M0609"
                          / "doosan-robot2" / "urdf" / "m0609_isaac_sim.urdf")
+DEFAULT_INSPECTION_CONFIG = _env_path(
+    "INSPECTION_CONFIG", PROJECT_DIR.parent.parent / "src"
+    / "smart_farm_vision" / "config" / "object_detection.yaml")
 DEFAULT_DESC = _env_path("M0609_LULA_DESC", Path.home() / (
     "Downloads/smartfarm_v008_vision/Collected_smartfarm_v008/lula/"
     "m0609_robot_description.yaml"))
@@ -155,6 +159,10 @@ def parse_args():
     g.add_argument("--target-topic", default="/inspection/targets_3d")
     g.add_argument("--plane-z", type=float, default=LOOK_Z,
                    help="깊이가 없을 때 쓰는 월드 수평면 높이 (m).")
+    g.add_argument("--inspection-config", type=Path,
+                   default=DEFAULT_INSPECTION_CONFIG,
+                   help="Inspection Node 와 같은 object_detection.yaml. "
+                        "이 파일로 판정을 재현해 불량(DEFECT) 슬롯 좌표만 낸다.")
     return p.parse_known_args()
 
 
@@ -727,6 +735,14 @@ class DetectionBridge:
         from std_msgs.msg import String
 
         self.vb, self.rclpy = vb, rclpy
+        self.judge = None
+        try:
+            self.judge = vb.load_inspection_config(args.inspection_config)
+            print(f"[브리지] 판정표 {self.judge[1]} "
+                  f"(출처 {args.inspection_config})", flush=True)
+        except (OSError, RuntimeError, ValueError, KeyError) as exc:
+            print(f"[브리지][경고] 검사 설정을 못 읽음: {exc} — 판정 없이 "
+                  f"모든 슬롯 좌표를 냅니다 (status=UNJUDGED).", flush=True)
         camera_path = RIG_CAMERA if args.rig_camera else COLOR
         self.model = vb.CameraModel(stage, camera_path, RENDER_PRODUCT)
         self.cam_matrix = cam_matrix
@@ -756,43 +772,75 @@ class DetectionBridge:
             print(f"[브리지][경고] {exc}", flush=True)
 
     def on_detections(self, msg):
+        """검출 -> (판정 재현) -> 불량 슬롯 base 좌표 발행.
+
+        판정은 Inspection Node 와 같은 규칙·같은 YAML 로 다시 계산한다.
+        UNKNOWN 슬롯이 하나라도 있으면 Node 도 검사 FAILED 를 내므로 좌표를
+        내지 않는다 (Task Manager 도 이때 CULL 을 보내지 않는다).
+        """
+        vb = self.vb
         try:
-            parsed = self.vb.parse_detections(msg.data)
-            if not self.vb.check_resolution(parsed, self.model):
+            parsed = vb.parse_detections(msg.data)
+            if not vb.check_resolution(parsed, self.model):
                 print("[브리지][경고] 검출 메시지에 해상도 정보 없음 — "
                       "카메라 해상도로 가정", flush=True)
+                parsed["image_width"] = self.model.width
+                parsed["image_height"] = self.model.height
         except (ValueError, RuntimeError) as exc:
             print(f"[브리지][오류] {exc}", flush=True)
             return
-        if parsed["duplicates"]:
-            print(f"[브리지][경고] 한 슬롯에 검출 여러 개: "
-                  f"{parsed['duplicates']} (신뢰도 높은 쪽 사용)", flush=True)
-        targets = {}
-        for slot, item in sorted(parsed["slots"].items()):
-            center = self.vb.extract_center(item)
-            if center is None:
-                print(f"[브리지][경고] {slot}: 중심 필드를 못 찾음 "
-                      f"(키: {sorted(item)})", flush=True)
-                continue
-            result = self.vb.pixel_to_base(
-                self.model, self.cam_matrix, self.base_matrix, *center,
-                depth_image=self.depth, plane_z=args.plane_z)
-            if result is None:
-                print(f"[브리지][경고] {slot}: 3D 변환 실패 {center}",
-                      flush=True)
-                continue
-            for key in ("class_name", "label", "cls", "confidence", "conf"):
-                if key in item:
-                    result[key] = item[key]
-            targets[slot] = result
-            print(f"[브리지] {slot} px={result['pixel']} "
-                  f"base={result['xyz_base']} ({result['source']})",
-                  flush=True)
+
         out = {"task_id": parsed["task_id"],
                "command_id": parsed["command_id"],
                "pallet_id": parsed["pallet_id"],
                "stamp": parsed["stamp"],
-               "frame": ARM_ROOT, "targets": targets}
+               "frame": ARM_ROOT, "targets": {}}
+
+        if self.judge is not None:
+            result = vb.assess_slots(parsed, *self.judge)
+            out["defect_slots"] = result["defect"]
+            out["unknown_slots"] = result["unknown"]
+            states = "  ".join(f"{k[-2:]}={v}"
+                               for k, v in result["states"].items())
+            print(f"[브리지] 판정 {states}", flush=True)
+            if result["unknown"]:
+                out.update(status="FAILED", reason="UNKNOWN_SLOT")
+                print(f"[브리지] 검사 FAILED (UNKNOWN {result['unknown']}) — "
+                      f"좌표를 내지 않습니다.", flush=True)
+                self._publish(out)
+                return
+            out.update(status="SUCCEEDED", reason="NONE")
+            chosen = {s: result["items"][s] for s in result["defect"]}
+        else:
+            out.update(status="UNJUDGED", reason="NO_CONFIG")
+            chosen = parsed["slots"]
+
+        for slot, item in sorted(chosen.items()):
+            center = vb.extract_center(item)
+            if center is None:
+                print(f"[브리지][경고] {slot}: 중심 필드를 못 찾음 "
+                      f"(키: {sorted(item)})", flush=True)
+                continue
+            target = vb.pixel_to_base(
+                self.model, self.cam_matrix, self.base_matrix, *center,
+                depth_image=self.depth, plane_z=args.plane_z)
+            if target is None:
+                print(f"[브리지][경고] {slot}: 3D 변환 실패 {center}",
+                      flush=True)
+                continue
+            target["class_name"] = item.get("class_name")
+            target["confidence"] = item.get("confidence")
+            out["targets"][slot] = target
+            label = "불량" if self.judge is not None else "미판정"
+            print(f"[브리지] {label} {slot} {target['class_name']} "
+                  f"px={target['pixel']} base={target['xyz_base']} "
+                  f"world={target['xyz_world']} ({target['source']})",
+                  flush=True)
+        if out["status"] == "SUCCEEDED" and not chosen:
+            print("[브리지] 불량 슬롯 없음 — 좌표 없음 (정상)", flush=True)
+        self._publish(out)
+
+    def _publish(self, out):
         self.pub.publish(self.String(data=json.dumps(out,
                                                      ensure_ascii=False)))
 

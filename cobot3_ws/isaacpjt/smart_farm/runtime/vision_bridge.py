@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 
 import numpy as np
 from pxr import Gf, UsdGeom
@@ -168,7 +169,99 @@ def parse_detections(payload):
         "image_height": data.get("image_height"),
         "slots": by_slot,
         "duplicates": sorted(set(duplicates)),
+        "detections": list(data.get("detections", [])),
     }
+
+
+# ── 검사 판정 재현 (Inspection Node 와 같은 규칙) ─────
+SLOT_IDS = tuple(f"SLOT_{i:02d}" for i in range(1, 7))
+_CFG_LINE = re.compile(
+    r"^\s*(slot_rois|class_outcomes)\.([A-Za-z0-9_]+)\s*:\s*(.+?)\s*$")
+
+
+def load_inspection_config(path):
+    """object_detection.yaml 에서 슬롯 ROI 와 class 판정표를 읽는다.
+
+    Inspection Node 가 쓰는 파일과 **같은 파일**을 읽어야 판정이 일치한다.
+    PyYAML 이 없으면 'slot_rois.X: [..]' / 'class_outcomes.X: Y' 줄만 읽는다.
+    반환: (rois {slot: (x, y, w, h)}, outcomes {class: 'NORMAL'|...})
+    """
+    text = open(path, encoding="utf-8").read()
+    rois, outcomes = {}, {}
+    try:
+        import yaml
+        params = yaml.safe_load(text)["object_detection"]["ros__parameters"]
+        items = [(k.split(".", 1)[0], k.split(".", 1)[1], v)
+                 for k, v in params.items() if "." in k]
+    except Exception:
+        items = []
+        for line in text.splitlines():
+            m = _CFG_LINE.match(line.split("#", 1)[0])
+            if m:
+                value = m.group(3)
+                if m.group(1) == "slot_rois":
+                    value = [float(v) for v in value.strip("[]").split(",")]
+                items.append((m.group(1), m.group(2), value))
+    for group, key, value in items:
+        if group == "slot_rois":
+            rois[key] = tuple(float(v) for v in value)
+        elif group == "class_outcomes":
+            outcomes[key] = str(value).strip().upper()
+    if tuple(sorted(rois)) != SLOT_IDS:
+        raise RuntimeError(f"슬롯 ROI 가 SLOT_01~06 이 아닙니다: {sorted(rois)}")
+    if not outcomes:
+        raise RuntimeError(f"class_outcomes 가 없습니다: {path}")
+    return rois, outcomes
+
+
+def _roi_contains(roi, u, v):
+    """Inspection Node 의 _roi_contains 와 같은 경계 규칙."""
+    x, y, w, h = roi
+    right, bottom = x + w, y + h
+    inside_x = x <= u < right
+    inside_y = y <= v < bottom
+    if abs(right - 1.0) < 1e-6 and u == 1.0:
+        inside_x = True
+    if abs(bottom - 1.0) < 1e-6 and v == 1.0:
+        inside_y = True
+    return inside_x and inside_y
+
+
+def assess_slots(parsed, rois, outcomes):
+    """검출 전체로 슬롯 판정을 다시 계산한다 (Node 의 _assess_detections 규칙).
+
+    - 중심이 ROI 한 곳에만 들면 그 슬롯, 두 곳 이상이면 겹친 슬롯 모두 UNKNOWN
+    - 슬롯당 검출이 정확히 1개가 아니면 UNKNOWN
+    - 그 외에는 class 판정표 (없는 class 는 UNKNOWN)
+    반환: {"states": {slot: 판정}, "defect": [...], "unknown": [...],
+           "items": {slot: 검출}}  (items 는 검출이 1개인 슬롯만)
+    """
+    width = float(parsed["image_width"])
+    height = float(parsed["image_height"])
+    by_slot = {s: [] for s in SLOT_IDS}
+    conflicts = set()
+    for item in parsed["detections"]:
+        center = extract_center(item)
+        if center is None:
+            continue
+        u, v = center[0] / width, center[1] / height
+        matched = [s for s in SLOT_IDS if _roi_contains(rois[s], u, v)]
+        if len(matched) == 1:
+            by_slot[matched[0]].append(item)
+        elif len(matched) > 1:
+            conflicts.update(matched)
+    states, items = {}, {}
+    for slot in SLOT_IDS:
+        found = by_slot[slot]
+        if slot in conflicts or len(found) != 1:
+            states[slot] = "UNKNOWN"
+            continue
+        items[slot] = found[0]
+        states[slot] = outcomes.get(str(found[0].get("class_name")), "UNKNOWN")
+    return {"states": states,
+            "defect": [s for s in SLOT_IDS if states[s] == "DEFECT"],
+            "unknown": [s for s in SLOT_IDS if states[s] == "UNKNOWN"],
+            "items": items}
 
 
 def extract_center(item):
