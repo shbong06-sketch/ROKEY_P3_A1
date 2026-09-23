@@ -28,7 +28,7 @@
 |---|---|---|
 | `stdbuf: failed to run command 'isaac_python'` | `stdbuf` 처럼 외부 명령을 앞에 붙이면 셸 별칭이 풀리지 않는다. 2절 블록대로 `isaac_python` 을 첫 낱말로 두고 `PYTHONUNBUFFERED=1` 만 쓴다 |
 | Place 지시 직후 Isaac 종료 | Place 직전 도킹 위치를 기록하는 코드가 그 파일에 없는 함수(`robot_motion.prim_world_pose`)와 import 하지 않은 `numpy` 를 불렀다. 예외가 팀 앱의 최상위까지 올라가 `app.close()` 로 이어졌다 | 표준 API(`robot.get_world_pose()`)와 표준 연산으로 바꿨다. 같은 유형이 더 없는지 바뀐 파일 전체를 정적 검사로 확인했다 |
-| 오류 내용이 로그에 없음 | `tee` 로 넘길 때 Python 출력이 블록 단위로 모였다가 나가므로, 갑자기 죽으면 마지막 묶음이 통째로 사라진다 | Isaac 실행 앞에 `PYTHONUNBUFFERED=1` 과 `stdbuf -oL -eL` 를 붙여 한 줄씩 바로 기록되게 했다 |
+| 오류 내용이 로그에 없음 | `tee` 로 넘길 때 Python 출력이 블록 단위로 모였다가 나가므로, 갑자기 죽으면 마지막 묶음이 통째로 사라진다 | Isaac 실행 앞에 `PYTHONUNBUFFERED=1` 을 두어 한 줄씩 바로 기록되게 했다 |
 | 팔 베이스 대기가 181초까지 늘어남 | 팔레트 이송 제어기가 쓰는 정지 감시기를 main loop 에서 또 갱신해 시간이 두 배로 흘렀다 | Place 검사용 감시기를 따로 두어 서로 간섭하지 않게 했다 |
 | GPU 원인 여부 확인 불가 | 감시 수단이 없었다 | 고피에 GPU 사용량 기록 터미널을 하나 추가했다(3절) |
 
