@@ -119,6 +119,7 @@ class FeederDock(Node):
         d("max_retry", 2)
         d("stall_check_s", 3.0)           # 명령을 내는데 이만큼 움직임이 없으면 멈춘 것으로 본다
         d("stall_move_m", 0.02)
+        d("stall_turn_rad", 0.02)         # 제자리 회전도 움직인 것으로 센다. 없으면 회전 구간이 멈춤으로 잘못 판정된다
         p = lambda n: self.get_parameter(n).value  # noqa: E731
         self.auto = bool(p("auto_start")); self.arm = (float(p("arm_x")), float(p("arm_y"))); self.arm_r = float(p("arm_radius_m"))
         self.standoff = float(p("standoff_m")); self.len_lim = (float(p("face_min_len_m")), float(p("face_max_len_m")))
@@ -130,6 +131,7 @@ class FeederDock(Node):
         self.w_rev_max = float(p("reverse_w_max")); self.square_tol = math.radians(float(p("square_tol_deg")))
         self.backoff_extra = float(p("backoff_extra_m")); self.max_retry = int(p("max_retry"))
         self.stall_check = float(p("stall_check_s")); self.stall_move = float(p("stall_move_m"))
+        self.stall_turn = float(p("stall_turn_rad"))
 
         self.cmd = self.create_publisher(Twist, p("cmd_vel_topic"), 10)
         latched = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -148,7 +150,7 @@ class FeederDock(Node):
         self.phase = "IDLE"; self.t_phase = 0.0; self.t_start = 0.0; self.done = False
         self.run_id = ""          # 명령을 보낸 쪽이 준 실행 식별자. 결과에 그대로 담아 과거 결과와 구분한다.
         self.retry = 0
-        self.odom_xy = None; self.stall_ref = None; self.stall_since = 0.0
+        self.odom_pose = None; self.stall_ref = None; self.stall_since = 0.0
         self.auto_seq = 0
         self.create_timer(0.05, self._tick)
         self.create_timer(5.0, self._report)
@@ -172,15 +174,25 @@ class FeederDock(Node):
     def _on_amcl(self, m):  self.amcl_xy = (m.pose.pose.position.x, m.pose.pose.position.y)
 
     def _on_odom(self, m):
-        self.odom_xy = (m.pose.pose.position.x, m.pose.pose.position.y)
+        q = m.pose.pose.orientation
+        self.odom_pose = (m.pose.pose.position.x, m.pose.pose.position.y,
+                          math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z)))
 
     def _stalled(self, now) -> bool:
-        """명령을 내고 있는데 실제로 움직이지 않으면 True. 구조물에 걸린 채 밀지 않게 한다."""
-        if self.odom_xy is None:
+        """명령을 내고 있는데 실제로 움직이지 않으면 True. 구조물에 걸린 채 밀지 않게 한다.
+
+        제자리 회전은 위치가 거의 변하지 않으므로 방향 변화도 함께 본다. 위치만 보면
+        회전 구간이 멈춤으로 잘못 판정되고, 그 타이머가 다음 구간으로 넘어간다(2026-09-23 실측).
+        """
+        if self.odom_pose is None:
             return False
-        if self.stall_ref is None or math.hypot(self.odom_xy[0] - self.stall_ref[0],
-                                                self.odom_xy[1] - self.stall_ref[1]) > self.stall_move:
-            self.stall_ref = self.odom_xy; self.stall_since = now
+        if self.stall_ref is None:
+            self.stall_ref = self.odom_pose; self.stall_since = now
+            return False
+        moved = math.hypot(self.odom_pose[0] - self.stall_ref[0], self.odom_pose[1] - self.stall_ref[1])
+        turned = abs(wrap(self.odom_pose[2] - self.stall_ref[2]))
+        if moved > self.stall_move or turned > self.stall_turn:
+            self.stall_ref = self.odom_pose; self.stall_since = now
             return False
         return now - self.stall_since > self.stall_check
     def _on_cmd(self, m):
@@ -209,6 +221,7 @@ class FeederDock(Node):
     # ---------- state machine ----------
     def _status(self, phase, detail=""):
         self.phase = phase; self.t_phase = self._now()
+        self.stall_ref = None          # 단계가 바뀌면 멈춤 판정을 처음부터 다시 센다
         self.status_pub.publish(String(data=json.dumps({"phase": phase, "detail": detail}, ensure_ascii=False)))
         self.get_logger().info(f"[{phase}] {detail}")
 
