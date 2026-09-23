@@ -27,7 +27,7 @@
 # ===================================================
 
 # ---------- ROS2 환경 변수 ----------
-export ROS_DOMAIN_ID=101
+export ROS_DOMAIN_ID=101   # 상황에 따라 102나 103도 될 수 있음.
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 export FASTRTPS_DEFAULT_PROFILES_FILE="$HOME/.ros/fastdds_whitelist.xml"
 
