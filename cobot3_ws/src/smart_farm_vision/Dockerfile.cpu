@@ -1,0 +1,52 @@
+FROM ros:jazzy-ros-base-noble
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3-pip \
+        python3-rosdep \
+        python3-colcon-common-extensions \
+        ros-jazzy-rclpy \
+        ros-jazzy-sensor-msgs \
+        ros-jazzy-cv-bridge \
+    && rm -rf /var/lib/apt/lists/*
+
+# CPU 전용 PyTorch wheel을 명시적으로 선택한다.
+# 이 PC의 RTX 5080 Laptop은 compute capability 12.0(sm_120)이라
+# cu124 빌드(sm_90까지)로는 CUDA 추론이 되지 않는다.
+RUN pip install --no-cache-dir --break-system-packages \
+        --index-url https://download.pytorch.org/whl/cpu \
+        torch==2.4.1 \
+        torchvision==0.19.1
+
+# cv_bridge와 호환되는 NumPy 1.x를 유지한다.
+RUN pip install --no-cache-dir --break-system-packages \
+        numpy==1.26.4 \
+        opencv-python==4.10.0.84 \
+        ultralytics==8.4.26
+
+# CUDA 빌드가 섞여 들어오면 빌드를 실패시킨다.
+RUN python3 -c \
+    "import torch; assert torch.version.cuda is None, torch.__version__"
+
+WORKDIR /vision_ws
+
+COPY smart_farm_interfaces /vision_ws/src/smart_farm_interfaces
+COPY smart_farm_vision /vision_ws/src/smart_farm_vision
+
+RUN rosdep update \
+    && rosdep install \
+        --from-paths src \
+        --ignore-src \
+        --rosdistro jazzy \
+        -y
+
+RUN . /opt/ros/jazzy/setup.sh \
+    && colcon build \
+        --packages-select \
+        smart_farm_interfaces \
+        smart_farm_vision
+
+COPY smart_farm_vision/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["sleep", "infinity"]

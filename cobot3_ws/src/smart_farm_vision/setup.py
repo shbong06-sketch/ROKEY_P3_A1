@@ -32,6 +32,8 @@ setup(
     entry_points={
         'console_scripts': [
             'object_detection = smart_farm_vision.inspection_executor_node:main',
+            'topic_audit = smart_farm_vision.topic_audit:main',
+            'frame_grab = smart_farm_vision.frame_grab:main',
         ],
     },
 )

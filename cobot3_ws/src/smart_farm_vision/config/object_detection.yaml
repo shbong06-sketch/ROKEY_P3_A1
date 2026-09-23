@@ -12,13 +12,32 @@ object_detection:
     continuous_inference: false
     debug_image_topic: /inspection/debug_image
 
-    slot_rois.SLOT_01: [0.0, 0.0, 0.3333333333, 0.5]
-    slot_rois.SLOT_02: [0.3333333333, 0.0, 0.3333333333, 0.5]
-    slot_rois.SLOT_03: [0.6666666666, 0.0, 0.3333333334, 0.5]
-    slot_rois.SLOT_04: [0.0, 0.5, 0.3333333333, 0.5]
-    slot_rois.SLOT_05: [0.3333333333, 0.5, 0.3333333333, 0.5]
-    slot_rois.SLOT_06: [0.6666666666, 0.5, 0.3333333334, 0.5]
+    # 2026-09-23 실측 캘리브레이션 (1280x720, 손목 D455 검사 자세 기준).
+    #
+    # 이전 값은 화면을 3x2 로 균등 분할한 것이었는데, 트레이를 +-30 mm
+    # 흔들자 9자세 중 6자세가 UNKNOWN_SLOT 으로 실패했다. 검출은 9장 모두
+    # 6/6 정상이었고, 깨진 것은 슬롯 배정이다.
+    #
+    # 슬롯 사이 경계는 이웃 중심의 중점, 바깥 경계는 중심에서 안쪽 경계와
+    # 같은 거리에 둔다. 좌우·상하 여유가 같아지고 ROI 가 화면 가장자리까지
+    # 번지지 않아 트레이 밖 오검출이 슬롯에 잡히지 않는다.
+    # 화면 점유 가로 55.9% · 세로 43.9%.
+    # 같은 스윕에서 실패 0/9, 여유 가로 57~83 px · 세로 54~61 px.
+    # 가로 한계는 +-60 mm (+-90 mm 에서 실패), 세로는 +-60 mm 에서도 통과.
+    #
+    # 카메라 자세나 트레이 위치가 바뀌면 다시 재야 한다.
+    #   재측정: runtime/vision_functest.py --sweep 으로 프레임을 뜨고
+    #           슬롯 중심 산포에서 경계를 다시 계산한다.
+    slot_rois.SLOT_01: [0.220275, 0.252170, 0.186589, 0.219712]
+    slot_rois.SLOT_02: [0.406864, 0.252170, 0.186476, 0.219712]
+    slot_rois.SLOT_03: [0.593340, 0.252170, 0.186363, 0.219712]
+    slot_rois.SLOT_04: [0.220275, 0.471882, 0.186589, 0.219712]
+    slot_rois.SLOT_05: [0.406864, 0.471882, 0.186476, 0.219712]
+    slot_rois.SLOT_06: [0.593340, 0.471882, 0.186363, 0.219712]
 
     class_outcomes.lettuce_dark_green: NORMAL
-    class_outcomes.lettuce_yellow: UNKNOWN
+    # 2026-09-23 팀 결정: 노랑도 갈색과 같이 솎아낸다.
+    # handoff README 2절은 보류(HOLD, CULL 아님)로 두었으나,
+    # 계약에 HOLD 필드가 없어 DEFECT 로 합친다.
+    class_outcomes.lettuce_yellow: DEFECT
     class_outcomes.lettuce_brown: DEFECT

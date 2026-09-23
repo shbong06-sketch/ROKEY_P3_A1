@@ -1,0 +1,38 @@
+# CPU 추론 전용. 단독으로 쓴다 (compose.vision.yaml 과 합치지 않는다).
+#
+#   docker compose -f compose.vision.cpu.yml build vision
+#   docker compose -f compose.vision.cpu.yml up -d vision
+#
+# 공용 compose.vision.yaml 과 다른 점
+#   · Dockerfile.cpu 로 빌드한다 (CUDA wheel 을 받지 않는다)
+#   · GPU 예약이 없다
+#   · 호스트와 같은 DDS 설정을 쓴다 (ROS_DOMAIN_ID 102, fastdds 프로파일)
+#
+# 이 PC 의 RTX 5080 Laptop 은 compute capability 12.0(sm_120) 이라
+# Dockerfile 이 고정한 torch 2.4.1+cu124 로는 CUDA 추론이 되지 않는다.
+# GPU 로 돌리려면 torch 를 cu128 계열로 올려야 하고, 그건 공용 파일
+# 변경이라 vision 담당과 합의가 필요하다.
+
+services:
+  vision:
+    build:
+      context: ./cobot3_ws/src
+      dockerfile: smart_farm_vision/Dockerfile.cpu
+
+    image: smart-farm-vision:jazzy-cpu
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+
+    network_mode: host
+    shm_size: "2gb"
+
+    environment:
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-102}"
+      ROS_LOCALHOST_ONLY: "0"
+      YOLO_CONFIG_DIR: "/tmp/"
+      FASTRTPS_DEFAULT_PROFILES_FILE: "/fastdds/fastdds_whitelist.xml"
+
+    volumes:
+      - ./cobot3_ws/src/smart_farm_vision/resource:/models:ro
+      - ./cobot3_ws/src/smart_farm_vision/config:/config:ro
+      - ${HOME}/.ros/fastdds_whitelist.xml:/fastdds/fastdds_whitelist.xml:ro

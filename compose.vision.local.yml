@@ -1,0 +1,17 @@
+# 이 PC 전용 덮어쓰기. 공용 compose.vision.yaml 은 건드리지 않는다.
+#
+#   docker compose -f compose.vision.yaml -f compose.vision.local.yml up -d vision
+#
+# 호스트 Isaac Sim 은 ~/.bashrc 에서 ROS_DOMAIN_ID=102 와
+# FASTRTPS_DEFAULT_PROFILES_FILE 을 쓴다. 그 프로파일은
+# useBuiltinTransports=false 이고 인터페이스 화이트리스트가 걸려 있어서,
+# 컨테이너가 같은 설정을 쓰지 않으면 토픽은 보이는데 데이터가 오지 않는
+# 상태가 된다. 같은 프로파일을 읽게 맞춘다.
+
+services:
+  vision:
+    environment:
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-102}"
+      FASTRTPS_DEFAULT_PROFILES_FILE: "/fastdds/fastdds_whitelist.xml"
+    volumes:
+      - ${HOME}/.ros/fastdds_whitelist.xml:/fastdds/fastdds_whitelist.xml:ro

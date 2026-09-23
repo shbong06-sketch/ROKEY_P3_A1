@@ -177,7 +177,12 @@ def test_slot_configuration_contains_exactly_six_supported_slots(node_factory):
 
 
 def test_slot_assessment_uses_yaml_class_outcomes(node_factory):
-    """NORMAL, DEFECT, and UNKNOWN are derived from configured outcomes."""
+    """Slot states follow the configured class outcomes.
+
+    노랑은 2026-09-23 결정으로 갈색과 같이 DEFECT 다. UNKNOWN 은 이제
+    클래스 매핑이 아니라 슬롯당 검출이 1개가 아닐 때만 나오고, 그쪽은
+    누락 슬롯·중복 슬롯 테스트가 덮는다.
+    """
     node, _ = node_factory()
     detections = make_detections(
         (
@@ -194,7 +199,9 @@ def test_slot_assessment_uses_yaml_class_outcomes(node_factory):
 
     assert assessment.slot_states['SLOT_01'] == 'NORMAL'
     assert assessment.slot_states['SLOT_02'] == 'DEFECT'
-    assert assessment.slot_states['SLOT_03'] == 'UNKNOWN'
+    assert assessment.slot_states['SLOT_03'] == 'DEFECT'
+    assert assessment.slot_states['SLOT_04'] == 'NORMAL'
+    assert assessment.unknown_slots == ()
     assert assessment.assigned[1].slot_id == 'SLOT_02'
 
 

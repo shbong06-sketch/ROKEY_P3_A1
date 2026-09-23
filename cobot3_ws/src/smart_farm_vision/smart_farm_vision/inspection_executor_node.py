@@ -44,9 +44,12 @@ DEFAULT_SLOT_ROIS = {
     'SLOT_05': (0.3333333333, 0.5, 0.3333333333, 0.5),
     'SLOT_06': (0.6666666666, 0.5, 0.3333333334, 0.5),
 }
+# 2026-09-23 팀 결정: 노랑도 갈색과 같이 솎아낸다.
+# handoff README 2절은 보류(HOLD, CULL 아님)로 두었으나 계약에 HOLD
+# 필드가 없어 DEFECT 로 합쳤다. config/object_detection.yaml 과 같은 값.
 DEFAULT_CLASS_OUTCOMES = {
     'lettuce_dark_green': 'NORMAL',
-    'lettuce_yellow': 'UNKNOWN',
+    'lettuce_yellow': 'DEFECT',
     'lettuce_brown': 'DEFECT',
 }
 VALID_OUTCOMES = frozenset({'NORMAL', 'DEFECT', 'UNKNOWN'})
