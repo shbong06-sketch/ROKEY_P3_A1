@@ -66,11 +66,11 @@ def complete_pick_harvest(machine: CycleStateMachine) -> None:
 def complete_navigation(machine: CycleStateMachine) -> None:
     command = machine.create_command()
     assert command.operation == "NAVIGATION"
-    assert command.destination == "INSPECTION_DOCK"
+    assert command.destination == "FEEDER_DOCK"
 
     result = success_result(
         command,
-        reached_station="INSPECTION_DOCK",
+        reached_station="FEEDER_DOCK",
     )
 
     outcome = machine.handle_result(result)

@@ -41,6 +41,10 @@ ARM_PATH = f"{RIG_PATH}/m0609_with_fork"
 ARM_BASE_PATH = f"{ARM_PATH}/base_link"
 LIFT_JOINT_PATH = f"{RIG_PATH}/lift_v3_physics/lift_prismatic_joint"
 LIFT_JOINT_NAME = "lift_prismatic_joint"
+TURNTABLE_PATH = "/World/SmartFarm/Placed/Conveyor/TurnTable"
+TURNTABLE_SURFACE_PATH = (
+    f"{TURNTABLE_PATH}/Geometry/SM_ConveyorBelt_A08_Roller35_01"
+)
 
 RACK_FRONT_X = -1.205
 BASE_BELOW_SHELF = 0.213
@@ -158,7 +162,7 @@ app = SimulationApp(
 
 import omni.usd  # noqa: E402
 import rclpy  # noqa: E402
-from pxr import UsdPhysics  # noqa: E402
+from pxr import Usd, UsdGeom, UsdPhysics  # noqa: E402
 from std_msgs.msg import String  # noqa: E402
 from isaacsim.core.api import World  # noqa: E402
 from isaacsim.core.prims import (  # noqa: E402
@@ -187,6 +191,7 @@ from robot_motion import (  # noqa: E402
     RobotMotion,
     Task,
     brake_wheels,
+    brake_wheels_at_current_position,
     release_wheels,
     tine_tip_position,
 )
@@ -400,6 +405,46 @@ def require_prims(stage, paths):
         )
 
 
+def turntable_place_pose(stage):
+    """TurnTable 표면 중심과 TurnTable 방향을 world pose로 반환합니다."""
+    surface_prim = stage.GetPrimAtPath(TURNTABLE_SURFACE_PATH)
+    bbox_cache = UsdGeom.BBoxCache(
+        Usd.TimeCode.Default(),
+        [UsdGeom.Tokens.default_],
+        useExtentsHint=True,
+    )
+    surface_range = bbox_cache.ComputeWorldBound(
+        surface_prim
+    ).ComputeAlignedRange()
+    if surface_range.IsEmpty():
+        raise RuntimeError(
+            f"TurnTable 표면 bound를 계산하지 못했습니다: "
+            f"{TURNTABLE_SURFACE_PATH}"
+        )
+
+    minimum = surface_range.GetMin()
+    maximum = surface_range.GetMax()
+    position = (
+        float((minimum[0] + maximum[0]) * 0.5),
+        float((minimum[1] + maximum[1]) * 0.5),
+        float(maximum[2]),
+    )
+
+    turntable_prim = stage.GetPrimAtPath(TURNTABLE_PATH)
+    transform = UsdGeom.Xformable(
+        turntable_prim
+    ).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+    rotation = transform.ExtractRotationQuat()
+    imaginary = rotation.GetImaginary()
+    quaternion = (
+        float(rotation.GetReal()),
+        float(imaginary[0]),
+        float(imaginary[1]),
+        float(imaginary[2]),
+    )
+    return position, quaternion
+
+
 def create_simulation_runtime(scene_path):
     stage = open_scene(scene_path)
     print("[시작] USD Scene 로딩이 완료되었습니다.", flush=True)
@@ -415,6 +460,8 @@ def create_simulation_runtime(scene_path):
             ARM_BASE_PATH,
             EE_PATH,
             LIFT_JOINT_PATH,
+            TURNTABLE_PATH,
+            TURNTABLE_SURFACE_PATH,
             *pallet_paths,
         ),
     )
@@ -535,6 +582,38 @@ def start_operation(command, runtime, transfer_operation, node):
         )
         return
 
+    if command.operation == "PLACE_INSPECT":
+        if (
+            command.recipe_id not in ("", "PLACE_AT_INSPECTION")
+            or command.pallet_id != "PALLET_001"
+            or command.source != "CARRY"
+            or command.destination != "INSPECT_STATION"
+        ):
+            node.fail(
+                reason="INVALID_COMMAND",
+                phase="COMMAND_DISPATCH",
+                reset_required=False,
+            )
+            return
+
+        brake_wheels_at_current_position(
+            runtime.stage,
+            RIG_PATH,
+            runtime.robot,
+        )
+        runtime.wheels_released = False
+        runtime.lift.hold()
+        position, quaternion = turntable_place_pose(runtime.stage)
+        runtime.motion.start_place_at_pose(position, quaternion)
+        node.set_phase(
+            "PLACE_INSPECT/ARM_PLACE",
+            detail=(
+                f"target={TURNTABLE_SURFACE_PATH}, "
+                f"position={[round(value, 4) for value in position]}"
+            ),
+        )
+        return
+
     if command.operation != "PICK_HARVEST":
         node.fail(
             reason="INVALID_COMMAND",
@@ -601,6 +680,21 @@ def update_operation(node, runtime, transfer_operation):
     command = node.active_command
     if command is None:
         raise RuntimeError("active command is missing")
+
+    if command.operation == "PLACE_INSPECT":
+        runtime.lift.hold()
+        runtime.motion.update(PHYSICS_DT)
+        node.set_phase(
+            "PLACE_INSPECT/ARM_PLACE",
+            detail=runtime.motion.current_stage,
+        )
+        if runtime.motion.is_running:
+            return
+        if not runtime.motion.is_done or runtime.motion.is_carrying:
+            raise RuntimeError("TurnTable Place 검증이 완료되지 않았습니다.")
+
+        node.succeed(phase="RESULT")
+        return
 
     if command.operation == "PICK_HARVEST":
         if runtime.harvest_phase == "PICK":
@@ -725,7 +819,7 @@ def run():
     print("[시작] ROS 2 노드를 초기화합니다.", flush=True)
     rclpy.init()
     node = SimTaskNode(
-        supported_operations={"TRANSFER", "PICK_HARVEST"},
+        supported_operations={"TRANSFER", "PICK_HARVEST", "PLACE_INSPECT"},
     )
     demo_publisher = (
         node.create_publisher(String, "/sim_task/command", 10)
@@ -819,7 +913,7 @@ def run():
                 needs_initialization = False
                 ready_detail = (
                     f"{args.scene.stem} scene ready; "
-                    "TRANSFER/PICK_HARVEST physical profiles loaded"
+                    "TRANSFER/PICK_HARVEST/PLACE_INSPECT physical profiles loaded"
                 )
                 node.mark_ready(ready_detail)
                 print(f"[READY] {ready_detail}", flush=True)

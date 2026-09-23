@@ -92,7 +92,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 state=CycleState.NAVIGATION,
                 executor=ExecutorName.NAVIGATION,
                 operation="NAVIGATION",
-                destination="INSPECTION_DOCK",
+                destination="FEEDER_DOCK",
                 timeout_sec=120.0,
             ),
             StepDefinition(

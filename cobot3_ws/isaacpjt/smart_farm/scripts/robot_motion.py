@@ -232,6 +232,25 @@ def brake_wheels(stage, rig_path):
     print(f"[브레이크] 카터 바퀴 {len(WHEEL_JOINT_NAMES)}개 고정")
 
 
+def brake_wheels_at_current_position(stage, rig_path, robot):
+    """주행 후 현재 휠 각도를 목표로 잡아 작업 중 차체를 고정합니다."""
+    positions = robot.get_joint_positions()
+    for name in WHEEL_JOINT_NAMES:
+        index = robot.get_dof_index(name)
+        if index < 0:
+            raise RuntimeError(f"휠 관절을 찾지 못했습니다: {name}")
+
+        drive = UsdPhysics.DriveAPI.Get(
+            stage.GetPrimAtPath(f"{rig_path}/{name}"), "angular"
+        )
+        drive.GetTargetPositionAttr().Set(
+            float(np.rad2deg(positions[index]))
+        )
+        drive.GetTargetVelocityAttr().Set(0.0)
+        drive.GetStiffnessAttr().Set(WHEEL_BRAKE_STIFFNESS)
+    print(f"[브레이크] 현재 휠 각도에서 {len(WHEEL_JOINT_NAMES)}개 고정")
+
+
 def release_wheels(stage, rig_path):
     """주행 제어기가 바퀴 속도를 구동할 수 있도록 주차 브레이크를 풉니다."""
     for name in WHEEL_JOINT_NAMES:
@@ -425,6 +444,20 @@ def _transform_stage_points(origin, quaternion, stages):
     ]
 
 
+def _quaternion_multiply(left, right):
+    """wxyz quaternion 두 개를 합성합니다."""
+    left = np.asarray(left, dtype=float)
+    right = np.asarray(right, dtype=float)
+    left_w, right_w = left[0], right[0]
+    left_xyz, right_xyz = left[1:], right[1:]
+    return np.concatenate((
+        [left_w * right_w - np.dot(left_xyz, right_xyz)],
+        left_w * right_xyz
+        + right_w * left_xyz
+        + np.cross(left_xyz, right_xyz),
+    ))
+
+
 def pick_stage_points(pallet_position, pallet_quaternion):
     """집을 당시 팔레트 pose를 기준으로 Pick 단계 좌표를 만듭니다."""
     return _transform_stage_points(pallet_position, pallet_quaternion, PICK_STAGES)
@@ -467,7 +500,8 @@ def split_segments(points, start_point=None):
 
 
 def solve_plan(solver, segments, lower_deg, upper_deg, start_joints_deg,
-               first_move_limit_deg=FIRST_MOVE_LIMIT_DEG):
+               first_move_limit_deg=FIRST_MOVE_LIMIT_DEG,
+               target_orientation=FORK_QUAT):
     """
     각 목표 좌표를 IK로 풀어 관절값 표를 만듭니다.
 
@@ -475,14 +509,14 @@ def solve_plan(solver, segments, lower_deg, upper_deg, start_joints_deg,
     팔이 갑자기 다른 자세로 뒤집히지 않게 합니다.
     첫 작업은 HOME, 후속 작업은 현재 관절 자세를 기준으로 계산·검사합니다.
     """
-    want_rotation = quat_to_rot_matrix(FORK_QUAT)
+    want_rotation = quat_to_rot_matrix(target_orientation)
     warm = np.deg2rad(start_joints_deg)
     plan = []
 
     for index, segment in enumerate(segments):
         name, target = segment.name, segment.target
         joints, solved = solver.compute_inverse_kinematics(
-            EE_FRAME, target, FORK_QUAT, warm
+            EE_FRAME, target, target_orientation, warm
         )
         if not solved:
             raise RuntimeError(
@@ -751,7 +785,8 @@ def build_sequence(solver, robot, indices, lower_deg, upper_deg, points,
                    start_joints_deg, pallet_tracker=None, start_point=None,
                    home_joints=None, first_move_limit_deg=FIRST_MOVE_LIMIT_DEG,
                    done_message="[DONE] 동작을 확인했습니다.",
-                   start_wait_seconds=START_WAIT_SECONDS):
+                   start_wait_seconds=START_WAIT_SECONDS,
+                   target_orientation=FORK_QUAT):
     """주어진 Pick 또는 Place 좌표를 기존 IK와 JointSequence로 만듭니다."""
     segments = split_segments(points, start_point=start_point)
     plan = solve_plan(
@@ -761,6 +796,7 @@ def build_sequence(solver, robot, indices, lower_deg, upper_deg, points,
         upper_deg,
         start_joints_deg,
         first_move_limit_deg=first_move_limit_deg,
+        target_orientation=target_orientation,
     )
     if home_joints is not None:
         plan = [Step(STAGE_HOME, STAGE_HOME, None, home_joints, True)] + plan
@@ -935,6 +971,60 @@ class RobotMotion:
             first_move_limit_deg=IK_JUMP_LIMIT_DEG,
             done_message="[DONE] 놓기·안착·포크 인출까지 확인했습니다.",
             start_wait_seconds=0.0,
+        )
+        self._reset_start_state()
+
+    def start_place_at_pose(
+        self,
+        destination_position,
+        destination_quaternion,
+    ):
+        """이동 후 CARRYING 팔레트를 지정한 world pose에 놓습니다."""
+        self._require_initialized()
+        self._require_idle()
+        if not self._is_carrying:
+            raise RuntimeError(
+                "Place는 Pick이 끝난 CARRYING 상태에서만 시작할 수 있습니다."
+            )
+
+        self._set_solver_base_pose()
+        destination_position = np.asarray(destination_position, dtype=float)
+        destination_quaternion = np.asarray(
+            destination_quaternion,
+            dtype=float,
+        )
+        if destination_position.shape != (3,):
+            raise ValueError("destination_position은 xyz 3개 값이어야 합니다.")
+        if destination_quaternion.shape != (4,):
+            raise ValueError("destination_quaternion은 wxyz 4개 값이어야 합니다.")
+
+        points = _transform_stage_points(
+            destination_position,
+            destination_quaternion,
+            PLACE_STAGES,
+        )
+        target_orientation = _quaternion_multiply(
+            destination_quaternion,
+            FORK_QUAT,
+        )
+        start_deg = read_joints_deg(self._robot, self._indices)
+        current_position, _ = self._robot.end_effector.get_world_pose()
+        self._sequence = build_sequence(
+            self._solver,
+            self._robot,
+            self._indices,
+            self._lower_deg,
+            self._upper_deg,
+            points,
+            start_deg,
+            pallet_tracker=self._pallet_tracker,
+            start_point=current_position,
+            first_move_limit_deg=IK_JUMP_LIMIT_DEG,
+            done_message=(
+                "[DONE] 지정 pose에 놓기·안착·포크 인출까지 확인했습니다."
+            ),
+            start_wait_seconds=0.0,
+            target_orientation=target_orientation,
         )
         self._reset_start_state()
 
