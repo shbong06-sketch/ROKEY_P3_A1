@@ -24,8 +24,8 @@ SCRIPTS_DIR = PROJECT_DIR / "scripts"
 DEFAULT_SCENE_PATH = (
     PROJECT_DIR
     / "scenes"
-    / "Collected_smartfarm_v011"
-    / "Collected_smartfarm_v011.usd"
+    / "Collected_smartfarm_v013"
+    / "Collected_smartfarm_v013.usd"
 )
 
 PHYSICS_DT = 1.0 / 60.0
