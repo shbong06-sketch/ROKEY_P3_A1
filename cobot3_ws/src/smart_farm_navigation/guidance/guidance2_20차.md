@@ -26,6 +26,7 @@
 
 | 증상 | 원인 | 이번 조치 |
 |---|---|---|
+| `stdbuf: failed to run command 'isaac_python'` | `isaac_python` 은 셸 별칭이다. 2절 블록대로 `/home/rokey/isaacsim/python.sh` 를 쓴다 |
 | Place 지시 직후 Isaac 종료 | Place 직전 도킹 위치를 기록하는 코드가 그 파일에 없는 함수(`robot_motion.prim_world_pose`)와 import 하지 않은 `numpy` 를 불렀다. 예외가 팀 앱의 최상위까지 올라가 `app.close()` 로 이어졌다 | 표준 API(`robot.get_world_pose()`)와 표준 연산으로 바꿨다. 같은 유형이 더 없는지 바뀐 파일 전체를 정적 검사로 확인했다 |
 | 오류 내용이 로그에 없음 | `tee` 로 넘길 때 Python 출력이 블록 단위로 모였다가 나가므로, 갑자기 죽으면 마지막 묶음이 통째로 사라진다 | Isaac 실행 앞에 `PYTHONUNBUFFERED=1` 과 `stdbuf -oL -eL` 를 붙여 한 줄씩 바로 기록되게 했다 |
 | 팔 베이스 대기가 181초까지 늘어남 | 팔레트 이송 제어기가 쓰는 정지 감시기를 main loop 에서 또 갱신해 시간이 두 배로 흘렀다 | Place 검사용 감시기를 따로 두어 서로 간섭하지 않게 했다 |
@@ -60,12 +61,14 @@ ros2 interface show smart_farm_interfaces/msg/TaskCommand
 ```bash
 export ROS_DOMAIN_ID=101
 export PYTHONUNBUFFERED=1
-stdbuf -oL -eL isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/isaac_$(date +%Y%m%d_%H%M).txt
+stdbuf -oL -eL /home/rokey/isaacsim/python.sh /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/isaac_$(date +%Y%m%d_%H%M).txt
 ```
 
 기대: `[라이다] 3D 라이다 fullScan=True (1개 helper)` → `[READY] Collected_smartfarm_v011 scene ready; TRANSFER/PICK_HARVEST/PLACE_INSPECT physical profiles loaded` → `[대기] /sim_task/command의 String/JSON 명령을 기다립니다`.
 
+- `isaac_python` 대신 실제 경로 `/home/rokey/isaacsim/python.sh` 를 쓴다. `isaac_python` 은 셸 별칭이라 `stdbuf` 같은 외부 명령이 실행할 수 없다.
 - `PYTHONUNBUFFERED=1` 과 `stdbuf` 는 출력을 한 줄씩 바로 기록하기 위한 것이다. 이것이 없으면 갑자기 종료됐을 때 마지막 출력이 사라져 원인을 볼 수 없다.
+- `stdbuf` 에서 문제가 생기면 그 부분만 빼고 `PYTHONUNBUFFERED=1` 만으로 실행해도 된다. 파이썬 출력은 그것만으로도 바로 기록된다.
 - Isaac 의 Stop 버튼은 누르지 않는다(팀 앱이 종료 처리에서 죽는다). 끝낼 때는 Ctrl+C 를 쓴다.
 - Isaac 을 다시 실행하면 5·6 절의 내피 터미널도 모두 다시 실행한다. 시뮬레이션 시각이 0 으로 돌아가기 때문이다.
 
@@ -207,6 +210,7 @@ ros2 topic echo /sim_task/result std_msgs/msg/String --once 2>&1 | tee -a /home/
 | `install/setup.bash: No such file or directory` (고피) | 1절 빌드를 하지 않았다. 1절을 먼저 실행한다 |
 | `Unknown package 'smart_farm_interfaces'` 또는 `The passed message type is invalid` | 그 터미널에서 `source .../install/setup.bash` 를 하지 않았다. 7절 블록을 줄 일부만 붙이지 말고 통째로 붙인다. 그래도 안 되면 1절 빌드부터 다시 한다 |
 | 발행 명령이 15 초 뒤 오류로 끝남 | 구독자를 못 찾았다. `/navigation/command` 면 6절 터미널이 떠 있는지, `/sim_task/command` 면 2절 Isaac 이 `[대기]` 상태인지 확인한다. 두 PC 의 도메인이 같은지도 본다 |
+| `stdbuf: failed to run command 'isaac_python'` | `isaac_python` 은 셸 별칭이다. 2절 블록대로 `/home/rokey/isaacsim/python.sh` 를 쓴다 |
 | Place 지시 직후 Isaac 종료 | 19차와 같은 증상이면 2절 로그 끝에 traceback 이 남는다(이번 판부터 유실되지 않는다). 그 몇 줄과 `gpu_*.csv` 를 함께 보고한다 |
 | Isaac 터미널에서 rclpy 오류로 죽음 | 그 터미널에서 워크스페이스를 `source` 했을 가능성이 크다. 새 터미널에서 워크스페이스 없이 2절만 실행한다 |
 | `navigate_to_pose 액션 서버가 없습니다` | 5절 Nav2 가 아직 안 떴다. `Managed nodes are active` 를 본 뒤 명령을 보낸다 |
