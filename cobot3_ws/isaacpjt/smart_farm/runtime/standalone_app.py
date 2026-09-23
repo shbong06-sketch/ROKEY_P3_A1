@@ -30,6 +30,7 @@ DEFAULT_SCENE_PATH = (
 
 PHYSICS_DT = 1.0 / 60.0
 BASE_SETTLE_SECONDS = 0.5           # [navigation 2026-09-23] Place 전 차체가 멈춰 있어야 하는 시간
+BASE_SETTLE_TIMEOUT = 15.0          # [navigation 2026-09-23] 이 시간까지 안 멈추면 실패로 본다
 RENDER_EVERY = 3
 SETTLE_STEPS = 120
 CARRY_ROTATE_DEG = 90.0
@@ -271,6 +272,8 @@ class SimulationRuntime:
     wheels_released: bool = False
     base_watcher: object = None
     arm_base: object = None
+    place_phase: str = "IDLE"
+    place_wait_seconds: float = 0.0
 
 
 class TransferOperation:
@@ -604,6 +607,8 @@ def initialize_scene(runtime, transfer_operation, step_world):
 
     transfer_operation.reset()
     runtime.harvest_phase = "IDLE"
+    runtime.place_phase = "IDLE"
+    runtime.place_wait_seconds = 0.0
     runtime.wheels_released = False
     runtime.world.reset()
     brake_wheels(runtime.stage, RIG_PATH)
@@ -633,6 +638,28 @@ def report_dock_pose(runtime):
         f"place 대상까지 x {offset_x:+.3f} m, y {offset_y:+.3f} m, "
         f"직선 {distance:.3f} m",
         flush=True,
+    )
+
+
+def start_place_motion(runtime, node):
+    """[navigation 2026-09-23] 차체가 멈춘 것을 확인한 뒤 브레이크를 걸고 팔 동작을 시작한다."""
+    brake_wheels_at_current_position(
+        runtime.stage,
+        RIG_PATH,
+        runtime.robot,
+    )
+    runtime.wheels_released = False
+    runtime.lift.hold()
+    report_dock_pose(runtime)
+    position, quaternion = turntable_place_pose(runtime.stage)
+    runtime.motion.start_place_at_pose(position, quaternion)
+    runtime.place_phase = "ARM_PLACE"
+    node.set_phase(
+        "PLACE_INSPECT/ARM_PLACE",
+        detail=(
+            f"target={TURNTABLE_SURFACE_PATH}, "
+            f"position={[round(value, 4) for value in position]}"
+        ),
     )
 
 
@@ -668,30 +695,17 @@ def start_operation(command, runtime, transfer_operation, node):
             return
 
         # [navigation 2026-09-23] 인터페이스 설계 검증 항목 7: 베이스 정지를 확인한 뒤 Place 를 시작한다.
-        if runtime.base_watcher.still_seconds < BASE_SETTLE_SECONDS:
-            node.fail(
-                reason="BASE_NOT_SETTLED",
-                phase="CHECK_BASE_STOPPED",
-                reset_required=False,
-            )
-            return
-
-        brake_wheels_at_current_position(
-            runtime.stage,
-            RIG_PATH,
-            runtime.robot,
+        # 즉시 실패시키지 않고 BASE_SETTLE_TIMEOUT 까지 기다린다. 대기 중에도 진행 상황을 남긴다.
+        runtime.place_phase = "WAIT_BASE_SETTLED"
+        runtime.place_wait_seconds = 0.0
+        print(
+            f"[Place] 차체 정지를 확인합니다 "
+            f"(현재 {runtime.base_watcher.still_seconds:.2f}초 / 필요 {BASE_SETTLE_SECONDS:.2f}초)",
+            flush=True,
         )
-        runtime.wheels_released = False
-        runtime.lift.hold()
-        report_dock_pose(runtime)
-        position, quaternion = turntable_place_pose(runtime.stage)
-        runtime.motion.start_place_at_pose(position, quaternion)
         node.set_phase(
-            "PLACE_INSPECT/ARM_PLACE",
-            detail=(
-                f"target={TURNTABLE_SURFACE_PATH}, "
-                f"position={[round(value, 4) for value in position]}"
-            ),
+            "PLACE_INSPECT/WAIT_BASE_SETTLED",
+            detail=f"still={runtime.base_watcher.still_seconds:.2f}s",
         )
         return
 
@@ -763,6 +777,32 @@ def update_operation(node, runtime, transfer_operation):
         raise RuntimeError("active command is missing")
 
     if command.operation == "PLACE_INSPECT":
+        # [navigation 2026-09-23] 차체가 멈출 때까지 기다린 뒤 팔을 움직인다.
+        if runtime.place_phase == "WAIT_BASE_SETTLED":
+            runtime.lift.hold()
+            runtime.place_wait_seconds += PHYSICS_DT
+
+            if runtime.base_watcher.still_seconds >= BASE_SETTLE_SECONDS:
+                print(
+                    f"[Place] 차체 정지 확인 ({runtime.place_wait_seconds:.1f}초 대기)",
+                    flush=True,
+                )
+                start_place_motion(runtime, node)
+                return
+
+            if runtime.place_wait_seconds > BASE_SETTLE_TIMEOUT:
+                raise RuntimeError(
+                    f"차체가 {BASE_SETTLE_TIMEOUT:.0f}초 안에 멈추지 않았습니다 "
+                    f"(정지 누적 {runtime.base_watcher.still_seconds:.2f}초). "
+                    "주행이 완전히 끝난 뒤 다시 지시하십시오."
+                )
+
+            node.set_phase(
+                "PLACE_INSPECT/WAIT_BASE_SETTLED",
+                detail=f"still={runtime.base_watcher.still_seconds:.2f}s",
+            )
+            return
+
         runtime.lift.hold()
         runtime.motion.update(PHYSICS_DT)
         node.set_phase(

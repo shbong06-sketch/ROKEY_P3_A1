@@ -142,7 +142,7 @@ stateDiagram-v2
 ### 6-1. `feeder_dock` (정밀 도킹) — `ros2 run … feeder_dock --ros-args -p <이름>:=<값>` 또는 launch 인자
 | 변수 | 기본값 | 뜻 · 바꾸면 |
 |---|---|---|
-| `standoff_m` | 0.75 | 도킹 완료 시 base_link ↔ TurnTable 앞면 거리. 팔 밑동은 여기서 0.20 m 뒤이고, 그 지점에서 place 대상까지 직선 0.90 m 로 M0609 도달 한계와 같다. 역기구학이 실패하면 0.70 으로 내리고 `self_box_x[0]` 도 −0.55 로 함께 옮긴다 |
+| `standoff_m` | 0.85 | 도킹 완료 시 base_link ↔ TurnTable 앞면 거리. 팔 밑동은 여기서 0.20 m 뒤이고 대상까지 거리는 `0.11 + standoff`. 팀 `robot_motion.BASE_TO_PALLET_X` 가 0.89~1.05 m 를 요구하므로 `standoff_m` 은 0.78~0.94 사이여야 한다. 0.85 는 그 한가운데(0.96 m) |
 | `arm_x`, `arm_y`, `arm_radius_m` | −2.19, −1.55, 0.6 | 자동 시작 조건: AMCL 위치가 이 점(=FEEDER_APPROACH) 반경 안. `stations.yaml` 을 바꾸면 같이 바꿔야 함 |
 | `auto_start` | **false** | 통합은 `navigation_node` 가 `/feeder_dock/start`(String, 실행 식별자) 로 시작. RViz2 수동 절차는 `dock_auto:=true` |
 | `search_x`, `search_y` | [−3.4, −0.5], [−1.3, 1.3] | base_link 기준 면을 찾는 창(뒤쪽). 접근 지점이 면에서 3 m 넘게 멀어지면 `search_x[0]` 을 늘림 |
@@ -157,7 +157,7 @@ stateDiagram-v2
 ### 6-2. `cloud_self_filter` (라이다 자기 반사·합침)
 | 변수 | 기본값 | 뜻 · 바꾸면 |
 |---|---|---|
-| `self_box_x`, `self_box_y`, `self_box_z` | [−0.60, 0.60], [−0.60, 0.60], [−0.20, 2.60] | base_link 기준 결합카터 부피. **`self_box_x[0]` 을 `standoff_m` 보다 뒤에 두면 도킹 면이 지워짐.** 실측 자기 반사는 x −0.6~−0.2, z ≤ 0.53 에 분포 |
+| `self_box_x`, `self_box_y`, `self_box_z` | [−0.65, 0.60], [−0.60, 0.60], [−0.20, 2.60] | base_link 기준 결합카터 부피. **`self_box_x[0]` 을 `standoff_m` 보다 뒤에 두면 도킹 면이 지워짐.** 실측 자기 반사는 x −0.6~−0.2, z ≤ 0.53 에 분포 |
 | `accumulate_s` | 0.5 (시뮬 초) | 합치는 시간창. 늘리면 섹터 누락에 강하지만 이동 중 점이 번짐(0.6 m/s 에서 0.25 s = 15 cm) |
 | `partial_max_points` | 20000 | 이보다 적으면 "조각 발행" 경고만 냄 |
 
@@ -190,7 +190,7 @@ stateDiagram-v2
 |---|---|---|
 | `initial_pose` | (−0.421, 1.006, 90°) | AMCL 초기 위치 = 장면의 카터 배치. 장면이 바뀌면 `launch_scene.py` 출력값으로 갱신 |
 | `FEEDER_APPROACH` | (−2.19, −1.55, 90°) | Nav2 Goal 클릭 지점, `feeder_dock` 자동 시작 기준점 |
-| `FEEDER_DOCK` | (−2.19, −2.85, 90°) | 참고값(마커 표시). 실제 정지 위치는 `feeder_dock` 의 `standoff_m` 가 정함 |
+| `FEEDER_DOCK` | (−2.19, −2.75, 90°) | 참고값(마커 표시). 실제 정지 위치는 `feeder_dock` 의 `standoff_m` 가 정함 |
 | `reverse_out_zones` | 통로 구역, 출구 방향 −90°, 2.2 m | `go_to_station -p pure_nav2:=false` 때만 사용 |
 
 ### 6-6. `launch_scene.py` (단위 시험용 Isaac 실행)
