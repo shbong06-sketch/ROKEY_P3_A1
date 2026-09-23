@@ -284,7 +284,7 @@ class NavigationNode(Node):
         self.started_at = time.monotonic()
 
         self._status(
-            state="EXECUTING",
+            state="BUSY",
             task_id=command.task_id,
             command_id=command.command_id,
             phase="DRIVING",
