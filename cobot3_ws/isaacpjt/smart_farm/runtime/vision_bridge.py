@@ -160,7 +160,10 @@ def parse_detections(payload):
     return {
         "task_id": data.get("task_id"),
         "command_id": data.get("command_id"),
-        "stamp": data.get("stamp") or data.get("timestamp"),
+        "stamp": ((data.get("header") or {}).get("stamp")
+                  or data.get("stamp") or data.get("timestamp")),
+        "frame_id": (data.get("header") or {}).get("frame_id"),
+        "pallet_id": data.get("pallet_id"),
         "image_width": data.get("image_width"),
         "image_height": data.get("image_height"),
         "slots": by_slot,
@@ -171,7 +174,8 @@ def parse_detections(payload):
 def extract_center(item):
     """검출 항목에서 픽셀 중심 (u, v) 를 꺼낸다. 못 찾으면 None.
 
-    필드 이름이 확정되지 않아 흔한 형태를 모두 받는다.
+    Inspection Node 계약(docs/02-interfaces.md): center_u, center_v 와
+    bbox_x_min ~ bbox_y_max. 다른 형태도 받는다.
       center / center_px / pixel : [u, v] 또는 {"u","v"} / {"x","y"}
       u, v / cx, cy / center_x, center_y
       bbox / xyxy : [x1, y1, x2, y2] (중심 계산)
@@ -184,9 +188,14 @@ def extract_center(item):
             for a, b in (("u", "v"), ("x", "y")):
                 if a in value and b in value:
                     return float(value[a]), float(value[b])
-    for a, b in (("u", "v"), ("cx", "cy"), ("center_x", "center_y")):
+    for a, b in (("center_u", "center_v"), ("u", "v"), ("cx", "cy"),
+                 ("center_x", "center_y")):
         if a in item and b in item:
             return float(item[a]), float(item[b])
+    keys = ("bbox_x_min", "bbox_y_min", "bbox_x_max", "bbox_y_max")
+    if all(k in item for k in keys):
+        x1, y1, x2, y2 = (float(item[k]) for k in keys)
+        return (x1 + x2) / 2.0, (y1 + y2) / 2.0
     for key in ("bbox", "xyxy", "box"):
         value = item.get(key)
         if isinstance(value, (list, tuple)) and len(value) >= 4:

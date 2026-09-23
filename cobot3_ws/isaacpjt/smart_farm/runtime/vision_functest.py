@@ -161,6 +161,13 @@ def parse_args():
 # ── SimulationApp 부트스트랩 ──────────────────────────
 # pxr·omni·isaacsim 을 쓰는 어떤 import 보다 먼저 SimulationApp 을 만들어야
 # 한다. 그래서 이 구간만 모듈 최상위에 있다.
+def bundled_ros_dir():
+    """Isaac 번들 ROS 2 Jazzy 폴더 (exts/isaacsim.ros2.bridge/jazzy)."""
+    root = Path(os.environ.get("ISAAC_PATH") or os.path.abspath(os.path.join(
+        os.path.dirname(os.path.abspath(sys.executable)), "..", "..", "..")))
+    return root / "exts" / "isaacsim.ros2.bridge" / "jazzy"
+
+
 def configure_ros_environment(marker="FUNCTEST_REEXEC"):
     """Isaac 번들 ROS 2 를 브리지가 찾게 한다.
 
@@ -170,9 +177,7 @@ def configure_ros_environment(marker="FUNCTEST_REEXEC"):
     """
     if os.environ.pop(marker, None) == "1":
         return
-    root = Path(os.environ.get("ISAAC_PATH") or os.path.abspath(os.path.join(
-        os.path.dirname(os.path.abspath(sys.executable)), "..", "..", "..")))
-    lib = str(root / "exts" / "isaacsim.ros2.bridge" / "jazzy" / "lib")
+    lib = str(bundled_ros_dir() / "lib")
     if not Path(lib).is_dir():
         raise RuntimeError(f"ROS 2 번들을 찾지 못했습니다: {lib}")
     old = os.environ.get("LD_LIBRARY_PATH", "")
@@ -711,6 +716,11 @@ class DetectionBridge:
 
     def __init__(self, stage, cam_matrix):
         sys.path.insert(0, str(RUNTIME_DIR))
+        # Isaac 내장 Python(3.11)은 번들 rclpy 를 sys.path 앞에 둬야 한다
+        # (standalone_app.py 의 configure_ros_environment 와 같은 처리).
+        ros_python = bundled_ros_dir() / "rclpy"
+        if ros_python.is_dir() and str(ros_python) not in sys.path:
+            sys.path.insert(0, str(ros_python))
         import vision_bridge as vb
         import rclpy
         from sensor_msgs.msg import Image
@@ -780,6 +790,7 @@ class DetectionBridge:
                   flush=True)
         out = {"task_id": parsed["task_id"],
                "command_id": parsed["command_id"],
+               "pallet_id": parsed["pallet_id"],
                "stamp": parsed["stamp"],
                "frame": ARM_ROOT, "targets": targets}
         self.pub.publish(self.String(data=json.dumps(out,

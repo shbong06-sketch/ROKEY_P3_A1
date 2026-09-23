@@ -94,7 +94,8 @@ check() {
       || { echo '[docker][오류] 컨테이너에서 GPU 가 안 보입니다 (NVIDIA Container Toolkit 확인)'; exit 1; }
     test -x $ISAAC_ROOT/python.sh || { echo '[docker][오류] $ISAAC_ROOT/python.sh 없음'; exit 1; }
     test -d $ISAAC_ROOT/exts/isaacsim.ros2.bridge/jazzy/lib \
-      && echo '[docker] 번들 ROS 2 (jazzy) 확인' \
+      && test -d $ISAAC_ROOT/exts/isaacsim.ros2.bridge/jazzy/rclpy \
+      && echo '[docker] 번들 ROS 2 (jazzy lib + rclpy) 확인' \
       || { echo '[docker][오류] 번들 ROS 경로가 다릅니다:'; ls -d $ISAAC_ROOT/exts/*ros2* || true; exit 1; }
     test -r $FUNCTEST && echo '[docker] 마운트 확인: $FUNCTEST' \
       || { echo '[docker][오류] 컨테이너에서 스크립트를 못 읽습니다 (권한/마운트)'; exit 1; }
