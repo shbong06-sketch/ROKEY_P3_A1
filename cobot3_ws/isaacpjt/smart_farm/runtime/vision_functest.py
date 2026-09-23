@@ -13,7 +13,12 @@ best.pt 학습 조건을 재현해 `/rgb` 를 내보낸다. 조건 출처는
     --bridge       /inspection/detections_2d 를 받아 불량(DEFECT) 슬롯만
                    base 좌표로 바꿔 /inspection/targets_3d 로 낸다
                    (같은 폴더 vision_bridge.py + object_detection.yaml 필요)
-    --strict       자세가 학습 분포를 벗어나면 중단
+    --strict       자세가 학습 분포를 벗어나거나 대체 자세로 넘어가면 중단
+    --azim-ref     IK 방위각 기준: arm(트레이->로봇, 기본) / scene(씬 카메라 시선)
+
+로봇을 옮겨도 멈추지 않게: 재생 직후 베이스 실제 위치를 재서 씬과 다르면 그
+값을 쓰고, IK 해를 적용해 보고 충돌·범위 밖이면 다음 해로, 해가 없으면 씬에
+저장된 자세로 대체한다 (모두 [검증] WARN 으로 기록, --strict 면 중단).
 
 네이티브:
     ~/isaacsim/python.sh runtime/vision_functest.py --headless --keep-pose
@@ -94,6 +99,9 @@ DATASET_RANGE = {"dist": (0.50, 0.72), "elev": (50.0, 88.0),
                  "roll": (-10.0, 10.0)}
 FK_USD_TOL_MM = 5.0          # FK 와 USD 가 이보다 다르면 USD 자세를 믿지 않는다
 SETTLE_TOL_DEG = 1.0         # settle 후 팔 관절 오차 경고 기준
+BASE_TOL_MM = 10.0           # 물리 루트 링크와 씬(USD) 베이스가 이보다 다르면 물리 값 사용
+BASE_PROBE_STEPS = 10        # 베이스 실측 전 물리 스텝
+AZIM_REF_WARN_DEG = 10.0     # 방위각 기준 두 가지가 이보다 다르면 경고
 
 # IK 후보. 학습 분포(±25°) 안에서만 훑는다.
 IK_ELEVATIONS = (70.0, 65.0, 60.0, 75.0, 55.0, 80.0, 50.0, 85.0)
@@ -138,7 +146,14 @@ def parse_args():
     g.add_argument("--azim-offset", type=float, default=0.0)
     g.add_argument("--roll", type=float, default=0.0)
     g.add_argument("--strict", action="store_true",
-                   help="[검증] 에 WARN 이 하나라도 있으면 중단한다.")
+                   help="[검증] 에 WARN 이 있거나 대체 자세로 넘어가면 중단한다.")
+    g.add_argument("--azim-ref", choices=("arm", "scene"), default="arm",
+                   help="IK 방위각 0° 기준. arm=트레이->로봇 방향(기본), "
+                        "scene=씬에 저장된 카메라가 보던 방향 (로봇을 옮겨도 "
+                        "화면 방향 유지)")
+    g.add_argument("--max-pose-tries", type=int, default=6,
+                   help="IK 해를 실제로 적용해 보고 충돌·범위 밖이면 다음 "
+                        "해로 넘어가는 최대 횟수")
 
     g = p.add_argument_group("리그 카메라 / 스윕")
     g.add_argument("--rig-camera", action="store_true",
@@ -535,33 +550,114 @@ def arm_indices(arm, ik):
     return ik_names, np.array([names.index(n) for n in ik_names])
 
 
-def pose_arm_with_ik(stage, arm, ik, cam_in_tool):
-    """IK 로 손목 카메라를 검사 지점에 겨냥시킨다.
+BASE_OVERRIDE = None   # 물리에서 잰 베이스 (씬 USD 와 다를 때만 설정)
+AZIM_REF = None        # IK 에 쓴 방위각 0° 방향 (라디안). 검증도 같은 기준
+RANGE_EPS = 0.5        # 경계값 부동소수 오차 허용 (도·cm 단위 공통으로 충분히 작음)
 
-    먼저 요청받은 조합을 쓰고, 안 풀리면 학습 분포 전체를 훑는다.
-    결과는 순간 배치(set_joint_positions)와 드라이브 목표(apply_action)
-    양쪽에 넣는다. 목표를 안 바꾸면 재생 중 원래 자세로 끌려간다.
-    반환: (DOF 인덱스, 목표 관절값)
+
+def base_world(stage):
+    """로봇 베이스 월드 행렬. 물리 실측값이 있으면 그것을 쓴다."""
+    if BASE_OVERRIDE is not None:
+        return BASE_OVERRIDE
+    return world_xform(stage, ARM_ROOT)
+
+
+def probe_base(stage, world, arm, ik):
+    """재생 직후 로봇 루트 링크의 실제 위치를 재서 씬 값과 비교한다.
+
+    로봇을 옮겼는데 root_joint(바닥 고정 관절)가 예전 자리를 붙잡고 있으면
+    재생하자마자 로봇이 옮겨진다. 그 경우 이후 IK·좌표 계산은 물리 실측
+    베이스를 쓴다. 실측이 안 되면 씬 값을 그대로 쓴다.
     """
-    if ik is None:
-        raise RuntimeError(f"IK 자산 없음: {args.desc} / {args.urdf} "
-                           f"(--keep-pose 로 실행하거나 M0609_LULA_DESC 지정)")
-    if not 0.0 < args.elev < 89.0:
-        raise RuntimeError("--elev 는 0~89° 여야 합니다 (90° 는 시선 퇴화).")
-    bt = world_xform(stage, ARM_ROOT).ExtractTranslation()
-    tool_in_cam = cam_in_tool.GetInverse()
+    global BASE_OVERRIDE
+    for _ in range(BASE_PROBE_STEPS):
+        world.step(render=False)
+    try:
+        pos, quat = arm.get_world_pose()
+        pos = np.asarray(pos, dtype=float)
+        quat = np.asarray(quat, dtype=float)
+    except Exception as exc:        # API 차이 대비
+        print(f"[검증] 베이스 실측 불가 ({type(exc).__name__}) — 씬 값 사용",
+              flush=True)
+        return
+    usd = world_xform(stage, ARM_ROOT).ExtractTranslation()
+    diff_mm = float(np.linalg.norm(pos - np.array(usd))) * 1000
+    verdict = "PASS" if diff_mm <= BASE_TOL_MM else "WARN"
+    print(f"[검증] 베이스 위치 {verdict} 물리 {v3(pos)} vs 씬 {v3(usd)} "
+          f"차이 {diff_mm:.1f} mm", flush=True)
+    if verdict == "PASS":
+        return
+    m = Gf.Matrix4d(1.0)
+    m.SetRotateOnly(Gf.Quatd(float(quat[0]),
+                             Gf.Vec3d(*[float(c) for c in quat[1:4]])))
+    m.SetTranslateOnly(Gf.Vec3d(*[float(c) for c in pos]))
+    BASE_OVERRIDE = m
+    if ik is not None:
+        ik.set_robot_base_pose(pos, quat)
+    print("[검증] 이후 IK·좌표는 물리 실측 베이스로 계산합니다 "
+          "(로봇 이동 후 root_joint 고정 위치가 예전 값일 수 있음).",
+          flush=True)
 
+
+def azimuth_reference(stage, scene_cam, look):
+    """IK 방위각 0° 방향(라디안). 두 기준을 모두 계산해 차이를 알린다."""
+    b = base_world(stage).ExtractTranslation()
+    ref_arm = math.atan2(b[1] - look[1], b[0] - look[0])
+    fwd = camera_axes(scene_cam)[1]
+    ref_scene = None
+    if math.hypot(fwd[0], fwd[1]) > 0.05:
+        ref_scene = math.atan2(-fwd[1], -fwd[0])
+    if ref_scene is not None:
+        diff = math.degrees(math.atan2(math.sin(ref_scene - ref_arm),
+                                       math.cos(ref_scene - ref_arm)))
+        print(f"[조건] 방위각 기준: arm {math.degrees(ref_arm):+.1f}° · "
+              f"scene {math.degrees(ref_scene):+.1f}° (차이 {diff:+.1f}°) "
+              f"-> {args.azim_ref} 사용", flush=True)
+        if abs(diff) > AZIM_REF_WARN_DEG:
+            print("[검증] 방위각 WARN — 로봇이 옆으로 옮겨진 것 같습니다. "
+                  "화면 속 트레이 방향이 ROI 보정 때와 다를 수 있습니다. "
+                  "debug_image 로 확인하고, 씬에 저장된 시선을 유지하려면 "
+                  "--azim-ref scene", flush=True)
+    global AZIM_REF
+    AZIM_REF = (ref_scene if args.azim_ref == "scene" and ref_scene is not None
+                else ref_arm)
+    return AZIM_REF
+
+
+def azim_anchor(stage):
+    """view_metrics 방위각 기준점: IK 와 같은 기준 방향 위의 한 점."""
+    if AZIM_REF is None:
+        b = base_world(stage).ExtractTranslation()
+        return (b[0], b[1])
+    return (args.tray_x + math.cos(AZIM_REF), args.tray_y + math.sin(AZIM_REF))
+
+
+def out_of_range(metrics):
+    bad = []
+    for k, (lo, hi) in DATASET_RANGE.items():
+        eps = RANGE_EPS if k != "dist" else 1e-4
+        v = metrics[k]
+        if math.isnan(v) or not lo - eps <= v <= hi + eps:
+            bad.append(k)
+    return bad
+
+
+def ik_candidates(stage, ik, cam_in_tool, scene_cam):
+    """학습 분포 안에서 IK 가 수렴한 해를 차례로 낸다.
+
+    (dist, elev, azim, eye, look, joints) — joints 는 Lula 관절 순서.
+    """
     look = np.array([args.tray_x, args.tray_y, LOOK_Z])
-    to_arm = math.atan2(bt[1] - look[1], bt[0] - look[0])
+    ref = azimuth_reference(stage, scene_cam, look)
+    tool_in_cam = cam_in_tool.GetInverse()
     seed = np.deg2rad(SEED_Q_DEG)
-    _, idx = arm_indices(arm, ik)
-
-    candidates = [(args.dist, args.elev, args.azim_offset)]
+    elev0 = min(max(args.elev, 1.0), 89.0)
+    candidates = [(args.dist, elev0, args.azim_offset)]
     candidates += [(d, e, a) for e in IK_ELEVATIONS
-                   for d in IK_DISTANCES for a in IK_AZIMUTHS]
-
+                   for d in IK_DISTANCES for a in IK_AZIMUTHS
+                   if (d, e, a) != candidates[0]]
     for dist, elev, azim in candidates:
-        az, el = to_arm + math.radians(azim), math.radians(elev)
+        az, el = ref + math.radians(azim), math.radians(elev)
         eye = look + dist * np.array([math.cos(el) * math.cos(az),
                                       math.cos(el) * math.sin(az),
                                       math.sin(el)])
@@ -571,31 +667,109 @@ def pose_arm_with_ik(stage, arm, ik, cam_in_tool):
             Gf.Rotation(Gf.Vec3d(0, 0, 1), args.roll)) * cam
         tool = tool_in_cam * cam
         q, t = tool.ExtractRotationQuat(), tool.ExtractTranslation()
-        sol, ok = ik.compute_inverse_kinematics(
-            frame_name="tool0",
-            target_position=np.array([t[0], t[1], t[2]]),
-            target_orientation=np.array([q.GetReal(), *q.GetImaginary()]),
-            warm_start=seed)
-        if not ok:
+        try:
+            sol, ok = ik.compute_inverse_kinematics(
+                frame_name="tool0",
+                target_position=np.array([t[0], t[1], t[2]]),
+                target_orientation=np.array([q.GetReal(), *q.GetImaginary()]),
+                warm_start=seed)
+        except Exception as exc:     # 솔버 예외는 해 없음으로 본다
+            print(f"[조건] IK 예외 ({type(exc).__name__}) — 다음 조합",
+                  flush=True)
             continue
+        if ok:
+            joints = np.asarray(getattr(sol, "joint_positions", sol),
+                                dtype=float)
+            yield dist, elev, azim, eye, look, joints
 
-        joints = np.asarray(getattr(sol, "joint_positions", sol),
-                            dtype=float)[:len(idx)]
-        current = np.array(arm.get_joint_positions(), dtype=float)
-        current[idx] = joints
-        arm.set_joint_positions(current)
-        arm.apply_action(articulation_action(joints, idx))
 
-        print(f"[조건] IK 해: 거리 {dist:.2f} m · 앙각 {elev:.0f}° · "
-              f"az {azim:+.0f}° · roll {args.roll:.0f}° "
-              f"(학습: 0.50~0.72 m, 50~88°, ±25°)", flush=True)
-        print(f"[조건] 카메라 eye={v3(eye)} look={v3(look)}", flush=True)
-        print(f"[조건] 관절(도) {np.rad2deg(joints).round(1).tolist()}",
+def apply_arm(arm, idx, joints):
+    """팔 관절만 순간 배치 + 드라이브 목표 설정 (그리퍼는 그대로)."""
+    current = np.array(arm.get_joint_positions(), dtype=float)
+    current[idx] = joints
+    arm.set_joint_positions(current)
+    arm.apply_action(articulation_action(joints, idx))
+
+
+def settle(world, steps=SETTLE_STEPS, render=False):
+    for _ in range(steps):
+        world.step(render=render)
+
+
+def fk_camera(ik, cam_in_tool, joints):
+    pos, rot = ik.compute_forward_kinematics("tool0", joints)
+    return cam_in_tool * fk_matrix(pos, rot)
+
+
+def pose_bad_keys(stage, cam_m):
+    metrics = view_metrics(cam_m, (args.tray_x, args.tray_y, LOOK_Z),
+                           azim_anchor(stage))
+    return out_of_range(metrics), metrics
+
+
+def restore_scene_pose(arm, idx, scene_q, reason):
+    print(f"[검증] 대체 자세 WARN — {reason}. 씬에 저장된 자세를 씁니다.",
+          flush=True)
+    apply_arm(arm, idx, scene_q[idx])
+    if args.strict:
+        raise RuntimeError(f"대체 자세로 넘어감: {reason} (--strict)")
+
+
+def choose_arm_pose(stage, world, arm, ik, cam_in_tool, scene_q, scene_cam,
+                    mover):
+    """IK 해를 실제로 적용·안정화해 보고 통과하는 첫 해를 쓴다.
+
+    통과 조건: settle 후 관절 오차 <= 허용치 (충돌·도달 불가 없음) 이고
+    카메라 자세가 학습 분포 안. 실패하면 트레이를 원위치하고 다음 해.
+    모두 실패하면 가장 나은 해, 해가 없으면 씬 자세로 대체한다 (에러 없이).
+    반환: (idx, joints) 또는 None(씬 자세)
+    """
+    _, idx = arm_indices(arm, ik)
+    if ik is None:
+        restore_scene_pose(arm, idx, scene_q, "IK 자산 없음")
+        return None
+    tries = []
+    for n, (dist, elev, azim, eye, look, joints) in enumerate(
+            ik_candidates(stage, ik, cam_in_tool, scene_cam), start=1):
+        joints = joints[:len(idx)]
+        apply_arm(arm, idx, joints)
+        settle(world)
+        err = math.degrees(float(np.abs(
+            np.array(arm.get_joint_positions())[idx] - joints).max()))
+        bad, metrics = pose_bad_keys(stage, fk_camera(ik, cam_in_tool,
+                                                      joints))
+        ok = err <= SETTLE_TOL_DEG and not bad
+        print(f"[자세 시도 {n}] 거리 {dist:.2f} · 앙각 {elev:.0f}° · "
+              f"az {azim:+.0f}° -> 관절오차 {err:.2f}° · "
+              f"범위밖 {bad or '없음'} -> {'채택' if ok else '다음'}",
               flush=True)
-        return idx, joints
-
-    raise RuntimeError(f"IK 실패: {len(candidates)}개 조합 모두 안 풀림. "
-                       f"look={look.round(3)} 트레이 위치를 옮겨 보세요.")
+        tries.append((len(bad), err, (dist, elev, azim), eye, look, joints))
+        if ok:
+            break
+        mover.reset()
+        if len(tries) >= max(1, args.max_pose_tries):
+            break
+    if not tries:
+        restore_scene_pose(arm, idx, scene_q, "학습 범위 안 IK 해 없음")
+        return None
+    best = min(tries, key=lambda t: (t[0], t[1]))
+    n_bad, err, (dist, elev, azim), eye, look, joints = best
+    if best is not tries[-1] or n_bad or err > SETTLE_TOL_DEG:
+        apply_arm(arm, idx, joints)
+        mover.reset()
+        settle(world)
+        if n_bad or err > SETTLE_TOL_DEG:
+            print("[검증] 자세 WARN — 모든 시도가 기준 미달이라 가장 나은 해를 "
+                  "씁니다.", flush=True)
+            if args.strict:
+                raise RuntimeError("기준을 만족하는 IK 자세 없음 (--strict)")
+    print(f"[조건] IK 해: 거리 {dist:.2f} m · 앙각 {elev:.0f}° · "
+          f"az {azim:+.0f}° · roll {args.roll:.0f}° "
+          f"(학습: 0.50~0.72 m, 50~88°, ±25°)", flush=True)
+    print(f"[조건] 카메라 eye={v3(eye)} look={v3(look)}", flush=True)
+    print(f"[조건] 관절(도) {np.rad2deg(joints).round(1).tolist()}",
+          flush=True)
+    return idx, joints
 
 
 # ── 자세 보고 · 검증 ──────────────────────────────────
@@ -671,7 +845,7 @@ def report_pose(stage, arm, ik, cam_in_tool, target_x, target_y):
     print(f"[자세] 관절(rad) {[round(math.radians(v), 6) for v in deg]}",
           flush=True)
     print(f"[자세] DOF {names}", flush=True)
-    print_matrix("베이스", world_xform(stage, ARM_ROOT))
+    print_matrix("베이스", base_world(stage))
 
     cam_m, source = camera_pose(stage, arm, ik, cam_in_tool)
     print_matrix(f"카메라({source})", cam_m)
@@ -698,16 +872,12 @@ def report_pose(stage, arm, ik, cam_in_tool, target_x, target_y):
         print("[검증] 리그 카메라 — 학습 분포 판정 생략", flush=True)
         return cam_m, []
 
-    base_t = world_xform(stage, ARM_ROOT).ExtractTranslation()
     metrics = view_metrics(cam_m, (target_x, target_y, LOOK_Z),
-                           (base_t[0], base_t[1]))
-    bad = []
+                           azim_anchor(stage))
+    bad = out_of_range(metrics)
     for key, (lo, hi) in DATASET_RANGE.items():
-        val = metrics[key]
-        ok = (not math.isnan(val)) and lo <= val <= hi
-        if not ok:
-            bad.append(key)
-        print(f"[검증] {key:<8s} {'PASS' if ok else 'WARN'} {val:+.3f} "
+        ok = key not in bad
+        print(f"[검증] {key:<8s} {'PASS' if ok else 'WARN'} {metrics[key]:+.3f} "
               f"(범위 {lo}~{hi})", flush=True)
     if (w, h) != (args.width, args.height):
         bad.append("resolution")
@@ -746,7 +916,7 @@ class DetectionBridge:
         camera_path = RIG_CAMERA if args.rig_camera else COLOR
         self.model = vb.CameraModel(stage, camera_path, RENDER_PRODUCT)
         self.cam_matrix = cam_matrix
-        self.base_matrix = world_xform(stage, ARM_ROOT)
+        self.base_matrix = base_world(stage)
         self.depth = None
         if not rclpy.ok():
             rclpy.init()
@@ -794,7 +964,9 @@ class DetectionBridge:
                "command_id": parsed["command_id"],
                "pallet_id": parsed["pallet_id"],
                "stamp": parsed["stamp"],
-               "frame": ARM_ROOT, "targets": {}}
+               "frame": (ARM_ROOT if BASE_OVERRIDE is None
+                         else f"{ARM_ROOT} (물리 루트 링크 실측)"),
+               "targets": {}}
 
         if self.judge is not None:
             result = vb.assess_slots(parsed, *self.judge)
@@ -892,10 +1064,17 @@ class TrayMover:
                                         name="inspect_tray")
             self.body.initialize()
         self.stage = stage
+        q = world_xform(stage, MAIN_TRAY).ExtractRotationQuat()
+        self.orient = np.array([q.GetReal(), *q.GetImaginary()])
+
+    def reset(self):
+        """검사 위치로 되돌린다 (자세 시도 중 팔에 밀렸을 수 있음)."""
+        self.move(args.tray_x, args.tray_y)
 
     def move(self, x, y):
         if self.body is not None:
-            self.body.set_world_pose(position=np.array([x, y, TRAY_Z]))
+            self.body.set_world_pose(position=np.array([x, y, TRAY_Z]),
+                                     orientation=self.orient)
             self.body.set_linear_velocity(np.zeros(3))
             self.body.set_angular_velocity(np.zeros(3))
         else:
@@ -907,12 +1086,11 @@ class TrayMover:
         return world_xform(self.stage, MAIN_TRAY).ExtractTranslation()
 
 
-def run_sweep(stage, tick):
+def run_sweep(stage, tick, mover):
     """팔은 그대로 두고 트레이만 옮겨 가며 잡을 시간을 준다.
 
     이미지 위치 흔들림 시험이다. 물리 컨베이어 동작 검증이 아니다.
     """
-    mover = TrayMover(stage)
     print(f"[스윕] 트레이 이동 방식: "
           f"{'물리 API (강체)' if mover.rigid else 'USD translate'}",
           flush=True)
@@ -956,8 +1134,8 @@ def main():
     # tool0 -> 카메라는 강체 고정이므로 재생 전 USD 에서 한 번 잰다.
     require_prim(stage, COLOR, "손목 카메라", UsdGeom.Camera)
     require_prim(stage, TOOL0, "tool0")
-    cam_in_tool = world_xform(stage, COLOR) * world_xform(
-        stage, TOOL0).GetInverse()
+    scene_cam = world_xform(stage, COLOR)        # 씬에 저장된 카메라 자세
+    cam_in_tool = scene_cam * world_xform(stage, TOOL0).GetInverse()
 
     world = World(stage_units_in_meters=1.0, physics_dt=PHYSICS_DT,
                   rendering_dt=PHYSICS_DT)
@@ -965,6 +1143,9 @@ def main():
     arm = SingleArticulation(prim_path=ARM_ART, name="m0609")
     arm.initialize()
     ik = make_ik(stage)
+    scene_q = np.array(arm.get_joint_positions(), dtype=float)
+    mover = TrayMover(stage)
+    probe_base(stage, world, arm, ik)
 
     commanded = None
     if args.rig_camera:
@@ -973,11 +1154,11 @@ def main():
         print("[조건] IK 건너뜀 — 씬에 저장된 팔 자세를 그대로 쓴다.",
               flush=True)
     else:
-        commanded = pose_arm_with_ik(stage, arm, ik, cam_in_tool)
+        commanded = choose_arm_pose(stage, world, arm, ik, cam_in_tool,
+                                    scene_q, scene_cam, mover)
 
     world.play()
-    for _ in range(SETTLE_STEPS):
-        world.step(render=True)
+    settle(world, render=True)
 
     if commanded is not None:
         idx, target = commanded
@@ -1014,7 +1195,7 @@ def main():
 
     try:
         if args.sweep:
-            run_sweep(stage, tick)
+            run_sweep(stage, tick, mover)
             return
         steps = 0
         while tick():
