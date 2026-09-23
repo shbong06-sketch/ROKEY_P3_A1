@@ -1,0 +1,8 @@
+[INFO] [1790156979.655967483] [nav2_link_check]: listening for 8 s ...
+[INFO] [1790156987.730858940] [nav2_link_check]: [1] /clock               0.0 Hz   <- MISSING: Isaac 을 scripts/launch_scene.py 로 실행했는지 확인
+[INFO] [1790156987.733231617] [nav2_link_check]: [2] /tf odom->base_link   0.0 Hz   <- MISSING
+[INFO] [1790156987.734134687] [nav2_link_check]: [3] /chassis/odom        0.0 Hz   <- MISSING
+[INFO] [1790156987.734984865] [nav2_link_check]: [4] /front_2d_lidar/scan           0.0 Hz,      0.0 kB/s, frame ''
+[INFO] [1790156987.735897993] [nav2_link_check]: [5] /front_3d_lidar/lidar_points   0.0 Hz,      0.0 kB/s, frame '', 0 points/msg
+[INFO] [1790156987.736883954] [nav2_link_check]: RESULT FAIL - no lidar topic arrives at >= 3 Hz
+[ros2run]: Process exited with failure 2
