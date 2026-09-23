@@ -31,7 +31,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'object_detection = smart_farm_vision.inspection_executor_node:main',
+            'object_detection = smart_farm_vision.object_detection_node:main',
         ],
     },
 )
