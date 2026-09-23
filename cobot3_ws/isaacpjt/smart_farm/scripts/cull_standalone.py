@@ -36,6 +36,11 @@ RIGHT_FINGER_PATH = f"{GRIPPER_ROOT_PATH}/right_inner_finger"
 TARGET_PATH = (
     "/World/SmartFarm/Placed/Pallet_Inspect/root_001/Romaine_03"
 )
+PALLET_BODY_PATH = "/World/SmartFarm/Placed/Pallet_Inspect/Cube_011_001"
+ROMAINE_PATHS = tuple(
+    f"/World/SmartFarm/Placed/Pallet_Inspect/root_001/Romaine_{index:02d}"
+    for index in range(1, 7)
+)
 
 URDF_PATH = M0609_DIR / "doosan-robot2/urdf/m0609_isaac_sim.urdf"
 RMPFLOW_DIR = M0609_DIR / "rmpflow"
@@ -79,12 +84,25 @@ def parse_args():
         default=6000,
         help="단일 동작 최대 physics step",
     )
+    parser.add_argument(
+        "--diagnose-settle",
+        action="store_true",
+        help="로봇을 움직이지 않고 Pallet/Romaine 초기 안정성만 측정",
+    )
+    parser.add_argument(
+        "--diagnose-steps",
+        type=int,
+        default=300,
+        help="초기 안정성 진단 physics step 수",
+    )
     return parser.parse_known_args()
 
 
 args, kit_args = parse_args()
 if args.max_steps <= 0:
     raise ValueError("--max-steps는 0보다 커야 합니다.")
+if args.diagnose_steps <= 0:
+    raise ValueError("--diagnose-steps는 0보다 커야 합니다.")
 
 from isaacsim import SimulationApp
 
@@ -213,6 +231,85 @@ def set_ready_pose(robot):
     robot.set_joint_velocities(np.zeros(robot.num_dof))
 
 
+def run_settle_diagnostic(world):
+    """로봇 명령 없이 Pallet과 Romaine의 초기 물리 안정성을 측정한다."""
+
+    paths = (PALLET_BODY_PATH, *ROMAINE_PATHS)
+
+    def snapshot():
+        return {
+            path: tuple(np.asarray(value, dtype=float) for value in get_world_pose(path))
+            for path in paths
+        }
+
+    initial = snapshot()
+    print(
+        f"[진단] 무개입 안정성 측정 시작: {args.diagnose_steps} steps "
+        f"({args.diagnose_steps * PHYSICS_DT:.2f} s)"
+    )
+
+    for step in range(1, args.diagnose_steps + 1):
+        world.step(render=not args.headless)
+        if step % LOG_INTERVAL_STEPS != 0 and step != args.diagnose_steps:
+            continue
+        current = snapshot()
+        movements = []
+        for path in paths:
+            delta = current[path][0] - initial[path][0]
+            movements.append(
+                f"{path.rsplit('/', 1)[-1]}="
+                f"{np.linalg.norm(delta) * 1000.0:.1f}mm"
+                f"(dz={delta[2] * 1000.0:+.1f})"
+            )
+        print(f"[진단:{step}] " + " ".join(movements))
+
+    final = snapshot()
+    print("[진단:최종]")
+    for path in paths:
+        start_position, start_quaternion = initial[path]
+        final_position, final_quaternion = final[path]
+        delta = final_position - start_position
+        dot = float(
+            np.clip(
+                abs(np.dot(start_quaternion, final_quaternion)),
+                0.0,
+                1.0,
+            )
+        )
+        angle_deg = float(np.rad2deg(2.0 * np.arccos(dot)))
+        print(
+            f"[진단:결과] {path.rsplit('/', 1)[-1]} "
+            f"xyz_mm={np.round(delta * 1000.0, 2).tolist()} "
+            f"distance_mm={np.linalg.norm(delta) * 1000.0:.2f} "
+            f"angle_deg={angle_deg:.3f}"
+        )
+
+
+def print_pick_pose_summary(initial_poses):
+    """Pick 종료 시 Pallet과 Romaine 전체의 pose 변화를 출력한다."""
+
+    print("[PICK:물리요약]")
+    for path, (start_position, start_quaternion) in initial_poses.items():
+        final_position, final_quaternion = (
+            np.asarray(value, dtype=float) for value in get_world_pose(path)
+        )
+        delta = final_position - start_position
+        dot = float(
+            np.clip(
+                abs(np.dot(start_quaternion, final_quaternion)),
+                0.0,
+                1.0,
+            )
+        )
+        angle_deg = float(np.rad2deg(2.0 * np.arccos(dot)))
+        print(
+            f"[PICK:결과] {path.rsplit('/', 1)[-1]} "
+            f"xyz_mm={np.round(delta * 1000.0, 2).tolist()} "
+            f"distance_mm={np.linalg.norm(delta) * 1000.0:.2f} "
+            f"angle_deg={angle_deg:.3f}"
+        )
+
+
 def create_runtime(stage):
     world = World(
         stage_units_in_meters=1.0,
@@ -293,7 +390,15 @@ def main():
         world.pause()
         print("[대기] Isaac Sim에서 Play를 누르면 단일 Pick 시험을 시작합니다.")
 
+    if args.diagnose_settle:
+        if not world.is_playing():
+            world.play()
+        run_settle_diagnostic(world)
+        return
+
     started = False
+    pick_initial_poses = None
+    pick_summary_printed = False
     step_count = 0
     previous_playing = world.is_playing()
 
@@ -321,10 +426,22 @@ def main():
                 world.step(render=not args.headless)
             initial_position, _ = target.get_world_pose()
             print(f"[대상] 시작 world={np.round(initial_position, 4).tolist()}")
+            pick_initial_poses = {
+                path: tuple(
+                    np.asarray(value, dtype=float) for value in get_world_pose(path)
+                )
+                for path in (PALLET_BODY_PATH, *ROMAINE_PATHS)
+            }
             motion.start_pick(FIXED_PICK_POSITION_BASE)
             started = True
 
-        motion.update()
+        try:
+            motion.update()
+        except Exception:
+            if pick_initial_poses is not None and not pick_summary_printed:
+                print_pick_pose_summary(pick_initial_poses)
+                pick_summary_printed = True
+            raise
         step_count += 1
 
         if step_count % LOG_INTERVAL_STEPS == 0:
@@ -341,6 +458,9 @@ def main():
             )
 
         if motion.is_done:
+            if pick_initial_poses is not None and not pick_summary_printed:
+                print_pick_pose_summary(pick_initial_poses)
+                pick_summary_printed = True
             print(
                 "CULL_STANDALONE_PASS "
                 f"rise_mm={motion.final_target_rise * 1000.0:.1f}"

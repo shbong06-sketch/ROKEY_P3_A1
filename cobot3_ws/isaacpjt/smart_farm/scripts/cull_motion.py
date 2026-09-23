@@ -50,6 +50,7 @@ class CullPickConfig:
 
     approach_clearance: float = 0.18
     lift_clearance: float = 0.22
+    pick_z_offset: float = 0.05
     tcp_offset_local: Position = (0.0, 0.0, 0.19671)
     tool_orientation_base: Tuple[float, float, float, float] = (
         0.0,
@@ -71,6 +72,8 @@ class CullPickConfig:
     def __post_init__(self):
         _position(self.tcp_offset_local, "tcp_offset_local")
         _quaternion(self.tool_orientation_base, "tool_orientation_base")
+        if not isfinite(float(self.pick_z_offset)):
+            raise ValueError("pick_z_offset은 유한한 값이어야 합니다.")
         for name in (
             "approach_clearance",
             "lift_clearance",
@@ -138,6 +141,7 @@ def build_cull_pick_plan(
         _position(detected_position_base, "detected_position_base"),
         dtype=float,
     )
+    pick[2] += config.pick_z_offset
     approach = pick.copy()
     approach[2] += config.approach_clearance
     lift = pick.copy()

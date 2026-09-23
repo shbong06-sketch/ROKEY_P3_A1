@@ -62,6 +62,7 @@ def test_builds_pick_only_plan_from_one_base_position():
         CullPickConfig(
             approach_clearance=0.18,
             lift_clearance=0.22,
+            pick_z_offset=0.02,
         ),
     )
 
@@ -73,10 +74,10 @@ def test_builds_pick_only_plan_from_one_base_position():
         "LIFT",
         "HOLD",
     ]
-    assert plan[1].position_base == pytest.approx((0.0009, 0.4192, 0.2957))
-    assert plan[2].position_base == pytest.approx((0.0009, 0.4192, 0.1157))
+    assert plan[1].position_base == pytest.approx((0.0009, 0.4192, 0.3157))
+    assert plan[2].position_base == pytest.approx((0.0009, 0.4192, 0.1357))
     assert plan[3].gripper == "close"
-    assert plan[4].position_base == pytest.approx((0.0009, 0.4192, 0.3357))
+    assert plan[4].position_base == pytest.approx((0.0009, 0.4192, 0.3557))
     assert plan[5].position_base == pytest.approx(plan[4].position_base)
 
 
