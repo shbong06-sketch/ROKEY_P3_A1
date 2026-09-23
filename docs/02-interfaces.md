@@ -56,7 +56,7 @@ flowchart LR
 | `/sim_task/command` | std_msgs/msg/String JSON Topic | Task Manager → Sim Task Executor | TRANSFER, PICK_HARVEST, PLACE_INSPECT, CULL, CONVEYOR_OUT 요청 |
 | `/sim_task/result` | std_msgs/msg/String JSON Topic | Sim Task Executor → Task Manager | Sim 작업 최종 성공·실패 결과 |
 | `/sim_task/status` | std_msgs/msg/String JSON Topic | Sim Task Executor → Task Manager·관찰자 | 준비 여부, 실행 중 operation과 내부 phase |
-| `/navigation/command` | TaskCommand Topic | Task Manager → Navigation Node | INSPECTION_DOCK 이동 요청 |
+| `/navigation/command` | TaskCommand Topic | Task Manager → Navigation Node | FEEDER_DOCK 이동 요청 |
 | `/navigation/result` | TaskResult Topic | Navigation Node → Task Manager | Nav2 최종 결과와 도착 작업점 |
 | `/navigation/status` | ExecutorStatus Topic | Navigation Node → Task Manager·관찰자 | Nav2 준비, 이동 중, 남은 거리 또는 내부 상태 |
 | `/inspection/command` | TaskCommand Topic | Task Manager → Inspection Node | 팔레트 슬롯별 검사 요청 |
@@ -300,7 +300,7 @@ status 값:
 - pallet_id: PALLET_001, PALLET_002, …
 - rack slot: RACK_L1 ~ RACK_L4
 - plant slot: SLOT_01 ~ SLOT_06
-- navigation station: RACK_DOCK, INSPECTION_DOCK
+- navigation station: RACK_DOCK, FEEDER_DOCK
 - pallet station: INSPECT_STATION, PACK_OUT
 
 Task Manager가 task_id와 command_id를 생성한다. 모든 결과는 요청의 두 ID를 그대로 반환해야 한다.
@@ -354,7 +354,7 @@ Task Manager가 task_id와 command_id를 생성한다. 모든 결과는 요청�
 | --- | --- | --- | --- |
 | TRANSFER | Sim Task Executor | recipe_id=RACK_REARRANGE_01 | PALLET_002 L3→L2와 PALLET_003 L4→L3 완료, completed_units 2개 |
 | PICK_HARVEST | Sim Task Executor | pallet_id=PALLET_001, source=RACK_L1 | safe_to_navigate=true |
-| NAVIGATION | Navigation Node | destination=INSPECTION_DOCK | reached_station=INSPECTION_DOCK |
+| NAVIGATION | Navigation Node | destination=FEEDER_DOCK | reached_station=FEEDER_DOCK |
 | PLACE_INSPECT | Sim Task Executor | pallet_id=PALLET_001, destination=INSPECT_STATION | VERIFY_PLACE 통과 |
 | INSPECT | Inspection Node | pallet_id=PALLET_001 | SLOT_01~SLOT_06 결과, unknown_slots 없음 |
 | CULL | Sim Task Executor | pallet_id와 target_slots | 모든 대상 슬롯 제거 확인 |
@@ -462,7 +462,7 @@ CHECK_BASE_STOPPED → LIFT_TO_PROFILE → ARM_PICK → VERIFY_PICK → ARM_RETR
 
 ### PLACE_INSPECT
 
-CHECK_BASE_STOPPED → CHECK_INSPECTION_DOCK → LIFT_TO_PROFILE → ARM_PLACE → VERIFY_PLACE → ARM_SAFE → RESULT
+CHECK_BASE_STOPPED → CHECK_FEEDER_DOCK → LIFT_TO_PROFILE → ARM_PLACE → VERIFY_PLACE → ARM_SAFE → RESULT
 
 ### CULL
 
@@ -482,7 +482,10 @@ CHECK_PALLET_ON_CONVEYOR → START_CONVEYOR → MONITOR_EXIT → STOP_CONVEYOR �
 - 마지막 feedback pose를 최종 도킹 증거로 사용하지 않는다.
 - 필요한 경우 /amcl_pose 등 map 기준 추정값으로 도킹 오차를 검증한다.
 - /odom을 map 기준 목표와 직접 비교하지 않는다.
-- Task Manager가 아닌 Nav2만 /cmd_vel을 발행한다.
+- 일반 주행 구간에서는 Nav2만 /cmd_vel을 발행한다.
+- FEEDER_DOCK 정밀 도킹 구간에 한해 Navigation Node가 실행하는 도킹 노드(feeder_dock)가 /cmd_vel을 발행한다.
+  Nav2 목표가 끝난 뒤에만 시작하며, 두 발행자가 동시에 명령을 내지 않는다.
+- Task Manager는 어떤 경우에도 /cmd_vel을 발행하지 않는다.
 
 ## 13. Inspection Node 계약
 

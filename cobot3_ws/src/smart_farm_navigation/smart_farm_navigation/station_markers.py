@@ -60,6 +60,9 @@ def main() -> None:
         rclpy.spin(node)
     except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass
+    except Exception:
+        if rclpy.ok():
+            raise
     finally:
         node.destroy_node()
         if rclpy.ok():

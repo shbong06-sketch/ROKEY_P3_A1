@@ -1,27 +1,21 @@
 # map 좌표 = Isaac world 좌표 (지도 Collected_smartfarm_v011.yaml 의 origin 이 world 기준). yaw_deg: 0 = +x, 90 = +y.
-# 기준 장면: Collected_smartfarm_v011.usd. yaw 는 base_link +x = 카터의 실제 앞(구동륜 쪽) 방향임.
-# 시작 배치는 카터의 뒤(-x, 캐스터 쪽·M0609 쪽)가 통로 출구를 향함. 이는 랙 P&P 를 위해 팀이 정한 배치라 바꾸지 않음.
+# 기준 장면: Collected_smartfarm_v011.usd. yaw 는 base_link +x = 카터의 실제 앞(구동륜 쪽) 방향이다.
+# 시작 배치는 카터의 뒤(-x, 캐스터·리프트·M0609 쪽)가 통로 출구를 향한다. 랙 P&P 를 위한 팀 배치라 바꾸지 않는다.
 scene: Collected_smartfarm_v011.usd
-initial_pose: {x: -0.421, y: 1.006, yaw_deg: 90.0}       # LiftRig/Asset/nova_carter_ROS/chassis_link world pose (v008 = v011)
+initial_pose: {x: -0.421, y: 1.006, yaw_deg: 90.0}       # LiftRig/Asset/nova_carter_ROS/chassis_link world pose
 stations:
-  RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0}  # Rack_1 옆 통로 안. Hybrid-A* 가 통로 진입 경로를 직접 계획함 (경유점을 두면 경유점 방향 오차로 20 s 이상 멈추는 일이 있었음)
-  CORRIDOR_EXIT:   {x: -0.421, y: -1.20, yaw_deg: 90.0}  # 통로 남단(y 0.27)을 1.5 m 지난 점. 후진 탈출이 끝나는 곳
-  # 최종 목적지 (2026-09-22): Conveyor/Feeder 에 붙은 돌출부 TurnTable (x -2.76..-1.61, y -6.32..-3.60) 의 북쪽 끝 = 입구.
-  # 리프트 자체 충돌 때문에 팔(M0609, 카터 뒤쪽 -x)이 입구를 봐야 하므로 카터는 **후진으로** 진입함:
-  #   FEEDER_APPROACH (입구에서 2.05 m 북쪽, 앞이 북쪽 = 뒤가 입구) 까지 Nav2 로 간 뒤, go_to_station 이 BackUp 1.17 m 로 도킹.
-  #   도킹 완료 시 base_link 는 입구 가장자리(y -3.60)에서 0.88 m: 차체 뒤끝(-0.607)이 가장자리에서 0.27 m 남음
-  #   (Nav2 BackUp 은 발자국이 inflation 안쪽 반경 0.25 m 안에 들어가면 충돌로 보고 중단하므로 이보다 가까이는 못 감).
-  #   팔 밑동(base_link x -0.42)은 가장자리에서 약 0.46 m. 복귀는 앞(북쪽)으로 그냥 출발함.
-  #   2026-09-22 실측: 곡선 경로 끝에서 33도 돌아간 채 멈춤(RPP 는 후진 허용 시 제자리 회전을 못 함). 그래서 pure_nav2 에서도
-  #   FEEDER_APPROACH 를 먼저 목표로 보내고(via) 마지막 1.05 m 는 직선 후진이 되게 함. 도킹 y 는 −2.72 → −2.60 (뒤끝 여유 0.39 m).
+  RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0}  # Rack_1 옆 통로 안. Hybrid-A* 가 통로 진입 경로를 직접 계획한다
+  CORRIDOR_EXIT:   {x: -0.421, y: -1.20, yaw_deg: 90.0}  # 통로 남단(y 0.27)을 1.5 m 지난 점
+  # Feeder 도킹. 리프트 자체 충돌 때문에 팔(카터 뒤쪽 -x)이 대상을 봐야 하므로 카터는 후진으로 진입한다.
+  #   FEEDER_APPROACH 까지 Nav2 로 간 뒤 feeder_dock 이 라이다로 면을 보며 도킹한다.
+  #   Conveyor/TurnTable 이 카터 쪽으로 뻗은 긴 벨트이고 그 북단 면이 y -3.60 이다(이름과 달리 Conveyor/Feeder 는 메인 컨베이어와 만나는 남쪽 합류 장치).
   FEEDER_APPROACH: {x: -2.19, y: -1.55, yaw_deg: 90.0}
-  FEEDER_DOCK:     {x: -2.19, y: -2.60, yaw_deg: 90.0, via: [FEEDER_APPROACH], reverse_in: {from: FEEDER_APPROACH, distance_m: 1.05, speed_mps: 0.2}}
-  # 1차 시연 자리 (컨베이어 Seg_4 가운데 앞). 참고용으로 유지
-  INSPECTION_DOCK: {x: 3.328, y: -5.251, yaw_deg: 90.0}
+  # 실제 정지 위치는 feeder_dock 의 standoff_m(0.75) 이 정하며 아래 좌표는 그 결과값이다(면에서 0.75 m 앞).
+  # 도킹 거리를 바꾸면 이 좌표와 cloud_self_filter 의 self_box_x[0] 도 함께 옮긴다.
+  FEEDER_DOCK:     {x: -2.19, y: -2.85, yaw_deg: 90.0}
 
-# 랙 통로 안에서는 제자리 회전 금지: 리그가 0.66 m 를 휩쓸어 랙·팔레트(가장자리 x -0.86)에 닿음.
-# 통로 안에 있으면 go_to_station 이 먼저 Nav2 BackUp(후진 = base_link -x 방향)으로 직진 탈출한 뒤 목표를 보냄.
-# 이 후진은 Nav2 의 경로 계획(RPP)이 아니라 go_to_station 이 명시적으로 지시하는 것이며, 통로 안에서는 항상 실행됨.
+# 랙 통로 안에서는 제자리 회전 금지: 리그가 0.66 m 를 휩쓸어 랙·팔레트(가장자리 x -0.86)에 닿는다.
+# go_to_station 을 pure_nav2:=false 로 쓸 때만 사용한다(손 시험용). 통합 경로는 Hybrid-A* 가 후진 경로를 직접 계획한다.
 reverse_out_zones:
   - name: RACK1_CORRIDOR
     x: [-1.10, 0.90]

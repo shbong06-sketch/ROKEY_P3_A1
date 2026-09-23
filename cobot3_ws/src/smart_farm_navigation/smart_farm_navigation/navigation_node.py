@@ -10,23 +10,30 @@
   /navigation/status
       smart_farm_interfaces/msg/ExecutorStatus
 
-TaskCommand를 받으면 destinations.yaml에 등록된 launch를 자식 프로세스로
-실행한다. 자식 프로세스의 종료 코드를 TaskResult로 변환한다.
+TaskCommand를 받으면 destinations_nav2.yaml에 등록된 작업점으로 직접 주행한다.
+목표는 NavigateToPose 액션으로 보내고, 완료 확인은 콜백과 타이머에서 한다.
+approach 가 지정된 목적지는 접근 작업점까지 Nav2 로 간 뒤 feeder_dock 에
+실행 식별자(command_id)를 주어 정밀 도킹을 시키고, 같은 식별자로 돌아온
+결과만 인정한다. 자식 프로세스는 쓰지 않는다.
 
 한 번에 하나의 명령만 실행하며, 실행 중 새로운 명령은 FAILED/BUSY로
 응답한다. 같은 command_id를 다시 수신하면 작업을 재실행하지 않고
 이전에 저장한 결과를 다시 발행한다.
 """
 
+import json
 import os
-import subprocess
 import time
 
 import rclpy
 import rclpy.executors
 import yaml
 from ament_index_python.packages import get_package_share_directory
+from nav2_msgs.action import NavigateToPose
+from action_msgs.msg import GoalStatus
+from rclpy.action import ActionClient
 from rclpy.node import Node
+from std_msgs.msg import String
 
 from smart_farm_interfaces.msg import (
     ExecutorStatus,
@@ -34,14 +41,18 @@ from smart_farm_interfaces.msg import (
     TaskResult,
 )
 
+from smart_farm_navigation import stations as stations_lib
+
 
 class NavigationNode(Node):
     def __init__(self) -> None:
         super().__init__("navigation_node")
         share = get_package_share_directory("smart_farm_navigation")
 
-        self.declare_parameter("destinations_file", os.path.join(share, "config", "destinations.yaml"))
-        self.declare_parameter("timeout_s", 110.0)
+        self.declare_parameter("destinations_file", os.path.join(share, "config", "destinations_nav2.yaml"))
+        self.declare_parameter("timeout_s", 600.0)   # 벽시계 기준. 속도 0.3 m/s 와 Isaac 실시간 배율 0.3 이 겹치면 편도가 3 분을 넘는다
+        self.declare_parameter("stations_file", stations_lib.default_path())
+        self.declare_parameter("dock_timeout_s", 240.0)
         self.declare_parameter("executor", "navigation")
 
         destinations_file = str(
@@ -92,9 +103,24 @@ class NavigationNode(Node):
         )
 
         self.active = None          # TaskCommand currently being executed
-        self.proc = None
         self.started_at = 0.0
         self.done_ids = {}
+
+        self.stations = stations_lib.load(
+            str(self.get_parameter("stations_file").value)
+        )
+        self.dock_timeout = float(self.get_parameter("dock_timeout_s").value)
+
+        self.nav_client = ActionClient(self, NavigateToPose, "navigate_to_pose")
+        self.dock_start_pub = self.create_publisher(String, "/feeder_dock/start", 10)
+        self.create_subscription(String, "/feeder_dock/result", self._on_dock_result, 10)
+
+        # 진행 상태: None 이면 대기. goal_handle/result_future 는 NavigateToPose 용이다.
+        self.stage = "IDLE"
+        self.goal_handle = None
+        self.result_future = None
+        self.dock_result = None
+        self.stage_started_at = 0.0
 
         self.status_tiemr = self.create_timer(
             0.5,
@@ -167,7 +193,8 @@ class NavigationNode(Node):
         message.defect_slots = []
         message.unknown_slots = []
 
-        self.done_ids[command.command_id] = message
+        if reason != "BUSY":          # BUSY 는 최종 결과가 아니므로 캐시하지 않는다
+            self.done_ids[command.command_id] = message
         self.result_pub.publish(message)
 
         self.get_logger().info(
@@ -215,6 +242,13 @@ class NavigationNode(Node):
             return
 
         if self.active is not None:
+            if command.command_id == self.active.command_id:
+                # 같은 명령의 재전송이다. BUSY 로 답하면 그 결과가 캐시되어 진짜 결과를 가린다.
+                self.get_logger().info(
+                    f"실행 중인 명령 재수신, 무시: {command.command_id}"
+                )
+                return
+
             self._result(
                 command,
                 status="FAILED",
@@ -236,109 +270,154 @@ class NavigationNode(Node):
             )
             return
 
-        if "station" in destination:
-            # Nav2 모드 (destinations_nav2.yaml): go_to_station 이 NavigateToPose 로 주행. exit code 0/2 규약은 동일.
-            argv = [
-                "ros2", "run", "smart_farm_navigation", "go_to_station",
-                "--ros-args", "-p", f"station:={destination['station']}",
-            ]
-        else:
-            params = os.path.join(
-                self.share,
-                "config",
-                destination["params"],
-            )
-
-            argv = [
-                "ros2",
-                "launch",
-                "smart_farm_navigation",
-                destination["launch"],
-                "auto_start:=true",
-                f"params_file:={params}",
-            ]
-
-        self.get_logger().info(
-            f"command {command.command_id}: "
-            f"{command.destination} -> {' '.join(argv)}"
-        )
-
-        try:
-            process = subprocess.Popen(argv)
-        except OSError as error:
-            self.get_logger().error(
-                "Failed to launch navigation process: "
-                f"{type(error).__name__}: {error}"
-            )
-
+        station = destination.get("station", command.destination)
+        if station not in self.stations.get("stations", {}):
+            self.get_logger().error(f"작업점이 stations.yaml 에 없습니다: {station}")
             self._result(
                 command,
                 status="FAILED",
-                reason="NAV_FAILED",
-                phase="LAUNCH",
+                reason="INVALID_COMMAND",
+                phase="VALIDATE",
             )
             return
 
-        self.proc = process
         self.active = command
+        self.destination = destination
         self.started_at = time.monotonic()
+        self.dock_result = None
+
+        # approach 가 있으면 그 작업점까지 먼저 가고, 도착 후 정밀 도킹을 시킨다.
+        first = destination.get("approach", station)
+        if not self._send_goal(first):
+            return
+
+        self.stage = "NAV_APPROACH" if "approach" in destination else "NAV"
+        self.stage_started_at = time.monotonic()
 
         self._status(
             state="BUSY",
             task_id=command.task_id,
             command_id=command.command_id,
             phase="DRIVING",
+            detail=f"{command.destination} -> {first}",
+        )
+
+    # ---------- Nav2 ----------
+    def _send_goal(self, station_name: str) -> bool:
+        """NavigateToPose 목표를 보낸다. 콜백에서 결과를 받으므로 여기서 기다리지 않는다."""
+        if not self.nav_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("navigate_to_pose 액션 서버가 없습니다. Nav2 가 떠 있는지 확인하십시오.")
+            self._finish(status="FAILED", reason="NAV_FAILED", phase="LAUNCH")
+            return False
+
+        goal = NavigateToPose.Goal()
+        goal.pose = stations_lib.pose_of(self.stations, station_name)
+        self.goal_handle = None
+        self.result_future = None
+        self.get_logger().info(f"goToPose {station_name}: {goal.pose.pose.position.x:.2f}, {goal.pose.pose.position.y:.2f}")
+        self.nav_client.send_goal_async(goal).add_done_callback(self._on_goal_response)
+        return True
+
+    def _on_goal_response(self, future) -> None:
+        handle = future.result()
+        if not handle.accepted:
+            self.get_logger().error("Nav2 가 목표를 거부했습니다.")
+            self._finish(status="FAILED", reason="NAV_FAILED", phase="DRIVING")
+            return
+        self.goal_handle = handle
+        self.result_future = handle.get_result_async()
+
+    def _on_dock_result(self, message: String) -> None:
+        """feeder_dock 결과. 실행 식별자가 현재 명령과 같은 것만 인정한다(래치된 과거 결과 차단)."""
+        try:
+            payload = json.loads(message.data)
+        except ValueError:
+            return
+        if self.active is None or payload.get("run_id") != self.active.command_id:
+            return
+        self.dock_result = payload
+
+    def _start_docking(self) -> None:
+        command = self.active
+        self.dock_result = None
+        self.dock_start_pub.publish(String(data=command.command_id))
+        self.stage = "DOCKING"
+        self.stage_started_at = time.monotonic()
+        self.get_logger().info(f"정밀 도킹 시작 요청: run_id={command.command_id}")
+        self._status(
+            state="BUSY",
+            task_id=command.task_id,
+            command_id=command.command_id,
+            phase="DOCKING",
             detail=command.destination,
         )
 
     def _poll(self) -> None:
-        if self.active is None or self.proc is None:
+        if self.active is None:
             return
 
-        return_code = self.proc.poll()
+        if time.monotonic() - self.started_at > self.timeout:
+            self._cancel_goal()
+            self._finish(
+                status="TIMEOUT",
+                reason="RESULT_TIMEOUT",
+                phase=self.stage,
+            )
+            return
 
-        if return_code is None:
-            elapsed = time.monotonic() - self.started_at
+        if self.stage in ("NAV", "NAV_APPROACH"):
+            if self.result_future is None or not self.result_future.done():
+                return
 
-            if elapsed > self.timeout:
-                self.proc.terminate()
+            status = self.result_future.result().status
+            self.goal_handle = None
+            self.result_future = None
 
-                try:
-                    self.proc.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    self.proc.kill()
-                    self.proc.wait()
+            if status != GoalStatus.STATUS_SUCCEEDED:
+                self._finish(status="FAILED", reason="NAV_FAILED", phase="DRIVING")
+                return
 
+            if self.stage == "NAV":
                 self._finish(
-                    status="TIMEOUT",
-                    reason="RESULT_TIMEOUT",
-                    phase="DRIVING",
+                    status="SUCCEEDED",
+                    reason="NONE",
+                    phase="ARRIVED",
+                    reached_station=self.active.destination,
                 )
+                return
 
+            self._start_docking()
             return
 
-        if return_code == 0:
-            self._finish(
-                status="SUCCEEDED",
-                reason="NONE",
-                phase="ARRIVED",
-                reached_station=self.active.destination,
-            )
+        if self.stage == "DOCKING":
+            if self.dock_result is None:
+                if time.monotonic() - self.stage_started_at > self.dock_timeout:
+                    self._finish(status="TIMEOUT", reason="RESULT_TIMEOUT", phase="DOCKING")
+                return
 
-        elif return_code == 2:
-            self._finish(
-                status="FAILED",
-                reason="NAV_FAILED",
-                phase="DRIVING",
+            payload = self.dock_result
+            detail = (
+                f"face_dist={payload.get('face_dist_m')} "
+                f"yaw_err={payload.get('yaw_err_deg')} lat={payload.get('lat_m')}"
             )
+            self.get_logger().info(f"도킹 결과 {payload.get('status')}: {detail}")
 
-        else:
-            self._finish(
-                status="FAILED",
-                reason="NAV_FAILED",
-                phase="LAUNCH",
-            )
-    
+            if payload.get("status") == "SUCCEEDED":
+                self._finish(
+                    status="SUCCEEDED",
+                    reason="NONE",
+                    phase="ARRIVED",
+                    reached_station=self.active.destination,
+                )
+            else:
+                self._finish(status="FAILED", reason="NAV_FAILED", phase="DOCKING")
+
+    def _cancel_goal(self) -> None:
+        if self.goal_handle is not None:
+            self.goal_handle.cancel_goal_async()
+        self.goal_handle = None
+        self.result_future = None
+
     def _finish(
         self,
         status: str,
@@ -355,7 +434,10 @@ class NavigationNode(Node):
             return
 
         self.active = None
-        self.proc = None
+        self.stage = "IDLE"
+        self.goal_handle = None
+        self.result_future = None
+        self.dock_result = None
 
         self._result(
             command,
@@ -372,17 +454,8 @@ class NavigationNode(Node):
         )
 
     def shutdown(self) -> None:
-        if (
-            self.proc is not None
-            and self.proc.poll() is None
-        ):
-            self.proc.terminate()
-
-            try:
-                self.proc.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.proc.kill()
-                self.proc.wait()
+        """종료 시 남은 Nav2 목표를 취소해 카터가 계속 움직이지 않게 한다."""
+        self._cancel_goal()
 
 
 def main() -> None:

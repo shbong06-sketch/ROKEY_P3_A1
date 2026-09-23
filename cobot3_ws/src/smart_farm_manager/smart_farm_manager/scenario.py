@@ -93,7 +93,9 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 executor=ExecutorName.NAVIGATION,
                 operation="NAVIGATION",
                 destination="FEEDER_DOCK",
-                timeout_sec=120.0,
+                # [navigation 2026-09-23] 속도 0.3 m/s 와 Isaac 실시간 배율 0.3 이 겹쳐
+                # 접근 주행과 정밀 도킹을 합치면 벽시계로 3 분을 넘길 수 있다.
+                timeout_sec=400.0,
             ),
             StepDefinition(
                 state=CycleState.PLACE_INSPECT,

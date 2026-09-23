@@ -29,6 +29,7 @@ DEFAULT_SCENE_PATH = (
 )
 
 PHYSICS_DT = 1.0 / 60.0
+BASE_SETTLE_SECONDS = 0.5           # [navigation 2026-09-23] Place 전 차체가 멈춰 있어야 하는 시간
 RENDER_EVERY = 3
 SETTLE_STEPS = 120
 CARRY_ROTATE_DEG = 90.0
@@ -268,6 +269,8 @@ class SimulationRuntime:
     pallets: dict
     harvest_phase: str = "IDLE"
     wheels_released: bool = False
+    base_watcher: object = None
+    arm_base: object = None
 
 
 class TransferOperation:
@@ -582,6 +585,8 @@ def create_simulation_runtime(scene_path):
     )
 
     return SimulationRuntime(
+        base_watcher=base_watcher,
+        arm_base=arm_base,
         world=world,
         stage=stage,
         robot=robot,
@@ -606,6 +611,27 @@ def initialize_scene(runtime, transfer_operation, step_world):
         step_world()
 
     runtime.lift.calibrate()
+
+
+def report_dock_pose(runtime):
+    """[navigation 2026-09-23] Place 직전 카터 본체가 실제로 어디에 멈췄는지 기록한다.
+
+    Navigation 이 보고한 값과 Isaac 안의 실제 위치를 대조하기 위한 자료이며,
+    허용 범위 판정은 실측 자료가 쌓인 뒤 도입한다. 지금은 기록만 한다.
+    """
+    chassis_position, chassis_quaternion = robot_motion.prim_world_pose(
+        runtime.stage, ROBOT_PATH
+    )
+    place_position, _ = turntable_place_pose(runtime.stage)
+    offset = np.asarray(place_position[:2]) - np.asarray(chassis_position[:2])
+    print(
+        "[도킹] 카터 본체 world "
+        f"({chassis_position[0]:.3f}, {chassis_position[1]:.3f}), "
+        f"place 대상까지 x {offset[0]:+.3f} m, y {offset[1]:+.3f} m, "
+        f"직선 {float(np.linalg.norm(offset)):.3f} m",
+        flush=True,
+    )
+    return chassis_position, chassis_quaternion
 
 
 def start_operation(command, runtime, transfer_operation, node):
@@ -639,6 +665,15 @@ def start_operation(command, runtime, transfer_operation, node):
             )
             return
 
+        # [navigation 2026-09-23] 인터페이스 설계 검증 항목 7: 베이스 정지를 확인한 뒤 Place 를 시작한다.
+        if runtime.base_watcher.still_seconds < BASE_SETTLE_SECONDS:
+            node.fail(
+                reason="BASE_NOT_SETTLED",
+                phase="CHECK_BASE_STOPPED",
+                reset_required=False,
+            )
+            return
+
         brake_wheels_at_current_position(
             runtime.stage,
             RIG_PATH,
@@ -646,6 +681,7 @@ def start_operation(command, runtime, transfer_operation, node):
         )
         runtime.wheels_released = False
         runtime.lift.hold()
+        report_dock_pose(runtime)
         position, quaternion = turntable_place_pose(runtime.stage)
         runtime.motion.start_place_at_pose(position, quaternion)
         node.set_phase(
@@ -1018,6 +1054,9 @@ def run():
                         reason="MOTION_FAILED",
                         phase="EXECUTION",
                     )
+
+            # [navigation 2026-09-23] 차체 정지 감시를 매 스텝 갱신한다.
+            runtime.base_watcher.update(runtime.arm_base, PHYSICS_DT)
 
             if runtime.motion.is_carrying and not node.has_active_command:
                 runtime.lift.hold()

@@ -33,7 +33,7 @@ class LinkCheck(Node):
         self.frames = set()
         self.scan_frame = self.cloud_frame = ""
         self.cloud_pts = self.self_pts = 0
-        self.self_zones = {"rear(x<-0.6)": 0, "mid(-0.6..-0.2)": 0, "front(x>-0.2)": 0}
+        self.self_zones = {"rear(x<-0.45)": 0, "mid(-0.45..-0.2)": 0, "front(x>-0.2)": 0}
         self.self_zmax = 0.0
         self.clock_first = self.clock_last = None
         self.create_subscription(Clock, "/clock", self._on_clock, qos_profile_sensor_data)
@@ -69,12 +69,12 @@ class LinkCheck(Node):
         if pts.size == 0:
             return
         x = pts[:, 0] - 0.232; y = pts[:, 1]; z = pts[:, 2] + 0.526      # lidar -> base_link
-        inside = (x > -0.85) & (x < 0.6) & (np.abs(y) < 0.6) & (z > -0.2) & (z < 2.6)
+        inside = (x > -0.60) & (x < 0.60) & (np.abs(y) < 0.60) & (z > -0.2) & (z < 2.6)   # cloud_self_filter 의 self_box_* 기본값과 같은 값
         self.cloud_pts += len(pts); self.self_pts += int(inside.sum())
         if inside.any():
             xi, zi = x[inside], z[inside]
-            self.self_zones["rear(x<-0.6)"] += int((xi < -0.6).sum())
-            self.self_zones["mid(-0.6..-0.2)"] += int(((xi >= -0.6) & (xi < -0.2)).sum())
+            self.self_zones["rear(x<-0.45)"] += int((xi < -0.45).sum())
+            self.self_zones["mid(-0.45..-0.2)"] += int(((xi >= -0.45) & (xi < -0.2)).sum())
             self.self_zones["front(x>-0.2)"] += int((xi >= -0.2).sum())
             self.self_zmax = max(self.self_zmax, float(zi.max()))
 
@@ -103,7 +103,7 @@ def main() -> None:
     if node.n["cloud"]:
         per = node.self_pts / node.n["cloud"]
         log.info(f"[6] self returns inside the rig box: {per:.0f} of {node.cloud_pts / node.n['cloud']:.0f} points/scan "
-                 f"(rear {node.self_zones['rear(x<-0.6)'] / node.n['cloud']:.0f}, mid {node.self_zones['mid(-0.6..-0.2)'] / node.n['cloud']:.0f}, "
+                 f"(rear {node.self_zones['rear(x<-0.45)'] / node.n['cloud']:.0f}, mid {node.self_zones['mid(-0.45..-0.2)'] / node.n['cloud']:.0f}, "
                  f"front {node.self_zones['front(x>-0.2)'] / node.n['cloud']:.0f}; highest z {node.self_zmax:.2f} m)"
                  + ("   <- cloud_self_filter removes these" if per > 0 else ""))
     for name, frame in (("scan", node.scan_frame), ("cloud", node.cloud_frame)):
