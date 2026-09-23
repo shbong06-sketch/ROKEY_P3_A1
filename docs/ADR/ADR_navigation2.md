@@ -1,7 +1,7 @@
 
 # ADR_navigiation2
 
-- **"/home/rokey/ROKEY_P3_A1/docs/ADR/ADR_navigation2.md"(이하 "ADR_nav2")는 "/home/rokey/ROKEY_P3_A1" git 디렉토리에 대해서 브랜치가 feature/navigation2일 때, 당신에게 주어질 규칙, 사고규칙, 판단규칙 등을 명시하고 정의하는 문서임**
+- **"/home/rokey/ROKEY_P3_A1/docs/ADR/ADR_navigation2.md"(이하 "ADR_nav2")는 "/home/rokey/ROKEY_P3_A1" git 디렉토리에 대해서 브랜치가 feature/navigation2 및 feature/Inspection-Place-nav2일 때, 당신에게 주어질 규칙, 사고규칙, 판단규칙 등을 명시하고 정의하는 문서임**
 - **ADR_nav2의 규칙은 ADR_basic.md의 규칙보다 우선되지 않음.**
 - **ADR_nav2의 내용을 수정하는 경우는 1) 프롬프터인 내가 그러한 행위를 직접 당신에게 지시했을 때, 2) 본 ADR_nav2의 내용이 수정되지 않고서는 내가 당신에게 시킨 업무를 해낼 수 없을 때 나한테 해당 안건을 보고하고 그것을 승인까지 받았을 때만으로 한정함**
 
