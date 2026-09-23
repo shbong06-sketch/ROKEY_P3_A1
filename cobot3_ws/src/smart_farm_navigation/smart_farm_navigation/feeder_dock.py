@@ -24,6 +24,7 @@ import numpy as np
 import rclpy
 import rclpy.executors
 from geometry_msgs.msg import PoseWithCovarianceStamped, Twist
+from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
 from sensor_msgs.msg import LaserScan
@@ -110,6 +111,14 @@ class FeederDock(Node):
         d("turn_speed_radps", 0.35); d("turn_min_radps", 0.08)
         d("yaw_tol_deg", 1.5); d("dist_tol_m", 0.03); d("lat_tol_m", 0.04)
         d("k_yaw", 1.5); d("k_lat", 1.2); d("timeout_s", 120.0)
+        # 2026-09-23 실측: 후진 중 방향이 25도 틀어졌고, 도킹 지점에서 제자리 회전을 하다가
+        # 팔이 든 팔레트가 컨베이어에 걸려 멈췄다. 도킹 근처에서는 제자리 회전을 하지 않는다.
+        d("reverse_w_max", 0.20)          # 후진 중 조향 상한. 크면 짧은 거리에서 방향이 크게 흔들린다
+        d("square_tol_deg", 3.0)          # 도착 시 허용 방향 오차
+        d("backoff_extra_m", 0.60)        # 다시 맞출 때 면에서 얼마나 더 떨어져서 회전하는가
+        d("max_retry", 2)
+        d("stall_check_s", 3.0)           # 명령을 내는데 이만큼 움직임이 없으면 멈춘 것으로 본다
+        d("stall_move_m", 0.02)
         p = lambda n: self.get_parameter(n).value  # noqa: E731
         self.auto = bool(p("auto_start")); self.arm = (float(p("arm_x")), float(p("arm_y"))); self.arm_r = float(p("arm_radius_m"))
         self.standoff = float(p("standoff_m")); self.len_lim = (float(p("face_min_len_m")), float(p("face_max_len_m")))
@@ -118,6 +127,9 @@ class FeederDock(Node):
         self.w_turn = float(p("turn_speed_radps")); self.w_min = float(p("turn_min_radps"))
         self.yaw_tol = math.radians(float(p("yaw_tol_deg"))); self.dist_tol = float(p("dist_tol_m")); self.lat_tol = float(p("lat_tol_m"))
         self.k_yaw = float(p("k_yaw")); self.k_lat = float(p("k_lat")); self.timeout = float(p("timeout_s"))
+        self.w_rev_max = float(p("reverse_w_max")); self.square_tol = math.radians(float(p("square_tol_deg")))
+        self.backoff_extra = float(p("backoff_extra_m")); self.max_retry = int(p("max_retry"))
+        self.stall_check = float(p("stall_check_s")); self.stall_move = float(p("stall_move_m"))
 
         self.cmd = self.create_publisher(Twist, p("cmd_vel_topic"), 10)
         latched = QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -126,6 +138,7 @@ class FeederDock(Node):
         self.create_subscription(LaserScan, p("scan_topic"), self._on_scan, qos_profile_sensor_data)
         self.create_subscription(String, "/feeder_dock/start", lambda m: self._start(m.data or "manual"), 10)
         self.create_subscription(PoseWithCovarianceStamped, "/amcl_pose", self._on_amcl, 10)
+        self.create_subscription(Odometry, "/chassis/odom", self._on_odom, qos_profile_sensor_data)
         self.create_subscription(Twist, "/cmd_vel", self._on_cmd, 10)
 
         self.face = None           # (d, yaw_err, lat, cx, cy, n_pts, length)
@@ -134,6 +147,8 @@ class FeederDock(Node):
         self.amcl_xy = None; self.last_ext_cmd = 0.0; self.near_since = None
         self.phase = "IDLE"; self.t_phase = 0.0; self.t_start = 0.0; self.done = False
         self.run_id = ""          # 명령을 보낸 쪽이 준 실행 식별자. 결과에 그대로 담아 과거 결과와 구분한다.
+        self.retry = 0
+        self.odom_xy = None; self.stall_ref = None; self.stall_since = 0.0
         self.auto_seq = 0
         self.create_timer(0.05, self._tick)
         self.create_timer(5.0, self._report)
@@ -155,6 +170,19 @@ class FeederDock(Node):
         return self.get_clock().now().nanoseconds * 1e-9
 
     def _on_amcl(self, m):  self.amcl_xy = (m.pose.pose.position.x, m.pose.pose.position.y)
+
+    def _on_odom(self, m):
+        self.odom_xy = (m.pose.pose.position.x, m.pose.pose.position.y)
+
+    def _stalled(self, now) -> bool:
+        """명령을 내고 있는데 실제로 움직이지 않으면 True. 구조물에 걸린 채 밀지 않게 한다."""
+        if self.odom_xy is None:
+            return False
+        if self.stall_ref is None or math.hypot(self.odom_xy[0] - self.stall_ref[0],
+                                                self.odom_xy[1] - self.stall_ref[1]) > self.stall_move:
+            self.stall_ref = self.odom_xy; self.stall_since = now
+            return False
+        return now - self.stall_since > self.stall_check
     def _on_cmd(self, m):
         if self.phase in ("IDLE", "DONE", "FAILED") and (abs(m.linear.x) > 0.01 or abs(m.angular.z) > 0.01):
             self.last_ext_cmd = self._now()
@@ -189,6 +217,7 @@ class FeederDock(Node):
             self.get_logger().warning(f"start '{run_id}' 무시: 이미 {self.phase}")
             return
         self.done = False; self.t_start = self._now(); self.run_id = run_id
+        self.retry = 0; self.stall_ref = None; self.stall_since = self._now()
         self._status("ALIGN_TO_GOAL", f"started (run_id={run_id})")
 
     def _finish(self, ok, reason):
@@ -204,6 +233,8 @@ class FeederDock(Node):
 
     def _pub(self, v, w):
         t = Twist(); t.linear.x = float(v); t.angular.z = float(w); self.cmd.publish(t)
+        if abs(v) < 1e-3 and abs(w) < 1e-3:
+            self.stall_ref = None      # 정지 명령 중에는 멈춤 판정을 하지 않는다
 
     def _turn_cmd(self, err):
         w = max(min(self.k_yaw * err, self.w_turn), -self.w_turn)
@@ -242,31 +273,52 @@ class FeederDock(Node):
         bearing_rear = wrap(math.atan2(gy, gx) - math.pi)       # 0 when G is straight behind
 
         if self.phase == "ALIGN_TO_GOAL":
+            # 면에서 충분히 떨어진 자리에서만 제자리 회전을 한다. 도킹 지점에서는 회전하지 않는다.
             if g_dist < 0.12:
-                self._status("SQUARE", f"already at goal point (|G|={g_dist:.2f})"); return
+                self._status("CHECK", f"already at goal point (|G|={g_dist:.2f})"); return
             if abs(bearing_rear) < self.yaw_tol:
                 self._status("REVERSE", f"G behind at {g_dist:.2f} m; face d={dist:.2f} yaw={math.degrees(yaw_err):+.1f} lat={lat:+.2f}")
             else:
+                if self._stalled(now):
+                    self._finish(False, "STALLED_ALIGN"); return
                 self._pub(0.0, self._turn_cmd(bearing_rear))
         elif self.phase == "REVERSE":
             if g_dist < 0.06 or dist <= self.standoff + 0.02:
-                self._pub(0.0, 0.0); self._status("SQUARE", f"reached G (|G|={g_dist:.2f}, d={dist:.2f})"); return
+                self._pub(0.0, 0.0); self._status("CHECK", f"reached G (|G|={g_dist:.2f}, d={dist:.2f}, yaw={math.degrees(yaw_err):+.1f})"); return
+            if self._stalled(now):
+                self._finish(False, "STALLED_REVERSE"); return
             v = self.v_rev if g_dist > 0.3 else max(self.v_creep, self.v_rev * g_dist / 0.3)
-            # reversing: steer so the rear keeps pointing at G (sign flips because we move backward)
-            w = max(min(self.k_lat * bearing_rear, 0.5), -0.5)   # G left of the rear axis -> bearing < 0 -> turn CW so the rear swings left
+            # 멀리서는 뒤축을 목표점에 겨누고, 가까워질수록 면과 직각을 맞추는 쪽으로 넘어간다.
+            # 목표점만 겨누면 거리가 짧아질수록 조향이 민감해져 방향이 크게 틀어진다(2026-09-23 실측 25도).
+            blend = min(1.0, g_dist / 0.5)
+            w = self.k_lat * bearing_rear * blend + self.k_yaw * yaw_err * (1.0 - blend)
+            w = max(min(w, self.w_rev_max), -self.w_rev_max)
             self._pub(-v, w)
-        elif self.phase == "SQUARE":
-            if abs(yaw_err) < self.yaw_tol:
+        elif self.phase == "CHECK":
+            # 도킹 지점에서는 회전하지 않는다. 방향이 틀어졌으면 면에서 물러나 다시 맞춘다.
+            if abs(yaw_err) <= self.square_tol:
                 self._status("CREEP", f"square (yaw {math.degrees(yaw_err):+.1f}); d={dist:.3f} target {self.standoff:.2f}")
-            else:
-                self._pub(0.0, self._turn_cmd(yaw_err))
+                return
+            if self.retry >= self.max_retry:
+                self._finish(False, f"YAW_OFF_{math.degrees(yaw_err):+.0f}DEG"); return
+            self.retry += 1
+            self._status("BACKOFF", f"yaw {math.degrees(yaw_err):+.1f} 도 틀어짐 -> 물러나 다시 맞춤 ({self.retry}/{self.max_retry})")
+        elif self.phase == "BACKOFF":
+            target = self.standoff + self.backoff_extra
+            if dist >= target:
+                self._pub(0.0, 0.0); self._status("ALIGN_TO_GOAL", f"물러남 완료 (d={dist:.2f})"); return
+            if self._stalled(now):
+                self._finish(False, "STALLED_BACKOFF"); return
+            self._pub(self.v_rev, max(min(self.k_yaw * yaw_err, 0.15), -0.15))
         elif self.phase == "CREEP":
             e = dist - self.standoff
             if abs(e) < self.dist_tol:
                 self._pub(0.0, 0.0)
                 self._finish(True, "NONE"); return
-            v = math.copysign(self.v_creep, -e)               # e>0: too far -> reverse (negative x)
-            self._pub(v, max(min(self.k_yaw * yaw_err, 0.15), -0.15))
+            if self._stalled(now):
+                self._finish(False, "STALLED_CREEP"); return
+            v = math.copysign(self.v_creep, -e)               # e>0: 너무 멀다 -> 후진
+            self._pub(v, max(min(self.k_yaw * yaw_err, 0.10), -0.10))
         if now - self.t_phase > 45.0:
             self._finish(False, f"PHASE_TIMEOUT_{self.phase}")
 
