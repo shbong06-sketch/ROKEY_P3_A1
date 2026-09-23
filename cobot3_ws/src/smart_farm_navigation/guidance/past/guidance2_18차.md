@@ -89,9 +89,9 @@ ros2 launch smart_farm_navigation navigation_node.launch.py 2>&1 | tee /home/rok
 
 ## 5. 내피 터미널 5 (명령 발행과 결과 확인)
 
-**이 터미널은 반드시 내피에서 연다.** 주행 명령은 `smart_farm_interfaces` 메시지를 쓰는데, 그 패키지는 2절에서 빌드한 내피 워크스페이스에만 있다. 고피 터미널에서 보내면 `The passed message type is invalid` 로 끝난다.
+**이 터미널은 반드시 내피(`lwh19180`)에서 연다.** 주행 명령은 `smart_farm_interfaces` 메시지를 쓰는데, 그 패키지는 2절에서 빌드한 내피 워크스페이스에만 있다. 고피(`IsaacSim03`)에는 `cobot3_ws/install` 자체가 없어 `No such file or directory` 와 `Unknown package 'smart_farm_interfaces'` 로 끝난다.
 
-먼저 메시지 타입이 읽히는지 확인한다.
+먼저 어느 PC 인지와 메시지 타입이 읽히는지 함께 확인한다.
 
 ```bash
 export ROS_DOMAIN_ID=101
@@ -99,10 +99,15 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
 source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+hostname
 ros2 interface show smart_farm_interfaces/msg/TaskCommand
 ```
 
-`string task_id` 로 시작하는 필드 목록이 나와야 한다. 아무것도 안 나오거나 오류가 나면 2절의 빌드가 끝나지 않은 것이므로 2절을 다시 실행한다.
+`lwh19180` 과 `string task_id` 로 시작하는 필드 목록이 함께 나와야 한다.
+
+- `IsaacSim03` 이 나오면 고피 터미널이다. 내피에서 다시 연다.
+- 내피인데 필드가 안 나오면 2절의 빌드가 끝나지 않은 것이므로 2절을 다시 실행한다.
+- 꼭 고피에서 명령을 보내야 한다면 고피에서 `cd /home/rokey/ROKEY_P3_A1/cobot3_ws && colcon build --packages-select smart_farm_interfaces` 를 한 번 돌린 뒤 이 블록을 다시 실행한다. 단, **Isaac 을 띄우는 터미널에서는 워크스페이스를 source 하지 않는다**(팀 앱이 Isaac 번들 ROS 라이브러리를 먼저 쓰도록 되어 있어 충돌한다).
 
 그 다음 팔레트를 집는다.
 
@@ -163,7 +168,8 @@ ros2 topic echo /sim_task/result std_msgs/msg/String --once
 | 도킹은 끝났는데 팔이 닿지 않음(역기구학 실패) | 도킹 거리를 줄인다. 터미널 3 을 `ros2 launch smart_farm_navigation nav2.launch.py record:=true dock_auto:=false` 로 띄운 뒤, 별도 터미널에서 `ros2 run smart_farm_navigation feeder_dock --ros-args -p use_sim_time:=true -p standoff_m:=0.70` 으로 바꿔 실행한다. 이때 `self_box_x` 도 `[-0.55, 0.60]` 으로 함께 내려야 한다 |
 | `PLACE_INSPECT` 가 `BASE_NOT_SETTLED` 로 실패 | 도킹 직후 카터가 아직 흔들리고 있다. 결과를 받은 뒤 2~3 초 기다렸다 명령을 보낸다 |
 | 주행 중 시간 초과 | 실시간 배율이 0.2 아래로 떨어진 경우다. 고피에서 다른 GPU 작업(비전 컨테이너 등)을 함께 돌리고 있는지 확인한다 |
-| `The passed message type is invalid` | 그 터미널이 내피가 아니거나 워크스페이스를 source 하지 않았다. 5절 첫 블록의 확인 명령을 먼저 돌린다 |
+| `The passed message type is invalid` 또는 `Unknown package 'smart_farm_interfaces'` | 그 터미널이 내피가 아니거나 워크스페이스를 source 하지 않았다. 5절 첫 블록의 `hostname` 과 `ros2 interface show` 를 먼저 돌린다 |
+| `install/setup.bash: No such file or directory` | 고피 터미널이다. 고피에는 워크스페이스가 빌드되어 있지 않다. 내피에서 연다 |
 | 발행 명령이 15 초 뒤 오류로 끝남 | 구독자를 못 찾았다. `/navigation/command` 면 4절 터미널이 떠 있는지, `/sim_task/command` 면 1절 고피 앱이 `[대기]` 상태인지 확인한다. 두 PC 의 `ROS_DOMAIN_ID` 가 같은지도 본다 |
 | 접근 지점에 멈춘 뒤 도킹이 시작되지 않음 | 터미널 3 에 `FEEDER_APPROACH 부근에 서 있으나 자동 시작이 꺼져 있습니다` 경고가 뜬다. 4·5 절 명령으로 시작하거나, 아래 RViz2 방식으로 다시 띄운다 |
 | RViz2 로 손 시험하고 싶음 | 터미널 3 을 `ros2 launch smart_farm_navigation nav2.launch.py record:=true dock_auto:=true` 로 띄우고 터미널 4·5 를 생략한다. `FEEDER_APPROACH` 화살표를 Nav2 Goal 로 한 번 클릭하면 도착 후 자동으로 도킹한다 |
