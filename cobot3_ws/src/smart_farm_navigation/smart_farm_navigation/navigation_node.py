@@ -23,6 +23,7 @@ import subprocess
 import time
 
 import rclpy
+import rclpy.executors
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
@@ -235,20 +236,27 @@ class NavigationNode(Node):
             )
             return
 
-        params = os.path.join(
-            self.share,
-            "config",
-            destination["params"],
-        )
+        if "station" in destination:
+            # Nav2 모드 (destinations_nav2.yaml): go_to_station 이 NavigateToPose 로 주행. exit code 0/2 규약은 동일.
+            argv = [
+                "ros2", "run", "smart_farm_navigation", "go_to_station",
+                "--ros-args", "-p", f"station:={destination['station']}",
+            ]
+        else:
+            params = os.path.join(
+                self.share,
+                "config",
+                destination["params"],
+            )
 
-        argv = [
-            "ros2",
-            "launch",
-            "smart_farm_navigation",
-            destination["launch"],
-            "auto_start:=true",
-            f"params_file:={params}",
-        ]
+            argv = [
+                "ros2",
+                "launch",
+                "smart_farm_navigation",
+                destination["launch"],
+                "auto_start:=true",
+                f"params_file:={params}",
+            ]
 
         self.get_logger().info(
             f"command {command.command_id}: "
@@ -383,12 +391,13 @@ def main() -> None:
     
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass
     finally:
         node.shutdown()
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():                 # ros2 launch 의 Ctrl+C 는 컨텍스트를 먼저 닫으므로 두 번 shutdown 하지 않음
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":
