@@ -12,7 +12,7 @@ that line: (1) turn in place so the rear points at the goal point on the face's 
 
 Geometry (base_link, x forward = drive wheels, rear = -x = M0609 side):
   face line fitted to scan points 0.5..3.2 m behind the robot; the face is ~1.15 m long.
-  goal: base_link `standoff_m` (default 0.75 m) in front of the face on the normal through the face centre,
+  goal: base_link `standoff_m` (default 0.85 m) in front of the face on the normal through the face centre,
         rear square to the face  ->  world (-2.19, -2.60, 90 deg) for the v011 scene.
 """
 
@@ -101,8 +101,9 @@ class FeederDock(Node):
         d("scan_topic", "/scan"); d("cmd_vel_topic", "/cmd_vel")
         d("auto_start", False)          # 통합은 명령으로 시작한다. RViz2 수동 절차는 launch 인자 dock_auto:=true
         d("arm_x", -2.19); d("arm_y", -1.55); d("arm_radius_m", 0.6)     # FEEDER_APPROACH (map)
-        d("standoff_m", 0.75)                     # base_link ~ TurnTable 앞면 거리. v011 면 y -3.60 -> base_link y -2.85.
-        #   팔 밑동에서 place 대상(y -3.91)까지 직선 0.90 m 로 M0609 도달 한계와 같다. 역기구학이 실패하면 0.70 으로 내린다.
+        d("standoff_m", 0.85)                     # base_link ~ TurnTable 앞면 거리. v011 면 y -3.60 -> base_link y -2.75.
+        #   팀 robot_motion.BASE_TO_PALLET_X 가 팔 밑동~대상 0.89~1.05 m 를 요구한다. 팔 밑동은 base_link 에서 0.20 m 뒤이므로
+        #   대상까지 거리 = 0.11 + standoff. 0.85 면 0.96 m 로 그 범위 한가운데다(0.75 는 0.86 m 로 범위 밖이었다).
         d("face_min_len_m", 0.6); d("face_max_len_m", 1.6)
         d("search_x", [-3.4, -0.5]); d("search_y", [-1.3, 1.3])
         d("reverse_speed_mps", 0.15); d("creep_speed_mps", 0.05)
