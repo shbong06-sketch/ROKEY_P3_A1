@@ -572,6 +572,8 @@ def create_simulation_runtime(scene_path):
     print("[시작] 모션 제어기 초기화가 완료되었습니다.", flush=True)
 
     base_watcher = BaseWatcher()
+    # [navigation 2026-09-23] Place 전 검사용 감시기. transfer 가 쓰는 base_watcher 와 섞지 않는다.
+    place_watcher = BaseWatcher()
     transfer = PalletTransferController(
         lift,
         motion,
@@ -585,7 +587,7 @@ def create_simulation_runtime(scene_path):
     )
 
     return SimulationRuntime(
-        base_watcher=base_watcher,
+        base_watcher=place_watcher,
         arm_base=arm_base,
         world=world,
         stage=stage,
@@ -619,19 +621,19 @@ def report_dock_pose(runtime):
     Navigation 이 보고한 값과 Isaac 안의 실제 위치를 대조하기 위한 자료이며,
     허용 범위 판정은 실측 자료가 쌓인 뒤 도입한다. 지금은 기록만 한다.
     """
-    chassis_position, chassis_quaternion = robot_motion.prim_world_pose(
-        runtime.stage, ROBOT_PATH
-    )
+    chassis_position, _ = runtime.robot.get_world_pose()
     place_position, _ = turntable_place_pose(runtime.stage)
-    offset = np.asarray(place_position[:2]) - np.asarray(chassis_position[:2])
+    chassis_x = float(chassis_position[0])
+    chassis_y = float(chassis_position[1])
+    offset_x = float(place_position[0]) - chassis_x
+    offset_y = float(place_position[1]) - chassis_y
+    distance = (offset_x * offset_x + offset_y * offset_y) ** 0.5
     print(
-        "[도킹] 카터 본체 world "
-        f"({chassis_position[0]:.3f}, {chassis_position[1]:.3f}), "
-        f"place 대상까지 x {offset[0]:+.3f} m, y {offset[1]:+.3f} m, "
-        f"직선 {float(np.linalg.norm(offset)):.3f} m",
+        f"[도킹] 카터 본체 world ({chassis_x:.3f}, {chassis_y:.3f}), "
+        f"place 대상까지 x {offset_x:+.3f} m, y {offset_y:+.3f} m, "
+        f"직선 {distance:.3f} m",
         flush=True,
     )
-    return chassis_position, chassis_quaternion
 
 
 def start_operation(command, runtime, transfer_operation, node):

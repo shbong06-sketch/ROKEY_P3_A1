@@ -31,9 +31,13 @@ export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
 source /opt/ros/jazzy/setup.bash
 cd /home/rokey/ROKEY_P3_A1/cobot3_ws
 colcon build --packages-select smart_farm_interfaces smart_farm_manager 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/build_gopi_$(date +%Y%m%d_%H%M).txt
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+ros2 interface show smart_farm_interfaces/msg/TaskCommand
 ```
 
-기대: `Summary: 2 packages finished`. 이 터미널은 5절에서 다시 쓴다.
+기대: `Summary: 2 packages finished` 뒤에 `string task_id` 로 시작하는 필드 목록이 나온다. 이 터미널은 6절에서 다시 쓴다.
+
+**빌드는 한 번이면 되지만 `source` 는 새 터미널을 열 때마다 해야 한다.** 그래서 6절의 모든 명령 블록에 환경 줄과 `source` 가 들어 있다. 블록을 통째로 붙여 쓴다.
 
 - `colcon: command not found` 가 나오면 고피에 colcon 이 없는 것이다. 그때는 5절을 내피에서 실행하고 그 사실을 보고한다.
 - 빌드 산출물(`build/`, `install/`, `log/`)은 git 에 올라가지 않는다.
@@ -118,6 +122,11 @@ ros2 interface show smart_farm_interfaces/msg/TaskCommand
 이어서 팔레트를 집는다.
 
 ```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 ros2 topic pub --once --max-wait-time-secs 15 /sim_task/command std_msgs/msg/String '{data: "{\"task_id\": \"TASK-20260923-001\", \"command_id\": \"TASK-20260923-001-CMD-001\", \"operation\": \"PICK_HARVEST\", \"recipe_id\": \"HARVEST_RACK_L1\", \"pallet_id\": \"PALLET_001\", \"source\": \"RACK_L1\", \"destination\": \"CARRY\"}"}' 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/cmd_$(date +%Y%m%d)_gopi.txt
 ros2 topic echo /sim_task/result std_msgs/msg/String --once 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/cmd_$(date +%Y%m%d)_gopi.txt
 ```
@@ -125,6 +134,11 @@ ros2 topic echo /sim_task/result std_msgs/msg/String --once 2>&1 | tee -a /home/
 `"status": "SUCCEEDED"` 와 `"safe_to_navigate": true` 를 확인한 뒤 주행을 지시한다.
 
 ```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 ros2 topic pub --once --max-wait-time-secs 15 /navigation/command smart_farm_interfaces/msg/TaskCommand "{task_id: 'TASK-20260923-001', command_id: 'TASK-20260923-001-CMD-002', operation: 'NAVIGATION', destination: 'FEEDER_DOCK'}" 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/cmd_$(date +%Y%m%d)_gopi.txt
 ros2 topic echo /navigation/result smart_farm_interfaces/msg/TaskResult --once 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/cmd_$(date +%Y%m%d)_gopi.txt
 ```
@@ -143,6 +157,11 @@ result SUCCEEDED/NONE for TASK-20260923-001-CMD-002 (phase ARRIVED)
 마지막으로 팔레트를 내려놓는다.
 
 ```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 ros2 topic pub --once --max-wait-time-secs 15 /sim_task/command std_msgs/msg/String '{data: "{\"task_id\": \"TASK-20260923-001\", \"command_id\": \"TASK-20260923-001-CMD-003\", \"operation\": \"PLACE_INSPECT\", \"recipe_id\": \"PLACE_AT_INSPECTION\", \"pallet_id\": \"PALLET_001\", \"source\": \"CARRY\", \"destination\": \"INSPECT_STATION\"}"}' 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/cmd_$(date +%Y%m%d)_gopi.txt
 ros2 topic echo /sim_task/result std_msgs/msg/String --once 2>&1 | tee -a /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/cmd_$(date +%Y%m%d)_gopi.txt
 ```
@@ -154,7 +173,7 @@ ros2 topic echo /sim_task/result std_msgs/msg/String --once 2>&1 | tee -a /home/
 | 증상 | 조치 |
 |---|---|
 | `install/setup.bash: No such file or directory` (고피) | 1절 빌드를 하지 않았다. 1절을 먼저 실행한다 |
-| `Unknown package 'smart_farm_interfaces'` | 같은 원인이다. 1절 뒤 `source` 까지 한 터미널에서 실행한다 |
+| `Unknown package 'smart_farm_interfaces'` 또는 `The passed message type is invalid` | 그 터미널에서 `source .../install/setup.bash` 를 하지 않았다. 6절 블록을 줄 일부만 붙이지 말고 통째로 붙인다. 그래도 안 되면 1절 빌드부터 다시 한다 |
 | 발행 명령이 15 초 뒤 오류로 끝남 | 구독자를 못 찾았다. `/navigation/command` 면 5절 터미널이 떠 있는지, `/sim_task/command` 면 2절 Isaac 이 `[대기]` 상태인지 확인한다. 두 PC 의 도메인이 같은지도 본다 |
 | Isaac 터미널에서 rclpy 오류로 죽음 | 그 터미널에서 워크스페이스를 `source` 했을 가능성이 크다. 새 터미널에서 워크스페이스 없이 2절만 실행한다 |
 | `navigate_to_pose 액션 서버가 없습니다` | 4절 Nav2 가 아직 안 떴다. `Managed nodes are active` 를 본 뒤 명령을 보낸다 |
