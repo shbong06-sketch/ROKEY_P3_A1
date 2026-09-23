@@ -9,7 +9,7 @@ import pytest
 import rclpy
 
 from smart_farm_interfaces.msg import TaskCommand
-import smart_farm_vision.inspection_executor_node as executor_module
+import cobot3_ws.src.smart_farm_vision.smart_farm_vision.object_detection_node as executor_module
 from smart_farm_vision.yolo_detector import Detection
 from smart_farm_vision.yolo_detector import EXPECTED_CLASS_NAMES
 

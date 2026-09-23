@@ -44,9 +44,10 @@ DEFAULT_SLOT_ROIS = {
     'SLOT_05': (0.3333333333, 0.5, 0.3333333333, 0.5),
     'SLOT_06': (0.6666666666, 0.5, 0.3333333334, 0.5),
 }
+
 DEFAULT_CLASS_OUTCOMES = {
     'lettuce_dark_green': 'NORMAL',
-    'lettuce_yellow': 'UNKNOWN',
+    'lettuce_yellow': 'DEFECT',
     'lettuce_brown': 'DEFECT',
 }
 VALID_OUTCOMES = frozenset({'NORMAL', 'DEFECT', 'UNKNOWN'})
