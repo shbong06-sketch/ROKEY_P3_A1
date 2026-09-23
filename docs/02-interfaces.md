@@ -177,7 +177,7 @@ status Topic은 진행 관찰과 PREFLIGHT에 사용한다. Task Manager의 단�
   },
   "task_id": "TASK-20260922-001",
   "command_id": "TASK-20260922-001-CMD-005",
-  "pallet_id": "PALLET_004",
+  "pallet_id": "PALLET_001",
   "image_width": 1280,
   "image_height": 720,
   "detections": [
@@ -240,8 +240,8 @@ status Topic은 진행 관찰과 PREFLIGHT에 사용한다. Task Manager의 단�
   "safe_to_navigate": false,
   "reached_station": "",
   "completed_units": [
-    "PALLET_002:RACK_L2:RACK_L3",
-    "PALLET_001:RACK_L1:RACK_L2"
+    "PALLET_002:RACK_L3:RACK_L2",
+    "PALLET_003:RACK_L4:RACK_L3"
   ],
   "defect_slots": [],
   "unknown_slots": []
@@ -352,11 +352,11 @@ Task Manager가 task_id와 command_id를 생성한다. 모든 결과는 요청�
 
 | operation | 수신 노드 | 필수 입력 | 성공 결과의 필수 조건 |
 | --- | --- | --- | --- |
-| TRANSFER | Sim Task Executor | recipe_id=RACK_REARRANGE_01 | L2→L3와 L1→L2 완료, completed_units 2개 |
-| PICK_HARVEST | Sim Task Executor | pallet_id=PALLET_004, source=RACK_L4 | safe_to_navigate=true |
+| TRANSFER | Sim Task Executor | recipe_id=RACK_REARRANGE_01 | PALLET_002 L3→L2와 PALLET_003 L4→L3 완료, completed_units 2개 |
+| PICK_HARVEST | Sim Task Executor | pallet_id=PALLET_001, source=RACK_L1 | safe_to_navigate=true |
 | NAVIGATION | Navigation Node | destination=INSPECTION_DOCK | reached_station=INSPECTION_DOCK |
-| PLACE_INSPECT | Sim Task Executor | pallet_id=PALLET_004, destination=INSPECT_STATION | VERIFY_PLACE 통과 |
-| INSPECT | Inspection Node | pallet_id=PALLET_004 | SLOT_01~SLOT_06 결과, unknown_slots 없음 |
+| PLACE_INSPECT | Sim Task Executor | pallet_id=PALLET_001, destination=INSPECT_STATION | VERIFY_PLACE 통과 |
+| INSPECT | Inspection Node | pallet_id=PALLET_001 | SLOT_01~SLOT_06 결과, unknown_slots 없음 |
 | CULL | Sim Task Executor | pallet_id와 target_slots | 모든 대상 슬롯 제거 확인 |
 | CONVEYOR_OUT | Sim Task Executor | pallet_id, destination=PACK_OUT | 출구 감지와 작업 기록 완료 |
 
@@ -386,9 +386,9 @@ INSPECT 결과 defect_slots가 비어 있으면 Task Manager는 CULL 명령을 �
   "task_id": "TASK-20260919-001",
   "command_id": "TASK-20260919-001-CMD-002",
   "operation": "PICK_HARVEST",
-  "recipe_id": "HARVEST_RACK_L4",
-  "pallet_id": "PALLET_004",
-  "source": "RACK_L4",
+  "recipe_id": "HARVEST_RACK_L1",
+  "pallet_id": "PALLET_001",
+  "source": "RACK_L1",
   "destination": "CARRY",
   "target_slots": []
 }
@@ -418,7 +418,7 @@ unknown_slots: []
   "command_id": "TASK-20260919-001-CMD-006",
   "operation": "CULL",
   "recipe_id": "CULL_DEFECT_SLOTS",
-  "pallet_id": "PALLET_004",
+  "pallet_id": "PALLET_001",
   "source": "INSPECT_STATION",
   "destination": "INSPECT_STATION",
   "target_slots": ["SLOT_03", "SLOT_06"]

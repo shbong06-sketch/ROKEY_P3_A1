@@ -52,10 +52,9 @@
 
 랙 층 번호와 리프트 높이 번호를 혼동하지 않도록 작업 목적 기반 프로파일을 사용한다.
 
-- TRANSFER_L3_TO_L4
-- TRANSFER_L2_TO_L3
-- TRANSFER_L1_TO_L2
-- PICK_RACK_L4
+- TRANSFER_L3_TO_L2
+- TRANSFER_L4_TO_L3
+- PICK_RACK_L1
 - PLACE_INSPECTION
 - TRAVEL
 
@@ -120,9 +119,9 @@ PREFLIGHT를 포함한 총 8개 상태이며, 실제 공정은 7개 실행 단�
 
 | 번호 | 상태 | 실행 주체 | 주요 동작 | 완료 조건 |
 | --- | --- | --- | --- | --- |
-| 0 | PREFLIGHT | Task Manager | Sim·Navigation·Inspection 준비, 초기 랙 점유와 장면 확인 | 모든 Executor READY, RACK_L3 공석 |
-| 1 | TRANSFER | Sim Task Executor | L2→L3 이동 후 L1→L2 이동 | 두 단위 이동 모두 성공 |
-| 2 | PICK_HARVEST | Sim Task Executor | 수확 팔레트 L4 PICK, 인출, 운송 자세·높이 | safe_to_navigate=true |
+| 0 | PREFLIGHT | Task Manager | Sim·Navigation·Inspection 준비, 초기 랙 점유와 장면 확인 | 모든 Executor READY, RACK_L2 공석 |
+| 1 | TRANSFER | Sim Task Executor | PALLET_002 L3→L2 이동 후 PALLET_003 L4→L3 이동 | 두 단위 이동 모두 성공 |
+| 2 | PICK_HARVEST | Sim Task Executor | PALLET_001을 L1에서 PICK, 인출, 운송 자세·높이 | safe_to_navigate=true |
 | 3 | NAVIGATION | Navigation Node | Nav2로 INSPECTION_DOCK 이동 | Nav2 성공 및 목적지 일치 |
 | 4 | PLACE_INSPECT | Sim Task Executor | 베이스 정지 확인 후 검사대 위 PLACE | 팔레트 안착 확인 |
 | 5 | INSPECT | Inspection Node | 카메라 인식과 SLOT_01~SLOT_06 검사 | 슬롯별 결과 생성, 미판정 없음 |
@@ -138,15 +137,15 @@ PREFLIGHT를 포함한 총 8개 상태이며, 실제 공정은 7개 실행 단�
 TRANSFER는 Task Manager 관점에서 하나의 단계지만 내부에서는 두 단위 작업을 연속 실행한다.
 
 1. CHECK_BASE_STOPPED
-2. TRANSFER_UNIT_01: LIFT_TO_PROFILE(TRANSFER_L2_TO_L3) → ARM_PICK(RACK_L2) → VERIFY_PICK → ARM_RETRACT → ARM_PLACE(RACK_L3) → VERIFY_PLACE → ARM_SAFE
-3. TRANSFER_UNIT_02: LIFT_TO_PROFILE(TRANSFER_L1_TO_L2) → ARM_PICK(RACK_L1) → VERIFY_PICK → ARM_RETRACT → ARM_PLACE(RACK_L2) → VERIFY_PLACE → ARM_SAFE
+2. TRANSFER_UNIT_01: PALLET_002, LIFT_TO_PROFILE(TRANSFER_L3_TO_L2) → ARM_PICK(RACK_L3) → VERIFY_PICK → ARM_RETRACT → ARM_PLACE(RACK_L2) → VERIFY_PLACE → ARM_SAFE
+3. TRANSFER_UNIT_02: PALLET_003, LIFT_TO_PROFILE(TRANSFER_L4_TO_L3) → ARM_PICK(RACK_L4) → VERIFY_PICK → ARM_RETRACT → ARM_PLACE(RACK_L3) → VERIFY_PLACE → ARM_SAFE
 4. RESULT
 
 각 단위 작업에서 PICK과 PLACE는 같은 리프트 높이에서 수행한다. PICK과 PLACE 사이에는 리프트 이동이 없다.
 
 ### PICK_HARVEST
 
-CHECK_BASE_STOPPED → LIFT_TO_PROFILE(PICK_RACK_L4) → ARM_PICK(RACK_L4) → VERIFY_PICK → ARM_RETRACT → ARM_TRANSPORT_POSE → LIFT_TO_PROFILE(TRAVEL) → VERIFY_TRANSPORT_READY → RESULT
+CHECK_BASE_STOPPED → LIFT_TO_PROFILE(PICK_RACK_L1) → ARM_PICK(PALLET_001, RACK_L1) → VERIFY_PICK → ARM_RETRACT → ARM_TRANSPORT_POSE → LIFT_TO_PROFILE(TRAVEL) → VERIFY_TRANSPORT_READY → RESULT
 
 VERIFY_TRANSPORT_READY는 팔레트 상승·인출, 미끄러짐, 팔 운송 자세, 리프트 운송 높이와 랙 이탈을 확인한다. 모든 조건이 충족되어야 safe_to_navigate=true를 반환한다.
 
