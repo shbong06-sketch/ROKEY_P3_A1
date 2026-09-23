@@ -121,22 +121,42 @@ def configure_ros_environment():
         for item in os.environ.get("LD_LIBRARY_PATH", "").split(":")
         if item
     ]
-    needs_reexec = (
-        str(ros_lib) not in current_paths
-        and os.environ.get("SMARTFARM_ROS_REEXEC") != "1"
-    )
-    if needs_reexec:
-        os.environ["LD_LIBRARY_PATH"] = ":".join(
-            [*current_paths, str(ros_lib)]
-        )
-        os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
-        os.environ["SMARTFARM_ROS_REEXEC"] = "1"
 
-        print(
-            f"[ROS2] LD_LIBRARY_PATH에 {ros_lib}를 추가하고 다시 실행합니다.",
-            flush=True,
-        )
-        os.execv(sys.executable, [sys.executable, *sys.argv])
+    # 시스템 ROS와 Isaac 번들의 같은 이름 라이브러리가 섞이면 rclpy가
+    # import되어도 Node 생성 시 ABI 충돌로 종료될 수 있다.
+    system_ros = [
+        item for item in current_paths if item.startswith("/opt/ros/")
+    ]
+    wanted = [str(ros_lib)] + [
+        item
+        for item in current_paths
+        if item != str(ros_lib) and not item.startswith("/opt/ros/")
+    ]
+
+    if current_paths != wanted:
+        os.environ["LD_LIBRARY_PATH"] = ":".join(wanted)
+        os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
+
+        if os.environ.get("SMARTFARM_ROS_REEXEC") == "1":
+            print(
+                "[ROS2] 경고 — LD_LIBRARY_PATH를 바로잡지 못했습니다. "
+                "ROS를 source하지 않은 터미널에서 실행해 보세요.",
+                flush=True,
+            )
+        else:
+            os.environ["SMARTFARM_ROS_REEXEC"] = "1"
+            if system_ros:
+                print(
+                    f"[ROS2] 시스템 ROS 경로 {len(system_ros)}개를 빼고 "
+                    "Isaac 번들을 씁니다.",
+                    flush=True,
+                )
+            print(
+                f"[ROS2] LD_LIBRARY_PATH 맨 앞에 {ros_lib}를 두고 "
+                "다시 실행합니다.",
+                flush=True,
+            )
+            os.execv(sys.executable, [sys.executable, *sys.argv])
 
     # 시스템 Jazzy는 Python 3.12용이므로 Isaac Sim Python 3.11에서는
     # 반드시 Isaac Sim에 포함된 rclpy를 먼저 import해야 한다.
@@ -375,6 +395,29 @@ def open_scene(scene_path):
         raise RuntimeError(f"USD Scene을 열지 못했습니다: {scene_path}")
 
     stage.SetEditTarget(stage.GetSessionLayer())
+
+    # 한 프레임의 일부 각도가 아니라 360도 point cloud를 발행하게 한다.
+    # 세션 레이어만 수정하므로 원본 USD 파일은 변경되지 않는다.
+    try:
+        helper_count = 0
+        for prim in stage.Traverse():
+            if (
+                prim.GetTypeName() == "OmniGraphNode"
+                and str(prim.GetAttribute("node:type").Get() or "").endswith(
+                    "ROS2RtxLidarHelper"
+                )
+                and str(prim.GetAttribute("inputs:type").Get() or "")
+                == "point_cloud"
+            ):
+                prim.GetAttribute("inputs:fullScan").Set(True)
+                helper_count += 1
+        print(
+            f"[라이다] 3D 라이다 fullScan=True ({helper_count}개 helper)",
+            flush=True,
+        )
+    except Exception as error:  # noqa: BLE001
+        print(f"[라이다] fullScan 설정 실패 (무시): {error}", flush=True)
+
     return stage
 
 
