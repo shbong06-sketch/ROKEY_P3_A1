@@ -66,3 +66,9 @@ publishing #1: smart_farm_interfaces.msg.TaskCommand(task_id='TASK-20260923-001'
 publisher: beginning loop
 publishing #1: std_msgs.msg.String(data='{"task_id": "TASK-20260923-001", "command_id": "TASK-20260923-001-CMD-003", "operation": "PLACE_INSPECT", "recipe_id": "PLACE_AT_INSPECTION", "pallet_id": "PALLET_001", "source": "CARRY", "destination": "INSPECT_STATION"}')
 
+publisher: beginning loop
+publishing #1: std_msgs.msg.String(data='{"task_id": "TASK-20260923-001", "command_id": "TASK-20260923-001-CMD-001", "operation": "PICK_HARVEST", "recipe_id": "HARVEST_RACK_L1", "pallet_id": "PALLET_001", "source": "RACK_L1", "destination": "CARRY"}')
+
+publisher: beginning loop
+publishing #1: smart_farm_interfaces.msg.TaskCommand(task_id='TASK-20260923-001', command_id='TASK-20260923-001-CMD-002', operation='NAVIGATION', recipe_id='', pallet_id='', source='', destination='FEEDER_DOCK', target_slots=[])
+
