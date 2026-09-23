@@ -1,0 +1,24 @@
+object_detection:
+  ros__parameters:
+    camera_topic: /rgb
+    image_timeout_sec: 3.0
+    model_path: /models/best.pt
+    device: "cuda:0"
+    confidence_threshold: 0.5
+    iou_threshold: 0.45
+    image_size: 640
+    allow_cpu_fallback: false
+    min_cycle_sec: 0.1
+    continuous_inference: false
+    debug_image_topic: /inspection/debug_image
+
+    slot_rois.SLOT_01: [0.0, 0.0, 0.3333333333, 0.5]
+    slot_rois.SLOT_02: [0.3333333333, 0.0, 0.3333333333, 0.5]
+    slot_rois.SLOT_03: [0.6666666666, 0.0, 0.3333333334, 0.5]
+    slot_rois.SLOT_04: [0.0, 0.5, 0.3333333333, 0.5]
+    slot_rois.SLOT_05: [0.3333333333, 0.5, 0.3333333333, 0.5]
+    slot_rois.SLOT_06: [0.6666666666, 0.5, 0.3333333334, 0.5]
+
+    class_outcomes.lettuce_dark_green: NORMAL
+    class_outcomes.lettuce_yellow: UNKNOWN
+    class_outcomes.lettuce_brown: DEFECT

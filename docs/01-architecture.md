@@ -22,7 +22,7 @@
 - Task Manager는 전체 공정 단계만 관리하며 관절값, 리프트 높이, TCP 경로 같은 세부 모션은 지시하지 않는다.
 - Sim Task Executor는 고수준 작업 명령을 받아 리프트와 로봇팔의 복합 동작을 프레임 단위로 실행한다.
 - Navigation Node는 작업점 이름을 map 좌표로 변환하고 Nav2 결과를 Task Manager가 사용하는 작업 결과로 변환한다.
-- Inspection Node는 OpenCV 색 기반 검출기를 대체 가능한 구조로 두며, 최종적으로 YOLO와 이상탐지 모델을 사용해 슬롯별 불량을 판정한다.
+- Inspection Node는 YOLO 검출 결과를 슬롯별 검사 결과와 원본 RGB pixel 기준 2D detection으로 변환한다. Depth와 로봇 좌표 계산은 Isaac Sim 내부 Executor가 담당한다.
 - 현재 시연은 한 번에 하나의 공정 명령만 수행한다. 중간 실패 시 자동 재시도하지 않고 정지 후 장면과 논리 상태를 함께 초기화한다.
 
 ## 2. 시스템 범위와 용어
@@ -40,7 +40,7 @@
 
 - 팔레트 ID: PALLET_001, PALLET_002, …
 - 랙 슬롯: RACK_L1 ~ RACK_L4
-- 식물 슬롯: SLOT_01 ~ SLOT_08
+- 식물 슬롯: SLOT_01 ~ SLOT_06
 - AMR 도킹점: RACK_DOCK, INSPECTION_DOCK
 - 팔레트 배치점: INSPECT_STATION, PACK_OUT
 - 작업 실행 ID: TASK-YYYYMMDD-NNN
@@ -52,10 +52,9 @@
 
 랙 층 번호와 리프트 높이 번호를 혼동하지 않도록 작업 목적 기반 프로파일을 사용한다.
 
-- TRANSFER_L3_TO_L4
-- TRANSFER_L2_TO_L3
-- TRANSFER_L1_TO_L2
-- PICK_RACK_L4
+- TRANSFER_L3_TO_L2
+- TRANSFER_L4_TO_L3
+- PICK_RACK_L1
 - PLACE_INSPECTION
 - TRAVEL
 
@@ -73,6 +72,7 @@ Standalone"]
     TM --> INS["Inspection Node
 외부 ROS 2"]
     SIM -->|"카메라 영상"| INS
+    INS -->|"2D detection"| EXEC
     INS -->|"슬롯별 검사 결과"| TM
     TM --> EXEC["Sim Task Executor
 Isaac Sim 내부 ROS 2"]
@@ -93,8 +93,8 @@ Isaac Sim 내부 ROS 2"]
 | Task Manager | 외부 ROS 2 | PREFLIGHT와 7개 실행 단계 진행, ID 생성·대조, 타임아웃, 논리 상태, 최종 결과 | 관절 제어, 리프트 높이 계산, Nav2 경로 계산, 영상 추론 |
 | Navigation Node | 외부 ROS 2 | 작업점 좌표 변환, BasicNavigator 호출, Nav2 결과 변환 | 직접 cmd_vel 계산·발행 |
 | Nav2 | 외부 ROS 2 | 지도 기반 경로 계획, 위치 추정 연계, 주행 제어 | 팔·리프트·컨베이어 제어 |
-| Inspection Node | 외부 ROS 2 | 검사 요청 단위 영상 수집, 슬롯별 정상·불량·미판정 결과 생성 | 솎아내기 물리 동작 |
-| Sim Task Executor | Isaac Sim 프로세스 내부 | 고수준 명령 수신, 내부 Routine 선택, 프레임별 동작, 물리 성공 판정 | 전체 시나리오 순서 결정 |
+| Inspection Node | 외부 ROS 2 | 검사 요청 단위 영상 수집, 슬롯별 정상·불량·미판정 결과와 2D bbox·중심점 생성 | Depth·로봇 좌표 계산, 솎아내기 물리 동작 |
+| Sim Task Executor | Isaac Sim 프로세스 내부 | 고수준 명령 수신, 2D detection과 Depth로 동적 Pick 좌표 계산, 내부 Routine 선택, 프레임별 동작, 물리 성공 판정 | 전체 시나리오 순서와 검사 결과 관리 |
 | Motion/Controller 모듈 | Isaac Sim 프로세스 내부 | M0609, 리프트, 솎아내기, 컨베이어 제어 | ROS 전체 공정 상태 관리 |
 | Isaac Sim 장면 | Isaac Sim 5.1 | 물리, 센서, 로봇 상태, 카메라 영상, 팔레트 상태 | 비즈니스 시나리오 결정 |
 
@@ -119,12 +119,12 @@ PREFLIGHT를 포함한 총 8개 상태이며, 실제 공정은 7개 실행 단�
 
 | 번호 | 상태 | 실행 주체 | 주요 동작 | 완료 조건 |
 | --- | --- | --- | --- | --- |
-| 0 | PREFLIGHT | Task Manager | Sim·Navigation·Inspection 준비, 초기 랙 점유와 장면 확인 | 모든 Executor READY, RACK_L3 공석 |
-| 1 | TRANSFER | Sim Task Executor | L2→L3 이동 후 L1→L2 이동 | 두 단위 이동 모두 성공 |
-| 2 | PICK_HARVEST | Sim Task Executor | 수확 팔레트 L4 PICK, 인출, 운송 자세·높이 | safe_to_navigate=true |
+| 0 | PREFLIGHT | Task Manager | Sim·Navigation·Inspection 준비, 초기 랙 점유와 장면 확인 | 모든 Executor READY, RACK_L2 공석 |
+| 1 | TRANSFER | Sim Task Executor | PALLET_002 L3→L2 이동 후 PALLET_003 L4→L3 이동 | 두 단위 이동 모두 성공 |
+| 2 | PICK_HARVEST | Sim Task Executor | PALLET_001을 L1에서 PICK, 인출, 운송 자세·높이 | safe_to_navigate=true |
 | 3 | NAVIGATION | Navigation Node | Nav2로 INSPECTION_DOCK 이동 | Nav2 성공 및 목적지 일치 |
 | 4 | PLACE_INSPECT | Sim Task Executor | 베이스 정지 확인 후 검사대 위 PLACE | 팔레트 안착 확인 |
-| 5 | INSPECT | Inspection Node | 카메라 인식과 SLOT_01~SLOT_08 검사 | 슬롯별 결과 생성, 미판정 없음 |
+| 5 | INSPECT | Inspection Node | 카메라 인식과 SLOT_01~SLOT_06 검사 | 슬롯별 결과 생성, 미판정 없음 |
 | 6 | CULL | Sim Task Executor | 불량 슬롯 순차 솎아내기 | 대상 슬롯 제거 확인 |
 | 7 | CONVEYOR_OUT | Sim Task Executor | 컨베이어 가동, 출구 이동, 작업 기록 | 출구 감지 또는 목표 위치 도달 |
 
@@ -137,15 +137,15 @@ PREFLIGHT를 포함한 총 8개 상태이며, 실제 공정은 7개 실행 단�
 TRANSFER는 Task Manager 관점에서 하나의 단계지만 내부에서는 두 단위 작업을 연속 실행한다.
 
 1. CHECK_BASE_STOPPED
-2. TRANSFER_UNIT_01: LIFT_TO_PROFILE(TRANSFER_L2_TO_L3) → ARM_PICK(RACK_L2) → VERIFY_PICK → ARM_RETRACT → ARM_PLACE(RACK_L3) → VERIFY_PLACE → ARM_SAFE
-3. TRANSFER_UNIT_02: LIFT_TO_PROFILE(TRANSFER_L1_TO_L2) → ARM_PICK(RACK_L1) → VERIFY_PICK → ARM_RETRACT → ARM_PLACE(RACK_L2) → VERIFY_PLACE → ARM_SAFE
+2. TRANSFER_UNIT_01: PALLET_002, LIFT_TO_PROFILE(TRANSFER_L3_TO_L2) → ARM_PICK(RACK_L3) → VERIFY_PICK → ARM_RETRACT → ARM_PLACE(RACK_L2) → VERIFY_PLACE → ARM_SAFE
+3. TRANSFER_UNIT_02: PALLET_003, LIFT_TO_PROFILE(TRANSFER_L4_TO_L3) → ARM_PICK(RACK_L4) → VERIFY_PICK → ARM_RETRACT → ARM_PLACE(RACK_L3) → VERIFY_PLACE → ARM_SAFE
 4. RESULT
 
 각 단위 작업에서 PICK과 PLACE는 같은 리프트 높이에서 수행한다. PICK과 PLACE 사이에는 리프트 이동이 없다.
 
 ### PICK_HARVEST
 
-CHECK_BASE_STOPPED → LIFT_TO_PROFILE(PICK_RACK_L4) → ARM_PICK(RACK_L4) → VERIFY_PICK → ARM_RETRACT → ARM_TRANSPORT_POSE → LIFT_TO_PROFILE(TRAVEL) → VERIFY_TRANSPORT_READY → RESULT
+CHECK_BASE_STOPPED → LIFT_TO_PROFILE(PICK_RACK_L1) → ARM_PICK(PALLET_001, RACK_L1) → VERIFY_PICK → ARM_RETRACT → ARM_TRANSPORT_POSE → LIFT_TO_PROFILE(TRAVEL) → VERIFY_TRANSPORT_READY → RESULT
 
 VERIFY_TRANSPORT_READY는 팔레트 상승·인출, 미끄러짐, 팔 운송 자세, 리프트 운송 높이와 랙 이탈을 확인한다. 모든 조건이 충족되어야 safe_to_navigate=true를 반환한다.
 
@@ -173,7 +173,8 @@ CHECK_PALLET_ON_CONVEYOR → START_CONVEYOR → MONITOR_EXIT → STOP_CONVEYOR �
 | AMR 위치 | Nav2·AMCL·Isaac Sim | 도착한 작업점 이름과 결과 |
 | 리프트·관절 상태 | Sim Task Executor | 단계 완료 여부만 수신 |
 | 검사 결과 | Inspection Node | defect_slots, unknown_slots |
-| 컨베이어 출구 도달 | Sim Task Executor | 최종 성공 여부 |
+| 검사 2D 위치 | Inspection Node | Task Manager는 보관하지 않음 |
+| Depth·로봇 좌표와 컨베이어 출구 도달 | Sim Task Executor | 최종 성공 여부만 수신 |
 
 Task Manager의 팔레트 위치는 명령 결과에 기반한 기대 상태다. 실제 장면 상태와 동일하다고 자동 가정하지 않는다.
 

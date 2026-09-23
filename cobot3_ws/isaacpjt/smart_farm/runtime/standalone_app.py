@@ -41,6 +41,10 @@ ARM_PATH = f"{RIG_PATH}/m0609_with_fork"
 ARM_BASE_PATH = f"{ARM_PATH}/base_link"
 LIFT_JOINT_PATH = f"{RIG_PATH}/lift_v3_physics/lift_prismatic_joint"
 LIFT_JOINT_NAME = "lift_prismatic_joint"
+TURNTABLE_PATH = "/World/SmartFarm/Placed/Conveyor/TurnTable"
+TURNTABLE_SURFACE_PATH = (
+    f"{TURNTABLE_PATH}/Geometry/SM_ConveyorBelt_A08_Roller35_01"
+)
 
 RACK_FRONT_X = -1.205
 BASE_BELOW_SHELF = 0.213
@@ -118,13 +122,11 @@ def configure_ros_environment():
         if item
     ]
 
-    # 시스템 ROS(/opt/ros/...)와 Isaac 번들에는 같은 이름의 .so가 둘 다 있습니다.
-    # 터미널에서 setup.bash를 source한 뒤 실행하면 /opt/ros/jazzy/lib가 앞에 있어
-    # 그쪽 .so가 먼저 잡히고, Python 쪽 rclpy는 Isaac 번들에서 옵니다.
-    # 그러면 Node를 만드는 순간
-    #   librcl_interfaces__rosidl_generator_py.so!..._convert_from_py → __assert_fail
-    # 으로 abort 합니다. 시스템 ROS 경로는 빼고 번들을 맨 앞에 둡니다.
-    system_ros = [item for item in current_paths if item.startswith("/opt/ros/")]
+    # 시스템 ROS와 Isaac 번들의 같은 이름 라이브러리가 섞이면 rclpy가
+    # import되어도 Node 생성 시 ABI 충돌로 종료될 수 있다.
+    system_ros = [
+        item for item in current_paths if item.startswith("/opt/ros/")
+    ]
     wanted = [str(ros_lib)] + [
         item
         for item in current_paths
@@ -136,7 +138,6 @@ def configure_ros_environment():
         os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
 
         if os.environ.get("SMARTFARM_ROS_REEXEC") == "1":
-            # 다시 실행했는데도 어긋나 있으면 더 손대지 않고 알리기만 합니다.
             print(
                 "[ROS2] 경고 — LD_LIBRARY_PATH를 바로잡지 못했습니다. "
                 "ROS를 source하지 않은 터미널에서 실행해 보세요.",
@@ -147,11 +148,12 @@ def configure_ros_environment():
             if system_ros:
                 print(
                     f"[ROS2] 시스템 ROS 경로 {len(system_ros)}개를 빼고 "
-                    "Isaac 번들을 씁니다. 필요한 rclpy·std_msgs는 번들에 있습니다.",
+                    "Isaac 번들을 씁니다.",
                     flush=True,
                 )
             print(
-                f"[ROS2] LD_LIBRARY_PATH 맨 앞에 {ros_lib}를 두고 다시 실행합니다.",
+                f"[ROS2] LD_LIBRARY_PATH 맨 앞에 {ros_lib}를 두고 "
+                "다시 실행합니다.",
                 flush=True,
             )
             os.execv(sys.executable, [sys.executable, *sys.argv])
@@ -180,7 +182,7 @@ app = SimulationApp(
 
 import omni.usd  # noqa: E402
 import rclpy  # noqa: E402
-from pxr import UsdPhysics  # noqa: E402
+from pxr import Usd, UsdGeom, UsdPhysics  # noqa: E402
 from std_msgs.msg import String  # noqa: E402
 from isaacsim.core.api import World  # noqa: E402
 from isaacsim.core.prims import (  # noqa: E402
@@ -209,6 +211,7 @@ from robot_motion import (  # noqa: E402
     RobotMotion,
     Task,
     brake_wheels,
+    brake_wheels_at_current_position,
     release_wheels,
     tine_tip_position,
 )
@@ -393,22 +396,28 @@ def open_scene(scene_path):
 
     stage.SetEditTarget(stage.GetSessionLayer())
 
-    # [navigation 2026-09-22] 3D 라이다를 프레임마다 60도 조각이 아니라 한 바퀴(10 Hz)마다 발행하게 함.
-    # 조각 발행이면 Nav2 의 /scan 이 한 방향만 담겨 AMCL 방향이 흔들리고 Feeder 도킹 면 검출이 안 됨.
-    # 세션 레이어에만 적용되며 USD 파일은 바뀌지 않음. (launch_scene.py 와 같은 설정)
+    # 한 프레임의 일부 각도가 아니라 360도 point cloud를 발행하게 한다.
+    # 세션 레이어만 수정하므로 원본 USD 파일은 변경되지 않는다.
     try:
-        n_set = 0
+        helper_count = 0
         for prim in stage.Traverse():
-            if prim.GetTypeName() == "OmniGraphNode" and str(
-                prim.GetAttribute("node:type").Get() or ""
-            ).endswith("ROS2RtxLidarHelper") and str(
-                prim.GetAttribute("inputs:type").Get() or ""
-            ) == "point_cloud":
+            if (
+                prim.GetTypeName() == "OmniGraphNode"
+                and str(prim.GetAttribute("node:type").Get() or "").endswith(
+                    "ROS2RtxLidarHelper"
+                )
+                and str(prim.GetAttribute("inputs:type").Get() or "")
+                == "point_cloud"
+            ):
                 prim.GetAttribute("inputs:fullScan").Set(True)
-                n_set += 1
-        print(f"[라이다] 3D 라이다 fullScan=True ({n_set}개 helper) -> 약 10 Hz 전체 스캔", flush=True)
+                helper_count += 1
+        print(
+            f"[라이다] 3D 라이다 fullScan=True ({helper_count}개 helper)",
+            flush=True,
+        )
     except Exception as error:  # noqa: BLE001
         print(f"[라이다] fullScan 설정 실패 (무시): {error}", flush=True)
+
     return stage
 
 
@@ -439,6 +448,46 @@ def require_prims(stage, paths):
         )
 
 
+def turntable_place_pose(stage):
+    """TurnTable 표면 중심과 TurnTable 방향을 world pose로 반환합니다."""
+    surface_prim = stage.GetPrimAtPath(TURNTABLE_SURFACE_PATH)
+    bbox_cache = UsdGeom.BBoxCache(
+        Usd.TimeCode.Default(),
+        [UsdGeom.Tokens.default_],
+        useExtentsHint=True,
+    )
+    surface_range = bbox_cache.ComputeWorldBound(
+        surface_prim
+    ).ComputeAlignedRange()
+    if surface_range.IsEmpty():
+        raise RuntimeError(
+            f"TurnTable 표면 bound를 계산하지 못했습니다: "
+            f"{TURNTABLE_SURFACE_PATH}"
+        )
+
+    minimum = surface_range.GetMin()
+    maximum = surface_range.GetMax()
+    position = (
+        float((minimum[0] + maximum[0]) * 0.5),
+        float((minimum[1] + maximum[1]) * 0.5),
+        float(maximum[2]),
+    )
+
+    turntable_prim = stage.GetPrimAtPath(TURNTABLE_PATH)
+    transform = UsdGeom.Xformable(
+        turntable_prim
+    ).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+    rotation = transform.ExtractRotationQuat()
+    imaginary = rotation.GetImaginary()
+    quaternion = (
+        float(rotation.GetReal()),
+        float(imaginary[0]),
+        float(imaginary[1]),
+        float(imaginary[2]),
+    )
+    return position, quaternion
+
+
 def create_simulation_runtime(scene_path):
     stage = open_scene(scene_path)
     print("[시작] USD Scene 로딩이 완료되었습니다.", flush=True)
@@ -454,6 +503,8 @@ def create_simulation_runtime(scene_path):
             ARM_BASE_PATH,
             EE_PATH,
             LIFT_JOINT_PATH,
+            TURNTABLE_PATH,
+            TURNTABLE_SURFACE_PATH,
             *pallet_paths,
         ),
     )
@@ -574,6 +625,38 @@ def start_operation(command, runtime, transfer_operation, node):
         )
         return
 
+    if command.operation == "PLACE_INSPECT":
+        if (
+            command.recipe_id not in ("", "PLACE_AT_INSPECTION")
+            or command.pallet_id != "PALLET_001"
+            or command.source != "CARRY"
+            or command.destination != "INSPECT_STATION"
+        ):
+            node.fail(
+                reason="INVALID_COMMAND",
+                phase="COMMAND_DISPATCH",
+                reset_required=False,
+            )
+            return
+
+        brake_wheels_at_current_position(
+            runtime.stage,
+            RIG_PATH,
+            runtime.robot,
+        )
+        runtime.wheels_released = False
+        runtime.lift.hold()
+        position, quaternion = turntable_place_pose(runtime.stage)
+        runtime.motion.start_place_at_pose(position, quaternion)
+        node.set_phase(
+            "PLACE_INSPECT/ARM_PLACE",
+            detail=(
+                f"target={TURNTABLE_SURFACE_PATH}, "
+                f"position={[round(value, 4) for value in position]}"
+            ),
+        )
+        return
+
     if command.operation != "PICK_HARVEST":
         node.fail(
             reason="INVALID_COMMAND",
@@ -640,6 +723,21 @@ def update_operation(node, runtime, transfer_operation):
     command = node.active_command
     if command is None:
         raise RuntimeError("active command is missing")
+
+    if command.operation == "PLACE_INSPECT":
+        runtime.lift.hold()
+        runtime.motion.update(PHYSICS_DT)
+        node.set_phase(
+            "PLACE_INSPECT/ARM_PLACE",
+            detail=runtime.motion.current_stage,
+        )
+        if runtime.motion.is_running:
+            return
+        if not runtime.motion.is_done or runtime.motion.is_carrying:
+            raise RuntimeError("TurnTable Place 검증이 완료되지 않았습니다.")
+
+        node.succeed(phase="RESULT")
+        return
 
     if command.operation == "PICK_HARVEST":
         if runtime.harvest_phase == "PICK":
@@ -764,7 +862,7 @@ def run():
     print("[시작] ROS 2 노드를 초기화합니다.", flush=True)
     rclpy.init()
     node = SimTaskNode(
-        supported_operations={"TRANSFER", "PICK_HARVEST"},
+        supported_operations={"TRANSFER", "PICK_HARVEST", "PLACE_INSPECT"},
     )
     demo_publisher = (
         node.create_publisher(String, "/sim_task/command", 10)
@@ -858,7 +956,7 @@ def run():
                 needs_initialization = False
                 ready_detail = (
                     f"{args.scene.stem} scene ready; "
-                    "TRANSFER/PICK_HARVEST physical profiles loaded"
+                    "TRANSFER/PICK_HARVEST/PLACE_INSPECT physical profiles loaded"
                 )
                 node.mark_ready(ready_detail)
                 print(f"[READY] {ready_detail}", flush=True)

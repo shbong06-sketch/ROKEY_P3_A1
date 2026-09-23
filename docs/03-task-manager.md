@@ -140,7 +140,7 @@ PREFLIGHT
 → COMPLETE / SUCCEEDED
 ```
 
-기본 검사 mock은 `SLOT_03`, `SLOT_07`을 불량으로 반환하므로 CULL이 실행된다.
+기본 검사 mock은 `SLOT_03`, `SLOT_06`을 불량으로 반환하므로 CULL이 실행된다.
 Task Manager 로그에서도 `PREFLIGHT complete`, 각 `Command published`, 마지막
 `Cycle completed`를 확인한다.
 
@@ -166,7 +166,7 @@ ros2 topic echo /inspection/result smart_farm_interfaces/msg/TaskResult
 
 | operation | 성공 결과에서 확인할 필드 |
 | --- | --- |
-| `TRANSFER` | `completed_units`에 `PALLET_002:RACK_L2:RACK_L3`, `PALLET_001:RACK_L1:RACK_L2` 포함 |
+| `TRANSFER` | `completed_units`에 `PALLET_002:RACK_L3:RACK_L2`, `PALLET_003:RACK_L4:RACK_L3` 포함 |
 | `PICK_HARVEST` | `safe_to_navigate: true` |
 | `NAVIGATION` | `reached_station: INSPECTION_DOCK` |
 | `PLACE_INSPECT` | `status: SUCCEEDED` |
@@ -265,9 +265,9 @@ ros2 topic info /navigation/result --verbose
 
 ### 6.4 Inspection Executor
 
-- `operation: INSPECT`와 `pallet_id: PALLET_004`를 처리한다.
+- `operation: INSPECT`와 `pallet_id: PALLET_001`을 처리한다.
 - 요청과 이미지 frame을 같은 검사 세션에 연결한다.
-- `SLOT_01`부터 `SLOT_08` 범위의 `defect_slots`, `unknown_slots`를 반환한다.
+- `SLOT_01`부터 `SLOT_06` 범위의 `defect_slots`, `unknown_slots`를 반환한다.
 - 미검출이나 신뢰도 부족을 임의로 PASS 처리하지 않는다.
 
 ## 7. 단계별 통합 체크포인트
