@@ -102,6 +102,9 @@ def parse_args():
     g.add_argument("--rig-camera", action="store_true",
                    help="트레이 위 수직 카메라로 RenderProduct 를 돌린다.")
     g.add_argument("--rig-height", type=float, default=0.70)
+    g.add_argument("--view-camera", action="store_true",
+                   help="GUI 뷰포트를 검사 카메라 화면으로 바꾼다. "
+                        "노드가 보는 그림을 그대로 본다.")
     g.add_argument("--sweep", action="store_true")
     g.add_argument("--sweep-hold", type=float, default=6.0)
     g.add_argument("--sweep-offsets", default=None,
@@ -134,7 +137,30 @@ def configure_ros_environment(marker="FUNCTEST_REEXEC"):
     os.execv(sys.executable, [sys.executable, *sys.argv])
 
 
+def strip_system_ros_pythonpath():
+    """PYTHONPATH 에서 시스템 ROS 2 경로를 걷어낸다.
+
+    호스트에서 `source /opt/ros/jazzy/setup.bash` 를 한 셸로 Isaac 을 띄우면,
+    Isaac 내장 Python(3.11) 이 시스템 ROS 의 python3.12 트리를 먼저 보다가
+    `_rclpy_pybind11` 을 못 찾고 rclpy 를 포기한다. 그러면 ROS 2 브리지가
+    죽어 `/rgb` 가 한 프레임도 안 나간다. 증상이 조용해서 찾기 어렵다.
+    """
+    raw = os.environ.get("PYTHONPATH", "")
+    if not raw:
+        return
+    kept = [p for p in raw.split(":") if p and "/opt/ros/" not in p]
+    if len(kept) == len(raw.split(":")):
+        return
+    if kept:
+        os.environ["PYTHONPATH"] = ":".join(kept)
+    else:
+        os.environ.pop("PYTHONPATH", None)
+    print("[ROS2] PYTHONPATH 에서 시스템 ROS 경로를 제거했습니다 "
+          "(Isaac 내장 rclpy 를 쓰기 위함).", flush=True)
+
+
 args, kit_args = parse_args()
+strip_system_ros_pythonpath()
 configure_ros_environment()
 
 from isaacsim import SimulationApp  # noqa: E402
@@ -178,6 +204,22 @@ def world_xform(stage, path):
 
 
 # ── 씬 설정 ───────────────────────────────────────────
+def set_viewport_camera(camera_path):
+    """GUI 뷰포트를 지정한 카메라로 바꾼다. 헤드리스면 조용히 넘어간다."""
+    try:
+        from omni.kit.viewport.utility import get_active_viewport
+    except ImportError:
+        print("[뷰포트] viewport 유틸을 쓸 수 없습니다.", flush=True)
+        return
+    viewport = get_active_viewport()
+    if viewport is None:
+        print("[뷰포트] 활성 뷰포트가 없습니다 (헤드리스).", flush=True)
+        return
+    viewport.set_active_camera(camera_path)
+    print(f"[뷰포트] 화면을 {camera_path.rsplit('/', 1)[-1]} 로 바꿨습니다.",
+          flush=True)
+
+
 def open_scene(path):
     """ROS 2 브리지를 켜고 씬을 연다. 로딩이 끝날 때까지 기다린다."""
     enable_extension("isaacsim.ros2.bridge")
@@ -497,6 +539,9 @@ def main():
     world.play()
     for _ in range(SETTLE_STEPS):
         world.step(render=True)
+
+    if args.view_camera:
+        set_viewport_camera(RIG_CAMERA if args.rig_camera else COLOR)
 
     report_pose(stage, arm, RIG_CAMERA if args.rig_camera else COLOR,
                 args.tray_x, args.tray_y)

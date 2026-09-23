@@ -1,0 +1,622 @@
+<!doctype html>
+<!-- 스마트팜 관제 대시보드. dashboard_server 가 이 파일을 그대로 내보냅니다.
+     데이터는 /events (SSE) 로 초당 4번 들어옵니다. render(d) 하나가 전부를 그립니다. -->
+<meta charset="utf-8">
+<title>스마트팜 관제</title>
+<style>
+  /* ── 색 ──────────────────────────────────────────
+     밝은 화면을 기본으로 합니다. 시연장 조명에서 어두운 화면은 반사가 심합니다.
+     어두운 쪽을 선호하면 사이드바 아래 토글로 바꾸고, 그 선택은 저장됩니다. */
+  :root {
+    --bg:#f4f5fa; --card:#fff; --line:#e7e9f2; --line2:#f0f1f7;
+    --text:#161a2b; --dim:#858aa0; --faint:#aeb2c4;
+    --brand:#4f46e5; --brand-soft:#ecebfd;
+    --ok:#10b981; --ok-soft:#e6f7f1;
+    --fail:#e5484d; --fail-soft:#fdecec;
+    --wait:#d97706; --wait-soft:#fdf3e4;
+    --run:#2563eb; --run-soft:#e8f0fe;
+    --idle:#c9cdda;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 6px 20px rgba(16,24,40,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg:#0f1117; --card:#171a23; --line:#262a36; --line2:#20242f;
+    --text:#e9ebf2; --dim:#8b90a3; --faint:#666c80;
+    --brand:#7c74f5; --brand-soft:#252142;
+    --ok:#34d399; --ok-soft:#10261f;
+    --fail:#f87171; --fail-soft:#2a1416;
+    --wait:#fbbf24; --wait-soft:#2a2010;
+    --run:#60a5fa; --run-soft:#12203a;
+    --idle:#3a4052;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.28);
+  }
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:14px/1.55 system-ui,-apple-system,"Noto Sans KR",sans-serif;
+         -webkit-font-smoothing:antialiased; }
+  .num { font-variant-numeric:tabular-nums; }
+  .mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+
+  /* ── 틀 ────────────────────────────────────────── */
+  .shell { display:grid; grid-template-columns:236px 1fr; min-height:100vh; }
+
+  /* ── 사이드바 ──────────────────────────────────── */
+  .side { background:var(--card); border-right:1px solid var(--line);
+          padding:22px 16px; display:flex; flex-direction:column; gap:26px;
+          position:sticky; top:0; height:100vh; }
+  .brand { display:flex; align-items:center; gap:10px; padding:0 6px; }
+  .brand .mark { width:30px; height:30px; border-radius:9px; flex:none;
+                 background:linear-gradient(135deg,var(--brand),#8b7cf6);
+                 display:grid; place-items:center; color:#fff; font-size:15px; }
+  .brand b { font-size:15px; font-weight:700; letter-spacing:-.01em; }
+  .brand span { display:block; font-size:11px; color:var(--faint); font-weight:400; }
+
+  nav { display:flex; flex-direction:column; gap:2px; }
+  nav a { display:flex; align-items:center; gap:10px; padding:9px 12px;
+          border-radius:9px; color:var(--dim); text-decoration:none; font-size:13.5px;
+          cursor:pointer; transition:background .12s, color .12s; }
+  nav a:hover { background:var(--line2); color:var(--text); }
+  nav a.on { background:var(--brand-soft); color:var(--brand); font-weight:600; }
+  nav a i { width:16px; text-align:center; font-style:normal; font-size:14px; }
+  nav .sep { height:1px; background:var(--line); margin:12px 6px; }
+
+  .side .foot { margin-top:auto; display:flex; flex-direction:column; gap:12px; }
+
+  /* 시작 카드 — 레퍼런스들이 사이드바 하단에 두는 강조 카드 자리입니다.
+     시연 중 가장 많이 누르는 것이라 항상 같은 자리에 보이게 둡니다. */
+  .launch { border-radius:14px; padding:14px; color:#fff;
+            background:linear-gradient(145deg,#5b52e8,#8b7cf6); }
+  .launch .cap { font-size:11px; opacity:.82; letter-spacing:.03em; }
+  .launch .why { font-size:11.5px; line-height:1.45; margin:7px 0 11px; opacity:.95;
+                 min-height:33px; }
+  .launch button { width:100%; border:0; border-radius:9px; padding:10px;
+                   font:600 13.5px/1 inherit; color:var(--brand); background:#fff;
+                   cursor:pointer; transition:transform .1s, opacity .12s; }
+  .launch button:hover:not(:disabled) { transform:translateY(-1px); }
+  .launch button:disabled { background:rgba(255,255,255,.22); color:rgba(255,255,255,.72);
+                            cursor:not-allowed; }
+  .said { font-size:11.5px; margin-top:8px; opacity:.95; min-height:15px; }
+
+  .toggle { display:flex; align-items:center; gap:9px; padding:8px 10px; cursor:pointer;
+            border-radius:9px; color:var(--dim); font-size:12.5px; }
+  .toggle:hover { background:var(--line2); }
+  .toggle .sw { width:32px; height:18px; border-radius:9px; background:var(--idle);
+                position:relative; transition:background .16s; flex:none; }
+  .toggle .sw::after { content:""; position:absolute; top:2px; left:2px;
+                       width:14px; height:14px; border-radius:50%; background:#fff;
+                       transition:transform .16s; }
+  :root[data-theme="dark"] .toggle .sw { background:var(--brand); }
+  :root[data-theme="dark"] .toggle .sw::after { transform:translateX(14px); }
+
+  /* ── 본문 ──────────────────────────────────────── */
+  .main { padding:24px 28px 40px; max-width:1560px; }
+  .top { display:flex; align-items:flex-end; justify-content:space-between;
+         gap:20px; flex-wrap:wrap; margin-bottom:22px; }
+  .top h1 { margin:0; font-size:22px; font-weight:700; letter-spacing:-.02em; }
+  .top .sub { color:var(--dim); font-size:13px; margin-top:3px; }
+  .top .right { display:flex; align-items:center; gap:10px; }
+
+  .chip { display:inline-flex; align-items:center; gap:7px; padding:7px 13px;
+          border-radius:999px; font-size:12.5px; font-weight:500;
+          background:var(--card); border:1px solid var(--line); }
+  .chip .dot { width:7px; height:7px; border-radius:50%; background:var(--idle); flex:none; }
+  .chip.ready { color:var(--ok); }   .chip.ready .dot { background:var(--ok); }
+  .chip.busy  { color:var(--run); }  .chip.busy  .dot { background:var(--run);
+                                                        animation:pulse 1.4s infinite; }
+  .chip.done  { color:var(--wait); } .chip.done  .dot { background:var(--wait); }
+  .chip.down  { color:var(--fail); } .chip.down  .dot { background:var(--fail); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px;
+          padding:18px 20px; box-shadow:var(--shadow); }
+  .card > h2 { margin:0 0 14px; font-size:13px; font-weight:600; letter-spacing:-.01em;
+               display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .card > h2 small { color:var(--faint); font-size:11.5px; font-weight:400; }
+
+  .grid { display:grid; gap:16px; margin-bottom:16px; }
+  .tiles { grid-template-columns:repeat(4,1fr); }
+  .two   { grid-template-columns:1.35fr 1fr; }
+  .two-b { grid-template-columns:1fr 1fr; }
+
+  /* ── 지표 타일 ─────────────────────────────────── */
+  .tile .cap { font-size:11.5px; color:var(--dim); letter-spacing:.02em; }
+  .tile .val { font-size:30px; font-weight:700; letter-spacing:-.03em; line-height:1.25;
+               margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tile .val.sm { font-size:22px; }
+  .tile .note { font-size:12px; color:var(--dim); margin-top:3px; }
+  .tile .note b { font-weight:600; color:var(--text); }
+
+  .pill { display:inline-block; padding:3px 10px; border-radius:999px;
+          font-size:11.5px; font-weight:600; background:var(--line2); color:var(--dim); }
+  .pill.SUCCEEDED,.pill.READY { background:var(--ok-soft); color:var(--ok); }
+  .pill.RUNNING,.pill.EXECUTING,.pill.ACCEPTED { background:var(--run-soft); color:var(--run); }
+  .pill.FAILED,.pill.TIMEOUT,.pill.RESET_REQUIRED,.pill.ERROR
+        { background:var(--fail-soft); color:var(--fail); }
+
+  /* ── 공정 8단계 ────────────────────────────────── */
+  .flow { display:grid; grid-template-columns:repeat(8,1fr); gap:10px; }
+  .step { position:relative; padding-top:20px; }
+  .step .rail { position:absolute; top:6px; left:0; right:0; height:5px;
+                border-radius:3px; background:var(--line); overflow:hidden; }
+  .step .rail i { display:block; height:100%; width:0; border-radius:3px;
+                  background:var(--idle); transition:width .25s ease; }
+  .step .nm { font-size:11.5px; font-weight:600; color:var(--faint); letter-spacing:-.01em;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .step .sc { font-size:11px; color:var(--faint); margin-top:1px; }
+  .step.done .rail i { width:100%; background:var(--ok); }
+  .step.done .nm { color:var(--dim); }
+  .step.now  .rail i { width:100%; background:var(--run); animation:pulse 1.4s infinite; }
+  .step.now  .nm { color:var(--run); }
+  .step.now  .sc { color:var(--run); }
+  .step.bad  .rail i { width:100%; background:var(--fail); }
+  .step.bad  .nm, .step.bad .sc { color:var(--fail); }
+
+  /* ── 검사 슬롯 ─────────────────────────────────── */
+  .insp { display:flex; gap:22px; align-items:center; flex-wrap:wrap; }
+  .donut { position:relative; width:118px; height:118px; flex:none; }
+  .donut svg { transform:rotate(-90deg); }
+  .donut .mid { position:absolute; inset:0; display:grid; place-content:center;
+                text-align:center; }
+  .donut .mid b { display:block; font-size:22px; font-weight:700; letter-spacing:-.02em; }
+  .donut .mid span { font-size:11px; color:var(--dim); }
+  .slots { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; flex:1; min-width:250px; }
+  .slot { border:1px solid var(--line); border-radius:11px; padding:9px 6px;
+          text-align:center; background:var(--card); transition:all .15s; }
+  .slot .no { font-size:10.5px; color:var(--faint); font-weight:600; }
+  .slot .mk { font-size:17px; line-height:1.4; color:var(--idle); }
+  .slot .wt { font-size:10.5px; color:var(--faint); }
+  .slot.ok  { border-color:#bff0dd; background:var(--ok-soft); }
+  .slot.ok  .mk, .slot.ok .wt { color:var(--ok); }
+  .slot.bad { border-color:#f7c9cb; background:var(--fail-soft); }
+  .slot.bad .mk, .slot.bad .wt { color:var(--fail); }
+  .slot.unk { border-color:#f3dcb4; background:var(--wait-soft); }
+  .slot.unk .mk, .slot.unk .wt { color:var(--wait); }
+  .slot.culled { opacity:.5; }
+  .legend { display:flex; gap:14px; font-size:11.5px; color:var(--dim); margin-top:12px; }
+  .legend i { width:8px; height:8px; border-radius:2px; display:inline-block;
+              margin-right:5px; vertical-align:1px; }
+
+  /* ── Executor ──────────────────────────────────── */
+  .execs { display:flex; flex-direction:column; gap:9px; }
+  .exec { border:1px solid var(--line); border-radius:12px; padding:11px 13px; }
+  .exec .hd { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .exec .who { display:flex; align-items:center; gap:8px; font-weight:600; font-size:13px; }
+  .exec .who i { width:8px; height:8px; border-radius:50%; background:var(--idle);
+                 display:inline-block; flex:none; }
+  .exec.READY .who i, .exec.SUCCEEDED .who i { background:var(--ok); }
+  .exec.EXECUTING .who i, .exec.RUNNING .who i { background:var(--run);
+                                                  animation:pulse 1.4s infinite; }
+  .exec.ERROR .who i { background:var(--fail); }
+  .exec .kv { display:flex; gap:14px; font-size:11.5px; color:var(--dim); margin-top:6px; }
+  .exec .kv b { font-weight:500; color:var(--text); }
+  .exec .stale { color:var(--fail); font-weight:600; }
+
+  /* ── 표 ────────────────────────────────────────── */
+  table { width:100%; border-collapse:collapse; font-size:12.5px;
+          color:inherit; }   /* quirks 모드에서 표가 색을 상속하지 않습니다 */
+  th { text-align:left; font-size:11px; font-weight:600; color:var(--faint);
+       letter-spacing:.03em; padding:0 10px 8px; border-bottom:1px solid var(--line); }
+  td { padding:9px 10px; border-bottom:1px solid var(--line2); vertical-align:top; }
+  tr:last-child td { border-bottom:0; }
+  td.when,td.id { font-family:ui-monospace,monospace; color:var(--dim); white-space:nowrap; }
+  td.sec { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  td.res b { font-weight:600; } .res.good b { color:var(--ok); } .res.bad b { color:var(--fail); }
+  td.slow b { font-weight:500; }
+  .scroll { max-height:330px; overflow:auto; margin:0 -6px; padding:0 6px; }
+  .empty { color:var(--faint); font-size:12.5px; padding:14px 2px; text-align:center; }
+  .tag { font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:5px;
+         background:var(--line2); color:var(--dim); }
+  .tag.command { background:var(--brand-soft); color:var(--brand); }
+  .tag.result  { background:var(--ok-soft); color:var(--ok); }
+  .tag.cycle   { background:var(--run-soft); color:var(--run); }
+
+  /* ── 실패 진단 ─────────────────────────────────── */
+  .diag { border-color:#f3c7c9; background:var(--fail-soft); }
+  .diag h2 { color:var(--fail); }
+  .diag .why { font-size:17px; font-weight:700; color:var(--fail); letter-spacing:-.02em; }
+  .diag .hint { color:var(--dim); font-size:13px; margin-top:4px; }
+  .diag .pair { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr));
+                gap:12px; margin-top:16px; }
+  .diag .box { background:var(--card); border:1px solid var(--line); border-radius:12px;
+               padding:13px; }
+  .diag .box h3 { margin:0 0 9px; font-size:11px; color:var(--faint); font-weight:600;
+                  letter-spacing:.03em; }
+  .diag .row { display:flex; justify-content:space-between; gap:12px; font-size:12px;
+               padding:4px 0; border-bottom:1px solid var(--line2); }
+  .diag .row:last-child { border:0; }
+  .diag .row span:first-child { color:var(--dim); }
+  .diag .row span:last-child { font-family:ui-monospace,monospace; text-align:right;
+                               word-break:break-all; }
+
+  @media (max-width:1180px) {
+    .tiles { grid-template-columns:repeat(2,1fr); }
+    .two, .two-b { grid-template-columns:1fr; }
+    .flow { grid-template-columns:repeat(4,1fr); row-gap:16px; }
+  }
+  @media (max-width:820px) {
+    .shell { grid-template-columns:1fr; }
+    .side { position:static; height:auto; }
+    .main { padding:18px 16px 32px; }
+  }
+</style>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <div class="mark">◈</div>
+      <div><b>스마트팜 관제</b><span id="scen">DEMO_HARVEST_01</span></div>
+    </div>
+
+    <nav>
+      <a class="on" data-go="sec-flow"><i>▦</i>공정 진행</a>
+      <a data-go="sec-insp"><i>◉</i>검사 결과</a>
+      <a data-go="sec-exec"><i>⬢</i>Executor</a>
+      <a data-go="sec-hist"><i>≡</i>사이클 이력</a>
+      <a data-go="sec-log"><i>⌁</i>최근 사건</a>
+    </nav>
+
+    <div class="foot">
+      <div class="launch">
+        <div class="cap">시연 제어</div>
+        <div class="why" id="why">확인 중…</div>
+        <button id="start">시연 시작</button>
+        <div class="said" id="said"></div>
+      </div>
+      <div class="toggle" id="theme"><div class="sw"></div><span id="themetext">어두운 화면</span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <div>
+        <h1>공정 관제</h1>
+        <div class="sub">task_manager 가 내보내는 사이클 상태를 그대로 보여 줍니다.</div>
+      </div>
+      <div class="right">
+        <span class="chip" id="conn"><span class="dot"></span><span id="conntext">연결 중…</span></span>
+        <span class="chip" id="ready"><span class="dot"></span><span id="readytext">—</span></span>
+      </div>
+    </div>
+
+    <div id="diag"></div>
+
+    <div class="grid tiles">
+      <div class="card tile">
+        <div class="cap">현재 단계</div>
+        <div class="val" id="state">IDLE</div>
+        <div class="note"><span class="pill" id="status">—</span></div>
+      </div>
+      <div class="card tile">
+        <div class="cap">경과 시간</div>
+        <div class="val num" id="elapsed">—</div>
+        <div class="note" id="task">사이클 없음</div>
+      </div>
+      <div class="card tile">
+        <div class="cap">검사 불량</div>
+        <div class="val num" id="badcount">—</div>
+        <div class="note" id="badlist">아직 검사 전</div>
+      </div>
+      <div class="card tile">
+        <div class="cap">끝난 사이클</div>
+        <div class="val num" id="histcount">0</div>
+        <div class="note" id="lastrun">기록 없음</div>
+      </div>
+    </div>
+
+    <div class="card" id="sec-flow" style="margin-bottom:16px">
+      <h2>공정 8단계 <small id="flownote">사이클을 시작하면 왼쪽부터 채워집니다</small></h2>
+      <div class="flow" id="steps"></div>
+    </div>
+
+    <div class="grid two">
+      <div class="card" id="sec-insp">
+        <h2>검사 결과 <small>팔레트 슬롯 8칸</small></h2>
+        <div class="insp">
+          <div class="donut">
+            <svg width="118" height="118">
+              <circle cx="59" cy="59" r="50" fill="none" stroke="var(--line)" stroke-width="13"/>
+              <circle id="arcOk"  cx="59" cy="59" r="50" fill="none" stroke="var(--ok)"
+                      stroke-width="13" stroke-dasharray="0 314" stroke-dashoffset="0"
+                      style="transition:stroke-dasharray .4s ease"/>
+              <circle id="arcBad" cx="59" cy="59" r="50" fill="none" stroke="var(--fail)"
+                      stroke-width="13" stroke-dasharray="0 314" stroke-dashoffset="0"
+                      style="transition:stroke-dasharray .4s ease, stroke-dashoffset .4s ease"/>
+              <circle id="arcUnk" cx="59" cy="59" r="50" fill="none" stroke="var(--wait)"
+                      stroke-width="13" stroke-dasharray="0 314" stroke-dashoffset="0"
+                      style="transition:stroke-dasharray .4s ease, stroke-dashoffset .4s ease"/>
+            </svg>
+            <div class="mid"><b id="ringnum">—</b><span id="ringcap">검사 전</span></div>
+          </div>
+          <div class="slots" id="slots"></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--ok)"></i>정상</span>
+          <span><i style="background:var(--fail)"></i>불량</span>
+          <span><i style="background:var(--wait)"></i>미판정</span>
+          <span><i style="background:var(--idle)"></i>검사 전</span>
+        </div>
+      </div>
+
+      <div class="card" id="sec-exec">
+        <h2>Executor <small>3초 넘게 소식이 없으면 빨갛게</small></h2>
+        <div class="execs" id="execs"></div>
+      </div>
+    </div>
+
+    <div class="grid two-b">
+      <div class="card" id="sec-hist">
+        <h2>사이클 이력 <small id="histsrc">기록 파일 + 이번 실행</small></h2>
+        <div class="scroll">
+          <table><thead><tr>
+            <th>시각</th><th>상태</th><th style="text-align:right">소요</th>
+            <th>가장 오래</th><th>검사</th>
+          </tr></thead><tbody id="hist"></tbody></table>
+        </div>
+      </div>
+
+      <div class="card" id="sec-log">
+        <h2>최근 사건 <small>새 것이 위</small></h2>
+        <div class="scroll">
+          <table><tbody id="log"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const END = ["SUCCEEDED","FAILED","TIMEOUT","RESET_REQUIRED"];
+const BAD = ["FAILED","TIMEOUT","RESET_REQUIRED","ERROR"];
+const RING = 2 * Math.PI * 50;          // 도넛 둘레
+
+let sending = false;                     // 시작 요청이 날아가 있는 동안
+let themeDark = false;
+
+// ── 화면 그리기 ──────────────────────────────────
+function render(d) {
+  const c = d.cycle;
+  $("scen").textContent = c.scenario_id || "DEMO_HARVEST_01";
+
+  // 지표 4개
+  $("state").textContent = c.state || "IDLE";
+  $("status").textContent = c.status || "—";
+  $("status").className = "pill " + (c.status || "");
+  // 사이클이 끝나면 elapsed 가 없어집니다. 그때는 이력에 남은 최종 소요를 씁니다.
+  const last = d.history[0];
+  const finished = d.elapsed === null && last && last.task_id === c.task_id
+                   && last.seconds !== null && last.seconds !== undefined;
+  $("elapsed").textContent = d.elapsed !== null ? d.elapsed.toFixed(1) + "s"
+                           : finished ? last.seconds.toFixed(1) + "s" : "—";
+  $("task").textContent = c.task_id
+    ? (finished ? `${c.task_id} · 최종` : c.task_id) : "사이클 없음";
+
+  const i = d.inspection;
+  $("badcount").textContent = i.done ? i.defects.length : "—";
+  $("badlist").textContent = i.done
+    ? (i.defects.length ? i.defects.map(s => s.replace("SLOT_", "")).join(", ") + "번 슬롯"
+                        : "불량 없음")
+    : "아직 검사 전";
+
+  $("histcount").textContent = d.history.length;
+  $("lastrun").textContent = d.history.length
+    ? `최근 ${(d.history[0].wall || "").slice(5, 16).replace("T", " ")}` : "기록 없음";
+
+  renderReady(d);
+  renderDiag(d);
+  renderFlow(d);
+  renderSlots(d);
+  renderExecs(d);
+  renderHistory(d);
+  renderLog(d);
+}
+
+// 지금 시작할 수 있는지. 누르기 전에 알려 줍니다.
+// task_manager 는 프로세스당 사이클 1회라, 끝난 뒤엔 재시작이 필요합니다.
+const READY_SHORT = {ready:"시작 가능", busy:"진행 중", done:"재시작 필요",
+                     down:"task_manager 없음", unknown:"상태 미확인"};
+
+function renderReady(d) {
+  $("ready").className = "chip " + d.start.code;
+  $("readytext").textContent = READY_SHORT[d.start.code] || d.start.text;
+  $("ready").title = d.start.text;
+  $("why").textContent = d.start.text;
+  if (!sending) $("start").disabled = !d.start.can;
+}
+
+function renderFlow(d) {
+  const c = d.cycle;
+  const at = d.states.indexOf(c.state);
+  const failed = BAD.includes(c.status);
+  $("flownote").textContent = at >= 0
+    ? `${at + 1} / ${d.states.length} 단계`
+    : (END.includes(c.status) ? "사이클 종료" : "사이클을 시작하면 왼쪽부터 채워집니다");
+
+  $("steps").innerHTML = d.states.map((name, n) => {
+    let cls = "step";
+    if (n === at) cls += failed ? " bad" : " now";
+    else if (at < 0 ? END.includes(c.status) : n < at) cls += " done";
+    const sec = d.state_seconds[name];
+    return `<div class="${cls}">
+      <div class="rail"><i></i></div>
+      <div class="nm">${name}</div>
+      <div class="sc">${sec === undefined ? "&nbsp;" : sec.toFixed(2) + "s"}</div>
+    </div>`;
+  }).join("");
+}
+
+// INSPECT 가 돌려준 defect_slots / unknown_slots, CULL 이 돌려준 completed_units
+function renderSlots(d) {
+  const i = d.inspection;
+  const state = (slot) =>
+    i.defects.includes(slot)  ? ["bad", "✕", "불량"] :
+    i.unknowns.includes(slot) ? ["unk", "?", "미판정"] :
+    i.done                    ? ["ok", "●", "정상"] :
+                                ["", "·", "대기"];
+
+  $("slots").innerHTML = d.slots.map(slot => {
+    const [cls, mark, what] = state(slot);
+    const culled = i.culled.includes(slot);
+    return `<div class="slot ${cls}${culled ? " culled" : ""}">
+      <div class="no">${slot.replace("SLOT_", "")}</div>
+      <div class="mk">${mark}</div>
+      <div class="wt">${culled ? "솎아냄" : what}</div>
+    </div>`;
+  }).join("");
+
+  // 도넛은 정상·불량·미판정을 이어 붙인 세 조각입니다. 한 색으로 칠하면
+  // '몇 개가 불량인지' 가 안 보이고 비율만 남습니다.
+  const total = d.slots.length;
+  const good = total - i.defects.length - i.unknowns.length;
+  const seg = (id, count, before) => {
+    const len = i.done ? RING * count / total : 0;
+    $(id).setAttribute("stroke-dasharray", `${len} ${RING}`);
+    $(id).setAttribute("stroke-dashoffset", i.done ? -RING * before / total : 0);
+  };
+  seg("arcOk",  good, 0);
+  seg("arcBad", i.defects.length, good);
+  seg("arcUnk", i.unknowns.length, good + i.defects.length);
+  $("ringnum").textContent = i.done ? `${good}/${total}` : "—";
+  $("ringcap").textContent = i.done ? "정상" : "검사 전";
+}
+
+function renderExecs(d) {
+  $("execs").innerHTML = Object.entries(d.executors).map(([name, e]) => {
+    const cls = e.state && !BAD.includes(e.state) ? e.state : (e.state ? "ERROR" : "");
+    const late = e.ago !== null && e.ago > 3;
+    return `<div class="exec ${cls}">
+      <div class="hd">
+        <span class="who"><i></i>${name}</span>
+        <span class="pill ${e.state || ""}">${e.state || "—"}</span>
+      </div>
+      <div class="kv">
+        <span>작업 <b>${e.operation || "—"}</b></span>
+        <span>단계 <b>${e.phase || "—"}</b></span>
+        <span>소식 <b class="${late ? "stale" : ""}">${
+          e.ago === null ? "—" : e.ago.toFixed(1) + "s 전"}</b></span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderHistory(d) {
+  if (!d.history.length) {
+    $("hist").innerHTML = `<tr><td colspan="5" class="empty">끝난 사이클이 아직 없습니다.</td></tr>`;
+    return;
+  }
+  $("hist").innerHTML = d.history.map(h => {
+    const good = h.status === "SUCCEEDED";
+    const when = (h.wall || "").slice(5, 16).replace("T", " ");
+    const slow = h.slowest ? `${h.slowest.state} ${h.slowest.seconds.toFixed(1)}s` : "—";
+    const seen = h.inspected
+      ? (h.defects.length ? `불량 ${h.defects.length}` : "불량 없음")
+      : "기록 없음";
+    return `<tr>
+      <td class="when">${when || "—"}</td>
+      <td class="res ${good ? "good" : "bad"}"><b>${h.status}</b>${
+        (h.reason && h.reason !== "NONE") ? `<br><span style="color:var(--dim)">${h.reason}</span>` : ""}</td>
+      <td class="sec">${h.seconds === null || h.seconds === undefined
+                        ? "—" : h.seconds.toFixed(1) + "s"}</td>
+      <td class="slow"><b>${slow}</b></td>
+      <td>${seen}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderLog(d) {
+  $("log").innerHTML = d.log.length
+    ? d.log.map(r => `<tr>
+        <td class="when" style="width:66px">${r.wall}</td>
+        <td style="width:78px"><span class="tag ${r.kind}">${r.kind}</span></td>
+        <td class="id" style="width:150px">${r.topic}</td>
+        <td>${r.text}</td></tr>`).join("")
+    : `<tr><td class="empty">아직 들어온 사건이 없습니다.</td></tr>`;
+}
+
+function rows(obj, keys) {
+  return keys.filter(k => obj && obj[k] !== undefined && obj[k] !== "")
+    .map(k => `<div class="row"><span>${k}</span><span>${
+      Array.isArray(obj[k]) ? (obj[k].join(", ") || "—") : obj[k]}</span></div>`).join("")
+    || `<div class="row"><span>—</span><span>기록 없음</span></div>`;
+}
+
+function renderDiag(d) {
+  if (!d.failed) { $("diag").innerHTML = ""; return; }
+  const c = d.cycle;
+  // 어느 executor 가 문제였는지: 마지막 결과가 실패인 쪽을 먼저 봅니다
+  const who = Object.keys(d.last_result).find(
+    k => d.last_result[k].status && d.last_result[k].status !== "SUCCEEDED");
+  const name = who || Object.keys(d.last_command).slice(-1)[0] || "";
+  const stale = Object.entries(d.executors)
+    .filter(([, e]) => e.ago !== null && e.ago > 3)
+    .map(([n, e]) => `${n} (${e.ago.toFixed(1)}s)`);
+
+  $("diag").innerHTML = `<div class="card diag" style="margin-bottom:16px">
+    <h2>실패 진단</h2>
+    <div class="why">${c.state} 단계에서 ${c.status} — ${c.reason || "reason 없음"}</div>
+    <div class="hint">${d.reason_hint || "문서에 없는 reason 입니다. Executor 로그를 보세요."}</div>
+    ${stale.length ? `<div class="hint" style="color:var(--fail)">
+       소식이 끊긴 executor: ${stale.join(", ")}</div>` : ""}
+    <div class="pair">
+      <div class="box"><h3>마지막 명령 ${name ? "· " + name : ""}</h3>
+        ${rows(d.last_command[name] || {},
+               ["operation","task_id","command_id","pallet_id","source","destination","target_slots"])}</div>
+      <div class="box"><h3>돌아온 결과</h3>
+        ${rows(d.last_result[name] || {},
+               ["operation","status","phase","reason","task_id","command_id",
+                "completed_units","defect_slots","unknown_slots"])}</div>
+    </div>
+  </div>`;
+}
+
+// ── 조작 ─────────────────────────────────────────
+$("start").onclick = async () => {
+  const btn = $("start"), said = $("said");
+  sending = true;
+  btn.disabled = true; said.textContent = "요청 중…";
+  try {
+    const reply = await (await fetch("/start", {method:"POST"})).json();
+    said.textContent = reply.accepted
+      ? `수락됨 — ${reply.task_id}`
+      : `거절됨 — ${reply.hint || reply.reason}`;
+  } catch (e) {
+    said.textContent = "서버에 닿지 못했습니다";
+  }
+  sending = false;            // 이후에는 renderReady 가 버튼 상태를 정합니다
+};
+
+document.querySelectorAll("nav a").forEach(link => {
+  link.onclick = () => {
+    document.querySelectorAll("nav a").forEach(a => a.classList.remove("on"));
+    link.classList.add("on");
+    $(link.dataset.go).scrollIntoView({behavior:"smooth", block:"start"});
+  };
+});
+
+// 테마는 이 브라우저에만 남습니다. 저장이 막혀 있어도 화면은 떠야 합니다.
+function setTheme(dark) {
+  themeDark = dark;
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  $("themetext").textContent = dark ? "밝은 화면" : "어두운 화면";
+  try { localStorage.setItem("theme", dark ? "dark" : "light"); } catch (e) {}
+}
+$("theme").onclick = () => setTheme(!themeDark);
+try { setTheme(localStorage.getItem("theme") === "dark"); } catch (e) { setTheme(false); }
+
+// ── 연결 ─────────────────────────────────────────
+function connect() {
+  const source = new EventSource("/events");
+  source.onopen = () => {
+    $("conn").className = "chip ready";
+    $("conntext").textContent = "연결됨";
+  };
+  source.onmessage = (e) => render(JSON.parse(e.data));
+  source.onerror = () => {
+    $("conn").className = "chip down";
+    $("conntext").textContent = "연결 끊김 — 재시도 중";
+    source.close();
+    setTimeout(connect, 2000);      // 노드를 다시 띄우면 알아서 붙습니다
+  };
+}
+connect();
+</script>
