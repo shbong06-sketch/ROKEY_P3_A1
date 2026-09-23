@@ -60,3 +60,4 @@ __pycache__/
 .DS_Store
 
 rosbag2_*
+best.pt
