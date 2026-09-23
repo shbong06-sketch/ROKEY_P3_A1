@@ -31,7 +31,21 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-BAG_DIR = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags"
+PACKAGE_SHARE = get_package_share_directory("smart_farm_navigation")
+
+BAG_DIR = os.path.join(
+    os.path.expanduser("~"),
+    ".ros",
+    "smart_farm_navigation",
+    "bags",
+)
+
+DEFAULT_MAP = os.path.join(
+    PACKAGE_SHARE,
+    "maps",
+    "Collected_smartfarm_v011.yaml",
+)
+
 BAG_TOPICS = [
     "/clock", "/tf", "/tf_static", "/chassis/odom", "/scan",
     "/cmd_vel", "/cmd_vel_nav", "/cmd_vel_smoothed", "/collision_monitor_state",
@@ -41,7 +55,6 @@ BAG_TOPICS = [
     "/navigation/command", "/navigation/result", "/navigation/status",
     "/goal_pose", "/stations_markers", "/feeder_dock/status", "/feeder_dock/result",
 ]
-DEFAULT_MAP = "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v011.yaml"
 SCAN2D_TOPIC = "/front_2d_lidar/scan"
 CLOUD_TOPIC = "/front_3d_lidar/lidar_points"
 
@@ -175,7 +188,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("use_rviz", default_value="true"),
         DeclareLaunchArgument("rviz_config", default_value=os.path.join(share, "rviz", "nav2_smartfarm.rviz")),
         DeclareLaunchArgument("use_composition", default_value="False"),
-        DeclareLaunchArgument("record", default_value="true"),
+        DeclareLaunchArgument("record", default_value="false"),
         DeclareLaunchArgument("dock_auto", default_value="true"),     # feeder_dock arms itself near FEEDER_APPROACH
         DeclareLaunchArgument("record_cloud", default_value="false"),
         DeclareLaunchArgument("initial_x", default_value=""),
