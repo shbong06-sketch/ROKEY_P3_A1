@@ -1,0 +1,6 @@
+Starting >>> smart_farm_interfaces
+Finished <<< smart_farm_interfaces [0.25s]
+Starting >>> smart_farm_manager
+Finished <<< smart_farm_manager [0.58s]
+
+Summary: 2 packages finished [1.04s]
