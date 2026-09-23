@@ -15,7 +15,7 @@ def test_sim_task_command_is_serialized_as_json_string():
         pallet_id="PALLET_001",
         source="INSPECT_STATION",
         destination="INSPECT_STATION",
-        target_slots=("SLOT_03", "SLOT_07"),
+        target_slots=("SLOT_03", "SLOT_06"),
     )
 
     message = TaskManagerNode._task_command_to_json(command)
@@ -29,7 +29,7 @@ def test_sim_task_command_is_serialized_as_json_string():
         "pallet_id": "PALLET_001",
         "source": "INSPECT_STATION",
         "destination": "INSPECT_STATION",
-        "target_slots": ["SLOT_03", "SLOT_07"],
+        "target_slots": ["SLOT_03", "SLOT_06"],
     }
 
 

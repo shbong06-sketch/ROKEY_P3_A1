@@ -46,7 +46,7 @@ class MockExecutorNode(Node):
         self.declare_parameter("result_delay_sec", 0.2)
         self.declare_parameter(
             "defect_slots",
-            ["SLOT_03", "SLOT_07"],
+            ["SLOT_03", "SLOT_06"],
         )
 
         self.executor_name = str(self.get_parameter("executor").value)

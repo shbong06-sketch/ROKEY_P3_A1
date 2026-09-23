@@ -106,20 +106,20 @@ def test_full_cycle_with_defects():
     inspect_command = machine.create_command()
     inspect_result = success_result(
         inspect_command,
-        defect_slots=("SLOT_03", "SLOT_07"),
+        defect_slots=("SLOT_03", "SLOT_06"),
         unknown_slots=(),
     )
     machine.handle_result(inspect_result)
 
     assert machine.state == CycleState.CULL
-    assert machine.defect_slots == ("SLOT_03", "SLOT_07")
+    assert machine.defect_slots == ("SLOT_03", "SLOT_06")
 
     cull_command = machine.create_command()
-    assert cull_command.target_slots == ("SLOT_03", "SLOT_07")
+    assert cull_command.target_slots == ("SLOT_03", "SLOT_06")
 
     cull_result = success_result(
         cull_command,
-        completed_units=("SLOT_03", "SLOT_07"),
+        completed_units=("SLOT_03", "SLOT_06"),
     )
     machine.handle_result(cull_result)
 
@@ -175,6 +175,28 @@ def test_unknown_inspection_slot_causes_error():
     assert machine.state == CycleState.ERROR
     assert machine.terminal_status == "FAILED"
     assert machine.failure_reason == "UNKNOWN_SLOT"
+
+
+def test_inspection_rejects_slot_outside_six_slot_contract():
+    machine = start_machine()
+
+    complete_transfer(machine)
+    complete_pick_harvest(machine)
+    complete_navigation(machine)
+    complete_place_inspect(machine)
+
+    command = machine.create_command()
+    result = success_result(
+        command,
+        defect_slots=("SLOT_07",),
+        unknown_slots=(),
+    )
+
+    machine.handle_result(result)
+
+    assert machine.state == CycleState.ERROR
+    assert machine.terminal_status == "FAILED"
+    assert machine.failure_reason == "INVALID_SLOT_ID"
 
 
 def test_pick_harvest_requires_safe_to_navigate():

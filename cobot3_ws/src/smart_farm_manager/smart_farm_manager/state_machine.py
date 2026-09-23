@@ -18,7 +18,7 @@ class CycleStateMachine:
     """시나리오 규칙에 따라 명령을 만들고 결과를 상태 전이에 반영한다."""
 
     VALID_PLANT_SLOTS: Set[str] = {
-        f"SLOT_{index:02d}" for index in range(1, 9)
+        f"SLOT_{index:02d}" for index in range(1, 7)
     }
 
     EXPECTED_TRANSFER_UNITS: Set[str] = {
