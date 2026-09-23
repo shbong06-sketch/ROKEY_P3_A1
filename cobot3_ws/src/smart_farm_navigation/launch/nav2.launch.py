@@ -117,7 +117,7 @@ def _setup(context):
     else:
         self_filter = Node(
             package="smart_farm_navigation", executable="cloud_self_filter", name="cloud_self_filter", output="screen",
-            parameters=[{"use_sim_time": True, "input_topic": CLOUD_TOPIC, "output_topic": CLOUD_TOPIC + "/filtered"}],
+            parameters=[{"use_sim_time": True, "input_topic": CLOUD_TOPIC, "output_topic": CLOUD_TOPIC + "/filtered", "accumulate_s": 0.5, "self_box_x_m": 0.6, "self_box_y_m": 0.6, "self_box_z_m": 1.0}],
         )
         scan_node = Node(
             package="pointcloud_to_laserscan", executable="pointcloud_to_laserscan_node",

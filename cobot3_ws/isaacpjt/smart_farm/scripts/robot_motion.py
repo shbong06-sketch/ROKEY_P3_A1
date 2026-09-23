@@ -132,6 +132,7 @@ HOME_JOINTS_DEG = [180.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 # ── 시간·검사 기준 ───────────────────────────────────────
 JOINT_SPEED_DEG_S = 20.0       # 관절 명령 속도. 올리면 추종 오차가 커집니다
+CARRY_ROTATE_SPEED_DEG_S = 5.0 # 인양 후 팔레트를 들고 회전할 때 관절 속도는 엽채류를 흘리지 않을 정도로 느리게
 MIN_MOVE_SECONDS = 0.5         # 짧은 구간도 최소 이만큼은 씁니다
 START_WAIT_SECONDS = 2.0
 
@@ -671,12 +672,14 @@ class JointSequence:
 
     def __init__(self, robot, indices, plan, pallet_tracker=None,
                  done_message="[DONE] 동작을 확인했습니다.",
-                 start_wait_seconds=START_WAIT_SECONDS):
+                 start_wait_seconds=START_WAIT_SECONDS,
+                 speed_deg_s=JOINT_SPEED_DEG_S):
         self.robot = robot
         self.indices = indices
         self.plan = plan
         self.pallet_tracker = pallet_tracker
         self.done_message = done_message
+        self.speed_deg_s = float(speed_deg_s)
 
         self.index = -1
         self.stage = "WAIT"
@@ -715,7 +718,7 @@ class JointSequence:
         self.goal = np.asarray(step.joints, dtype=float)
 
         largest_move = float(np.max(np.abs(self.goal - self.start)))
-        self.duration = max(MIN_MOVE_SECONDS, largest_move / JOINT_SPEED_DEG_S)
+        self.duration = max(MIN_MOVE_SECONDS, largest_move / self.speed_deg_s)
 
         if self.pallet_tracker is not None:
             self.pallet_tracker.begin_stage(self.stage)
@@ -940,6 +943,7 @@ class RobotMotion:
             pallet_tracker=self._pallet_tracker,
             done_message="[DONE] 운반 자세에 도달했습니다.",
             start_wait_seconds=0.0,
+            speed_deg_s=CARRY_ROTATE_SPEED_DEG_S,
         )
         self._reset_start_state()
 

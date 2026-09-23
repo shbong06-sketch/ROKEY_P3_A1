@@ -122,11 +122,11 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: false
     feedback: "OPEN_LOOP"
-    max_velocity: [0.6, 0.0, 0.8]      # 2026-09-22: 0.5 -> 0.6 (팔레트·엽채류 유지를 위해 살짝만)
-    min_velocity: [-0.6, 0.0, -0.8]
+    max_velocity: [0.3, 0.0, 0.4]      # 2026-09-22: 0.5 -> 0.6 (팔레트·엽채류 유지를 위해 살짝만)
+    min_velocity: [-0.3, 0.0, -0.4]
     velocity_timeout: 1.0
-    max_accel: [0.8, 0.0, 1.2]         # 가감속은 오히려 낮춤: 들고 있는 팔레트가 밀리지 않게
-    max_decel: [-0.8, 0.0, -1.2]
+    max_accel: [0.3, 0.0, 0.6]         # 가감속은 오히려 낮춤: 들고 있는 팔레트가 밀리지 않게
+    max_decel: [-0.35, 0.0, -0.6]
     odom_topic: "/chassis/odom"
     odom_duration: 0.1
 
@@ -159,13 +159,13 @@ controller_server:
     # (1차 Nav2 시험은 DWB 였음. 도착점 0.6 m 안에서 좌우 회전을 반복해 교체함.)
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.6
+      desired_linear_vel: 0.3
       lookahead_dist: 0.6
       min_lookahead_dist: 0.3
       max_lookahead_dist: 0.9
       lookahead_time: 1.5
       use_velocity_scaled_lookahead_dist: false
-      rotate_to_heading_angular_vel: 0.8
+      rotate_to_heading_angular_vel: 0.4
       max_angular_accel: 20.0              # 실측: 2.0 이면 Isaac odom 속도 기준 가속 제한에 걸려 회전이 기어감(정지처럼 보임). Isaac 쪽 DifferentialController 가 실제 가속을 제한함
       transform_tolerance: 0.5            # 두 PC 사이 지연 여유
       min_approach_linear_velocity: 0.1
