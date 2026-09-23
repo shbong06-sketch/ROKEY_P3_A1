@@ -161,6 +161,13 @@ class FeederDock(Node):
     def _report(self):
         if self.phase != "IDLE":
             return
+        if not self.auto and self.amcl_xy is not None and self.face is not None:
+            if math.hypot(self.amcl_xy[0] - self.arm[0], self.amcl_xy[1] - self.arm[1]) < self.arm_r:
+                self.get_logger().warning(
+                    "FEEDER_APPROACH 부근에 서 있으나 자동 시작이 꺼져 있습니다. "
+                    "navigation_node 명령으로 시작하거나 "
+                    "'ros2 topic pub --once /feeder_dock/start std_msgs/msg/String \"{data: manual}\"' 로 직접 시작하십시오."
+                )
         near = None
         if self.amcl_xy is not None:
             near = math.hypot(self.amcl_xy[0] - self.arm[0], self.amcl_xy[1] - self.arm[1])
