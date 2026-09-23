@@ -486,3 +486,35 @@
 [feeder_dock-4] [INFO] [1790160488.590782382] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
 [cloud_self_filter-2] [INFO] [1790160493.545131499] [cloud_self_filter]: 3.4 Hz, 42061 points/scan, merged 2 msgs, 947 self points removed/scan
 [feeder_dock-4] [INFO] [1790160493.551785890] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 13}, nearest (-0.51,0.79))
+[cloud_self_filter-2] [INFO] [1790160498.415624112] [cloud_self_filter]: 3.4 Hz, 42283 points/scan, merged 2 msgs, 937 self points removed/scan
+[feeder_dock-4] [INFO] [1790160498.434619988] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-2] [INFO] [1790160503.329483851] [cloud_self_filter]: 3.2 Hz, 41870 points/scan, merged 2 msgs, 694 self points removed/scan
+[feeder_dock-4] [INFO] [1790160503.333582462] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-2] [INFO] [1790160507.970101070] [cloud_self_filter]: 3.4 Hz, 41579 points/scan, merged 2 msgs, 691 self points removed/scan
+[feeder_dock-4] [INFO] [1790160507.972132024] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.29 outside (0.6, 1.6) (centre -0.60,0.88, 11 pts))
+[feeder_dock-4] [INFO] [1790160512.483658914] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-2] [INFO] [1790160512.491851250] [cloud_self_filter]: 3.4 Hz, 41402 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-2] [INFO] [1790160516.991101008] [cloud_self_filter]: 3.2 Hz, 41300 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-4] [INFO] [1790160516.994186114] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-2] [INFO] [1790160521.503994733] [cloud_self_filter]: 3.4 Hz, 41460 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-4] [INFO] [1790160521.504786450] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 16}, nearest (-0.51,0.79))
+[feeder_dock-4] [INFO] [1790160526.028102248] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-2] [INFO] [1790160526.064618037] [cloud_self_filter]: 3.4 Hz, 41401 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-2] [INFO] [1790160530.493194029] [cloud_self_filter]: 3.2 Hz, 41304 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-4] [INFO] [1790160530.494396737] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.29 outside (0.6, 1.6) (centre -0.60,0.88, 11 pts))
+[cloud_self_filter-2] [INFO] [1790160534.992785386] [cloud_self_filter]: 3.4 Hz, 41394 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-4] [INFO] [1790160534.995437175] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[feeder_dock-4] [INFO] [1790160539.513085229] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-2] [INFO] [1790160539.602181952] [cloud_self_filter]: 3.4 Hz, 41231 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-2] [INFO] [1790160544.022771111] [cloud_self_filter]: 3.2 Hz, 41397 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-4] [INFO] [1790160544.025004153] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-2] [INFO] [1790160548.522362229] [cloud_self_filter]: 3.4 Hz, 41313 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-4] [INFO] [1790160548.525457310] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[feeder_dock-4] [INFO] [1790160553.044130487] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-2] [INFO] [1790160553.088663262] [cloud_self_filter]: 3.4 Hz, 41241 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-2] [INFO] [1790160557.544011041] [cloud_self_filter]: 3.2 Hz, 41305 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-4] [INFO] [1790160557.547335277] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-2] [INFO] [1790160562.059286868] [cloud_self_filter]: 3.4 Hz, 41403 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-4] [INFO] [1790160562.059609561] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 12}, nearest (-0.51,0.79))
+[cloud_self_filter-2] [INFO] [1790160566.935520924] [cloud_self_filter]: 3.4 Hz, 41822 points/scan, merged 2 msgs, 840 self points removed/scan
+[feeder_dock-4] [INFO] [1790160566.948734787] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.29 outside (0.6, 1.6) (centre -0.60,0.88, 11 pts))
