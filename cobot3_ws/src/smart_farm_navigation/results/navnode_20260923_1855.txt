@@ -1,0 +1,4 @@
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-23-18-55-34-229729-lwh19180-786593
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [navigation_node-1]: process started with pid [786598]
+[navigation_node-1] [0m[INFO] [1790157335.943116283] [navigation_node]: navigation_node ready; destinations: ['FEEDER_DOCK', 'RACK_DOCK', 'CORRIDOR_EXIT'][0m
