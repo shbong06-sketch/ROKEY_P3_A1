@@ -37,7 +37,7 @@ ros2 run smart_farm_navigation nav2_link_check 2>&1 | tee /home/rokey/ROKEY_P3_A
 ```
 `RESULT OK - … scan_mode:=cloud` 확인.
 
-## 3. 내피 터미널 3 (Nav2 + RViz2 + 도킹 노드 + bag)
+## 3. 내피 터미널 3 (Nav2 + RViz2 + 도킹 노드)
 ```bash
 export ROS_DOMAIN_ID=102
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
@@ -46,6 +46,8 @@ source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 ros2 launch smart_farm_navigation nav2.launch.py 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/nav2_$(date +%Y%m%d_%H%M).txt
 ```
+**bag 을 남기려면** 위 명령의 `nav2.launch.py` 뒤에 `record:=true` 를 붙임(통합 이후 기본은 꺼짐). 실패를 분석해야 하는 실측에서는 반드시 붙일 것.
+
 `Managed nodes are active` 와 `[feeder_dock]: [IDLE] waiting (auto: arms within 0.6 m of FEEDER_APPROACH)` 확인. RViz2 에 작업점 화살표가 보임. 2D Pose Estimate 는 찍지 않음.
 
 ## 4. 내피 터미널 4 (파지 명령)

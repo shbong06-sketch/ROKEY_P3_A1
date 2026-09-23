@@ -175,7 +175,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("use_rviz", default_value="true"),
         DeclareLaunchArgument("rviz_config", default_value=os.path.join(share, "rviz", "nav2_smartfarm.rviz")),
         DeclareLaunchArgument("use_composition", default_value="False"),
-        DeclareLaunchArgument("record", default_value="true"),
+        DeclareLaunchArgument("record", default_value="false"),   # 통합(2026-09-23): 기본 꺼짐. 분석이 필요한 실측만 record:=true
         DeclareLaunchArgument("dock_auto", default_value="true"),     # feeder_dock arms itself near FEEDER_APPROACH
         DeclareLaunchArgument("record_cloud", default_value="false"),
         DeclareLaunchArgument("initial_x", default_value=""),

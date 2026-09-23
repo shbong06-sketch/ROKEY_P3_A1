@@ -4,3 +4,34 @@
 "Isaac 실시간 배율은 0.3 전후. 시간 판단은 반드시 `use_sim_time`/시뮬레이션 시계. 벽시계 기반 타임아웃 금지."이면 /clock은 전혀 쓸 수 없는건지? 해결이 어렵거나 못 한다면 이유가 무엇인지 나한테 답할 것.
 1.2.
 '"Nav2만으로"의 의미: 스크립트 BackUp 없이 NavigateToPose 클릭만.'은 내가 잘못 말한 것을 인정함. 차라리 RViz2의 Nav2 goal만으로 라고 했어야했음. 스크립트 Backup도 필요하다는 걸 인지했으니 앞으로는 만들어줄 것.
+
+---
+
+1.
+통합 브랜치에서는 팀장님의 시스템 통합에 따라 다음과 같이 변수 수정 이루어짐.
+1.1.
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/launch/nav2.launch.py":
+DeclareLaunchArgument("record", default_value="true")를 false로
+
+1.2.
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/smart_farm_navigation/navigation_node.py":
+'''
+class NavigationNode(Node):
+    (...)
+    def _on_command(
+    (...)
+        self._status(
+            state="EXECUTING",
+'''
+에서 "EXECUTING"을 "BUSY"로 변경함.
+
+2.
+ADR 수정 중 내 쪽 관점에서 수정한 것 알림:
+2.1.
+"4. **커밋 범위**: 사용자 파일(`docs/ADR/*`, `docs/prompt/*`, `errored/*`, `.gitignore`)은 사용자가 스테이지하지 않았다면 당신이 커밋에 포함하지 않음. `results/*.txt` 는 사용자가 커밋함. push 가 거부되면 pull 하지 말고 사용자에게 알림.": pull을 제외하면 push 제외하는 파일은 따로 안 둠. 프롬프토 입력때마다 git 내용물 전체는 push해도 상관없음.
+
+2.2.
+- "Nav2 만으로" 의 정의: 출발 지시는 RViz2 Nav2 Goal 클릭 하나.": 내가 잘못 말한 것을 인정했으므로 ADR에 해당 문구가 들어갈 필요는 없음. 만약 그 RViz2 상에서 Nav2 goal을 클릭해서 움직이는게 필요하다면 RViz2의 Nav2 goal만으로 라고 할 거임. 스크립트 Backup도 필요하다는 것도 사실임. 다만 현재는 코드 통합 자체는 완료되었고, 모듈 간 안정성 테스트 중에 있음.
+
+2.3
+"- 실측 절차의 표준 순서: 고피 터미널 1(Isaac) → 내피 터미널 2(빌드·`nav2_link_check`) → 내피 터미널 3(`nav2.launch.py`) → 내피 터미널 4(파지 명령) → RViz2 클릭 → 결과 확인(`/feeder_dock/result`, 터미널 3 의 `[DONE]`).": 1차적으로 네비게이션 움직임이 성공했으므로, 통합 후 부터는 RViz2를 사용하지 않고, Nav2로 이동하는 스크

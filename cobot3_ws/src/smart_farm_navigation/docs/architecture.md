@@ -1,6 +1,7 @@
 # smart_farm_navigation 아키텍처 (Nav2 + 정밀 도킹 판)
 
 - 기준: `feature/navigation2`, 2026-09-23. 장면 `Collected_smartfarm_v011.usd`, 지도 `maps/Collected_smartfarm_v011.yaml`, ROS 2 Jazzy, `ROS_DOMAIN_ID` **102**(고피2 기준. 이전 고피는 101).
+- `navigation_node` 의 실행 중 상태값은 `BUSY` 임(통합 브랜치 기준, 이전 `EXECUTING`).
 - 확정 동작(2026-09-22 실측): 팀 `standalone_app.py` 로 Isaac 실행 → 내피 Nav2 → `PICK_HARVEST` 로 Pallet_01 파지 → RViz2 에서 `FEEDER_APPROACH` 한 번 클릭 → 도착 약 2 s 뒤 `feeder_dock` 이 자동으로 `FEEDER_DOCK` 앞(면에서 0.90 m)에 뒤(팔 쪽)를 면과 직각으로 맞춰 정지.
 - 그림은 GitHub 또는 VS Code(Markdown Preview Mermaid Support)에서 렌더링됨.
 
@@ -20,7 +21,7 @@ flowchart LR
         S --> CM["Nav2: costmaps · planner(Hybrid-A*) · controller(RPP) · behaviors · collision_monitor"]
         S --> D["feeder_dock (정밀 도킹)"]
         M["station_markers"] --> RV["RViz2 (nav2_smartfarm.rviz)"]
-        B["ros2 bag record"]
+        B["ros2 bag record (record:=true 일 때만)"]
         NN["navigation_node (팀 TaskCommand) → go_to_station"]
     end
     USD -- "/front_3d_lidar/lidar_points<br>/chassis/odom /tf /clock" --> F
@@ -158,7 +159,7 @@ stateDiagram-v2
 |---|---|---|
 | `scan_mode` | auto | `scan2d`(2D 라이다) / `cloud`(3D 점군). 고피는 2D 가 안 나와 항상 cloud |
 | `dock_auto` | true | `feeder_dock` 자동 시작. false 면 터미널에서 따로 띄움 |
-| `record`, `record_cloud` | true, false | rosbag 기록, 점군 포함 여부 |
+| `record`, `record_cloud` | **false**, false | rosbag 기록 여부(통합 이후 기본 꺼짐), 점군 포함 여부. 분석이 필요한 실측은 `record:=true` 로 실행 |
 | `map`, `initial_x/y/yaw_deg` | v011 지도, stations.yaml 초기 위치 | 지도·AMCL 초기 위치 |
 | pointcloud_to_laserscan `min_height`/`max_height` | −0.35 / 1.5 (라이다 기준 m) | 바닥 제외, TurnTable(1.17 m)·랙 포함 |
 | pointcloud_to_laserscan `range_min` | 0.3 | 라이다 0.3 m 안은 버림 |
