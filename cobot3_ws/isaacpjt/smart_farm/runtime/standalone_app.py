@@ -274,6 +274,7 @@ class SimulationRuntime:
     arm_base: object = None
     place_phase: str = "IDLE"
     place_wait_seconds: float = 0.0
+    hold_fault_logged: bool = False   # [navigation 2026-09-24] 운반 중 팔레트 감시 예외를 한 번만 기록
 
 
 class TransferOperation:
@@ -1102,7 +1103,15 @@ def run():
 
             if runtime.motion.is_carrying and not node.has_active_command:
                 runtime.lift.hold()
-                runtime.motion.hold()
+                # [navigation 2026-09-24] 운반 중 팔레트 미끄러짐 검사가 예외를 던지면 앱 전체가 죽고
+                # Isaac 이 종료되었다(24차: 도킹 회전 중 30.1 mm). 관절 목표는 물리 드라이브에 남아 있으므로
+                # 여기서는 한 번만 기록하고 계속 돈다. 다음 PLACE 명령에서 같은 검사가 MOTION_FAILED 로 보고한다.
+                try:
+                    runtime.motion.hold()
+                except RuntimeError as error:
+                    if not runtime.hold_fault_logged:
+                        node.get_logger().error(f"운반 중 팔레트 감시 예외 (계속 진행): {error}")
+                        runtime.hold_fault_logged = True
 
             step_world()
 

@@ -79,23 +79,27 @@ flowchart LR
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE
-    IDLE --> ALIGN_TO_GOAL: auto (AMCL 이 FEEDER_APPROACH 0.6 m 안, Nav2 2 s 정지, 면 검출) 또는 /feeder_dock/start
-    ALIGN_TO_GOAL --> REVERSE: 뒤축이 목표점 G 를 가리킴 (±1.5°)
+    IDLE --> SETTLE: /feeder_dock/start (navigation_node 가 실행 식별자를 실어 보냄) 또는 auto
+    SETTLE --> ALIGN_TO_GOAL: Nav2 /cmd_vel 이 2 s 조용하고 차체 각속도 < 0.03 rad/s
+    ALIGN_TO_GOAL --> REVERSE: 뒤축이 면 가운데 C 를 가리킴 (±4°, 관성 예측 포함) 이고 각속도 < 0.03
+    ALIGN_TO_GOAL --> REVERSE: 제자리 회전이 안 먹혀도 오차 15° 안이면 후진하며 맞춤
     REVERSE --> CHECK: |G| < 0.06 m 또는 면 거리 ≤ standoff+0.02
-    CHECK --> CREEP: 뒤가 면과 직각 (±3°)
-    CHECK --> BACKOFF: 3° 초과 (도킹 지점에서는 회전하지 않는다)
-    BACKOFF --> ALIGN_TO_GOAL: 면에서 standoff+0.6 m 까지 물러남
+    CHECK --> CREEP: 직각 ±3° 이고 횡 ≤ 0.06 m (재시도 소진 시 직각만)
+    CHECK --> BACKOFF: 직각 또는 횡 오차 초과 (도킹 지점에서는 회전하지 않는다)
+    BACKOFF --> ALIGN_TO_GOAL: 면에서 standoff+0.9 m 까지 물러남 (재시도 후진 거리를 늘려 횡 오차를 갚는다)
     CREEP --> DONE: 면 거리 = standoff ± 0.03 m
     CHECK --> FAILED: 재시도 2회 초과 (YAW_OFF)
     REVERSE --> FAILED: 멈춤 3 s (STALLED) / 면 미검출 / 시간 초과
     DONE --> [*]
-    FAILED --> ALIGN_TO_GOAL: /feeder_dock/start (재시도)
+    FAILED --> SETTLE: /feeder_dock/start (재시도)
 ```
 
-- 후진 조향은 거리에 따라 목표점 추종과 직각 맞추기를 섞고 상한 0.20 rad/s 로 제한한다. 도킹 지점에서 제자리 회전을 하면 팔이 든 팔레트가 구조물에 걸린다(2026-09-23 실측).
-- 멈춤 감지는 위치와 방향을 함께 본다. `ALIGN_TO_GOAL` 처럼 제자리에서 도는 단계는 위치가 거의 변하지 않으므로, 이동만 보면 회전 시간이 그대로 멈춤 타이머로 쌓여 다음 단계를 곧바로 실패시킨다(2026-09-23 실측). 단계가 바뀌면 기준점을 새로 잡는다.
+- 코드 구조: 상태기계는 `DockLogic`(ROS 없음, 입력 = 면 측정·odom 각속도·외부 명령 경과, 출력 = v, w)이고 `FeederDock` 노드는 그 둘레의 ROS 배선만 맡는다. 파라미터는 `DockParams` 한 곳에서 선언한다. `sim_test/dock_sim.py` 가 같은 `DockLogic` 을 평면 운동학 위에서 돌리므로 모의와 실제 노드의 제어 논리가 갈라질 수 없다.
+- 차체 특성(2026-09-23 22·24차 bag): 각속도는 명령을 시정수 1~3 s 로 따라오고 초당 0.05~0.1 rad/s 이상 못 바꾼다(Isaac DifferentialController 가속 제한). 제자리 회전은 명령의 12~75% 만 나온다. 그래서 모든 조향은 `settled_err` = 측정 오차 − 각속도×측정 지연 − 관성으로 더 돌 각도(`wz²/2a`) 로 계산한다.
+- 후진 조향은 목표점 G 가 아니라 면 가운데를 지나는 법선(도킹 선)을 따른다. 횡 오차를 갚기 위한 방향 이탈은 최대 10°(`lat_heading_cap_deg`), 마지막 0.4 m 는 직각만. 점을 겨누면 남은 거리가 짧을 때 횡 오차를 방향으로 갚다가 도착 방향이 틀어진다(24차: 21°). 도킹 지점에서 제자리 회전을 하면 팔이 든 팔레트가 구조물에 걸린다(22차).
+- 멈춤 감지는 위치와 방향을 함께 본다(23차: 회전 구간이 멈춤으로 오판). 단계가 바뀌면 기준점을 새로 잡는다. 명령이 0 이면 판정하지 않는다.
 - 면 검출: `/scan` 을 base_link 로 바꾼 뒤 뒤쪽 창(x −3.4~−0.5, |y|<1.3)에서 가장 가까운 점 주변 1.5 m 의 점에 RANSAC 직선(3 cm 내점)을 맞춤. 길이 0.6~1.6 m, 법선이 뒤쪽 ±60° 안이어야 TurnTable 앞면으로 인정. 목표점 G = 면 가운데 법선 위 `standoff_m`.
-- 시간 기준은 전부 시뮬레이션 시계(`use_sim_time`). 실시간 배율 0.3 에서 벽시계로 판단하면 스캔이 늘 "오래된 값" 이 됨.
+- 시간 기준은 전부 시뮬레이션 시계(`use_sim_time`). 실시간 배율 0.3 에서 벽시계로 판단하면 스캔이 늘 "오래된 값" 이 되고 제한 시간이 3배 빨리 걸린다. `navigation_node` 도 같다.
 
 ## 5. 파일 목록과 역할
 
@@ -106,6 +110,10 @@ stateDiagram-v2
 | `scripts/launch_scene.py` | 고피 | 팀 앱 없이 장면만 띄우는 단위 시험용. `/clock` 그래프 보강, M0609 관절 고정, fullScan, `--pose carry` 자세, 실행 로그 `results/launch_scene_*.log` |
 | `launch/nav2.launch.py` | 내피 | Nav2 bringup + RViz2 + `/scan` 파이프라인 + `feeder_dock` + `station_markers` + rosbag. 인자: `scan_mode`, `dock_auto`, `record`, `record_cloud`, `map`, `initial_*` |
 | `launch/navigation_node.launch.py` | 내피 | 팀 통합용 `navigation_node` (`mode:=nav2` → `go_to_station`) |
+| `sim_test/dock_regression.py` | 내피 | **실측 전 회귀 시험.** 합성 로봇 + 현장과 같은 launch 로 도킹 10 시나리오를 돌려 통과/실패 표를 낸다. Isaac 없이 돌며 실측과 같은 도메인에서는 돌리지 않는다 |
+| `sim_test/dock_sim.py` | 내피 | `DockLogic` 을 ROS 없이 평면 운동학 위에서 225 케이스 돌리는 오프라인 모의. 이득을 바꿀 때 먼저 돌린다 |
+| `sim_test/fake_robot.py` | 내피 | Isaac 대역. 지도에서 점군을 만들고 bag 에서 읽은 굼뜬 차체 응답을 흉내낸다 |
+| `sim_test/replay_bag_dock.py` | 내피 | 실측 bag 의 `/scan` 을 노드와 같은 검출기에 다시 넣어 그때 제어기가 본 값을 찍는다. "센서가 잘못 봤나, 제어가 잘못 판단했나" 를 가르는 도구 |
 
 ### 노드 (`smart_farm_navigation/`)
 | 파일 | 역할 |
@@ -149,10 +157,17 @@ stateDiagram-v2
 | `auto_start` | **false** | 통합은 `navigation_node` 가 `/feeder_dock/start`(String, 실행 식별자) 로 시작. RViz2 수동 절차는 `dock_auto:=true` |
 | `search_x`, `search_y` | [−3.4, −0.5], [−1.3, 1.3] | base_link 기준 면을 찾는 창(뒤쪽). 접근 지점이 면에서 3 m 넘게 멀어지면 `search_x[0]` 을 늘림 |
 | `face_min_len_m`, `face_max_len_m` | 0.6, 1.6 | 인정하는 직선 길이. TurnTable 앞면 1.15 m 기준. 다른 도킹 대상이면 그 폭에 맞춤 |
-| `reverse_speed_mps`, `creep_speed_mps` | 0.15, 0.05 | 후진 속도, 마지막 거리 맞춤 속도 |
-| `turn_speed_radps`, `turn_min_radps` | 0.35, 0.08 | 제자리 회전 최대·최소 각속도. Isaac 배율이 낮을수록 화면상 더 느려 보임 |
-| `yaw_tol_deg`, `dist_tol_m` | 1.5, 0.03 | 직각·거리 허용 오차 = 완료 판정 |
-| `k_yaw`, `k_lat` | 1.5, 1.2 | 회전·후진 조향 비례 이득. 흔들리면 낮춤 |
+| `reverse_speed_mps`, `creep_speed_mps` | 0.10, 0.05 | 후진 속도, 마지막 거리 맞춤 속도. 느릴수록 굼뜬 차체가 조향할 시간이 생긴다 |
+| `turn_speed_radps`, `turn_min_radps` | 0.35, 0.08 | 제자리 회전 최대·최소 각속도. 관성으로 넘어갈 각도는 `settled_err` 가 미리 뺀다 |
+| `align_tol_deg`, `align_giveup_deg` | 4.0, 15.0 | 제자리 정렬은 이만큼만 맞추고 나머지는 후진하며 맞춘다 / 제자리 회전이 안 먹혀도 이 안이면 후진으로 넘어간다 |
+| `square_tol_deg`, `lat_tol_m`, `dist_tol_m` | 3.0, 0.06, 0.03 | 도착 판정: 직각·횡·거리. 직각 또는 횡이 넘으면 `BACKOFF` 재시도(`max_retry` 2) |
+| `backoff_extra_m` | 0.9 | 재시도 때 면에서 얼마나 더 물러나는가. 0.6 이면 재시도 후진이 0.6 m 뿐이라 횡 오차가 한 번에 15% 만 줄었다(모의). 0.9 에서 0.2 m 횡 오차가 0.06 m 안으로 들어온다 |
+| `reverse_w_max` | 0.12 | 후진 중 조향 상한. 크면 응답이 느린 차체가 정렬을 지나쳐 반대쪽으로 넘어간다(24차: 0.20 → 21°) |
+| `lookahead_m`, `lat_heading_cap_deg`, `blend_dist_m` | 0.6, 10.0, 0.4 | 횡 오차를 갚는 거리 / 그때 법선에서 벗어나도 되는 최대 방향 / 마지막에 직각만 맞추는 구간 |
+| `ang_decel_radps2`, `meas_lag_s`, `settle_w_radps` | 0.08, 0.5, 0.03 | 차체 특성: 명령을 끊었을 때 각속도가 주는 비율, 방향 측정 지연, "멈춤" 으로 보는 각속도. bag 에서 읽은 값이며 차체가 바뀌면 다시 잰다 |
+| `quiet_s` | 2.0 | 시작 전 Nav2 `/cmd_vel` 이 조용해야 하는 시간(ADR 2.2) |
+| `k_yaw` | 1.5 | 조향 비례 이득. 흔들리면 낮춤 |
+| `stall_check_s`, `stall_move_m`, `stall_turn_rad` | 3.0, 0.02, 0.01 | 멈춤 판정: 이 시간 동안 이동·회전이 이만큼도 없으면 `STALLED_*` |
 | `timeout_s` | 120 (시뮬 초) | 전체 제한. 단계별 45 s, 면 미검출 8 s 는 코드 상수 |
 | (코드 상수) 면 신선도 2.5 s, RANSAC 내점 3 cm·120회, 법선 허용 ±60°, 최근접점 반경 1.5 m | | 검출 민감도. 옆면에 붙는 오검출이 보이면 법선 허용을 ±40° 로 줄이는 것이 첫 후보 |
 

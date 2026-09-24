@@ -23,7 +23,6 @@ approach 가 지정된 목적지는 접근 작업점까지 Nav2 로 간 뒤 feed
 
 import json
 import os
-import time
 
 import rclpy
 import rclpy.executors
@@ -50,9 +49,9 @@ class NavigationNode(Node):
         share = get_package_share_directory("smart_farm_navigation")
 
         self.declare_parameter("destinations_file", os.path.join(share, "config", "destinations_nav2.yaml"))
-        self.declare_parameter("timeout_s", 600.0)   # 벽시계 기준. 속도 0.3 m/s 와 Isaac 실시간 배율 0.3 이 겹치면 편도가 3 분을 넘는다
+        self.declare_parameter("timeout_s", 300.0)   # 시뮬레이션 시계 기준(ADR 2.2). 주행 ~60 s + 도킹 ≤120 s + 여유
         self.declare_parameter("stations_file", stations_lib.default_path())
-        self.declare_parameter("dock_timeout_s", 240.0)
+        self.declare_parameter("dock_timeout_s", 150.0)   # 시뮬레이션 시계 기준. 도킹 노드 자체 제한 120 s + 여유
         self.declare_parameter("executor", "navigation")
 
         destinations_file = str(
@@ -283,7 +282,7 @@ class NavigationNode(Node):
 
         self.active = command
         self.destination = destination
-        self.started_at = time.monotonic()
+        self.started_at = self._now()
         self.dock_result = None
 
         # approach 가 있으면 그 작업점까지 먼저 가고, 도착 후 정밀 도킹을 시킨다.
@@ -292,7 +291,7 @@ class NavigationNode(Node):
             return
 
         self.stage = "NAV_APPROACH" if "approach" in destination else "NAV"
-        self.stage_started_at = time.monotonic()
+        self.stage_started_at = self._now()
 
         self._status(
             state="BUSY",
@@ -327,6 +326,11 @@ class NavigationNode(Node):
         self.goal_handle = handle
         self.result_future = handle.get_result_async()
 
+    def _now(self) -> float:
+        """노드 시계(초). use_sim_time 이라 Isaac 시뮬레이션 시각이다. 실시간 배율 0.3 에서 벽시계로
+        재면 제한 시간이 3배 빨리 걸린다(ADR 2.2)."""
+        return self.get_clock().now().nanoseconds * 1e-9
+
     def _on_dock_result(self, message: String) -> None:
         """feeder_dock 결과. 실행 식별자가 현재 명령과 같은 것만 인정한다(래치된 과거 결과 차단)."""
         try:
@@ -342,7 +346,7 @@ class NavigationNode(Node):
         self.dock_result = None
         self.dock_start_pub.publish(String(data=command.command_id))
         self.stage = "DOCKING"
-        self.stage_started_at = time.monotonic()
+        self.stage_started_at = self._now()
         self.get_logger().info(f"정밀 도킹 시작 요청: run_id={command.command_id}")
         self._status(
             state="BUSY",
@@ -356,7 +360,7 @@ class NavigationNode(Node):
         if self.active is None:
             return
 
-        if time.monotonic() - self.started_at > self.timeout:
+        if self._now() - self.started_at > self.timeout:
             self._cancel_goal()
             self._finish(
                 status="TIMEOUT",
@@ -391,7 +395,7 @@ class NavigationNode(Node):
 
         if self.stage == "DOCKING":
             if self.dock_result is None:
-                if time.monotonic() - self.stage_started_at > self.dock_timeout:
+                if self._now() - self.stage_started_at > self.dock_timeout:
                     self._finish(status="TIMEOUT", reason="RESULT_TIMEOUT", phase="DOCKING")
                 return
 
