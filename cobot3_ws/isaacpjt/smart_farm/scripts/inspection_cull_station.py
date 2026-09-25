@@ -2,27 +2,27 @@
 
 컨베이어(conveyor.py)가 카메라 앞에 세우고 고정한 팔레트를 받아서
 비전 M0609 손목 RealSense + YOLO(best.pt) 로 칸별 색을 판정하고, 불량 칸 포기를
-팀 CullMotion(RMPflow, cull_motion.py 무수정) 으로 집어 SortBox_1 / SortBox_2 에 번갈아 버린 뒤
-팔레트를 벨트로 돌려보낸다.
+팀 CullMotion(RMPflow, cull_motion.py 무수정) 으로 집어 SortBin_1 / SortBin_2 에 번갈아 버린 뒤
+팔레트를 벨트로 돌려보낸다. 컨베이어는 시간이 아니라 이 스테이션이 끝났을 때(inspection_done) 다시 돈다.
 
-    station = install(stage, world, m0609_dir)       # world.reset() 전
+    station = install(stage, world, m0609_dir)       # world.reset() 전 (이송 프레임도 여기서 세운다)
     world.reset(); conveyor.attach(); station.attach(conveyor)
     매 스텝: conveyor.update(dt); station.update(dt)
     Stop -> Play: station.reset() -> world.reset() -> station.attach(conveyor)
 
-팔레트 한 장의 순서
-    PUSH_IN       푸셔(로우폴리 장치, build_pushers)가 트레이를 로봇 쪽으로 민다 (물리로 밀어 이동).
-                  컨베이어 줄(y -6.73)은 팔 도달거리 밖이다. 위에서 집기 + 접근 18 cm 로
-                  닿는 트레이 중심은 base 에서 약 0.48 m 까지라 그 자리로 옮긴다.
-                  아래에서 올라온 뒤 푸셔가 검사·솎아내기 동안 스토퍼가 된다.
+팔레트 한 장의 순서 (state)
+    IDLE          컨베이어가 카메라 앞에 세운 팔레트가 있는지 본다
+    PUSH_IN       이송 프레임(build_transfer_frame)이 트레이 위로 와서 내려앉고, PlateN 이 트레이를 로봇 쪽으로 민다.
+                  컨베이어 줄(y -6.73)은 팔 도달거리 밖이다. 위에서 집기 + 접근 18 cm 로 닿는 트레이 중심은
+                  base 에서 약 0.48 m 까지라 그 자리(y -7.00)로 옮긴다. 검사·솎아내기 동안 프레임이 트레이를 잡아 둔다.
     MOVE_INSPECT  검사 자세 (카메라가 팔 쪽 위에서 트레이 중심을 내려다봄)
     CAPTURE       컬러 프레임 FRAMES 장 -> YOLO -> 칸 배정(카메라 모델로 포기 투영) -> 다수결
-    CULL          CULL_CLASSES 칸마다 OPEN-APPROACH-DESCEND-GRASP-LIFT-PLACE-RELEASE-RETREAT
+    CULL / HOME   CULL_CLASSES 칸마다 OPEN-APPROACH-DESCEND-GRASP-LIFT-VIA-PLACE-RELEASE-RETREAT, 끝나면 검사 자세로
     RECHECK       다시 찍어 불량이 남았는지 기록
-    PUSH_OUT      앞 푸셔를 물리고 뒤 푸셔가 트레이를 벨트 줄로 되민 뒤 conveyor.inspection_done()
+    PUSH_OUT      PlateS 가 트레이를 벨트 줄로 되밀고 프레임이 올라간 뒤 conveyor.inspection_done()
 
-판정표(팀 R-T01~03): brown = 불량, yellow = 보류, dark_green = 정상.
-사용자 요청(2026-09-25)으로 노랑도 제거한다 -> CULL_CLASSES 에 yellow 포함. 팀 규칙대로 하려면 brown 만 남긴다.
+양배추 판정 (2026-09-25 결정): dark_green = 정상, yellow · brown = 불량 -> 둘 다 솎아낸다 (CULL_CLASSES).
+조정할 값은 아래 상수 묶음에 모여 있다 (도달거리 TRAY_REACH, 프레임 치수·속도, 버리는 높이, 검사 자세 ...).
 """
 
 import json
@@ -70,18 +70,23 @@ HEAD_TOP_ABOVE_TRAY = 0.105
 TRAY_REACH = 0.48              # base -> 트레이 중심 수평거리 (dbg_reach: 0.48 이면 6칸 모두 접근·집기 IK 가능)
 TRANSFER_Y_LIMIT = (-7.06, -6.60)   # 트레이 폭 0.252, 롤러 y -7.20 ~ -6.30 안
 
-# 가로 이송 푸셔 (로우폴리, 이 모듈이 install() 때 씬에 세운다)
-#   PusherN: 벨트 건너편(북쪽) 하우징에서 로드가 나와 판으로 트레이를 로봇 쪽으로 민다
-#   PusherS: 롤러 아래에서 올라오는 판. 검사·솎아내기 동안 스토퍼, 끝나면 트레이를 벨트 줄로 되민다
+# 가로 이송 프레임 (로우폴리, install() 때 씬에 세운다 — 구조는 build_transfer_frame 설명 참고)
+#   PlateN(주황) 이 트레이를 로봇 쪽으로 밀고, PlateS(빨강) 가 벨트 줄로 되민다. 평소에는 벨트 위에 올려 둔다.
 PUSHER_ROOT = "/World/VisionTransfer"
 STATION_X = -0.686             # 트레이가 서는 x (컨베이어 vision_x -0.69 + 관성)
+LANE_Y = -6.73                 # 컨베이어 가로줄기 트레이 중심 y (옆가이드 사이)
 TRAY_HALF_W = 0.126            # 트레이 반폭 (y)
-PLATE_SIZE = (0.60, 0.02, 0.05)
-PLATE_Z = 0.769 + 0.035        # 판 중심 높이 (롤러 윗면 위 1~6 cm, 포기 바닥 0.84 보다 아래)
-PLATE_Z_LOW = 0.655            # 뒤 푸셔가 숨는 높이 (롤러 아래)
-N_RETRACT_Y = -6.50            # 앞 푸셔 대기 (북쪽 옆가이드 바깥)
-PUSH_SPEED = 0.12              # m/s
-COLOR_PLATE, COLOR_ROD, COLOR_BODY = (0.95, 0.55, 0.10), (0.75, 0.76, 0.78), (0.20, 0.21, 0.24)
+TRAY_HALF_L = 0.276            # 트레이 반길이 (x)
+FRAME_GAP = 0.012              # 판·팔 안쪽 면과 트레이 사이 여유
+FRAME_T = 0.02                 # 판·팔 두께
+FRAME_H = 0.06                 # 판·팔 높이
+FRAME_Z_DOWN = 0.805           # 내린 높이(중심): 바닥 0.775 > 롤러 윗면 0.769, 윗면 0.835 < 포기 바닥 0.84
+FRAME_Z_UP = 0.965             # 올린 높이(중심): 바닥 0.935 > 포기 꼭대기 0.90 -> 트레이가 아래로 지나감
+COLUMN_Y = -6.02               # 기둥·캐리지 y (컨베이어 바깥쪽 끝 -6.175 과 방 북쪽 벽 -5.70 사이)
+ROD_LEN = 0.90                 # 로드 길이 (N판에서 북쪽으로, 캐리지를 관통)
+PUSH_SPEED = 0.08              # m/s (눈으로 보이게 천천히)
+COLOR_N, COLOR_S, COLOR_ARM = (0.95, 0.55, 0.10), (0.85, 0.15, 0.10), (0.30, 0.32, 0.36)
+COLOR_ROD, COLOR_BODY = (0.75, 0.76, 0.78), (0.20, 0.21, 0.24)
 INSPECT_EYE = (0.0, -0.20, 0.36)    # 트레이 중심(포기 윗면 높이) 기준 카메라 위치: 팔 쪽 0.20 m, 위 0.36 m
 DROP_ABOVE_BOX_TOP = 0.10      # SortBox 윗면 위 TCP 높이 (0.20 에서는 먼저 버린 포기에 튀어 상자 밖으로)
 # 같은 상자에 여러 번 버릴 때 상자 긴 변(0.57 m)을 따라 자리를 바꾼다. 같은 자리면 먼저 버린 포기 위에 떨어져 굴러 나갔다.
@@ -155,7 +160,7 @@ def install(stage, world, m0609_dir, out_dir=None):
     finger.GetMaxForceAttr().Set(GRIPPER_DRIVE[2])
     base_y = _world_matrix(stage, BASE_PATH)[1, 3]
     target_y = float(np.clip(base_y + TRAY_REACH, *TRANSFER_Y_LIMIT))
-    build_pushers(stage, target_y)
+    build_transfer_frame(stage)
     return VisionCullStation(stage, world, Path(m0609_dir), out_dir, target_y)
 
 
@@ -172,30 +177,44 @@ def _box(stage, path, size, offset, color, collide=False):
     return cube
 
 
-def build_pushers(stage, target_y):
-    """가로 이송 푸셔 두 개와 하우징(로우폴리 박스). 판만 충돌체, 나머지는 보이기만 한다."""
-    s_retract = target_y - TRAY_HALF_W - PLATE_SIZE[1] / 2 - 0.004
+def build_transfer_frame(stage):
+    """가로 이송 프레임 (로우폴리 박스). world.reset() 전에 한 번.
+
+    Frame (kinematic 강체) = 트레이를 둘러싸는 사각 틀
+        PlateN (주황) : 트레이 북쪽 면을 밀어 로봇 쪽으로 보냄
+        PlateS (빨강) : 트레이 남쪽 면을 밀어 벨트 줄로 되돌림 (검사·솎아내기 중에는 멈춤판)
+        ArmW / ArmE   : 두 판을 잇는 양 끝 팔
+        Rod0 / Rod1   : PlateN 에서 북쪽 캐리지로 가는 로드 (보이기만)
+    Carriage (보이기만) : 컨베이어 바깥 두 기둥 사이 가로보. 프레임과 같이 오르내린다.
+    Column0 / Column1  : 고정 기둥 (y COLUMN_Y, 컨베이어 바깥)
+
+    치수는 컨베이어를 뚫지 않게 잡았다: 판 바닥 0.775 > 롤러 윗면 0.769, 판은 양 레일(y -7.19 / -6.31) 안쪽에서만
+    움직이고, 로드 바닥 0.835 > 레일 윗면 0.798, 기둥은 컨베이어 바깥 끝(-6.175)보다 북쪽.
+    """
+    inner_y = TRAY_HALF_W + FRAME_GAP                      # 판 안쪽 면까지 (트레이 중심 기준)
+    inner_x = TRAY_HALF_L + FRAME_GAP
+    plate_len = 2 * (inner_x + FRAME_T)
     stage.DefinePrim(PUSHER_ROOT, "Xform")
-    for name, y, z in (("PusherN", N_RETRACT_Y, PLATE_Z), ("PusherS", s_retract, PLATE_Z_LOW)):
-        root = UsdGeom.Xform.Define(stage, f"{PUSHER_ROOT}/{name}")
-        root.ClearXformOpOrder()
-        root.AddTranslateOp().Set(Gf.Vec3d(STATION_X, y, z))
-        body = UsdPhysics.RigidBodyAPI.Apply(root.GetPrim())
-        body.CreateKinematicEnabledAttr().Set(True)
-        UsdPhysics.MassAPI.Apply(root.GetPrim()).CreateMassAttr().Set(5.0)
-        _box(stage, f"{PUSHER_ROOT}/{name}/Plate", PLATE_SIZE, (0, 0, 0), COLOR_PLATE, collide=True)
-    # 앞 푸셔: 판 위 모서리에서 북쪽 하우징으로 들어가는 로드 3개 (판과 같이 움직임)
-    for i, dx in enumerate((0.0, 0.20, -0.20)):
-        _box(stage, f"{PUSHER_ROOT}/PusherN/Rod{i}", (0.03, 0.62, 0.03), (dx, 0.32, 0.018), COLOR_ROD)
-    # 뒤 푸셔: 판 아래로 내려가는 받침 (롤러 사이로 오르내림)
-    _box(stage, f"{PUSHER_ROOT}/PusherS/Post", (0.03, 0.02, 0.12), (0, 0, -0.085), COLOR_ROD)
-    # 고정 하우징: 벨트 북쪽 프레임 위 실린더 박스 + 다리, 벨트 남쪽 롤러 아래 구동부
-    _box(stage, f"{PUSHER_ROOT}/HousingN", (0.56, 0.50, 0.10), (STATION_X, -6.02, PLATE_Z + 0.02), COLOR_BODY)
-    for i, dx in enumerate((-0.22, 0.22)):
-        _box(stage, f"{PUSHER_ROOT}/HousingN_Leg{i}", (0.06, 0.06, PLATE_Z - 0.03),
-             (STATION_X + dx, -5.86, (PLATE_Z - 0.03) / 2), COLOR_BODY)
-    _box(stage, f"{PUSHER_ROOT}/HousingS", (0.62, 0.18, 0.05), (STATION_X, s_retract - 0.02, 0.575), COLOR_BODY)
-    return s_retract
+    frame = UsdGeom.Xform.Define(stage, f"{PUSHER_ROOT}/Frame")
+    frame.ClearXformOpOrder()
+    frame.AddTranslateOp().Set(Gf.Vec3d(STATION_X, LANE_Y, FRAME_Z_UP))
+    UsdPhysics.RigidBodyAPI.Apply(frame.GetPrim()).CreateKinematicEnabledAttr().Set(True)
+    UsdPhysics.MassAPI.Apply(frame.GetPrim()).CreateMassAttr().Set(8.0)
+    f = f"{PUSHER_ROOT}/Frame"
+    _box(stage, f"{f}/PlateN", (plate_len, FRAME_T, FRAME_H), (0, inner_y + FRAME_T / 2, 0), COLOR_N, collide=True)
+    _box(stage, f"{f}/PlateS", (plate_len, FRAME_T, FRAME_H), (0, -inner_y - FRAME_T / 2, 0), COLOR_S, collide=True)
+    for name, sx in (("ArmW", -1), ("ArmE", 1)):
+        _box(stage, f"{f}/{name}", (FRAME_T, 2 * inner_y, FRAME_H), (sx * (inner_x + FRAME_T / 2), 0, 0), COLOR_ARM,
+             collide=True)
+    rod_y0 = inner_y + FRAME_T                             # PlateN 바깥 면
+    for i, dx in enumerate((-0.18, 0.18)):
+        _box(stage, f"{f}/Rod{i}", (0.03, ROD_LEN, 0.03), (dx, rod_y0 + ROD_LEN / 2, FRAME_H / 2 + 0.015), COLOR_ROD)
+    carriage = UsdGeom.Xform.Define(stage, f"{PUSHER_ROOT}/Carriage")
+    carriage.ClearXformOpOrder()
+    carriage.AddTranslateOp().Set(Gf.Vec3d(STATION_X, COLUMN_Y, FRAME_Z_UP))
+    _box(stage, f"{PUSHER_ROOT}/Carriage/Beam", (0.60, 0.08, 0.08), (0, 0, FRAME_H / 2 + 0.015), COLOR_BODY)
+    for i, dx in enumerate((-0.33, 0.33)):
+        _box(stage, f"{PUSHER_ROOT}/Column{i}", (0.06, 0.06, 1.20), (STATION_X + dx, COLUMN_Y, 0.60), COLOR_BODY)
 
 
 class _YoloClient:
@@ -254,7 +273,7 @@ class VisionCullStation:
         from isaacsim.core.prims import SingleArticulation
         from isaacsim.robot.manipulators.grippers import ParallelGripper
 
-        self._target_y = target_y      # 푸셔가 트레이 중심을 밀어 놓는 y
+        self._target_y = target_y      # 이송 프레임이 트레이 중심을 밀어 놓는 y
         self._stage = stage
         self._world = world
         self._m0609_dir = m0609_dir
@@ -282,18 +301,11 @@ class VisionCullStation:
         with open(self._out / "station_events.json", "w", encoding="utf-8") as f:
             json.dump(self.events, f, ensure_ascii=False, indent=1)
 
-    @property
-    def _s_retract_y(self):
-        return self._target_y - TRAY_HALF_W - PLATE_SIZE[1] / 2 - 0.004
-
-    def reset(self, keep_pushers=False):
+    def reset(self, keep_frame=False):
         if getattr(self, "_tray", None) is not None:
             self._set_guide(True)          # Stop 으로 끊겨도 옆가이드는 원래대로
-        if not keep_pushers and self._stage.GetPrimAtPath(f"{PUSHER_ROOT}/PusherN"):
-            for name, y, z in (("PusherN", N_RETRACT_Y, PLATE_Z), ("PusherS", self._s_retract_y, PLATE_Z_LOW)):
-                op, cur = self._pusher_pos(name)
-                op.Set(type(cur)(cur[0], y, z))
-            self._bg_moves = []
+        if not keep_frame and self._stage.GetPrimAtPath(f"{PUSHER_ROOT}/Frame"):
+            self._set_frame((STATION_X, LANE_Y, FRAME_Z_UP))   # 대기: 벨트 줄 위에 올려 둔 자리
         self._moves = []
         self._move_key = None
         self._tray = None
@@ -389,7 +401,6 @@ class VisionCullStation:
             self._begin_transfer_out()
 
     def _state_idle(self, dt):
-        self._run_background(dt)
         if self._conveyor is None:
             return
         path = self._conveyor.inspecting
@@ -415,18 +426,21 @@ class VisionCullStation:
         self._seat_offsets = {name: positions[i] - tray_p for name, i in self._head_index.items()}
         self._record = {"pallet": path.rsplit("/", 1)[-1], "stop_xy": [round(float(tray_p[0]), 3), round(float(tray_p[1]), 3)],
                         "sim_start": time.time()}
-        _log(f"[솎아내기] {self._record['pallet']} 도착 ({tray_p[0]:+.3f}, {tray_p[1]:+.3f}) — 푸셔가 로봇 앞으로 "
-             f"{(self._target_y - tray_p[1]) * 1000:+.0f} mm 밀어 줍니다 (트레이 중심 수평거리 "
+        _log(f"[솎아내기] {self._record['pallet']} 도착 ({tray_p[0]:+.3f}, {tray_p[1]:+.3f}) — 이송 프레임이 내려와 "
+             f"로봇 앞으로 {(self._target_y - tray_p[1]) * 1000:+.0f} mm 밀어 줍니다 (트레이 중심 수평거리 "
              f"{np.hypot(tray_p[0] - self._base_p[0], self._target_y - self._base_p[1]):.2f} m)")
-        # 컨베이어 lock() 은 트레이·포기의 시뮬레이션을 끈다. 다시 켜서(가로줄기는 멈춰 있음) 푸셔가 물리로 민다.
-        # 민 자리의 먼 줄 포기·트레이가 보이지 않는 남쪽 옆가이드(y -6.95~-6.93)와 겹쳐 가이드가 포기를 칸에서
+        # 컨베이어 lock() 은 트레이·포기의 시뮬레이션을 끈다. 다시 켜서(가로줄기는 멈춰 있음) 프레임이 물리로 민다.
+        # 민 자리의 트레이·먼 줄 포기가 보이지 않는 남쪽 옆가이드(y -6.95~-6.93)와 겹쳐 가이드가 포기를 칸에서
         # 밀어냈었다 — 검사 중에만 그 가이드 충돌을 끈다.
         self._event("ARRIVED_PUSH_START")
         self._set_guide(False)
         self._rigid.enable_rigid_body_physics()
         self._rigid.set_velocities(np.zeros((len(body_paths), 6), dtype=np.float32))
-        self._moves = [("PusherN", self._target_y + TRAY_HALF_W + PLATE_SIZE[1] / 2 + 0.001, PLATE_Z),
-                       ("PusherS", self._target_y - TRAY_HALF_W - PLATE_SIZE[1] / 2 - 0.004, PLATE_Z)]
+        x, y = float(tray_p[0]), float(tray_p[1])
+        self._frame_x = x
+        self._moves = [(x, y, FRAME_Z_UP),              # 올린 채 트레이 바로 위로 맞춤
+                       (x, y, FRAME_Z_DOWN),            # 트레이를 감싸도록 내림 (판·팔은 트레이 바깥)
+                       (x, self._target_y - FRAME_GAP, FRAME_Z_DOWN)]   # PlateN 이 밀어 트레이 중심 = 목표 y
         self._timer = 0
         self.state = "PUSH_IN"
 
@@ -435,34 +449,34 @@ class VisionCullStation:
         if prim and prim.HasAPI(UsdPhysics.CollisionAPI):
             UsdPhysics.CollisionAPI(prim).GetCollisionEnabledAttr().Set(bool(on))
 
-    # ── 푸셔 (가로 이송 장치) ──
-    def _pusher_pos(self, name):
-        op = UsdGeom.Xformable(self._stage.GetPrimAtPath(f"{PUSHER_ROOT}/{name}")).GetOrderedXformOps()[0]
+    # ── 이송 프레임 ──
+    def _frame_op(self):
+        op = UsdGeom.Xformable(self._stage.GetPrimAtPath(f"{PUSHER_ROOT}/Frame")).GetOrderedXformOps()[0]
         return op, op.Get()
 
+    def _set_frame(self, xyz):
+        """프레임(kinematic 목표)과 캐리지(높이만 따라감)를 옮긴다."""
+        op, cur = self._frame_op()
+        op.Set(type(cur)(*map(float, xyz)))
+        c_op = UsdGeom.Xformable(self._stage.GetPrimAtPath(f"{PUSHER_ROOT}/Carriage")).GetOrderedXformOps()[0]
+        c = c_op.Get()
+        c_op.Set(type(c)(float(xyz[0]), c[1], float(xyz[2])))
+
     def _step_moves(self, moves, dt):
-        """moves 앞에서부터 하나씩 kinematic 푸셔를 목표 (y, z) 로 움직인다. 다 끝나면 True."""
+        """moves 앞에서부터 하나씩 프레임을 목표 (x, y, z) 로 부드럽게 옮긴다. 다 끝나면 True."""
         if not moves:
             return True
-        name, y, z = moves[0]
-        op, cur = self._pusher_pos(name)
-        key = (name, y, z)
-        if getattr(self, "_move_key", None) != key:
-            self._move_key, self._move_from, self._move_t = key, np.array([cur[1], cur[2]]), 0.0
-        goal = np.array([y, z])
+        goal = np.array(moves[0], dtype=float)
+        if getattr(self, "_move_key", None) != tuple(goal):
+            self._move_key, self._move_from, self._move_t = tuple(goal), np.array(self._frame_op()[1], float), 0.0
         distance = float(np.linalg.norm(goal - self._move_from))
         self._move_t = min(1.0, self._move_t + dt * PUSH_SPEED / max(distance, 1e-3))
         s = self._move_t * self._move_t * (3 - 2 * self._move_t)
-        yz = self._move_from + (goal - self._move_from) * s
-        op.Set(type(cur)(cur[0], float(yz[0]), float(yz[1])))
+        self._set_frame(self._move_from + (goal - self._move_from) * s)
         if self._move_t >= 1.0:
             moves.pop(0)
             self._move_key = None
         return not moves
-
-    def _run_background(self, dt):
-        if getattr(self, "_bg_moves", None):
-            self._step_moves(self._bg_moves, dt)
 
     def _state_push_in(self, dt):
         if not self._step_moves(self._moves, dt):
@@ -477,7 +491,7 @@ class VisionCullStation:
                    for n, i in self._head_index.items()) * 1000
         self._record["pushed_xy"] = [round(float(tray_p[0]), 3), round(float(tray_p[1]), 3)]
         self._record["seat_error_after_push_mm"] = round(seat, 1)
-        _log(f"[솎아내기] 푸셔 이송 완료 — 트레이 ({tray_p[0]:+.3f}, {tray_p[1]:+.3f}), 포기 칸 이탈 최대 {seat:.1f} mm")
+        _log(f"[솎아내기] 프레임 이송 완료 — 트레이 ({tray_p[0]:+.3f}, {tray_p[1]:+.3f}), 포기 칸 이탈 최대 {seat:.1f} mm")
         self._event("PUSH_DONE_INSPECT_MOVE")
         self._timer = 0
         self._start_inspect_move()
@@ -792,12 +806,12 @@ class VisionCullStation:
         if self._tray is None or self._conveyor is None:
             self.reset()
             return
-        # 앞 푸셔를 물리고, 아래에서 올라온 뒤 푸셔가 트레이를 벨트 줄(도착했던 y)로 되민 뒤 롤러 아래로 내려간다.
-        back_y = self._lane_y - TRAY_HALF_W - PLATE_SIZE[1] / 2 - 0.001
-        self._moves = [("PusherN", N_RETRACT_Y, PLATE_Z),
-                       ("PusherS", self._target_y - TRAY_HALF_W - PLATE_SIZE[1] / 2 - 0.004, PLATE_Z),
-                       ("PusherS", back_y, PLATE_Z),
-                       ("PusherS", back_y, PLATE_Z_LOW)]
+        # PlateS 가 트레이를 도착했던 줄로 되민다 (프레임 중심을 여유만큼 더 북쪽으로 -> 트레이 중심 = 줄 중심).
+        # 그다음 프레임을 올려 트레이가 아래로 빠져나가게 한다.
+        x = getattr(self, "_frame_x", STATION_X)
+        self._moves = [(x, self._lane_y + FRAME_GAP, FRAME_Z_DOWN),
+                       (x, self._lane_y + FRAME_GAP, FRAME_Z_UP),
+                       (STATION_X, LANE_Y, FRAME_Z_UP)]
         self._timer = 0
         self.state = "PUSH_OUT"
 
@@ -820,5 +834,4 @@ class VisionCullStation:
              f"({tray_p[0]:+.3f}, {tray_p[1]:+.3f}), 배출")
         self._event("PUSH_BACK_DONE_RELEASED")
         self._conveyor.inspection_done()
-        self._bg_moves =[("PusherS", self._s_retract_y, PLATE_Z_LOW)]   # 트레이가 떠난 뒤 롤러 아래로 제자리
-        self.reset(keep_pushers=True)
+        self.reset(keep_frame=True)

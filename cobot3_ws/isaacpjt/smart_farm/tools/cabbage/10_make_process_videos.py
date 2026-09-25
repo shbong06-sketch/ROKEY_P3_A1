@@ -123,15 +123,25 @@ for p in sorted(glob.glob(os.path.join(RUN, "station", "Pallet_01_[0-9]_yolo.jpg
 for p in sorted(glob.glob(os.path.join(RUN, "station", "Pallet_01_recheck_[0-9]_yolo.jpg")))[:1]:
     clip3 += [label(fit(cv2.imread(p)), "③ 솎아내기 후 재검사", "불량(노랑·갈색) 칸이 비었는지 확인")] * int(3 * FPS)
 videos.append(("03_vision_inspection.mp4", clip3, "③ 비전 검사", "YOLO 로 칸별 색 판정 (노랑·갈색 = 제거 대상)"))
-# 4 cull pick and place
+# 4 cull pick and place (프레임이 미는 구간은 Cam5, 나머지는 Cam4)
 f4 = frames("cam4_cullpickplace")
+f5 = dict(frames("cam5_pusher"))
 clip4 = []
 for t, p in f4:
     if t_arrive - 2.0 <= t <= t_back + 8.0:
-        step = ("푸셔가 트레이를 로봇 앞으로" if t < t_push else "검사 자세" if t < t_insp else
-                "솎아내기 → SortBin 1/2 번갈아 버리기" if t < t_recheck else "재검사 · 푸셔가 벨트로 되돌림 · 배출")
-        clip4.append(label(fit(cv2.imread(p)), "④ 비전룸 픽앤플레이스 (불량 제거)", f"t = {t:.1f} s · {step}"))
+        pushing = t < t_push + 1.0 or t > t_recheck
+        step = ("이송 프레임이 내려와 트레이를 로봇 앞으로" if t < t_push else "검사 자세" if t < t_insp else
+                "솎아내기 → SortBin 1/2 번갈아 버리기" if t < t_recheck else "재검사 · 프레임이 벨트로 되밀기 · 배출")
+        src = f5.get(t, p) if pushing else p
+        clip4.append(label(fit(cv2.imread(src)), "④ 비전룸 픽앤플레이스 (불량 제거)", f"t = {t:.1f} s · {step}"))
 videos.append(("04_cull_pick_place.mp4", clip4, "④ 픽앤플레이스", f"제거: {removed}"))
+# 5 transfer frame (pusher) only
+clip5 = []
+for t, p in sorted(f5.items()):
+    if t_arrive - 3.0 <= t <= t_push + 2.0 or t_recheck - 1.0 <= t <= t_back + 8.0:
+        step = "PlateN(주황)이 로봇 쪽으로 밀기" if t <= t_push + 2.0 else "PlateS(빨강)가 벨트 줄로 되밀기 → 프레임 올림 → 배출"
+        clip5.append(label(fit(cv2.imread(p)), "⑤ 이송 프레임 (푸셔 N·S)", f"t = {t:.1f} s · {step}"))
+videos.append(("05_transfer_frame_pusher.mp4", clip5, "⑤ 이송 프레임", "트레이를 로봇 앞으로 밀고 다시 벨트로 되밀기"))
 
 combined = []
 for name, clip, title, sub in videos:

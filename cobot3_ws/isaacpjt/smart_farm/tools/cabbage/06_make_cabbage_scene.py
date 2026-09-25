@@ -165,7 +165,7 @@ for i in (() if os.environ.get("SKIP_SCENEFIX") else (1, 2)):
     (x0, y0, z0), (x1, y1, z1) = rng.GetMin(), rng.GetMax()
     root = f"/World/SmartFarm/RobotZone/SortBin_{i}"
     UsdGeom.Xform.Define(st, root)
-    parts = {"Floor": ((x0, y0, z0), (x1, y1, z0 + T)),
+    parts = {"Floor": ((x0, y0, z0), (x1, y1, z0 + 0.05)),     # 바닥은 두껍게: 2 cm 에서 떨어진 포기가 뚫고 내려감
              "WallW": ((x0, y0, z0), (x0 + T, y1, z1)), "WallE": ((x1 - T, y0, z0), (x1, y1, z1)),
              "WallS": ((x0, y0, z0), (x1, y0 + T, z1)), "WallN": ((x0, y1 - T, z0), (x1, y1, z1))}
     for name, (lo, hi) in parts.items():
@@ -188,6 +188,7 @@ PROCESS_CAMERAS = {
     "Cam1_Harvest": ((1.3, -0.6, 2.6), (-1.0, 1.0, 0.9)),
     "Cam2_Nav2Place": ((1.0, -5.2, 3.2), (-1.7, -1.6, 0.5)),
     "Cam4_CullPickPlace": ((0.25, -5.95, 2.25), (-0.72, -7.45, 0.40)),
+    "Cam5_Pusher": ((-1.35, -6.05, 1.55), (-0.69, -6.95, 0.80)),     # 이송 프레임(PlateN·PlateS) 동작
 }
 UsdGeom.Xform.Define(st, "/World/ProcessCameras")
 for name, (eye, target) in PROCESS_CAMERAS.items():
