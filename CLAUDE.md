@@ -11,6 +11,7 @@
    - 브랜치 `feature/navigation2`, `feature/Inspection-Place-nav2` 에서 적용되며, 브랜치 이름과 무관하게 **Nav2 가 얽힌 모든 작업**에 적용함.
 3. 충돌 시 **ADR_basic 이 ADR_navigation2 보다 우선**함.
 4. **ADR 을 임의로 수정하지 않음.** 사용자가 직접 지시했거나, 수정 없이는 업무가 불가능함을 보고하고 승인받은 경우만 수정함.
+5. **2026-09-25 사용자 지시: 이제 ADR 은 거의 수정하지 않는 방향으로 감.** 낡은 항목이 보이면 고치지 말고 답변의 "미해결" 항에 적어 알리기만 함. 현행값의 출처는 코드와 최신 가이던스임.
 
 > 2026-09-24 사용자 지적: ADR 항목을 어겼을 뿐 아니라 **ADR 파일을 아예 읽지 않는 상태**가 되었음.
 > 구체적 위반: Nav2 감속 중 `feeder_dock` 시작(2.2 위반), `--once` 사용(2.3 위반), 모의 결과를 실측처럼 보고(2.7 위반).
@@ -136,10 +137,12 @@ Isaac Sim 실측은 사용자의 물리적 작업 시간이고 **영상 녹화 �
 ## 7. 현재 상태 (2026-09-25 저녁)
 
 - 브랜치 `feature/Inspection-Place-nav2` (통합 브랜치. feature/navigation2 + 팀의 PLACE_INSPECT + smart_farm_vision + 팀의 cabbage-place-fix 반입분).
-- 최신 가이던스 `guidance/guidance2_27차.md` — 전 구간(주행→도킹 0.92→PLACE_INSPECT→컨베이어→비전 검사→솎아내기) 절차. 26차까지는 `guidance/past/`.
+- **지금의 작업 범위는 팔레트 파지 → 주행·도킹 → 턴테이블 Place 까지임** (2026-09-25 사용자 지시). 그 뒤 비전 검사·솎아내기는 이번 범위가 아니며 전체 시나리오 통합은 팀원 회의로 정함. 내피와의 원격 통신은 교육장 복귀(약 3일 뒤)부터이고 **지금은 고피3 한 대에서 Isaac·Nav2 를 모두 돌려 모듈 단위로 시험함**.
+- 최신 가이던스 `guidance/guidance2_28차.md` — 고피3 한 대 기준 절차(Isaac `--headless`, Nav2 `use_rviz:=false`, `--no-vision-station`). 교육장 2대 기준 전 구간 절차는 `guidance/past/guidance2_27차.md` 에 남겨 두었고 28차 부록 A 가 차이를 표로 정리함.
 - 직전 작업(`a95ba6c`): ①팀 place 수정 반입(`standalone_app.py` + `scripts/` 새 모듈 5개) ②`standoff_m` 0.90 → **0.92** ③장면·지도 **v014** 전환(`Collected_smartfarm_v014_room_core_cabbage.usd`).
 - 그 앞(`ceeafd5`): 굼뜬 차체(각속도 1~3초 지연)를 전제로 도킹 조향 재설계. `DockLogic`(ROS 없는 상태기계) + `FeederDock`(ROS 배선) 분리, `SETTLE` 단계, 면 법선 추종 후진, 횡 오차 0.06 m 초과 시 0.9 m 물러나 재시도.
-- **검증은 고피3 모의뿐** (standoff 0.92 ROS 회귀 10/10, v014 지도 normal 1/1). **실측 미실시** — 27차 절차로 전 구간 실측하는 것이 다음 할 일임.
+- **검증은 고피3 모의뿐** (standoff 0.92 ROS 회귀 10/10, 오프라인 격자 225/225·횡 224/225, v014 지도 normal 1/1). **실측 미실시** — 28차 절차로 파지→도킹→Place 를 돌리는 것이 다음 할 일임.
+- **고피3 에서 Isaac 을 띄운 기록이 아직 없음**(Kit 로그 없음, `DISPLAY` 없음). headless 에서 `/clock`·odom·라이다가 나오는지 미확인이라 28차 3절에 예비 점검을 둠.
 - 실측 전 `sim_test/dock_regression.py` 를 먼저 돌림. 실측 중에는 절대 돌리지 않음(같은 도메인에 Nav2 두 벌).
 - 받아야 할 실측 로그: 고피 Isaac 터미널의 `[도킹] 카터 본체 world (…)` 줄 (팔 자세 허용 범위 결정용).
 - 알려진 여유 부족: standoff 0.92 회귀에서 최대 횡 오차 0.057 m (허용 0.06). 팔 쪽 실제 횡 허용치를 받으면 `lat_tol_m`·`max_retry` 를 조정함.
