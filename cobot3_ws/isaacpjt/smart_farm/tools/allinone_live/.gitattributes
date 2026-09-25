@@ -1,0 +1,4 @@
+# WSL 에서 도는 파일은 LF 로 받는다 (CRLF 면 bash 가 '$'\r': command not found' 로 멈춤)
+*.sh text eol=lf
+wsl/*.py text eol=lf
+wsl/*.xml text eol=lf

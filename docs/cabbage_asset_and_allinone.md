@@ -100,6 +100,6 @@
 
 ## 7. Windows 한 대로 돌리는 법 (참고)
 
-- Isaac 과 Nav2 사이는 DDS 가 WSL 경계를 넘지 못해 `scripts/wsl/ros_tcp_relay.py`(localhost TCP 중계) 사용. WSL 은 NAT 모드(mirrored 에서는 WSL 안에서도 늦게 뜬 노드 간 데이터가 안 옴).
-- 한 번에 실행: `D:\smartfarm-sim\scripts\cabbage\run_allinone_live.ps1` (Isaac GUI + Nav2 + RViz2 + 명령 흐름).
+- Isaac 과 Nav2 사이는 DDS 가 WSL 경계를 넘지 못해 `tools/allinone_live/wsl/ros_tcp_relay.py`(localhost TCP 중계) 사용. WSL 은 NAT 모드(mirrored 에서는 WSL 안에서도 늦게 뜬 노드 간 데이터가 안 옴).
+- 한 번에 실행: `smart_farm\tools\allinone_live\run_allinone.ps1` (Isaac GUI + Nav2 + RViz2 + 명령 흐름, 옵션 `-Human` `-Lane`). 설명: 그 폴더 README.md
 - 팀 Linux PC 두 대 구성(고피/내피)은 기존 guidance2_25 그대로 쓰면 되고 중계기는 필요 없다.

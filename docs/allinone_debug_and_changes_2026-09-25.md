@@ -7,6 +7,7 @@
 > `tools/cabbage/make_cabbage_scene.py`. (YOLO 워커는 inspection_cull_station.py 에 합침 — 같은 파일을 `--yolo-worker` 로 띄운다,
 > 06+run_in_isaac 은 make_cabbage_scene.py 로 합침.) 양배추 씬이 scenes/Collected_smartfarm_v013 에 있으면 올인원이 기본으로 연다. 양배추 에셋은 공유 zip 으로 전달.
 > 아래 표에 나오는 시험·녹화·Windows/WSL 도구(01~05, 07~13, aio_wrapper, run_*.ps1, wsl/*)는 커밋 `ee1043d` 에 있다.
+> 지금 실행에 쓰는 도구는 저장소 `smart_farm/tools/allinone_live/` 에 있다: `run_allinone.ps1`(= run_allinone_live.ps1 + run_isaac_for_nav2.ps1), `run_with_monitor.py`(= aio_wrapper.py 에서 개발용 기능을 뺀 것), `wsl/*`.
 테스트 횟수는 이 PC 의 실행 기록(`D:\smartfarm-sim\out\*` 폴더·로그) 기준이다. 오전 에셋 제작 단계는 스크립트 기록 기준의 대략값.
 
 ---

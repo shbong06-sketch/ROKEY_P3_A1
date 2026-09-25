@@ -131,6 +131,11 @@ def parse_args():
         action="store_true",
         help="[올인원 2026-09-25] 비전 검사·솎아내기 스테이션을 끄고 실행 (컨베이어가 10초 뒤 스스로 배출)",
     )
+    parser.add_argument(
+        "--human-crossing",
+        action="store_true",
+        help="[올인원 2026-09-25] 사람 돌발상황: 카터가 통로를 나올 때 작업자가 앞을 막았다가 비킨다 (scripts/human_crossing.py)",
+    )
     return parser.parse_known_args()
 
 
@@ -319,6 +324,7 @@ class SimulationRuntime:
     hold_fault_logged: bool = False   # [navigation 2026-09-24] 운반 중 팔레트 감시 예외를 한 번만 기록
     conveyor: object = None           # [올인원 2026-09-25] scripts/conveyor.ConveyorController (--no-conveyor 면 None)
     station: object = None            # [올인원 2026-09-25] scripts/inspection_cull_station.VisionCullStation
+    human: object = None              # [올인원 2026-09-25] scripts/human_crossing.HumanCrossing (--human-crossing)
 
 
 class TransferOperation:
@@ -579,6 +585,15 @@ def turntable_place_pose(stage, arm_base_position=None):
 
 
 def create_simulation_runtime(scene_path):
+    human_skel = None
+    if args.human_crossing:
+        # [올인원 2026-09-25] 사람은 장면을 열기 전에 넣어야 걷기 애니메이션이 붙는다 -> 원래 장면을 감싼 .usda 를 연다
+        import tempfile
+        import human_crossing
+
+        scene_path, human_skel = human_crossing.prepare_scene(
+            scene_path, Path(tempfile.gettempdir()) / "smartfarm_human", app.update)
+        print(f"[사람] 작업자를 넣은 장면: {scene_path}", flush=True)
     stage = open_scene(scene_path)
     print("[시작] USD Scene 로딩이 완료되었습니다.", flush=True)
 
@@ -713,7 +728,15 @@ def create_simulation_runtime(scene_path):
         ),
     )
 
+    human = None
+    if human_skel is not None:
+        import human_crossing
+
+        human = human_crossing.HumanCrossing(
+            human_skel, lambda: robot.get_world_pose()[0], os.environ.get("SMARTFARM_STATION_OUT"))
+
     return SimulationRuntime(
+        human=human,
         base_watcher=place_watcher,
         arm_base=arm_base,
         world=world,
@@ -1119,6 +1142,8 @@ def run():
             runtime.conveyor.update(PHYSICS_DT)   # [올인원 2026-09-25] 벨트는 Play 중 계속 돈다
         if runtime.station is not None:
             runtime.station.update(PHYSICS_DT, render=runtime.world.render)   # 카메라 앞 팔레트 검사·솎아내기
+        if runtime.human is not None and runtime.world.is_playing():
+            runtime.human.update(PHYSICS_DT)   # [올인원 2026-09-25] 사람 돌발상황
 
     try:
         if args.autoplay:

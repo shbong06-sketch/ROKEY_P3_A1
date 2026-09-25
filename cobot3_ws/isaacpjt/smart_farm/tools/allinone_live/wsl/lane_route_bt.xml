@@ -1,0 +1,68 @@
+<!--
+  바닥 노란 차선 주행 BT (lane mode, A안).
+  FEEDER_APPROACH 목표이고 카터가 랙 통로 차선 위에 있으면:
+    1) lane_planner.py 의 차선 경로(LaneRoute): 남북 중앙선 x -0.42 을 따라 남쪽으로 후진 -> 모서리 곡선(R 0.85)을 45 deg 까지
+    2) 이어서 Nav2 기본 경로(DefaultNav, 팀 설정 Hybrid-A*)로 FEEDER_APPROACH 까지 -> navigation_node 가 feeder_dock 시작
+  카터는 제자리 회전을 못 하고 회전 반경이 약 1.2 m 라서 두 번째 90 deg 곡선(도킹선 진입)까지 차선으로는 못 간다(2026-09-25 시험).
+  사람 정지(HumanStop)로 멈춰 있는 동안 차선 FollowPath 가 실패하면 1 s 뒤 다시 따라간다.
+  조건이 안 맞으면 lane_planner 가 거절하고 처음부터 DefaultNav 로 간다.
+  DefaultNav = Nav2 navigate_to_pose_w_replanning_and_recovery.xml 과 같은 내용.
+-->
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <Fallback name="LaneOrDefault">
+      <Sequence name="LaneThenDefault">
+        <ComputePathToPose goal="{goal}" path="{lane_path}" planner_id="LaneRoute" server_name="lane_planner" server_timeout="2000"/>
+        <RecoveryNode number_of_retries="30" name="FollowLane">
+          <FollowPath path="{lane_path}" controller_id="FollowPath"/>
+          <Wait wait_duration="1.0"/>
+        </RecoveryNode>
+        <SubTree ID="DefaultNav" _autoremap="true"/>
+      </Sequence>
+      <SubTree ID="DefaultNav" _autoremap="true"/>
+    </Fallback>
+  </BehaviorTree>
+
+  <BehaviorTree ID="DefaultNav">
+    <RecoveryNode number_of_retries="6" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <ControllerSelector selected_controller="{selected_controller}" default_controller="FollowPath" topic_name="controller_selector"/>
+        <PlannerSelector selected_planner="{selected_planner}" default_planner="GridBased" topic_name="planner_selector"/>
+        <RateController hz="1.0">
+          <RecoveryNode number_of_retries="1" name="ComputePathToPose">
+            <ComputePathToPose goal="{goal}" path="{path}" planner_id="{selected_planner}" error_code_id="{compute_path_error_code}"/>
+            <Sequence>
+              <WouldAPlannerRecoveryHelp error_code="{compute_path_error_code}"/>
+              <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
+            </Sequence>
+          </RecoveryNode>
+        </RateController>
+        <RecoveryNode number_of_retries="1" name="FollowPath">
+          <FollowPath path="{path}" controller_id="{selected_controller}" error_code_id="{follow_path_error_code}"/>
+          <Sequence>
+            <WouldAControllerRecoveryHelp error_code="{follow_path_error_code}"/>
+            <ClearEntireCostmap name="ClearLocalCostmap-Context" service_name="local_costmap/clear_entirely_local_costmap"/>
+          </Sequence>
+        </RecoveryNode>
+      </PipelineSequence>
+      <Sequence>
+        <Fallback>
+          <WouldAControllerRecoveryHelp error_code="{follow_path_error_code}"/>
+          <WouldAPlannerRecoveryHelp error_code="{compute_path_error_code}"/>
+        </Fallback>
+        <ReactiveFallback name="RecoveryFallback">
+          <GoalUpdated/>
+          <RoundRobin name="RecoveryActions">
+            <Sequence name="ClearingActions">
+              <ClearEntireCostmap name="ClearLocalCostmap-Subtree" service_name="local_costmap/clear_entirely_local_costmap"/>
+              <ClearEntireCostmap name="ClearGlobalCostmap-Subtree" service_name="global_costmap/clear_entirely_global_costmap"/>
+            </Sequence>
+            <Spin spin_dist="1.57" error_code_id="{spin_error_code}"/>
+            <Wait wait_duration="5.0"/>
+            <BackUp backup_dist="0.30" backup_speed="0.15" error_code_id="{backup_code_id}"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </Sequence>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>
