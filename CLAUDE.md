@@ -20,15 +20,24 @@
 
 ADR 은 작업보다 뒤처짐. ADR 과 **최근 대화에서 사용자와 합의한 값**이 충돌하면 **최근 합의가 이김**. 단, 그때는 낡은 ADR 항목을 답변의 "미해결" 항에 열거해 **갱신을 사용자에게 제안**해야 함. 직접 고치지 않음.
 
-현재 확인된 낡은 ADR 항목 (2026-09-25 기준, 사용자 결정 대기):
+현재 확인된 낡은 ADR 항목 (2026-09-25 기준):
 
-| ADR 항목 | ADR 표기 | 실제 현행값 (출처) |
+**반영 완료** — 사용자 승인(2026-09-25)으로 `ADR_navigation2.md` 에 적용함.
+
+| ADR 항목 | 옛 값 | 반영된 현행값 |
 |---|---|---|
-| ADR_nav2 2.2 / 2.6 | `standoff_m` 0.90 | **0.85** (`feeder_dock.py:118`, `config/stations.yaml:13`) |
-| ADR_nav2 2.6 | `cloud_self_filter` 상자 x −0.85~0.6 | **−0.65~0.60** (`cloud_self_filter.py:30`) |
-| ADR_nav2 2.3 | `ros2 topic pub -t 3 -r 1` | guidance2_25차는 **`--once --max-wait-time-secs 15`** — 어느 쪽으로 통일할지 미결 |
-| ADR_nav2 1.2 | 지도 v005 | **Collected_smartfarm_v011** (scenes/maps 최신) |
-| ADR_basic 2 | 도메인 101/102 | guidance2_25차는 **101** (그때 쓰는 고피에 맞춤 — 고정값 아님) |
+| nav2 2.2 | `standoff_m` 0.90 | **0.85** (`feeder_dock.py:118`, `config/stations.yaml:13`) |
+| nav2 2.6 | `feeder_dock` standoff 0.90 | **0.85** |
+| nav2 2.6 | `cloud_self_filter` 상자 x −0.85~0.6 | **−0.65~0.60** (`cloud_self_filter.py:30`) |
+| nav2 2.6 | `standoff_m`(0.90) / `box_x[0]`(−0.85) 짝 | **(0.85) / (−0.65)** |
+
+**미결 — 사용자 결정 대기 (ADR 을 고치지 않음)**
+
+| ADR 항목 | ADR 표기 | 실제 |
+|---|---|---|
+| nav2 2.3 | `ros2 topic pub -t 3 -r 1` (bag 기록기가 같은 토픽을 구독하므로 `--once` 는 놓칠 수 있음) | guidance2_25차는 `--once --max-wait-time-secs 15` |
+| nav2 2.6 | RPP **0.6 m/s** | `config/nav2_params.yaml:162` `desired_linear_vel: **0.3**` |
+| basic §3-4 / nav2 2.4 | 팀 파일 중 손댄 곳은 `standalone_app.py` `open_scene()` fullScan 6줄**뿐** | `ceeafd5` 에서 main loop 의 `hold()` 예외 처리도 수정함 (`docs/standalone_app_changes.md`) |
 
 ---
 
