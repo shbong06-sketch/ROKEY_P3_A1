@@ -42,7 +42,9 @@
 - map = Isaac world. 지도 origin (−4.525, −10.025), 0.05 m/px. 장면이 바뀌면 `make_map_from_usd.py`로 지도 재생성 후 ADR 1.2 갱신.
 - XT-32 위치 base_link (−0.232, 0, 0.526). 이 값은 `feeder_dock`, `cloud_self_filter`, `nav2_link_check` 세 곳이 공유함.
 - 2D 라이다 토픽은 센서가 존재하고 채널도 생성되나 일부 채널은 msg를 발행하지 않음. 2D 라이다 두 채널 모두 발행 안 됨(실측 4회). 3D 점군 → /scan 변환만 사용.
-- TurnTable 앞면: world x −2.76~−1.61, y −3.60(북쪽 끝), 높이 1.17 m. 도킹 목표는 이 면 기준 `standoff_m` 0.85 (2026-09-24 `ceeafd5` 반영. 팀 `robot_motion` 의 팔 작업 범위 0.89~1.05 m 의 한가운데인 0.96 m 가 되는 값. 이전 값 0.90 은 그 범위보다 멀었음).
+- TurnTable 앞면: world x −2.76~−1.61, 높이 1.17 m. **면의 y 는 두 가지를 구분함**: USD 기준 북단은 y −3.60 이나, **라이다(RANSAC)가 실제로 검출해 도킹 기준으로 삼는 면은 y −3.645** 임(실측 2건: `results/isaac_20260923_2032.txt:704` + `nav2_20260923_2033.txt:433` → −3.644, `isaac_20260923_2125.txt:722` + `nav2_20260923_2126.txt:435` → −3.651). `standoff_m` 은 **검출 면 기준**임.
+- 도킹 목표는 검출 면 기준 `standoff_m` **0.90** (2026-09-25 실측 재환산). 팔 밑동 ~ place 대상 = `standoff_m` + 0.06 이므로 0.96 m 가 되며, 랙 pick 에서 실제로 성공한 자세 0.932 m(`isaac_20260923_2032.txt:556`)와 팀 상한 1.05 사이임. 환산의 근거는 검출 면 ~ place 대상 0.26 m 와 팔 밑동 위치(base_link 보다 0.20 m 뒤, 같은 파일 `:557`)임.
+  - 2026-09-23~24 에 쓰던 0.85 는 철회함. 그 근거였던 `0.11 + standoff` 는 면을 y −3.60 으로 가정해 0.05 m 틀렸고, 기준으로 삼은 `BASE_TO_PALLET_X`(0.89~1.05)는 `robot_motion.check_base_pose` 가 `start_pick` 에서만 호출하므로 **feeder place 에는 적용되지 않음**(`robot_motion.py:883` vs `:981`). 0.85 는 실측 환산으로 0.91 이어서 하한 0.89 와의 여유가 도킹 거리 공차 0.03 보다 작았음.
 - 시간 판단은 `/clock`(`use_sim_time: true`) 기준으로만 함. `time.monotonic()`·`time.time()` 으로 타임아웃·신선도를 판단하지 않음. 이유: Isaac 실시간 배율이 0.3 전후라 벽시계 임계값은 3배 빨리 걸림.
 - 3D 라이다는 `fullScan=True` 여야 한 바퀴(약 41,000점, 시뮬 10 Hz)로 옴. 꺼져 있으면 프레임마다 60° 조각(약 6,900점)만 와서 AMCL 과 도킹이 깨짐. 팀 앱과 `launch_scene.py` 둘 다 이 설정을 넣으며, fullScan 이어도 섹터가 빠진 스캔이 섞이므로 `cloud_self_filter` 가 0.25 s 점군을 합침.
 - `/cmd_vel` 발행자는 Nav2(collision_monitor)와 `feeder_dock` 둘임. `feeder_dock` 은 Nav2 가 2 s 이상 조용할 때만 시작함. 세 번째 발행자를 추가하지 않음.
@@ -70,11 +72,11 @@
 
 2.6. **현재 "keep" 상태의 기준선 (바꾸려면 보고 후)**
 - planner Smac Hybrid-A*(Reeds-Shepp, 후진), RPP 0.6 m/s `allow_reversing`, goal 허용 0.25 m/0.5 rad, `max_angular_accel` 20, PoseProgressChecker, BT 응답 200 ms.
-- `cloud_self_filter` 상자 x −0.65~0.60, y ±0.6, 합치기 0.25 s (이전 값 −0.85~0.6. `standoff_m` 을 0.85 로 줄이면서 함께 옮김). `box_x[0]`은 `standoff_m`보다 앞에 있어야 함.
-- `feeder_dock` standoff 0.85, 자동 시작 반경 0.6 m, 면 길이 0.6~1.6 m, 법선 ±60°, 신선도 2.5 s.
+- `cloud_self_filter` 상자 x −0.65~0.60, y ±0.6, 합치기 0.25 s (이전 값 −0.85~0.6. 차체 뒤끝 −0.607 을 덮으면서 검출 면 −0.90 은 남김). `box_x[0]`은 `standoff_m`보다 앞에 있어야 함.
+- `feeder_dock` standoff 0.90, 자동 시작 반경 0.6 m, 면 길이 0.6~1.6 m, 법선 ±60°, 신선도 2.5 s.
 - 미해결 1건: 후진 중 방향이 틀어져 전진한 사례(3회 중 1회). 연속성 검사 후보는 적용 전.
 - `/scan` 파이프라인: 3D 점군 → `cloud_self_filter`(상자 제거, 0.25 s 합침) → `pointcloud_to_laserscan`(높이 −0.35~1.5 m, `range_min` 0.3, 0.5°) → `/scan`. 2D 라이다는 쓰지 않음.
-- `standoff_m`(0.85) 과 `box_x[0]`(−0.65) 은 짝임. 도킹 거리를 줄이면 상자 뒤끝도 그보다 앞(값이 더 큼)에 두어야 면이 지워지지 않음. 차체 뒤끝은 base_link −0.607 이므로 `standoff_m` 은 0.75 아래로 두지 않음.
+- `standoff_m`(0.90) 과 `box_x[0]`(−0.65) 은 짝임. 도킹 거리를 줄이면 상자 뒤끝도 그보다 앞(값이 더 큼)에 두어야 면이 지워지지 않음. 차체 뒤끝은 base_link −0.607 이므로 `standoff_m` 은 0.75 아래로 두지 않음.
 - 속도 상한은 팔레트·엽채류의 위치값을 유지하는 선이 기준임.
 
 2.7. **내가 할루시네이션을 겪기 쉬운 지점 (명시적으로 금지·확인 문구로)**

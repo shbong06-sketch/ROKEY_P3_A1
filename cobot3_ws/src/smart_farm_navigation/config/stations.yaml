@@ -8,9 +8,10 @@ stations:
   CORRIDOR_EXIT:   {x: -0.421, y: -1.20, yaw_deg: 90.0}  # 통로 남단(y 0.27)을 1.5 m 지난 점
   # Feeder 도킹. 리프트 자체 충돌 때문에 팔(카터 뒤쪽 -x)이 대상을 봐야 하므로 카터는 후진으로 진입한다.
   #   FEEDER_APPROACH 까지 Nav2 로 간 뒤 feeder_dock 이 라이다로 면을 보며 도킹한다.
-  #   Conveyor/TurnTable 이 카터 쪽으로 뻗은 긴 벨트이고 그 북단 면이 y -3.60 이다(이름과 달리 Conveyor/Feeder 는 메인 컨베이어와 만나는 남쪽 합류 장치).
+  #   Conveyor/TurnTable 이 카터 쪽으로 뻗은 긴 벨트이고 그 북단 면이 USD 기준 y -3.60,
+  #   라이다가 실제로 검출하는 면은 y -3.645 이다(실측 2건). 도킹 거리는 검출 면 기준이다(이름과 달리 Conveyor/Feeder 는 메인 컨베이어와 만나는 남쪽 합류 장치).
   FEEDER_APPROACH: {x: -2.19, y: -1.55, yaw_deg: 90.0}
-  # 실제 정지 위치는 feeder_dock 의 standoff_m(0.85) 이 정하며 아래 좌표는 그 결과값이다(면에서 0.85 m 앞).
+  # 실제 정지 위치는 feeder_dock 의 standoff_m(0.90) 이 정하며 아래 좌표는 그 결과값이다(검출 면 y -3.645 에서 0.90 m 앞).
   # 도킹 거리를 바꾸면 이 좌표와 cloud_self_filter 의 self_box_x[0] 도 함께 옮긴다.
   FEEDER_DOCK:     {x: -2.19, y: -2.75, yaw_deg: 90.0}
 

@@ -27,7 +27,8 @@ class CloudSelfFilter(Node):
         super().__init__("cloud_self_filter")
         self.declare_parameter("input_topic", "/front_3d_lidar/lidar_points")
         self.declare_parameter("output_topic", "/front_3d_lidar/filtered")
-        self.declare_parameter("self_box_x", [-0.65, 0.60])   # [뒤, 앞]. 뒤 경계는 도킹 거리(standoff_m 0.85)보다 앞이어야 도킹 면이 지워지지 않는다
+        self.declare_parameter("self_box_x", [-0.65, 0.60])   # [뒤, 앞]. 뒤 경계는 도킹 거리(standoff_m 0.90)보다 앞이어야 도킹 면이 지워지지 않는다.
+        #                                                      차체 뒤끝 -0.607 을 덮으면서 면(-0.90)은 남긴다
         self.declare_parameter("self_box_y", [-0.60, 0.60])
         self.declare_parameter("self_box_z", [-0.20, 2.60])   # 상한은 들고 있는 팔레트까지 덮는다
         # Isaac's ROS2RtxLidarHelper without fullScan publishes one ~60 deg slice per rendered frame (about 6,900

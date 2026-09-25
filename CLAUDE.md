@@ -26,10 +26,17 @@ ADR 은 작업보다 뒤처짐. ADR 과 **최근 대화에서 사용자와 합�
 
 | ADR 항목 | 옛 값 | 반영된 현행값 |
 |---|---|---|
-| nav2 2.2 | `standoff_m` 0.90 | **0.85** (`feeder_dock.py:118`, `config/stations.yaml:13`) |
-| nav2 2.6 | `feeder_dock` standoff 0.90 | **0.85** |
+| nav2 2.2 | 도킹 목표 `standoff_m` 0.90 → (9/24) 0.85 | **0.90 으로 복귀** (실측 재환산, 아래 설명) |
+| nav2 2.2 | TurnTable 앞면 y −3.60 | **USD 기준 −3.60 / 라이다 검출 면 −3.645 를 구분해 명시.** `standoff_m` 은 검출 면 기준임 |
+| nav2 2.6 | `feeder_dock` standoff 0.90 → 0.85 | **0.90** |
 | nav2 2.6 | `cloud_self_filter` 상자 x −0.85~0.6 | **−0.65~0.60** (`cloud_self_filter.py:30`) |
-| nav2 2.6 | `standoff_m`(0.90) / `box_x[0]`(−0.85) 짝 | **(0.85) / (−0.65)** |
+| nav2 2.6 | `standoff_m`/`box_x[0]` 짝 표기 | **(0.90) / (−0.65)** |
+
+> **도킹 거리를 두 번 바꾼 이유 (되풀이 금지)**
+> 팔 밑동 ~ place 대상 = **`standoff_m` + 0.06** 임. 근거는 실측 2건(`results/isaac_20260923_2032.txt:704` + `nav2_20260923_2033.txt:433`, `isaac_20260923_2125.txt:722` + `nav2_20260923_2126.txt:435`)에서 나온 "검출 면 ~ place 대상 0.26 m" 와 팔 밑동 위치(base_link 보다 0.20 m 뒤, `isaac_20260923_2032.txt:557`)임.
+> 2026-09-23 에 쓰던 `0.11 + standoff_m` 은 면을 USD 값 y −3.60 으로 가정해 **0.05 m 틀렸음**.
+> 또한 그때 기준으로 삼은 `BASE_TO_PALLET_X`(0.89~1.05)는 `robot_motion.check_base_pose` 가 **`start_pick` 에서만** 호출하므로(`robot_motion.py:883`) **feeder place 에는 적용되지 않음**(`start_place_at_pose`, `:981`). place 의 실제 관문은 역기구학과 관절 연속성(한계 20°)임.
+> 실제로 성공이 확인된 자세는 랙 pick 의 **앞뒤 0.932 m** 하나뿐임(`:556`). 0.90 은 그것을 0.96 으로 재현하는 값이고, 그 자세를 그대로 쓰려면 0.87 임.
 
 **미결 — 사용자 결정 대기 (ADR 을 고치지 않음)**
 

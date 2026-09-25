@@ -12,7 +12,7 @@ that line: (1) turn in place so the rear points at the goal point on the face's 
 
 Geometry (base_link, x forward = drive wheels, rear = -x = M0609 side):
   face line fitted to scan points 0.5..3.2 m behind the robot; the face is ~1.15 m long.
-  goal: base_link `standoff_m` (default 0.85 m) in front of the face on the normal through the face centre,
+  goal: base_link `standoff_m` (default 0.90 m) in front of the face on the normal through the face centre,
         rear square to the face  ->  world (-2.19, -2.60, 90 deg) for the v011 scene.
 """
 
@@ -115,7 +115,12 @@ def settled_err(e: float, wz: float, lag: float, decel: float) -> float:
 @dataclass
 class DockParams:
     """도킹 파라미터. 노드는 이 필드를 그대로 ROS 파라미터로 선언한다 (단일 출처)."""
-    standoff_m: float = 0.85          # base_link ~ TurnTable 앞면. 팀 robot_motion.BASE_TO_PALLET_X(0.89~1.05) 의 가운데 0.96 m 가 되는 값
+    standoff_m: float = 0.90          # base_link ~ 라이다가 검출한 TurnTable 앞면(world y -3.645).
+    #                                   팔 밑동 ~ place 대상 = standoff_m + 0.06 이므로 0.96 m 가 된다.
+    #                                   0.06 의 출처(실측 2건): 검출 면 ~ place 대상 0.26 m, 팔 밑동은 base_link 보다 0.20 m 뒤
+    #                                   (isaac_20260923_2032.txt:557 팔 베이스 world, 같은 파일 :704 와 nav2_20260923_2033.txt:433 의 쌍).
+    #                                   랙 pick 에서 실제로 성공한 자세가 0.932 m 였고(같은 파일 :556) 0.96 은 그 값과 상한 1.05 사이다.
+    #                                   24차까지 0.85 였으나 그때 쓰던 환산식(+0.11)은 면을 y -3.60 으로 가정해 0.05 m 틀렸다.
     face_min_len_m: float = 0.6
     face_max_len_m: float = 1.6
     reverse_speed_mps: float = 0.10   # 24차까지 0.15. 각속도 응답이 느린 차체가 조향할 시간을 주기 위해 늦춤
