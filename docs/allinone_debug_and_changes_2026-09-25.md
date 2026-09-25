@@ -1,6 +1,11 @@
 # 올인원(수확 → Nav2 → 컨베이어 → 비전 검사 → 솎아내기) 디버깅 · 수정 내역 (2026-09-25)
 
 브랜치 `feature/cabbage-place-fix` · Isaac Sim 5.1 · Windows 11 + RTX 3060 12GB + WSL2 Ubuntu 24.04 (ROS 2 Jazzy Nav2)
+
+> **저장소 정리 (2026-09-25 저녁):** 브랜치에는 최종 올인원 코드만 남겼다 —
+> `runtime/standalone_app.py`, `scripts/{conveyor, conveyor_rollers, cull_motion, inspection_cull_station, inspection_yolo_worker}.py`,
+> `tools/cabbage/{06_make_cabbage_scene.py, run_in_isaac.py}`. 양배추 에셋은 공유 zip 으로 전달.
+> 아래 표에 나오는 시험·녹화·Windows/WSL 도구(01~05, 07~13, aio_wrapper, run_*.ps1, wsl/*)는 커밋 `ee1043d` 에 있다.
 테스트 횟수는 이 PC 의 실행 기록(`D:\smartfarm-sim\out\*` 폴더·로그) 기준이다. 오전 에셋 제작 단계는 스크립트 기록 기준의 대략값.
 
 ---

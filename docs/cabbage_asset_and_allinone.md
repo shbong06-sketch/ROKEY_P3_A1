@@ -2,6 +2,10 @@
 
 브랜치 `feature/cabbage-place-fix` · Isaac Sim 5.1 · 검증 PC: Windows 11 + RTX 3060 12GB (+ WSL2 Ubuntu 24.04 / ROS 2 Jazzy Nav2)
 
+> 에셋 파일은 저장소에서 빼고 공유 zip(`cabbage_smartfarm_share_2026-09-25.zip`)으로 전달한다. 이 문서의 제작·시험 도구 설명은
+> 기록용이며 도구 파일은 커밋 `ee1043d` 에 있다. 최종 파일 구성은 `docs/allinone_debug_and_changes_2026-09-25.md` 맨 위 참고.
+> 양배추 판정은 이후 결정으로 **yellow·brown 모두 제거**(아래 표의 "보류"는 옛 규칙 표기).
+
 ## 1. 한눈에
 
 | 항목 | 내용 |
