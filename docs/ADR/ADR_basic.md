@@ -11,10 +11,22 @@
 - **연산 기기 ('고피')**: 
   - Isaac Sim 시뮬레이션 및 그래픽 연산 구동 전용 고성능 PC. 2대이며, 각각 고피1, 고피2로 부름.
 - **임시 기기 ('고피3')** — 2026-09-25 추가, 사용자 승인:
-  - 교육장 밖에 있는 동안(2026-09-25부터 약 3일) 쓰는 GCP VM 인스턴스임. 고성능이지만 임시이며, 이 기간에는 **내피·고피1·고피2 를 모두 쓸 수 없음.** 따라서 그 기간의 작업은 고피3 한 대에서만 이루어짐.
-  - 고피3 는 경로가 다름: 홈이 `/home/rokey` 가 아니고, 저장소가 `/home/rokey/ROKEY_p3_a1`(소문자 `p3_a1`)임. 다른 기기용 문서에는 계속 대문자 `/home/rokey/ROKEY_P3_A1` 을 적음.
-  - 고피3 에는 **장면 USD(`Collected_smartfarm_v###`)가 없어 Isaac 실측을 할 수 없음.** ROS 2 Jazzy 와 Nav2 는 설치되어 있어 `sim_test/` 의 모의·회귀 시험만 가능함.
-  - 이 기간이 끝나면 고피3 항목은 삭제하고 원래의 고피1·고피2·내피 분담으로 돌아감.
+  - 교육장 밖에 있는 동안(2026-09-25부터 약 3일) 쓰는 GCP VM 인스턴스임. 이 기간에는 **내피·고피1·고피2 를 모두 쓸 수 없어 고피3 한 대에서만 작업함.** 기간이 끝나면 이 항목을 삭제하고 원래 분담으로 돌아감.
+  - **경로는 다른 기기와 같은 문자열로 맞춰 두었음.** 실디렉터리는 소문자 `/home/rokey/ROKEY_p3_a1` 이지만 심볼릭 링크로 다음이 모두 동작함. **문서·명령에는 항상 대문자 경로를 적을 것.**
+    - `/home/rokey/ROKEY_P3_A1` → `/home/rokey/ROKEY_p3_a1`
+    - `/home/rokey/cobot3_ws` → `/home/rokey/ROKEY_P3_A1/cobot3_ws` (다른 기기와 같은 심볼릭 링크 구조)
+    - `colcon` 은 링크를 실경로로 풀어 쓰므로 어느 쪽으로 빌드해도 `install/` 안의 경로 문자열은 하나로 유지됨.
+  - **`$HOME` 만은 `/home/rokey` 가 아님**(계정명이 다름). `~` 에 의존하는 것은 `isaac`·`isaac_python` 별칭뿐이고 `$HOME/isaacsim` 이 실재하므로 문제 없음.
+  - **환경 줄은 4줄임. `FASTRTPS_DEFAULT_PROFILES_FILE` 을 넣지 않음**:
+    ```bash
+    export ROS_DOMAIN_ID=101
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    source /opt/ros/jazzy/setup.bash
+    source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+    ```
+    화이트리스트는 교육장 랜선 IP(10.10.0.1~4)만 허용하는데 VM 에는 그 랜카드가 없음. 켜는 순간 VM 안의 노드들이 서로를 못 찾아 토픽 송수신이 전부 끊김. `RMW_IMPLEMENTATION` 은 Jazzy 기본값이라 무해하므로 남겨 형태를 맞춤. 회귀 시험만은 기존 규칙대로 도메인 77 + `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` 를 씀.
+  - 설치 상태: Isaac Sim 5.1.0, ROS 2 Jazzy, **Nav2 는 2026-09-25 에 설치함**(`ros-jazzy-navigation2`, `nav2-bringup`, `nav2-simple-commander`, `pointcloud-to-laserscan`). 고피3 가 내피 역할까지 겸하기 때문임.
+  - `/home/rokey/IsaacSim-ros_workspaces` 는 없음. ADR §4 가 "참고용 원본이며 실행에 쓰지 않음" 이라 두지 않았음.
 - **워크스페이스 동기화**: 
   - Git을 통해 형상 관리.
   - 경로: "/home/rokey/ROKEY_P3_A1"에 `.git` 존재. 작업 브랜치는 현재 체크아웃된 브랜치를 따르며, feature/navigation2 에서는 ADR_navigation2.md 를 함께 적용함.

@@ -34,6 +34,7 @@
   export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
   source /opt/ros/jazzy/setup.bash
   source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+- 고피3(임시 기기, ADR_basic §1)에서는 위 5줄 중 `FASTRTPS_DEFAULT_PROFILES_FILE` 을 **빼고 4줄만** 쓴다. 화이트리스트가 교육장 랜선 IP 전용이라 VM 안에서는 통신이 끊긴다.
 - 내피 `~/.bashrc`는 도메인 103이라 터미널마다 export 필요. 내피 유선 IP 10.10.0.3, 고피1(기존 고피) 유선 IP 10.10.0.2, 고피2 유선 IP 10.10.0.1임.
 - 내피에서 `git pull`은 내가 하지 않음. push 거부 시 사용자 pull 대기.
 

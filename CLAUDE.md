@@ -55,7 +55,7 @@ ADR 은 작업보다 뒤처짐. ADR 과 **최근 대화에서 사용자와 합�
 | 고피1 | `IsaacSim03` / 10.10.0.2 / DOMAIN 101 | Isaac Sim, 명령 발행, Task Manager |
 | 고피2 | 10.10.0.1 / DOMAIN 102 | 위와 동일(번갈아 사용) |
 | 내피 | `lwh19180` / 10.10.0.3 | Nav2 · RViz2 · `feeder_dock` · `navigation_node` · 회귀 시험. Isaac 실행 불가 |
-| **고피3** | `gc-isaacsim-lwh` (GCP VM) | **2026-09-25부터 약 3일간의 임시 기기.** 이 기간에는 내피·고피1·고피2 를 모두 쓸 수 없어 **고피3 한 대에서 전부 돌림.** 홈이 `/home/rokey` 가 아니고 레포가 `/home/rokey/ROKEY_p3_a1`(소문자). **장면 USD 가 없어 Isaac 실측 불가**, Nav2 는 설치되어 있어 `sim_test/` 모의·회귀만 가능 (ADR_basic §1) |
+| **고피3** | `gc-isaacsim-lwh` (GCP VM) | **2026-09-25부터 약 3일간의 임시 기기.** 이 기간에는 내피·고피1·고피2 를 모두 쓸 수 없어 **고피3 한 대에서 전부 돌림.** 경로는 심볼릭 링크로 맞춰 두었으므로 **대문자 `/home/rokey/ROKEY_P3_A1` 을 그대로 씀**(`$HOME` 만 `/home/rokey` 가 아님). 환경 줄은 **4줄** — 화이트리스트 `FASTRTPS_DEFAULT_PROFILES_FILE` 을 넣으면 VM 안 통신이 끊김. Nav2 설치 완료, 장면 `Collected_smartfarm_v014` 반입 완료 (ADR_basic §1) |
 
 - **경로 주의**: ADR·가이던스·기존 메모리는 모두 `/home/rokey/ROKEY_P3_A1` (대문자)로 적혀 있음. GCP 기기에서는 실제 경로가 소문자임. 절대경로를 옮겨 적기 전에 `hostname` 과 `pwd` 를 확인함. **가이던스에 적는 경로는 계속 대문자 ADR 경로를 씀** (고피1/고피2/내피가 그 경로임).
 - `ROS_DOMAIN_ID` 를 고정값으로 박지 않음. 그때 쓰는 고피에 맞춰 내피 전 터미널과 비전 컨테이너에 같은 값을 적용함.

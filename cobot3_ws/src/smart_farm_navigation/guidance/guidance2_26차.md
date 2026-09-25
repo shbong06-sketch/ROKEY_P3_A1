@@ -116,23 +116,22 @@ ROS 회귀 10 시나리오 결과(내피 모의):
 
 | 항목 | 가능 여부 |
 |---|---|
-| Isaac Sim 실측 | **불가.** 장면 `Collected_smartfarm_v011.usd` 가 git 에 없고(대용량 에셋 제외) 이 VM 에도 없다 |
+| Isaac Sim 실측 | 장면이 들어왔으므로 기술적으로는 가능. 다만 **실행 전에 사용자 승인을 받는다**(유의미한 트러블슈팅은 사용자가 직접 실측·녹화한다) |
 | Nav2 · RViz2 | 가능. 2026-09-25 에 `ros-jazzy-navigation2` 등을 설치했다 |
 | 워크스페이스 빌드 | 가능 |
 | 오프라인 격자 모의 (`dock_sim.py`) | 가능 |
 | ROS 회귀 시험 (`dock_regression.py`) | 가능 |
 
-고피3 에서 회귀를 돌릴 때는 아래 블록을 쓴다. **저장소 경로가 소문자 `ROKEY_p3_a1` 인 점만 다르다.**
+고피3 에서 회귀를 돌릴 때는 아래 블록을 쓴다. 경로는 심볼릭 링크로 맞춰 두었으므로 **다른 기기와 같은 대문자 경로를 그대로 쓴다.** 화이트리스트 줄만 없다.
 
 ```bash
 export ROS_DOMAIN_ID=77
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
-unset FASTRTPS_DEFAULT_PROFILES_FILE
 source /opt/ros/jazzy/setup.bash
-cd /home/rokey/ROKEY_p3_a1/cobot3_ws
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws
 colcon build --symlink-install --packages-select smart_farm_interfaces smart_farm_navigation
-source /home/rokey/ROKEY_p3_a1/cobot3_ws/install/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 python3 src/smart_farm_navigation/sim_test/dock_regression.py 2>&1 | tee src/smart_farm_navigation/results/regression_$(date +%Y%m%d_%H%M).txt
 ```
 
@@ -140,7 +139,7 @@ python3 src/smart_farm_navigation/sim_test/dock_regression.py 2>&1 | tee src/sma
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-cd /home/rokey/ROKEY_p3_a1/cobot3_ws/src/smart_farm_navigation
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation
 python3 sim_test/dock_sim.py
 ```
 

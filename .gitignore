@@ -71,3 +71,6 @@ rosbag2_*
 .claude.json
 .claude.json.backup
 *.jsonl
+
+# 대용량 씬 아카이브 (ADR_nav2 2.4: 대용량 USD 에셋은 git 제외)
+cobot3_ws/isaacpjt/smart_farm/scenes/*.zip
