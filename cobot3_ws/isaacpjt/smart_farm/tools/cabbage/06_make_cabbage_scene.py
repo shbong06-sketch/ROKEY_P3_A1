@@ -271,6 +271,38 @@ if holder and plate:
             "posts_xy": [[round(float(v), 3) for v in (x0, x1, y0, y1)] for (x0, x1), (y0, y1) in posts],
             "inner_post_length": INNER_LEN, "plate_bottom": round(plate_bottom, 3)}
 layout["telescopic_mast"] = mast or "lift_holder not found"
+
+# user request 2026-09-25: make the shared scene lighter without changing anything visible or functional.
+#   * Nova Carter chassis_link/visual/internal_components: 1.52 M points of parts inside the closed body shell
+#     (skirt + top_body stay). It is an instance, so only this Carter's visual is de-instanced to switch it off.
+#   * hidden meshes that are not colliders (viewport camera gizmos, an unused hidden mesh in the fork robot base).
+lighten = {}
+visual = st.GetPrimAtPath("/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/visual")
+if visual:
+    visual.SetInstanceable(False)
+    inner = st.GetPrimAtPath(str(visual.GetPath()) + "/internal_components")
+    if inner:
+        inner.SetActive(False)
+        lighten[str(inner.GetPath())] = "deactivated (inside the chassis shell, no collider)"
+
+def carries_physics(prim):
+    """collider / body on the prim or any ancestor, or joints / articulations below it"""
+    q = prim
+    while q and q.GetPath() != Sdf.Path.absoluteRootPath:
+        if q.HasAPI(UsdPhysics.CollisionAPI) or q.HasAPI(UsdPhysics.RigidBodyAPI):
+            return True
+        q = q.GetParent()
+    return False
+
+for prim in st.Traverse():
+    if not prim.IsA(UsdGeom.Gprim) or prim.IsInstanceProxy():
+        continue
+    img = UsdGeom.Imageable(prim)
+    hidden = img.ComputeVisibility() == UsdGeom.Tokens.invisible
+    if hidden and not carries_physics(prim) and "/SortBox_" not in str(prim.GetPath()):
+        prim.SetActive(False)
+        lighten[str(prim.GetPath())] = "deactivated (invisible, no physics)"
+layout["lighten"] = lighten
 st.GetRootLayer().Save()
 del st
 
