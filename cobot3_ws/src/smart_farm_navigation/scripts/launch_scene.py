@@ -1,4 +1,4 @@
-"""Isaac Sim standalone launcher for the Nav2 test (default scene: Collected_smartfarm_v011.usd).
+"""Isaac Sim standalone launcher for the Nav2 test (default scene: Collected_smartfarm_v014 cabbage).
 
 Opens the scene, enables the ROS 2 bridge, adds a /clock publisher graph when the
 scene has none (Nav2 runs with use_sim_time, so /clock is mandatory), presses Play,
@@ -49,8 +49,9 @@ sys.stdout = _Tee(sys.__stdout__, _log_file)
 sys.stderr = _Tee(sys.__stderr__, _log_file)
 print(f"[launch_scene] log -> {_LOG_PATH}  argv={sys.argv[1:]}", flush=True)
 
+# 폴더 이름과 파일 이름이 다르다(ADR_nav2 1.1.2). 폴더에 딸려 온 README_사용법.md 가 여는 파일을 밝힌다.
 DEFAULT_SCENE = ("/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/"
-                 "Collected_smartfarm_v011/Collected_smartfarm_v011.usd")
+                 "Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd")
 _ap = argparse.ArgumentParser()
 _ap.add_argument("scene", nargs="?", default=DEFAULT_SCENE)
 _ap.add_argument("--pose", default="", help="preset name in config/arm_poses.yaml (e.g. carry)")

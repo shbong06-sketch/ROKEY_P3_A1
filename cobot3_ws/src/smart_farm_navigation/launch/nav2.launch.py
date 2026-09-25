@@ -6,7 +6,7 @@ results/bags/nav2_<YYYYmmdd_HHMM>/ with every topic needed to replay the run
 record_cloud:=true adds the raw 3D point cloud (about 1.3 MB/s).
 
 Nav2 (map_server + AMCL + planner/controller/behaviors + RViz2) for the carter in
-Collected_smartfarm_v011.usd.  Runs on the PC that does NOT run Isaac Sim; the only
+Collected_smartfarm_v014.  Runs on the PC that does NOT run Isaac Sim; the only
 things it needs from Isaac over DDS are /clock, /tf, /chassis/odom and one lidar topic.
 
 /scan source (scan_mode):
@@ -43,7 +43,7 @@ BAG_DIR = os.path.join(
 DEFAULT_MAP = os.path.join(
     PACKAGE_SHARE,
     "maps",
-    "Collected_smartfarm_v011.yaml",
+    "Collected_smartfarm_v014.yaml",
 )
 
 BAG_TOPICS = [

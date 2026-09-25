@@ -1,7 +1,7 @@
-# map 좌표 = Isaac world 좌표 (지도 Collected_smartfarm_v011.yaml 의 origin 이 world 기준). yaw_deg: 0 = +x, 90 = +y.
-# 기준 장면: Collected_smartfarm_v011.usd. yaw 는 base_link +x = 카터의 실제 앞(구동륜 쪽) 방향이다.
+# map 좌표 = Isaac world 좌표 (지도 Collected_smartfarm_v014.yaml 의 origin 이 world 기준). yaw_deg: 0 = +x, 90 = +y.
+# 기준 장면: Collected_smartfarm_v014 (scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd). yaw 는 base_link +x = 카터의 실제 앞(구동륜 쪽) 방향이다.
 # 시작 배치는 카터의 뒤(-x, 캐스터·리프트·M0609 쪽)가 통로 출구를 향한다. 랙 P&P 를 위한 팀 배치라 바꾸지 않는다.
-scene: Collected_smartfarm_v011.usd
+scene: Collected_smartfarm_v014_room_core_cabbage.usd
 initial_pose: {x: -0.421, y: 1.006, yaw_deg: 90.0}       # LiftRig/Asset/nova_carter_ROS/chassis_link world pose
 stations:
   RACK_DOCK:       {x: -0.421, y: 1.006, yaw_deg: 90.0}  # Rack_1 옆 통로 안. Hybrid-A* 가 통로 진입 경로를 직접 계획한다
@@ -11,9 +11,10 @@ stations:
   #   Conveyor/TurnTable 이 카터 쪽으로 뻗은 긴 벨트이고 그 북단 면이 USD 기준 y -3.60,
   #   라이다가 실제로 검출하는 면은 y -3.645 이다(실측 2건). 도킹 거리는 검출 면 기준이다(이름과 달리 Conveyor/Feeder 는 메인 컨베이어와 만나는 남쪽 합류 장치).
   FEEDER_APPROACH: {x: -2.19, y: -1.55, yaw_deg: 90.0}
-  # 실제 정지 위치는 feeder_dock 의 standoff_m(0.90) 이 정하며 아래 좌표는 그 결과값이다(검출 면 y -3.645 에서 0.90 m 앞).
+  # 실제 정지 위치는 feeder_dock 의 standoff_m(0.92) 이 정하며 아래 좌표는 그 어림값이다.
+  # 0.92 는 팀이 feature/cabbage-place-fix 올인원 실행에서 확인한 값이다(place 수정과 한 쌍).
   # 도킹 거리를 바꾸면 이 좌표와 cloud_self_filter 의 self_box_x[0] 도 함께 옮긴다.
-  FEEDER_DOCK:     {x: -2.19, y: -2.75, yaw_deg: 90.0}
+  FEEDER_DOCK:     {x: -2.19, y: -2.73, yaw_deg: 90.0}
 
 # 랙 통로 안에서는 제자리 회전 금지: 리그가 0.66 m 를 휩쓸어 랙·팔레트(가장자리 x -0.86)에 닿는다.
 # go_to_station 을 pure_nav2:=false 로 쓸 때만 사용한다(손 시험용). 통합 경로는 Hybrid-A* 가 후진 경로를 직접 계획한다.

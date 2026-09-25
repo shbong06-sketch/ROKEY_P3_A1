@@ -115,12 +115,11 @@ def settled_err(e: float, wz: float, lag: float, decel: float) -> float:
 @dataclass
 class DockParams:
     """도킹 파라미터. 노드는 이 필드를 그대로 ROS 파라미터로 선언한다 (단일 출처)."""
-    standoff_m: float = 0.90          # base_link ~ 라이다가 검출한 TurnTable 앞면(world y -3.645).
-    #                                   팔 밑동 ~ place 대상 = standoff_m + 0.06 이므로 0.96 m 가 된다.
-    #                                   0.06 의 출처(실측 2건): 검출 면 ~ place 대상 0.26 m, 팔 밑동은 base_link 보다 0.20 m 뒤
-    #                                   (isaac_20260923_2032.txt:557 팔 베이스 world, 같은 파일 :704 와 nav2_20260923_2033.txt:433 의 쌍).
-    #                                   랙 pick 에서 실제로 성공한 자세가 0.932 m 였고(같은 파일 :556) 0.96 은 그 값과 상한 1.05 사이다.
-    #                                   24차까지 0.85 였으나 그때 쓰던 환산식(+0.11)은 면을 y -3.60 으로 가정해 0.05 m 틀렸다.
+    standoff_m: float = 0.92          # base_link ~ 라이다가 검출한 TurnTable 앞면.
+    #                                   0.92 의 출처: 팀이 feature/cabbage-place-fix 에서 올인원을 끝까지 돌려 확인한 값이다
+    #                                   (scenes/Collected_smartfarm_v014/allinone_debug_and_changes_2026-09-25.md 의 P3).
+    #                                   0.85 에서는 팔 베이스~놓을 자리가 0.72 m 라 DESCEND_5 가 관절 20.7 도(한계 20)로 실패했다.
+    #                                   팀이 turntable_place_pose() 의 놓을 자리 정의를 함께 고쳤으므로 이 값은 그 수정과 한 쌍이다.
     face_min_len_m: float = 0.6
     face_max_len_m: float = 1.6
     reverse_speed_mps: float = 0.10   # 24차까지 0.15. 각속도 응답이 느린 차체가 조향할 시간을 주기 위해 늦춤

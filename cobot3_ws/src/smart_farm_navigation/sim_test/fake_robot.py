@@ -39,7 +39,7 @@ from tf2_msgs.msg import TFMessage
 #   <저장소>/cobot3_ws/src/smart_farm_navigation/sim_test/fake_robot.py
 REPO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 DEFAULT_MAP = os.path.join(
-    REPO_DIR, "cobot3_ws", "isaacpjt", "smart_farm", "maps", "Collected_smartfarm_v011.yaml"
+    REPO_DIR, "cobot3_ws", "isaacpjt", "smart_farm", "maps", "Collected_smartfarm_v014.yaml"
 )
 LIDAR_X = 0.026          # base_link 에서 라이다까지
 LIDAR_MOUNT_X = 0.232    # front_3d_lidar 프레임 원점 보정

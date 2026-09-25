@@ -14,7 +14,8 @@
 ## 1.
 
 1.1. **메인 장면 standalone USD파일**:
-    1.1.1. 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v###/"의 Collected_smartfarm_v###.usd의 형태로 들어가있음. 최신화될 때마다 버전값이 유동적으로 바뀔 수 있음.
+    1.1.1. 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v###/" 안에 들어가있음. 최신화될 때마다 버전값이 유동적으로 바뀔 수 있음.
+    1.1.2. **파일명은 `Collected_smartfarm_v###.usd` 로 고정되지 않음.** 한 폴더에 여러 USD 가 함께 들어오며 실제로 열 파일은 그중 하나임 (2026-09-25 예: 폴더 `Collected_smartfarm_v014/` 안에 기반이 되는 `Collected_smartfarm_v013_room_core.usd` 와 실제로 여는 `Collected_smartfarm_v014_room_core_cabbage.usd` 가 같이 있음). 폴더에 딸려 오는 `README_사용법.md` 가 어느 파일을 여는지 밝히므로 그것을 먼저 읽음.
 1.2. **메인 씬의 map 및 yaml 설정값**: 
     1.2.1. 경로: "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/"에서 Collected_smartfarm_v###의 이름으로 png 혹은 yaml파일로 존재함.
     1.2.2. scenes 디렉터리의 최신 버전과 ADR 의 버전이 다르면 scenes 의 최신 버전을 우선하고, 당신이 ADR 1.1·1.2 의 버전 문구 갱신을 사용자에게 요청함.
