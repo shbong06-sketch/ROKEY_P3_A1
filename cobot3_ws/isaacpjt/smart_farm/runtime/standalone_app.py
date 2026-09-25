@@ -67,6 +67,20 @@ SHELF_TOP = {
 PALLET_ASSET_NAME = (
     "Cube_011_001"
 )
+# [올인원 2026-09-25] 컨베이어(scripts/conveyor.py, refactor/lift-robot-motion)가 감시할 팔레트 루트.
+# 벨트에 이미 올라와 있는 검사 트레이도 모두 넣어야 한다(감시 밖 강체도 롤러가 밀어낸다).
+# 랙 팔레트는 로봇이 들고 돌리므로 요 고정을 벨트에 올라온 순간 건다(carried).
+CONVEYOR_CARRIED_PALLETS = tuple(f"/World/SmartFarm/Placed/Pallet_0{i}" for i in (1, 2, 3))
+CONVEYOR_BELT_PALLETS = tuple(
+    f"/World/SmartFarm/Placed/Pallet_Inspect{suffix}" for suffix in ("", "_01", "_02", "_03")
+)
+# 비전 노드가 아직 붙지 않았으므로 카메라 앞에서 이 시간 뒤 스스로 내보낸다. 비전 연동 시 None.
+CONVEYOR_AUTO_RESUME_SECONDS = 10.0
+# 장면의 Pallet_Inspect* 는 시험용 배치(y -7.0 / -6.58)라 conveyor.py 가 세우는 옆가이드(y -6.56 / -6.94)에
+# 걸친다. 그대로 두면 가이드가 트레이를 관통한 채 생겨 트레이와 작물이 튕겨 나간다.
+# conveyor_standalone.py 와 같이 줄기 서쪽 빈 바닥에 세워 두고 시작한다(세션 레이어, 장면 파일은 그대로).
+CONVEYOR_PARK = (-3.40, -5.60, 0.03, 0.60)   # x, 첫 y, z, 간격
+
 PALLET_1_PATH = f"/World/SmartFarm/Placed/Pallet_01/{PALLET_ASSET_NAME}"
 PALLET_2_PATH = f"/World/SmartFarm/Placed/Pallet_02/{PALLET_ASSET_NAME}"
 PALLET_3_PATH = f"/World/SmartFarm/Placed/Pallet_03/{PALLET_ASSET_NAME}"
@@ -94,6 +108,11 @@ def parse_args():
         "--demo",
         action="store_true",
         help="timeline 재생 후 검증용 TRANSFER 명령을 자동 발행",
+    )
+    parser.add_argument(
+        "--no-conveyor",
+        action="store_true",
+        help="[올인원 2026-09-25] 컨베이어 반송(scripts/conveyor.py)을 끄고 실행",
     )
     return parser.parse_known_args()
 
@@ -281,6 +300,7 @@ class SimulationRuntime:
     place_phase: str = "IDLE"
     place_wait_seconds: float = 0.0
     hold_fault_logged: bool = False   # [navigation 2026-09-24] 운반 중 팔레트 감시 예외를 한 번만 기록
+    conveyor: object = None           # [올인원 2026-09-25] scripts/conveyor.ConveyorController (--no-conveyor 면 None)
 
 
 class TransferOperation:
@@ -595,7 +615,36 @@ def create_simulation_runtime(scene_path):
         )
 
     print("[시작] Scene 객체 등록이 완료되었습니다.", flush=True)
+    conveyor = None
+    if not args.no_conveyor:
+        # [올인원 2026-09-25] conveyor.install() 은 world.reset() 전에, attach() 는 뒤에 (conveyor.py 계약)
+        from conveyor import install as install_conveyor
+
+        park_x, park_y, park_z, park_gap = CONVEYOR_PARK
+        for index, path in enumerate(CONVEYOR_BELT_PALLETS):
+            prim = stage.GetPrimAtPath(path)
+            if not prim.IsValid():
+                continue
+            for op in UsdGeom.Xformable(prim).GetOrderedXformOps():
+                if op.GetOpName() == "xformOp:translate":
+                    op.Set(type(op.Get())(park_x, park_y + index * park_gap, park_z))
+                    print(f"[컨베이어] {prim.GetName()} 시험 배치를 벨트 밖에 세움 "
+                          f"({park_x:+.2f}, {park_y + index * park_gap:+.2f})", flush=True)
+
+        watched = [
+            path
+            for path in CONVEYOR_CARRIED_PALLETS + CONVEYOR_BELT_PALLETS
+            if stage.GetPrimAtPath(path).IsValid()
+        ]
+        conveyor = install_conveyor(
+            stage,
+            watched,
+            auto_resume=CONVEYOR_AUTO_RESUME_SECONDS,
+            carried_paths=CONVEYOR_CARRIED_PALLETS,
+        )
     world.reset()
+    if conveyor is not None:
+        conveyor.attach()
     print("[시작] World reset이 완료되었습니다.", flush=True)
     world.pause()
 
@@ -645,6 +694,7 @@ def create_simulation_runtime(scene_path):
         motion=motion,
         transfer=transfer,
         pallets=pallets,
+        conveyor=conveyor,
     )
 
 
@@ -656,7 +706,11 @@ def initialize_scene(runtime, transfer_operation, step_world):
     runtime.place_phase = "IDLE"
     runtime.place_wait_seconds = 0.0
     runtime.wheels_released = False
+    if runtime.conveyor is not None:
+        runtime.conveyor.reset()        # Stop -> Play: reset() -> world.reset() -> attach() (conveyor.py 계약)
     runtime.world.reset()
+    if runtime.conveyor is not None:
+        runtime.conveyor.attach()
     brake_wheels(runtime.stage, RIG_PATH)
 
     print(f"[장면] 안정화를 위해 {SETTLE_STEPS} physics step을 진행합니다.")
@@ -711,6 +765,8 @@ def start_place_motion(runtime, node):
         f"팔 베이스까지 {reach:.3f} m",
         flush=True,
     )
+    if runtime.conveyor is not None:
+        runtime.conveyor.hold_stem(True)   # [올인원 2026-09-25] 놓는 동안 줄기 벨트 인터록
     runtime.motion.start_place_at_pose(position, quaternion)
     runtime.place_phase = "ARM_PLACE"
     node.set_phase(
@@ -870,6 +926,8 @@ def update_operation(node, runtime, transfer_operation):
         )
         if runtime.motion.is_running:
             return
+        if runtime.conveyor is not None:
+            runtime.conveyor.hold_stem(False)   # 포크 인출까지 끝났다 -> 벨트가 팔레트를 비전룸으로 가져간다
         if not runtime.motion.is_done or runtime.motion.is_carrying:
             raise RuntimeError("TurnTable Place 검증이 완료되지 않았습니다.")
 
@@ -1023,6 +1081,8 @@ def run():
                 and step_count % RENDER_EVERY == 0
             )
         )
+        if runtime.conveyor is not None:
+            runtime.conveyor.update(PHYSICS_DT)   # [올인원 2026-09-25] 벨트는 Play 중 계속 돈다
 
     try:
         if args.autoplay:
@@ -1149,6 +1209,8 @@ def run():
                     )
                 except RuntimeError as error:
                     node.get_logger().error(str(error))
+                    if runtime.conveyor is not None:
+                        runtime.conveyor.hold_stem(False)   # [올인원 2026-09-25] 실패해도 인터록은 푼다
                     fail_operation(
                         node,
                         transfer_operation,
