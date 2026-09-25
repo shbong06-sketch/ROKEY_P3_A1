@@ -28,6 +28,15 @@ DEFAULT_SCENE_PATH = (
     / "Collected_smartfarm_v011"
     / "Collected_smartfarm_v011.usd"
 )
+# [올인원 2026-09-25] 양배추 씬(공유 zip 을 scenes/Collected_smartfarm_v013 에 푼 것)이 있으면 --scene 없이도 그 씬을 연다.
+CABBAGE_SCENE_PATH = (
+    PROJECT_DIR
+    / "scenes"
+    / "Collected_smartfarm_v013"
+    / "Collected_smartfarm_v013_room_core_cabbage.usd"
+)
+if CABBAGE_SCENE_PATH.exists():
+    DEFAULT_SCENE_PATH = CABBAGE_SCENE_PATH
 
 PHYSICS_DT = 1.0 / 60.0
 BASE_SETTLE_SECONDS = 0.5           # [navigation 2026-09-23] Place 전 차체가 멈춰 있어야 하는 시간

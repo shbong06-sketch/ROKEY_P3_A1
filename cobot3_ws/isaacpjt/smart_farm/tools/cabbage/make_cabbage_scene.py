@@ -1,7 +1,7 @@
-"""Make a cabbage variant of a Collected_smartfarm scene without touching the original files.
+"""원본 v013 씬에서 양배추 씬 복사본을 만든다 (원본 파일은 그대로).
 
-  D:\\isaacsim\\python.bat run_in_isaac.py 06_make_cabbage_scene.py SCENE_USD ASSET_DIR [OUT_NAME]
-  (run through run_in_isaac.py: the root layers are binary .usd and must be written by Isaac Sim's own USD)
+  isaacsim/python.sh make_cabbage_scene.py SCENE_USD ASSET_DIR [OUT_NAME]
+  (Windows: isaacsim\\python.bat). 씬 파일은 Isaac Sim 5.1 의 USD 로 써야 해서 이 스크립트가 Isaac 을 headless 로 띄운다.
 
 * copies ASSET_DIR (cabbage_pallet_6.usd, empty tray, single heads, textures, build_info.json)
   to <scene dir>/assets/cabbage_pallet_6
@@ -12,8 +12,19 @@
   authored in a sublayer is merged with (not replacing) the root's prepended romaine reference.
 * verifies the composed copy: no Romaine_* prims left, every tray has 6 Cabbage_* bodies, scale 1.
 """
-import os, sys, shutil, json
-from pxr import Usd, Sdf, UsdPhysics, Gf
+import atexit, os, sys, shutil, json, traceback
+
+if "omni.kit.app" not in sys.modules:              # 혼자 실행: Isaac 을 headless 로 띄운다 (씬 파일은 Isaac USD 로 저장)
+    from isaacsim import SimulationApp
+    _app = SimulationApp({"headless": True})
+    atexit.register(_app.close)
+
+    def _excepthook(kind, value, tb):              # Kit 종료 때 stderr 가 사라질 수 있어 파일로도 남긴다
+        open(os.path.abspath(__file__) + ".error.txt", "w", encoding="utf-8").write(
+            "".join(traceback.format_exception(kind, value, tb)))
+        sys.__excepthook__(kind, value, tb)
+    sys.excepthook = _excepthook
+from pxr import Usd, Sdf, UsdPhysics, Gf  # noqa: E402
 
 SCENE, ASSET_DIR = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
 scene_dir = os.path.dirname(SCENE)
@@ -207,7 +218,7 @@ cs = dict(st.GetRootLayer().customLayerData).get("cameraSettings", {})
 views = []
 if "Perspective" in cs and "target" in cs["Perspective"]:
     views.append(("Cam0_Perspective", tuple(cs["Perspective"]["position"]), tuple(cs["Perspective"]["target"]), 18.147))
-saved = os.path.join(r"D:\smartfarm-sim\out", "saved_view_cameras.json")
+saved = os.environ.get("SAVED_VIEW_CAMERAS", os.path.join(scene_dir, "saved_view_cameras.json"))
 if os.path.exists(saved):
     for i, v in enumerate(json.load(open(saved))):
         views.append((v.get("name", f"Cam0_View{i + 1}"), None, v["matrix"], v.get("focal", 18.147)))

@@ -3,8 +3,9 @@
 브랜치 `feature/cabbage-place-fix` · Isaac Sim 5.1 · Windows 11 + RTX 3060 12GB + WSL2 Ubuntu 24.04 (ROS 2 Jazzy Nav2)
 
 > **저장소 정리 (2026-09-25 저녁):** 브랜치에는 최종 올인원 코드만 남겼다 —
-> `runtime/standalone_app.py`, `scripts/{conveyor, conveyor_rollers, cull_motion, inspection_cull_station, inspection_yolo_worker}.py`,
-> `tools/cabbage/{06_make_cabbage_scene.py, run_in_isaac.py}`. 양배추 에셋은 공유 zip 으로 전달.
+> `runtime/standalone_app.py`, `scripts/{conveyor, conveyor_rollers, cull_motion, inspection_cull_station}.py`,
+> `tools/cabbage/make_cabbage_scene.py`. (YOLO 워커는 inspection_cull_station.py 에 합침 — 같은 파일을 `--yolo-worker` 로 띄운다,
+> 06+run_in_isaac 은 make_cabbage_scene.py 로 합침.) 양배추 씬이 scenes/Collected_smartfarm_v013 에 있으면 올인원이 기본으로 연다. 양배추 에셋은 공유 zip 으로 전달.
 > 아래 표에 나오는 시험·녹화·Windows/WSL 도구(01~05, 07~13, aio_wrapper, run_*.ps1, wsl/*)는 커밋 `ee1043d` 에 있다.
 테스트 횟수는 이 PC 의 실행 기록(`D:\smartfarm-sim\out\*` 폴더·로그) 기준이다. 오전 에셋 제작 단계는 스크립트 기록 기준의 대략값.
 
@@ -39,11 +40,11 @@ inspection_cull_station.VisionCullStation.update()  (상태 기계)
    IDLE → PUSH_IN → MOVE_INSPECT → CAPTURE → CULL ⇄ HOME → RECHECK_MOVE → RECHECK → PUSH_OUT → IDLE
    ├─ 이송 프레임: build_transfer_frame() 이 만든 kinematic 틀을 _step_moves() 로 움직임
    ├─ 팔: cull_motion.CullMotion (팀 파일 무수정) + m0609_rmpflow_controller.RMPFlowController
-   ├─ 비전: replicator rgb (손목 RealSense) → inspection_yolo_worker.py (하위 프로세스, best.pt)
+   ├─ 비전: replicator rgb (손목 RealSense) → inspection_cull_station.py --yolo-worker (같은 파일을 하위 프로세스로, best.pt)
    └─ 끝: conveyor.inspection_done() → 컨베이어가 트레이를 다시 반송
 ```
 
-씬 준비는 별도: `tools/cabbage/06_make_cabbage_scene.py` 가 원본 v013 씬에서 `<씬>_cabbage.usd` 를 만든다 (원본 그대로).
+씬 준비는 별도: `tools/cabbage/make_cabbage_scene.py` (옛 이름 06_make_cabbage_scene.py) 가 원본 v013 씬에서 `<씬>_cabbage.usd` 를 만든다 (원본 그대로).
 
 ---
 

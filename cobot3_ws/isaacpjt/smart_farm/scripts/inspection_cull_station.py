@@ -34,7 +34,47 @@ import time
 from pathlib import Path
 
 import numpy as np
-from pxr import Gf, Usd, UsdGeom, UsdPhysics
+
+
+# ── YOLO 워커 모드 ─────────────────────────────────────────
+# Isaac Sim 파이썬 안에 ultralytics 를 섞으면 numpy·torch 판이 부딪혀서, 추론은 이 파일을 다른 파이썬으로
+# 한 번 더 띄워서 한다:  python inspection_cull_station.py --yolo-worker WEIGHTS CONF
+#   stdin  한 줄: {"npy": 프레임(.npy), "annotated": 결과 그림 경로 | null, "raw": 원본 그림 경로 | null}
+#   stdout 한 줄: {"detections": [{"class_name", "conf", "xyxy"}]}   (첫 줄은 {"ready": true, "names": {...}})
+# 워커 모드는 pxr 을 import 하기 전에 끝나야 하므로 파일 맨 위에 둔다.
+def _yolo_worker_main(weights, conf):
+    from ultralytics import YOLO
+
+    model = YOLO(weights)
+    model.predict(np.zeros((640, 640, 3), np.uint8), imgsz=640, conf=conf, verbose=False)   # 첫 추론 지연을 미리
+    print(json.dumps({"ready": True, "names": {int(k): v for k, v in model.names.items()}}), flush=True)
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            request = json.loads(line)
+            bgr = np.ascontiguousarray(np.load(request["npy"])[..., :3][..., ::-1])
+            result = model.predict(bgr, imgsz=640, conf=conf, verbose=False)[0]
+            detections = [
+                {"class_name": model.names[int(c)], "conf": round(float(s), 4), "xyxy": [round(float(v), 1) for v in box]}
+                for box, s, c in zip(result.boxes.xyxy.tolist(), result.boxes.conf.tolist(), result.boxes.cls.tolist())]
+            if request.get("annotated") or request.get("raw"):
+                import cv2
+                if request.get("annotated"):
+                    cv2.imwrite(request["annotated"], result.plot())
+                if request.get("raw"):
+                    cv2.imwrite(request["raw"], bgr)
+            print(json.dumps({"detections": detections}), flush=True)
+        except Exception as error:  # noqa: BLE001 - 한 장 실패로 워커가 죽지 않게
+            print(json.dumps({"error": str(error), "detections": []}), flush=True)
+
+
+if __name__ == "__main__" and len(sys.argv) >= 3 and sys.argv[1] == "--yolo-worker":
+    _yolo_worker_main(sys.argv[2], float(sys.argv[3]) if len(sys.argv) > 3 else 0.25)
+    sys.exit(0)
+
+from pxr import Gf, Usd, UsdGeom, UsdPhysics  # noqa: E402  (워커 모드 뒤에서 import)
 
 ROBOT_PATH = "/World/SmartFarm/Placed/M0609/Asset"
 BASE_PATH = f"{ROBOT_PATH}/base_link"
@@ -95,11 +135,32 @@ VIA_RADIUS = 0.45              # 집은 자리 -> SortBox 사이에 거치는 ba
 CAMERA_RES = (640, 640)
 SETTLE_FRAMES = 20
 
-DEFAULT_WEIGHTS = r"C:\Users\kangm\Downloads\romaine3_v012_640sq_yolo11n_best.pt"
-DEFAULT_PYTHON = r"D:\isaacsim\kit\python\python.exe"
-DEFAULT_PYTHONPATH = (r"D:\smartfarm-sim\team_ref\pylib_yolo;"
-                      r"D:\isaacsim\exts\omni.isaac.ml_archive\pip_prebundle;"
-                      r"D:\smartfarm-sim\team_ref\pylib")
+# YOLO 설정 찾는 순서 (_yolo_setup):
+#   가중치  SMARTFARM_YOLO_WEIGHTS -> 씬 폴더의 *best*.pt -> smart_farm/models/*.pt -> 작성 PC 경로
+#   파이썬  SMARTFARM_YOLO_PYTHON  -> (Windows 작성 PC) Isaac 번들 파이썬 -> python3 (Linux: pip 의 ultralytics)
+#   경로    SMARTFARM_YOLO_PYTHONPATH -> (Windows 작성 PC) 아래 묶음 -> 그대로
+AUTHOR_PC_WEIGHTS = r"C:\Users\kangm\Downloads\best.pt"
+AUTHOR_PC_PYTHON = r"D:\isaacsim\kit\python\python.exe"
+AUTHOR_PC_PYTHONPATH = (r"D:\smartfarm-sim\team_ref\pylib_yolo;"
+                        r"D:\isaacsim\exts\omni.isaac.ml_archive\pip_prebundle;"
+                        r"D:\smartfarm-sim\team_ref\pylib")
+MODELS_DIR = Path(__file__).resolve().parents[1] / "models"
+
+
+def _yolo_setup(scene_dir=None):
+    weights = os.environ.get("SMARTFARM_YOLO_WEIGHTS")
+    if not weights:
+        found = []
+        if scene_dir:
+            found += sorted(Path(scene_dir).glob("*best*.pt"))
+        found += sorted(MODELS_DIR.glob("*.pt")) if MODELS_DIR.exists() else []
+        weights = str(found[0]) if found else AUTHOR_PC_WEIGHTS
+    python = os.environ.get("SMARTFARM_YOLO_PYTHON") or (
+        AUTHOR_PC_PYTHON if os.path.exists(AUTHOR_PC_PYTHON) else "python3")
+    pythonpath = os.environ.get("SMARTFARM_YOLO_PYTHONPATH")
+    if pythonpath is None and os.path.exists(AUTHOR_PC_PYTHON):
+        pythonpath = AUTHOR_PC_PYTHONPATH
+    return weights, python, pythonpath
 
 
 def _log(message):
@@ -218,31 +279,33 @@ def build_transfer_frame(stage):
 
 
 class _YoloClient:
-    """inspection_yolo_worker.py 하위 프로세스. 시작은 바로, 준비 확인은 처음 쓸 때."""
+    """이 파일을 --yolo-worker 로 띄운 하위 프로세스. 시작은 바로, 준비 확인은 처음 쓸 때."""
 
-    def __init__(self, out_dir):
-        weights = os.environ.get("SMARTFARM_YOLO_WEIGHTS", DEFAULT_WEIGHTS)
-        python = os.environ.get("SMARTFARM_YOLO_PYTHON", DEFAULT_PYTHON)
+    def __init__(self, out_dir, scene_dir=None):
+        weights, python, pythonpath = _yolo_setup(scene_dir)
         env = dict(os.environ)
-        env["PYTHONPATH"] = os.environ.get("SMARTFARM_YOLO_PYTHONPATH", DEFAULT_PYTHONPATH)
         env.pop("PYTHONHOME", None)
-        worker = Path(__file__).with_name("inspection_yolo_worker.py")
+        if pythonpath is not None:
+            env["PYTHONPATH"] = pythonpath
         self.weights = weights
         self.names = None
         self.error = None
-        self._stderr = open(Path(out_dir) / "inspection_yolo_worker.err", "w") if out_dir else subprocess.DEVNULL
+        self._stderr = open(Path(out_dir) / "yolo_worker.err", "w") if out_dir else subprocess.DEVNULL
         try:
-            self._proc = subprocess.Popen([python, str(worker), weights, str(CONF_MIN)], stdin=subprocess.PIPE,
-                                          stdout=subprocess.PIPE, stderr=self._stderr, text=True, env=env, bufsize=1)
+            self._proc = subprocess.Popen([python, str(Path(__file__).resolve()), "--yolo-worker", weights, str(CONF_MIN)],
+                                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self._stderr,
+                                          text=True, env=env, bufsize=1)
         except OSError as error:
-            self._proc, self.error = None, f"YOLO 워커 실행 실패: {error}"
-        _log(f"[비전] YOLO 워커 시작: {weights}")
+            self._proc, self.error = None, f"YOLO 워커 실행 실패 ({python}): {error}"
+        _log(f"[비전] YOLO 워커 시작: {python} · {weights}")
 
     def _read(self):
+        if self._proc is None:
+            raise RuntimeError(self.error)
         while True:
             line = self._proc.stdout.readline()
             if not line:
-                raise RuntimeError("YOLO 워커가 종료되었습니다 (inspection_yolo_worker.err 확인)")
+                raise RuntimeError("YOLO 워커가 종료되었습니다 (yolo_worker.err 확인: ultralytics·가중치 경로)")
             line = line.strip()
             if line.startswith("{"):
                 return json.loads(line)
@@ -284,7 +347,8 @@ class VisionCullStation:
             end_effector_prim_path=EE_PATH, joint_prim_names=list(GRIPPER_JOINTS),
             joint_opened_positions=np.array([GRIPPER_OPEN] * 2), joint_closed_positions=np.array([GRIPPER_CLOSE] * 2),
             action_deltas=None)
-        self._yolo = _YoloClient(self._out)
+        scene_file = stage.GetRootLayer().realPath
+        self._yolo = _YoloClient(self._out, Path(scene_file).parent if scene_file else None)
         self._rgb = None
         self._conveyor = None
         self._drop_index = 0          # SortBox_1 / SortBox_2 번갈아
