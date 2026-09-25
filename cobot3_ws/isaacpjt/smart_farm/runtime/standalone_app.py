@@ -10,6 +10,7 @@
 
 import argparse
 import json
+import math
 import os
 import sys
 import traceback
@@ -51,6 +52,10 @@ TURNTABLE_SURFACE_PATH = (
 RACK_FRONT_X = -1.205
 BASE_BELOW_SHELF = 0.213
 # v008은 팔레트 원점이 밑면보다 25.9 mm 위에 있다.
+PALLET_ORIGIN_ABOVE_BOTTOM = 0.0259   # [place-fix 2026-09-25] TurnTable 놓기 높이에도 같은 규칙을 쓴다
+# [place-fix 2026-09-25] TurnTable 은 롤러 컨베이어다. 놓은 뒤 포크를 뺄 때 포크판이 롤러 사이에 걸리지 않도록
+# 포크판(DOCK_X)이 TurnTable 가장자리보다 이만큼 바깥에 오게 놓는다. 랙에서는 선반 앞 끝보다 39 mm 바깥이다.
+PLACE_PLATE_EDGE_CLEARANCE = 0.035
 SHELF_TOP = {
     1: 0.7388,
     2: 1.0388,
@@ -208,6 +213,7 @@ from pallet_transfer import (  # noqa: E402
     TransferState,
 )
 from robot_motion import (  # noqa: E402
+    DOCK_X,
     BaseWatcher,
     EE_FRAME,
     RobotMotion,
@@ -455,8 +461,11 @@ def require_prims(stage, paths):
         )
 
 
-def turntable_place_pose(stage):
-    """TurnTable 표면 중심과 TurnTable 방향을 world pose로 반환합니다."""
+def turntable_place_pose(stage, arm_base_position=None):
+    """TurnTable 표면 중심(팔레트 원점 높이)과 놓을 방향을 world pose로 반환합니다.
+
+    arm_base_position 을 주면 놓을 방향을 '놓을 자리 -> 팔 베이스' 쪽으로 맞춘다(place-fix 2026-09-25).
+    """
     surface_prim = stage.GetPrimAtPath(TURNTABLE_SURFACE_PATH)
     bbox_cache = UsdGeom.BBoxCache(
         Usd.TimeCode.Default(),
@@ -474,24 +483,60 @@ def turntable_place_pose(stage):
 
     minimum = surface_range.GetMin()
     maximum = surface_range.GetMax()
+    # [place-fix 2026-09-25] place 단계 좌표의 z 는 팔레트 '원점' 높이다(랙의 SHELF_TOP 과 같은 규칙).
+    # 팔레트 원점은 밑면보다 25.9 mm 위이므로 벨트 윗면에 그만큼 더해야 벨트를 파고들지 않는다.
     position = (
         float((minimum[0] + maximum[0]) * 0.5),
         float((minimum[1] + maximum[1]) * 0.5),
-        float(maximum[2]),
+        float(maximum[2]) + PALLET_ORIGIN_ABOVE_BOTTOM,
     )
 
     turntable_prim = stage.GetPrimAtPath(TURNTABLE_PATH)
     transform = UsdGeom.Xformable(
         turntable_prim
     ).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+    # [place-fix 2026-09-25] TurnTable 행렬에는 배율이 섞여 있어 ExtractRotationQuat 가 정규화되지 않은
+    # 값(0.507, 0, 0, 0)을 준다. 그 값이 그대로 IK 목표 자세에 곱해지므로 정규화한다.
     rotation = transform.ExtractRotationQuat()
     imaginary = rotation.GetImaginary()
-    quaternion = (
+    w, x, y, z = (
         float(rotation.GetReal()),
         float(imaginary[0]),
         float(imaginary[1]),
         float(imaginary[2]),
     )
+    norm = math.sqrt(w * w + x * x + y * y + z * z)
+    quaternion = (w / norm, x / norm, y / norm, z / norm)
+
+    if arm_base_position is not None:
+        # [place-fix 2026-09-25] PLACE_STAGES 는 '+x = 놓을 자리에서 로봇 쪽'을 가정한다(랙 팔레트 좌표와 같다).
+        # TurnTable 의 +x(동쪽)를 그대로 쓰면 북쪽(yaw 90)에서 도킹한 로봇과 90° 어긋나 DESCEND_1 에서
+        # IK 가 뒤집혔다(관절 110° 변화, 로메인 원본 장면에서도 재현). 놓을 자리에서 팔 베이스를 향하는
+        # 방향을 TurnTable 축 기준 90° 단위로 맞춰 쓴다: 팔레트가 벨트와 나란히 놓이고, 도킹 방향이
+        # 바뀌어도 그대로 동작한다.
+        turntable_yaw = 2.0 * math.atan2(quaternion[3], quaternion[0])
+        to_arm = math.atan2(
+            float(arm_base_position[1]) - position[1],
+            float(arm_base_position[0]) - position[0],
+        )
+        quarter = round((to_arm - turntable_yaw) / (math.pi / 2.0))
+        yaw = turntable_yaw + quarter * (math.pi / 2.0)
+        quaternion = (math.cos(yaw / 2.0), 0.0, 0.0, math.sin(yaw / 2.0))
+
+        # 로봇 쪽 TurnTable 가장자리까지의 거리(접근 방향 기준). 롤러 가운데(-3.905)에 놓으면 포크판이
+        # 가장자리(-3.597)보다 12 cm 안쪽에서 롤러 높이까지 내려가, 빼낼 때 롤러 사이에 걸렸다
+        # (fork_tool 고정 조인트가 늘어나며 EXIT 에서 팔레트가 20 mm 따라 올라옴).
+        ux, uy = math.cos(yaw), math.sin(yaw)
+        table_range = bbox_cache.ComputeWorldBound(turntable_prim).ComputeAlignedRange()
+        corners = [
+            (cx, cy)
+            for cx in (table_range.GetMin()[0], table_range.GetMax()[0])
+            for cy in (table_range.GetMin()[1], table_range.GetMax()[1])
+        ]
+        edge = max((cx - position[0]) * ux + (cy - position[1]) * uy for cx, cy in corners)
+        shift = edge - DOCK_X + PLACE_PLATE_EDGE_CLEARANCE
+        position = (position[0] + shift * ux, position[1] + shift * uy, position[2])
+
     return position, quaternion
 
 
@@ -652,7 +697,20 @@ def start_place_motion(runtime, node):
     runtime.wheels_released = False
     runtime.lift.hold()
     report_dock_pose(runtime)
-    position, quaternion = turntable_place_pose(runtime.stage)
+    arm_base_position, _ = runtime.arm_base.get_world_pose()
+    position, quaternion = turntable_place_pose(runtime.stage, arm_base_position)
+    # 팔 베이스(차체보다 0.20 m 뒤)에서 놓을 팔레트 원점까지의 수평 거리. 기록용(판정 없음).
+    # 2026-09-25 실측: 0.755 m 에서 놓기·포크 인출 성공 (팔 베이스가 대상보다 0.24 m 높아 랙 범위와 다르다).
+    reach = math.hypot(
+        float(arm_base_position[0]) - position[0],
+        float(arm_base_position[1]) - position[1],
+    )
+    print(
+        f"[Place] 목표 팔레트 원점 {[round(value, 4) for value in position]}, "
+        f"놓는 방향 yaw {math.degrees(2.0 * math.atan2(quaternion[3], quaternion[0])):+.1f}°, "
+        f"팔 베이스까지 {reach:.3f} m",
+        flush=True,
+    )
     runtime.motion.start_place_at_pose(position, quaternion)
     runtime.place_phase = "ARM_PLACE"
     node.set_phase(
