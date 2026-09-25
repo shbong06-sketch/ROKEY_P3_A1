@@ -138,7 +138,8 @@ Isaac Sim 실측은 사용자의 물리적 작업 시간이고 **영상 녹화 �
 
 - 브랜치 `feature/Inspection-Place-nav2` (통합 브랜치. feature/navigation2 + 팀의 PLACE_INSPECT + smart_farm_vision + 팀의 cabbage-place-fix 반입분).
 - **지금의 작업 범위는 팔레트 파지 → 주행·도킹 → 턴테이블 Place 까지임** (2026-09-25 사용자 지시). 그 뒤 비전 검사·솎아내기는 이번 범위가 아니며 전체 시나리오 통합은 팀원 회의로 정함. 내피와의 원격 통신은 교육장 복귀(약 3일 뒤)부터이고 **지금은 고피3 한 대에서 Isaac·Nav2 를 모두 돌려 모듈 단위로 시험함**.
-- 최신 가이던스 `guidance/guidance2_28차.md` — 고피3 한 대 기준 절차(Isaac `--headless`, Nav2 `use_rviz:=false`, `--no-vision-station`). 교육장 2대 기준 전 구간 절차는 `guidance/past/guidance2_27차.md` 에 남겨 두었고 28차 부록 A 가 차이를 표로 정리함.
+- 최신 가이던스 `guidance/guidance2_26차.md` — 고피3 한 대 기준 절차(Isaac `--headless`, Nav2 `use_rviz:=false`, `--no-vision-station`). 교육장 복귀 후 전 구간(검사·솎아내기 포함) 절차는 그 문서 **부록 A** 에 자립형으로 들어 있음.
+- **2026-09-25 사용자 지시로 옛 26·27차를 삭제하고 28차를 26차로 되돌렸음.** 그 둘은 실측 없이 번호만 올라간 판이었음. 실측 근거가 있는 내역(24차 bag 분석)은 새 26차에 옮겨 담았음. 25차까지는 `guidance/past/` 에 그대로 있음. **앞으로도 실측 없이 차수를 올리지 않음** — 같은 판을 고칠 때는 같은 차수 문서를 갱신함.
 - 직전 작업(`a95ba6c`): ①팀 place 수정 반입(`standalone_app.py` + `scripts/` 새 모듈 5개) ②`standoff_m` 0.90 → **0.92** ③장면·지도 **v014** 전환(`Collected_smartfarm_v014_room_core_cabbage.usd`).
 - 그 앞(`ceeafd5`): 굼뜬 차체(각속도 1~3초 지연)를 전제로 도킹 조향 재설계. `DockLogic`(ROS 없는 상태기계) + `FeederDock`(ROS 배선) 분리, `SETTLE` 단계, 면 법선 추종 후진, 횡 오차 0.06 m 초과 시 0.9 m 물러나 재시도.
 - **검증은 고피3 모의뿐** (standoff 0.92 ROS 회귀 10/10, 오프라인 격자 225/225·횡 224/225, v014 지도 normal 1/1). **실측 미실시** — 28차 절차로 파지→도킹→Place 를 돌리는 것이 다음 할 일임.

@@ -1,9 +1,9 @@
-# guidance2_28차 — 고피3 한 대에서 파지 → 도킹 → 턴테이블 Place (모듈 단위 통합 시험)
+# guidance2_26차 — 고피3 한 대에서 파지 → 도킹 → 턴테이블 Place (모듈 단위 통합 시험)
 
 - 작성일: 2026-09-25, 브랜치 `feature/Inspection-Place-nav2`.
 - **이번 판의 범위는 딱 세 단계다: 랙 팔레트 파지(PICK_HARVEST) → 주행·정밀 도킹(NAVIGATION) → 턴테이블 줄기 벨트에 내려놓기(PLACE_INSPECT).** 그 뒤의 비전 검사·솎아내기는 이번 범위가 아니므로 끄고 돌린다.
 - **기기는 고피3(GCP VM) 한 대뿐이다.** Isaac 도 Nav2 도 RViz2 도 도킹도 전부 이 한 대에서 돈다. 내피와의 원격 통신은 3일 뒤 교육장 복귀부터이고, 그때의 절차는 부록 A 에 적었다.
-- **27차는 교육장 2대(고피1 + 내피) 전제로 쓴 것이라 지금은 쓰지 않는다.** `guidance/past/` 로 옮겼다.
+- **이 문서가 옛 26·27차를 대체한다(2026-09-25 사용자 지시).** 그 둘은 실측 없이 번호만 올라간 판이라 저장소에서 지웠고, **실측에 근거한 내역은 아래 "24차 실측에서 막힌 곳" 과 "지금까지 고친 것" 에 옮겨 담았다.** 25차까지는 `guidance/past/` 에 그대로 있다.
 - 경로는 심볼릭 링크로 맞춰 두었으므로 **다른 기기와 같은 대문자 경로 `/home/rokey/ROKEY_P3_A1` 을 그대로 쓴다.**
 - **아직 실측하지 않았다. 검증은 고피3 모의뿐이다** (ADR 2.7: 모의 통과 ≠ 실측 통과).
 
@@ -17,7 +17,7 @@
 | **Isaac 이 이 VM 에서 도는지는 아직 확인되지 않았다** | 고피3 에서 Isaac 을 띄운 기록이 없다(Kit 로그 없음). 그래서 3절에 **예비 점검**을 두었다. 본 시험 전에 반드시 먼저 한다 |
 | 장면 | `scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd`. 그 폴더가 있으면 팀 앱이 `--scene` 없이 자동으로 이 씬을 연다 |
 | 지도 | `maps/Collected_smartfarm_v014.yaml` 을 `nav2.launch.py` 가 자동으로 쓴다 |
-| 집는 팔레트 | 팀 코드의 `PICK_HARVEST` 는 **`Pallet_01`** 을 집도록 고정되어 있다(`standalone_app.py:293` 의 `HARVEST_TASK`). `pallet_id` 를 바꿔 보내도 대상은 바뀌지 않는다. 다른 팔레트로 바꾸려면 그 줄을 고쳐야 하는데 팀 파일이므로 지시가 있을 때만 한다 |
+| 집는 팔레트 | **`Pallet_01`** 이다(랙 L1 선반, `standalone_app.py:293` 의 `HARVEST_TASK = Task(PALLET_1_PATH, None, pick_only=True)`). 게다가 `PICK_HARVEST` 는 명령 네 필드가 **`recipe_id: HARVEST_RACK_L1` / `pallet_id: PALLET_001` / `source: RACK_L1` / `destination: CARRY`** 와 정확히 일치하지 않으면 `INVALID_COMMAND` 로 거부한다(`standalone_app.py:892~903`). 그래서 7-1 의 명령이 유일한 유효 조합이다. 참고로 `Pallet_02`·`Pallet_03` 은 랙 안에서 선반을 옮기는 `TRANSFER` 연산이 쓰는 것이고 이번 범위가 아니다 |
 | 도킹 거리 | 라이다가 검출하는 면(world y −3.645)에서 **0.92 m**. 팀이 올인원을 끝까지 돌려 확인한 값이며 **팀의 place 수정과 한 쌍**이다. 임의로 바꾸지 않는다 |
 | Place | 팀 수정으로 네 가지가 고쳐졌다 — 놓는 방향이 도킹 방향과 90° 어긋나던 것, TurnTable 쿼터니언 비정규화(0.507), 높이 25.9 mm 부족, 포크판이 롤러에 걸리던 것 |
 | 컨베이어는 켠다 | Place 중 줄기 벨트를 멈추는 인터록(`hold_stem`)이 **팀 place 수정의 일부**다. 컨베이어를 끄면 이번에 확인하려는 조건이 달라지므로 켜 둔다. 검사 스테이션만 끈다 |
@@ -30,11 +30,53 @@
 | 결과 구독 | 결과 토픽은 보관되지 않는다. **6절 구독 터미널을 명령보다 먼저 띄운다** |
 | 회귀 시험 | 2절에서 먼저 돌린다. **본 시험 중에는 절대 돌리지 않는다**(같은 기기에 Nav2 가 두 벌 뜬다) |
 
+### 24차 실측에서 막힌 곳과 그 근거 (읽기만 · 교육장 실측 기록)
+
+지금 쓰는 도킹 코드가 왜 이렇게 생겼는지의 근거다. **모의가 아니라 2026-09-24 교육장 실측 bag 기록이다.**
+Nav2 주행은 성공했고 23차의 멈춤 오판도 사라졌다. 그 뒤 두 가지가 겹쳤다.
+
+| 시점(bag) | 기록 |
+|---|---|
+| 291.4 | `ALIGN_TO_GOAL` 시작, 방향 오차 30° |
+| 295.1 | `REVERSE` 시작, 방향 오차 0.1° — **그러나 차체는 아직 0.24 rad/s 로 돌고 있었다** |
+| 296~297 | 관성으로 15° 더 돌아감. 후진하며 도킹 선에서 옆으로 0.16 m 벗어남 |
+| 304.5 | `CHECK` 도착 방향 **+21.2°** → `BACKOFF` |
+| 310.7 | 물러남 완료, 다시 정렬 |
+| 313.7 | Isaac 종료: `RuntimeError: HOLD: 운반 중 팔레트가 30.1 mm 미끄러졌습니다` (팀 감시 예외가 main loop 에서 안 잡힘) |
+
+기록된 `/scan` 을 도킹 노드와 같은 검출기에 다시 넣어 보면 **센서는 멀쩡했고 제어가 잘못 판단했다**는 것이 바로 보인다.
+
+| bag 시각 | 면까지 | 방향 오차 | 횡 | 목표 방위 | 실제 cmd_w | odom 각속도 |
+|---|---|---|---|---|---|---|
+| 295.1 `[REVERSE]` 선언 | 1.99 | +0.1° | −0.01 | +0.3° | +0.116 | **+0.227** ← 아직 돌고 있다 |
+| 296.1 | 1.99 | −8.2° | +0.34 | −11.2° | −0.165 | +0.144 |
+| 297~302 | 1.9→1.2 | −15°→+9° | +0.60→0.02 | **−17~−24° 5 초 지속** | **−0.200 고정** | −0.10~−0.14 |
+| 303.5 | 1.01 | **+20.7°** | −0.28 | −5.9° | −0.036 | −0.045 |
+
+| 원인 | 내용 | 조치 (현재 코드에 들어 있음) |
+|---|---|---|
+| 차체 각속도 응답이 느리다 | 0.35 rad/s 를 명령해도 3 s 걸려 0.26, 끊어도 초당 0.14 씩만 줄어든다(Isaac DifferentialController 가속 제한). 22차엔 제자리 회전이 명령의 12% 만 나왔다 | 정렬 종료에 "실제 각속도 < 0.03" 조건. 모든 조향은 관성으로 더 돌 각도와 측정 지연을 뺀 오차로 계산. 시작 전 `SETTLE` 단계 |
+| 점을 겨누는 후진 조향 | 남은 거리가 짧을 때 횡 오차를 방향으로 갚다가 도착 방향이 틀어진다 | 면 법선(도킹 선)을 따라가되 횡 보정용 방향 이탈을 10° 로 제한, 마지막 0.4 m 는 직각만. 정렬은 도킹 지점이 아니라 더 먼 면 가운데를 겨눔. 횡 0.06 m 넘으면 0.9 m 물러나 재시도(최대 2회) |
+| 팀 감시 예외로 앱 종료 | 운반 중 팔레트 30 mm 이동 → 예외 → Isaac 종료 | main loop 에서 잡아 한 번 기록하고 계속. PLACE 때 같은 검사가 `MOTION_FAILED` 로 보고 |
+
+같은 것을 다시 보려면(고피3 에서 가능, Isaac 불필요. **선택**):
+
+```bash
+export ROS_DOMAIN_ID=77
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+python3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/sim_test/replay_bag_dock.py ~/.ros/smart_farm_navigation/bags/nav2_20260923_2154 --from 295 --to 306
+```
+
+(그 bag 이 이 기기에 없으면 돌지 않는다. 교육장 내피에 있던 기록이다.)
+
 ### 지금까지 고친 것 (읽기만)
 
 | 판 | 증상 | 조치 |
 |---|---|---|
-| 26차까지 | PLACE 에서 IK 110° 점프 / `DESCEND_5` 20.7°(한계 20°) | 팀 `feature/cabbage-place-fix` 의 `turntable_place_pose()` 수정 + 도킹 거리 0.92 를 함께 반입(`a95ba6c`) |
+| 24차 실측 이후 | PLACE 에서 IK 110° 점프 / `DESCEND_5` 20.7°(한계 20°) | 팀 `feature/cabbage-place-fix` 의 `turntable_place_pose()` 수정 + 도킹 거리 0.92 를 함께 반입(`a95ba6c`) |
 | 24차 | 정렬 직후에도 차체가 0.23 rad/s 로 돌아 후진 중 0.16 m 이탈, `CHECK` +21.2° | `SETTLE` 단계, 관성·측정 지연을 뺀 오차로 조향, 면 법선 추종, 횡 0.06 m 초과 시 0.9 m 물러나 재시도 |
 | 24차 | 운반 중 팔레트 30 mm 미끄러짐 예외로 Isaac 종료 | main loop 에서 잡아 한 줄 남기고 계속 |
 | 23차 | 후진 0.6 s 만에 `STALLED_REVERSE` | 멈춤 감지가 방향 변화도 이동으로 인정, 단계마다 기준점 재설정 |
@@ -319,4 +361,33 @@ ros2 topic pub --once --max-wait-time-secs 15 /sim_task/command std_msgs/msg/Str
 | 화면 | 없음 → Isaac `--headless`, Nav2 `use_rviz:=false` | 있음 → `--headless` 를 빼고, `use_rviz:=false` 도 뺀다(RViz2 로 스캔·경로를 본다) |
 | 검사·솎아내기 | 범위 밖이라 `--no-vision-station` | 전 구간을 볼 때는 이 인자를 빼고, 고피에 `ultralytics` 가 있는지 먼저 확인한다(`python3 -c "import ultralytics"`). 가중치는 씬 폴더의 `best.pt` 를 자동으로 찾는다 |
 
-복귀 후 전 구간(검사·솎아내기 포함)을 돌릴 때의 상세 절차는 `guidance/past/guidance2_27차.md` 에 그대로 남겨 두었다.
+복귀 후 전 구간(검사·솎아내기 포함)을 돌릴 때 추가로 필요한 것은 아래 셋뿐이다. 나머지는 1~9절 그대로다.
+
+1. **고피에서 `ultralytics` 확인** — 검사는 Isaac 파이썬이 아니라 별도 `python3` 하위 프로세스로 돈다.
+
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+python3 -c "import ultralytics, torch; print('ultralytics', ultralytics.__version__, '| torch', torch.__version__)"
+ls -l /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/best.pt
+```
+
+없으면 `python3 -m pip install ultralytics`. 다른 파이썬에 있으면 Isaac 터미널에 `export SMARTFARM_YOLO_PYTHON=<그 파이썬 경로>` 를 더한다. 가중치는 씬 폴더의 `best.pt` 를 자동으로 찾는다.
+
+2. **Isaac 을 검사 스테이션까지 켜서 띄운다** — `--no-vision-station` 과 `--headless` 를 빼고, 결과물이 모일 곳을 지정한다.
+
+```bash
+export ROS_DOMAIN_ID=101
+export PYTHONUNBUFFERED=1
+export SMARTFARM_STATION_OUT=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/station_$(date +%Y%m%d_%H%M)
+isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/isaac_$(date +%Y%m%d_%H%M).txt
+```
+
+`SMARTFARM_STATION_OUT` 폴더에 검사 사진, `station_results.json`, 실패 시 `yolo_worker.err` 가 쌓인다.
+
+3. **7-3 이후로는 명령을 더 보내지 않는다** — 트레이가 벨트에 놓이면 컨베이어 반송 → 이송 프레임 밀어 넣기 → YOLO 검사 → 노랑·갈색 솎아내기(SortBin 1/2 번갈아) → 재검사 → 배출이 자동으로 이어진다. 팀 기준 전 구간 약 4분 19초(시뮬 시간)다. Isaac 터미널에 `[컨베이어]`·`[솎아내기]`·`[비전]` 줄이 순서대로 찍히는지만 본다.
+
+돌발상황(카터가 통로를 나올 때 작업자가 앞을 막았다 비킴)을 넣으려면 2 의 명령에 `--human-crossing` 을 붙인다. 첫 전 구간 실측에서는 붙이지 않는다.
