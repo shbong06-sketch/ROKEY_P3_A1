@@ -17,6 +17,7 @@ Isaac 을 못 쓰는 동안에도 내피에서 도킹 알고리즘을 끝까지 
 """
 import argparse
 import math
+import os
 import time
 
 import numpy as np
@@ -33,7 +34,13 @@ from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 from tf2_msgs.msg import TFMessage
 
-DEFAULT_MAP = "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/maps/Collected_smartfarm_v011.yaml"
+# 지도 파일은 저장소 안에 있다. 기기마다 저장소 경로가 달라서(고피3 는 소문자
+# ROKEY_p3_a1) 경로를 적어 두지 않고, 이 파일 위치에서 네 단계 위로 올라가 찾는다.
+#   <저장소>/cobot3_ws/src/smart_farm_navigation/sim_test/fake_robot.py
+REPO_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+DEFAULT_MAP = os.path.join(
+    REPO_DIR, "cobot3_ws", "isaacpjt", "smart_farm", "maps", "Collected_smartfarm_v011.yaml"
+)
 LIDAR_X = 0.026          # base_link 에서 라이다까지
 LIDAR_MOUNT_X = 0.232    # front_3d_lidar 프레임 원점 보정
 LIDAR_MOUNT_Z = 0.526

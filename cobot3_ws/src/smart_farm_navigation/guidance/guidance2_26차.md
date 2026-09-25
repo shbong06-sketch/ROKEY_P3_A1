@@ -108,6 +108,44 @@ ROS 회귀 10 시나리오 결과(내피 모의):
 | 19차 | 오류가 로그에 안 남음 | `PYTHONUNBUFFERED=1`. `stdbuf` 는 별칭이라 쓸 수 없다 |
 | 18차 | 명령에서 메시지 형식 오류 | 고피에도 워크스페이스를 1회 빌드(1절) |
 
+## 0-1. 지금은 실행할 수 없다 — 고피3 임시 기간 (2026-09-25 ~ 약 3일)
+
+**아래 1~9절은 교육장의 고피1·고피2 와 내피가 있을 때의 절차다.** 지금은 교육장 밖이라 그 세 대를 모두 쓸 수 없고, 임시 GCP VM 한 대(고피3)만 있다. 교육장에 돌아가면 1절부터 그대로 실행하면 된다.
+
+고피3 에서 되는 것과 안 되는 것:
+
+| 항목 | 가능 여부 |
+|---|---|
+| Isaac Sim 실측 | **불가.** 장면 `Collected_smartfarm_v011.usd` 가 git 에 없고(대용량 에셋 제외) 이 VM 에도 없다 |
+| Nav2 · RViz2 | 가능. 2026-09-25 에 `ros-jazzy-navigation2` 등을 설치했다 |
+| 워크스페이스 빌드 | 가능 |
+| 오프라인 격자 모의 (`dock_sim.py`) | 가능 |
+| ROS 회귀 시험 (`dock_regression.py`) | 가능 |
+
+고피3 에서 회귀를 돌릴 때는 아래 블록을 쓴다. **저장소 경로가 소문자 `ROKEY_p3_a1` 인 점만 다르다.**
+
+```bash
+export ROS_DOMAIN_ID=77
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+unset FASTRTPS_DEFAULT_PROFILES_FILE
+source /opt/ros/jazzy/setup.bash
+cd /home/rokey/ROKEY_p3_a1/cobot3_ws
+colcon build --symlink-install --packages-select smart_farm_interfaces smart_farm_navigation
+source /home/rokey/ROKEY_p3_a1/cobot3_ws/install/setup.bash
+python3 src/smart_farm_navigation/sim_test/dock_regression.py 2>&1 | tee src/smart_farm_navigation/results/regression_$(date +%Y%m%d_%H%M).txt
+```
+
+오프라인 격자만 빠르게 보려면(2 분):
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd /home/rokey/ROKEY_p3_a1/cobot3_ws/src/smart_farm_navigation
+python3 sim_test/dock_sim.py
+```
+
+---
+
 ## 1. 고피 터미널 1 — 워크스페이스 빌드 (처음 한 번만)
 
 Isaac 을 띄우지 않은 새 터미널에서 실행한다.
