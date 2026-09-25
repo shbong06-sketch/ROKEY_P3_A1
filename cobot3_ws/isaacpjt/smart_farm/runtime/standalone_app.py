@@ -28,12 +28,12 @@ DEFAULT_SCENE_PATH = (
     / "Collected_smartfarm_v011"
     / "Collected_smartfarm_v011.usd"
 )
-# [올인원 2026-09-25] 양배추 씬(공유 zip 을 scenes/Collected_smartfarm_v013 에 푼 것)이 있으면 --scene 없이도 그 씬을 연다.
+# [올인원 2026-09-25] 양배추 씬 v014(공유 zip 을 scenes/Collected_smartfarm_v014 에 푼 것)가 있으면 --scene 없이도 그 씬을 연다.
 CABBAGE_SCENE_PATH = (
     PROJECT_DIR
     / "scenes"
-    / "Collected_smartfarm_v013"
-    / "Collected_smartfarm_v013_room_core_cabbage.usd"
+    / "Collected_smartfarm_v014"
+    / "Collected_smartfarm_v014_room_core_cabbage.usd"
 )
 if CABBAGE_SCENE_PATH.exists():
     DEFAULT_SCENE_PATH = CABBAGE_SCENE_PATH

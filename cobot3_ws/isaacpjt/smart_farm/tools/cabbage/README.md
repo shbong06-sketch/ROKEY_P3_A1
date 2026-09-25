@@ -1,6 +1,6 @@
 # tools/cabbage — 양배추 씬 만들기
 
-`make_cabbage_scene.py` 하나. 원본 v013 씬에서 양배추 씬 복사본 `<씬>_cabbage.usd` 를 만든다 (원본은 그대로).
+`make_cabbage_scene.py` 하나. 원본 v013 씬에서 양배추 씬 v014 `Collected_smartfarm_v014_room_core_cabbage.usd` 를 만든다 (원본은 그대로).
 
 ```
 isaacsim/python.sh make_cabbage_scene.py <v013>/Collected_smartfarm_v013_room_core.usd <cabbage_pallet_6 에셋 폴더>
@@ -17,7 +17,7 @@ isaacsim/python.sh make_cabbage_scene.py <v013>/Collected_smartfarm_v013_room_co
 isaacsim/python.sh cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay
 ```
 
-- 양배추 씬이 `smart_farm/scenes/Collected_smartfarm_v013/Collected_smartfarm_v013_room_core_cabbage.usd` 에 있으면
+- 양배추 씬이 `smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd` 에 있으면
   `--scene` 없이 그 씬을 연다.
 - 컨베이어·비전 검사·솎아내기는 트레이가 벨트에 놓이면 자동 진행.
 - YOLO: 씬 폴더의 `*best*.pt` 를 찾아 쓴다 (또는 `SMARTFARM_YOLO_WEIGHTS`). ultralytics 가 있는 파이썬은

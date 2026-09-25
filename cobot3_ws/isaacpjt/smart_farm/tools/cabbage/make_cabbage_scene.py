@@ -1,11 +1,12 @@
-"""원본 v013 씬에서 양배추 씬 복사본을 만든다 (원본 파일은 그대로).
+"""원본 v013 씬에서 양배추 씬 v014 를 만든다 (원본 파일은 그대로).
 
   isaacsim/python.sh make_cabbage_scene.py SCENE_USD ASSET_DIR [OUT_NAME]
   (Windows: isaacsim\\python.bat). 씬 파일은 Isaac Sim 5.1 의 USD 로 써야 해서 이 스크립트가 Isaac 을 headless 로 띄운다.
+  기본 출력: 씬 폴더에 Collected_smartfarm_v014_room_core_cabbage.usd (원본 이름의 v013 -> v014, 뒤에 _cabbage)
 
 * copies ASSET_DIR (cabbage_pallet_6.usd, empty tray, single heads, textures, build_info.json)
   to <scene dir>/assets/cabbage_pallet_6
-* copies the root layer to OUT_NAME (default <scene>_cabbage.usd) and, in that copy only, replaces every
+* copies the root layer to OUT_NAME and, in that copy only, replaces every
   reference to romaine_pallet_6_v005*.usd with cabbage_pallet_6.usd and sets xformOp:scale to 1
   (the cabbage tray has the scenes' x0.6 tray width baked in).
   This must be done in the root layer itself: the root layer is stronger than any of its sublayers, so a swap
@@ -28,7 +29,8 @@ from pxr import Usd, Sdf, UsdPhysics, Gf  # noqa: E402
 
 SCENE, ASSET_DIR = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
 scene_dir = os.path.dirname(SCENE)
-out = os.path.join(scene_dir, sys.argv[3] if len(sys.argv) > 3 else os.path.splitext(os.path.basename(SCENE))[0] + "_cabbage.usd")
+default_name = os.path.splitext(os.path.basename(SCENE))[0].replace("_v013", "_v014") + "_cabbage.usd"
+out = os.path.join(scene_dir, sys.argv[3] if len(sys.argv) > 3 else default_name)
 NEW_REF = "./assets/cabbage_pallet_6/cabbage_pallet_6.usd"
 INSPECT_REF = "./assets/cabbage_pallet_6/cabbage_pallet_6_inspect.usd"
 # user request 2026-09-25: the rack trays the fork carries to the conveyor must need vision sorting too, so they use the
