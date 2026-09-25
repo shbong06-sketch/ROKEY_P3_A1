@@ -47,6 +47,7 @@
 | `run_allinone_live.ps1` | PowerShell | Isaac GUI + WSL Nav2/RViz2 + 전체 흐름 |
 | `run_isaac_for_nav2.ps1` | PowerShell | Isaac GUI + Windows 쪽 중계기 |
 | `save_view_camera.ps1 [-Name X]` | 실행 중에 | GUI 뷰포트의 현재 시점을 `/World/ProcessCameras/X` 카메라로 저장 |
+| `13_make_detection_video.py` | ultralytics 파이썬 | 손목 카메라 녹화 프레임 전체에 best.pt → 박스가 뜨는 rqt_image_view 형식 영상 |
 | `12_slim_carter_layer.py` | `isaacsim\python.bat run_in_isaac.py 12_... SRC DST` | 카터 파일에서 씬에 안 나오는 몸체 속 부품 제거 (193 → 57 MB) |
 | `run_in_isaac.py` | | pxr 스크립트를 Isaac USD 로 실행 (예외는 `<스크립트>.error.txt`) |
 | `wsl/*` | WSL | Nav2 스택·중계기·흐름 명령 |
