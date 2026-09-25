@@ -66,3 +66,8 @@ rosbag2_*
 /cobot3_ws/isaacpjt/smart_farm/scripts/lift_stroke.py
 /cobot3_ws/records/*
 /cobot3_ws/src/smart_farm_monitor/*
+# Claude Code 로컬 상태 — 자격증명과 대화 기록이 들어 있으므로 절대 커밋하지 않음
+.claude/
+.claude.json
+.claude.json.backup
+*.jsonl
