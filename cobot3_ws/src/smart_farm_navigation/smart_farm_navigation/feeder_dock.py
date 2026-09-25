@@ -12,7 +12,7 @@ that line: (1) turn in place so the rear points at the goal point on the face's 
 
 Geometry (base_link, x forward = drive wheels, rear = -x = M0609 side):
   face line fitted to scan points 0.5..3.2 m behind the robot; the face is ~1.15 m long.
-  goal: base_link `standoff_m` (default 0.90 m) in front of the face on the normal through the face centre,
+  goal: base_link `standoff_m` (default 0.92 m) in front of the face on the normal through the face centre,
         rear square to the face  ->  world (-2.19, -2.60, 90 deg) for the v011 scene.
 """
 

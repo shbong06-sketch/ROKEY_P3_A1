@@ -14,37 +14,32 @@
 
 > 2026-09-24 사용자 지적: ADR 항목을 어겼을 뿐 아니라 **ADR 파일을 아예 읽지 않는 상태**가 되었음.
 > 구체적 위반: Nav2 감속 중 `feeder_dock` 시작(2.2 위반), `--once` 사용(2.3 위반), 모의 결과를 실측처럼 보고(2.7 위반).
+> (`--once` 항목만은 2026-09-25 에 규칙 자체가 바뀌었음. 지금은 `--once --max-wait-time-secs 15` 가 정식임. 나머지 두 항목은 그대로 유효함.)
 > 가이던스 문서보다 ADR 이 상위임.
 
 ### ADR 이 최신이 아닐 때
 
 ADR 은 작업보다 뒤처짐. ADR 과 **최근 대화에서 사용자와 합의한 값**이 충돌하면 **최근 합의가 이김**. 단, 그때는 낡은 ADR 항목을 답변의 "미해결" 항에 열거해 **갱신을 사용자에게 제안**해야 함. 직접 고치지 않음.
 
-현재 확인된 낡은 ADR 항목 (2026-09-25 기준):
-
-**반영 완료** — 사용자 승인(2026-09-25)으로 `ADR_navigation2.md` 에 적용함.
+현재 확인된 낡은 ADR 항목 (2026-09-25 저녁 기준): **없음.** 아래 표의 항목은 모두 사용자 승인(2026-09-25)으로 ADR 에 반영을 마쳤음.
 
 | ADR 항목 | 옛 값 | 반영된 현행값 |
 |---|---|---|
-| nav2 2.2 | 도킹 목표 `standoff_m` 0.90 → (9/24) 0.85 | **0.90 으로 복귀** (실측 재환산, 아래 설명) |
-| nav2 2.2 | TurnTable 앞면 y −3.60 | **USD 기준 −3.60 / 라이다 검출 면 −3.645 를 구분해 명시.** `standoff_m` 은 검출 면 기준임 |
-| nav2 2.6 | `feeder_dock` standoff 0.90 → 0.85 | **0.90** |
+| nav2 1.2.1 | 지도 버전 미명시 | **`Collected_smartfarm_v014.yaml`** (`nav2.launch.py`·`fake_robot.py` 의 `DEFAULT_MAP`) |
+| nav2 1.4 / 2.2 | `standoff_m` 0.85 → 0.90 | **0.92** (팀 `feature/cabbage-place-fix` 올인원 실행에서 확인한 값. 팀의 place 수정과 한 쌍) |
+| nav2 1.4 / 2.2 | TurnTable 앞면 y −3.60 | **USD 기준 −3.60 / 라이다 검출 면 −3.645 를 구분.** `standoff_m` 은 검출 면 기준임 |
+| nav2 2.3 | `ros2 topic pub -t 3 -r 1` | **`--once --max-wait-time-secs 15`**. 결과 구독 터미널을 명령보다 먼저 띄워 결과 유실을 막음 |
+| nav2 2.4 | 팀 파일 중 손댄 곳은 fullScan 6줄뿐 | **팀 `standalone_app.py` + `scripts/` 새 모듈 5개를 `a95ba6c` 에서 그대로 반입.** 내 추가분은 `[navigation 2026-09-23]` 표시 부분뿐 |
+| nav2 2.6 | RPP 0.6 m/s | **0.3 m/s** (`config/nav2_params.yaml:162`) |
 | nav2 2.6 | `cloud_self_filter` 상자 x −0.85~0.6 | **−0.65~0.60** (`cloud_self_filter.py:30`) |
-| nav2 2.6 | `standoff_m`/`box_x[0]` 짝 표기 | **(0.90) / (−0.65)** |
+| nav2 2.6 | `standoff_m`/`box_x[0]` 짝 표기 | **(0.92) / (−0.65)** |
+| basic §3-4 | 팀 파일 목록에 새 모듈 없음 | `conveyor*`, `cull_motion`, `human_crossing`, `inspection_cull_station` 추가 |
 
-> **도킹 거리를 두 번 바꾼 이유 (되풀이 금지)**
-> 팔 밑동 ~ place 대상 = **`standoff_m` + 0.06** 임. 근거는 실측 2건(`results/isaac_20260923_2032.txt:704` + `nav2_20260923_2033.txt:433`, `isaac_20260923_2125.txt:722` + `nav2_20260923_2126.txt:435`)에서 나온 "검출 면 ~ place 대상 0.26 m" 와 팔 밑동 위치(base_link 보다 0.20 m 뒤, `isaac_20260923_2032.txt:557`)임.
-> 2026-09-23 에 쓰던 `0.11 + standoff_m` 은 면을 USD 값 y −3.60 으로 가정해 **0.05 m 틀렸음**.
-> 또한 그때 기준으로 삼은 `BASE_TO_PALLET_X`(0.89~1.05)는 `robot_motion.check_base_pose` 가 **`start_pick` 에서만** 호출하므로(`robot_motion.py:883`) **feeder place 에는 적용되지 않음**(`start_place_at_pose`, `:981`). place 의 실제 관문은 역기구학과 관절 연속성(한계 20°)임.
-> 실제로 성공이 확인된 자세는 랙 pick 의 **앞뒤 0.932 m** 하나뿐임(`:556`). 0.90 은 그것을 0.96 으로 재현하는 값이고, 그 자세를 그대로 쓰려면 0.87 임.
-
-**미결 — 사용자 결정 대기 (ADR 을 고치지 않음)**
-
-| ADR 항목 | ADR 표기 | 실제 |
-|---|---|---|
-| nav2 2.3 | `ros2 topic pub -t 3 -r 1` (bag 기록기가 같은 토픽을 구독하므로 `--once` 는 놓칠 수 있음) | guidance2_25차는 `--once --max-wait-time-secs 15` |
-| nav2 2.6 | RPP **0.6 m/s** | `config/nav2_params.yaml:162` `desired_linear_vel: **0.3**` |
-| basic §3-4 / nav2 2.4 | 팀 파일 중 손댄 곳은 `standalone_app.py` `open_scene()` fullScan 6줄**뿐** | `ceeafd5` 에서 main loop 의 `hold()` 예외 처리도 수정함 (`docs/standalone_app_changes.md`) |
+> **도킹 거리를 세 번 바꾼 이유 (되풀이 금지)**
+> 최종값 **0.92 는 환산으로 구한 값이 아니라 팀이 올인원을 끝까지 돌려 확인한 값**임(`scenes/Collected_smartfarm_v014/allinone_debug_and_changes_2026-09-25.md` P3). 0.85 에서는 팔 베이스 ~ 놓을 자리가 0.72 m 라 `DESCEND_5` 가 20.7°(한계 20°)로 실패했음.
+> 철회한 값 둘: **0.85** 는 근거식 `0.11 + standoff_m` 이 면을 USD 값 y −3.60 으로 가정해 0.05 m 틀렸음. **0.90** 은 실측 로그로 재환산한 값이었으나, 팀이 같은 수정에서 `turntable_place_pose()` 의 놓을 자리 정의 자체를 바꿔(방향·쿼터니언·높이·포크판) 환산의 기준점이 사라졌음.
+> 따라서 **`standoff_m + 0.06` 식으로 거리를 다시 계산하지 않음.** 도킹 거리를 건드릴 일이 생기면 팀 place 코드와 함께 봄.
+> 또한 `BASE_TO_PALLET_X`(0.89~1.05)는 `robot_motion.check_base_pose` 가 `start_pick` 에서만 호출하므로(`robot_motion.py:883`) **feeder place 에는 적용되지 않음**(`start_place_at_pose`, `:981`). place 의 실제 관문은 역기구학과 관절 연속성(한계 20°)임.
 
 ---
 
@@ -138,17 +133,17 @@ Isaac Sim 실측은 사용자의 물리적 작업 시간이고 **영상 녹화 �
 
 ---
 
-## 7. 현재 상태 (2026-09-25)
+## 7. 현재 상태 (2026-09-25 저녁)
 
-- 브랜치 `feature/Inspection-Place-nav2` (통합 브랜치. feature/navigation2 + 팀의 PLACE_INSPECT + smart_farm_vision).
-- 최신 가이던스 `guidance/guidance2_25차.md` — 전 구간(주행→도킹→Place) 절차.
-- 직전 작업(`ceeafd5`): 굼뜬 차체(각속도 1~3초 지연)를 전제로 도킹 조향 재설계. `DockLogic`(ROS 없는 상태기계) + `FeederDock`(ROS 배선) 분리, `SETTLE` 단계 추가, 면 법선 추종 후진, 횡 오차 0.06 m 초과 시 0.9 m 물러나 재시도.
-- **검증은 내피 모의뿐** (오프라인 격자 225/225, ROS 회귀 10/10). **실측 미실시** — 25차 절차로 실측하는 것이 다음 할 일.
-- 실측 전 `sim_test/dock_regression.py` 를 내피에서 먼저 돌림. 실측 중에는 절대 돌리지 않음(같은 도메인에 Nav2 두 벌).
+- 브랜치 `feature/Inspection-Place-nav2` (통합 브랜치. feature/navigation2 + 팀의 PLACE_INSPECT + smart_farm_vision + 팀의 cabbage-place-fix 반입분).
+- 최신 가이던스 `guidance/guidance2_27차.md` — 전 구간(주행→도킹 0.92→PLACE_INSPECT→컨베이어→비전 검사→솎아내기) 절차. 26차까지는 `guidance/past/`.
+- 직전 작업(`a95ba6c`): ①팀 place 수정 반입(`standalone_app.py` + `scripts/` 새 모듈 5개) ②`standoff_m` 0.90 → **0.92** ③장면·지도 **v014** 전환(`Collected_smartfarm_v014_room_core_cabbage.usd`).
+- 그 앞(`ceeafd5`): 굼뜬 차체(각속도 1~3초 지연)를 전제로 도킹 조향 재설계. `DockLogic`(ROS 없는 상태기계) + `FeederDock`(ROS 배선) 분리, `SETTLE` 단계, 면 법선 추종 후진, 횡 오차 0.06 m 초과 시 0.9 m 물러나 재시도.
+- **검증은 고피3 모의뿐** (standoff 0.92 ROS 회귀 10/10, v014 지도 normal 1/1). **실측 미실시** — 27차 절차로 전 구간 실측하는 것이 다음 할 일임.
+- 실측 전 `sim_test/dock_regression.py` 를 먼저 돌림. 실측 중에는 절대 돌리지 않음(같은 도메인에 Nav2 두 벌).
 - 받아야 할 실측 로그: 고피 Isaac 터미널의 `[도킹] 카터 본체 world (…)` 줄 (팔 자세 허용 범위 결정용).
-
----
+- 알려진 여유 부족: standoff 0.92 회귀에서 최대 횡 오차 0.057 m (허용 0.06). 팔 쪽 실제 횡 허용치를 받으면 `lat_tol_m`·`max_retry` 를 조정함.
 
 ## 8. 더 자세한 배경
 
-에이전트 메모리(`~/.claude/projects/<레포경로>/memory/`)에 다음이 있음: `adr-first`, `nav2-track-v008`(Nav2 트랙 전체 이력), `gopi-naepi-split`, `guidance-doc-conventions`, `minimize-gopi-work`, `stepwise-observable-workflow`, `carter-visual-front`, `project-milestones`, `integration-design`, `reference-docs-layout`, `ros2-bootcamp-level`. 메모리는 기기별로 저장되므로 **저장소에서의 단일 출처는 ADR 과 이 파일임**.
+에이전트 메모리(`~/.claude/projects/<레포경로>/memory/`)에 다음이 있음: `adr-first`, `nav2-track-v008`(Nav2 트랙 전체 이력), `gopi-naepi-split`, `guidance-doc-conventions`, `minimize-gopi-work`, `stepwise-observable-workflow`, `carter-visual-front`, `project-milestones`, `integration-design`, `reference-docs-layout`, `ros2-bootcamp-level`, `repo-claude-md`, `gopi3-temporary`, `preserve-field-troubleshooting`, `cabbage-place-fix-branch`. 메모리는 기기별로 저장되므로 **저장소에서의 단일 출처는 ADR 과 이 파일임**.

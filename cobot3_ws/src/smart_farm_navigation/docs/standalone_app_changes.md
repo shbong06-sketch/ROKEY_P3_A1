@@ -65,3 +65,19 @@ Place 명령을 받으면 기존 출력 사이에 아래 한 줄이 추가됨.
 ## 6. 참고: 같은 파일에 9월 22일에 넣었던 것
 
 라이다 관련으로 `open_scene()` 에 `fullScan=True` 6줄을 넣은 적이 있음(커밋 `49d24d8`). 그 부분은 이후 팀에서 `1e7fbc7` 로 다시 정리했으므로 **현재 파일의 해당 코드는 팀 코드**이며 제 변경분이 아님.
+
+---
+
+## 7. 2026-09-25 갱신 — 팀 브랜치 반입으로 이 파일의 전제가 바뀜
+
+커밋 `a95ba6c` 에서 **팀 브랜치 `origin/feature/cabbage-place-fix` 의 `runtime/standalone_app.py` 를 그대로 가져왔음.** 따라서 위 1~6절이 말하는 "내가 41줄만 더한 파일" 은 더 이상 아님.
+
+| 항목 | 지금 상태 |
+|---|---|
+| 내가 넣은 것 | 위 2절·2-1절의 `[navigation 2026-09-23]` 표시 부분(`report_dock_pose`, Place 전 차체 정지 확인, main loop 의 `hold()` 예외 처리). 팀 브랜치가 `ceeafd5` 에서 갈라져 나갔으므로 이 부분을 이미 담고 있었고 충돌 없이 들어왔음 |
+| 팀이 넣은 것 | `[올인원 2026-09-25]` 표시 부분 — v014 양배추 씬 자동 선택, `conveyor`/`inspection_cull_station` 설치와 갱신, PLACE 중 줄기 벨트 인터록(`hold_stem`), 실행 인자 `--no-conveyor` / `--no-vision-station` / `--human-crossing` |
+| 함께 들어온 새 팀 파일 | `scripts/conveyor.py`, `conveyor_rollers.py`, `cull_motion.py`, `human_crossing.py`, `inspection_cull_station.py` |
+| PLACE 실패의 원인 | 팀이 `turntable_place_pose()` 에서 해결했음 — 놓는 방향을 팔 베이스 쪽으로, 쿼터니언 정규화(0.507 → 1.0), 벨트 윗면 +25.9 mm, 포크판 35 mm 밖. 이 수정과 도킹 거리 `standoff_m` 0.92 는 **한 쌍**이며 따로 떼어 쓰지 않음 |
+| 정적 검사 | 반입 후 `pyflakes` 통과(미사용 import 2건만) |
+
+`[navigation 2026-09-23]` 블록만 지우면 팀 원본으로 돌아간다는 4~5절의 설명은 그대로 유효함.

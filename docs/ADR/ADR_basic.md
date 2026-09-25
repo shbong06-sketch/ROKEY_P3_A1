@@ -91,7 +91,7 @@ isaac_ros() {
    - `"/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/"`
 3. **프로젝트 전체를 아우르는 문서 작성 영역**:
    - `"/home/rokey/ROKEY_P3_A1/docs/"`
-4. 위 경로 안이라도 팀원이 소유한 파일(`isaacpjt/smart_farm/runtime/`, `scripts/robot_motion*.py`, `scripts/pallet_transfer.py`, `scripts/lift.py`, `src/smart_farm_navigation/smart_farm_navigation/navigation_node.py`, `src/smart_farm_interfaces/`)은 수정 전 사용자에게 보고하고, 수정하면 주석 `[navigation YYYY-MM-DD]` 로 표시함. ADR 갱신 중인 현재시점에서 수정된 곳은 `standalone_app.py` 의 `open_scene()` fullScan 6줄임.
+4. 위 경로 안이라도 팀원이 소유한 파일(`isaacpjt/smart_farm/runtime/`, `scripts/robot_motion*.py`, `scripts/pallet_transfer.py`, `scripts/lift.py`, `scripts/conveyor*.py`, `scripts/cull_motion.py`, `scripts/human_crossing.py`, `scripts/inspection_cull_station.py`, `src/smart_farm_navigation/smart_farm_navigation/navigation_node.py`, `src/smart_farm_interfaces/`)은 수정 전 사용자에게 보고하고, 수정하면 주석 `[navigation YYYY-MM-DD]` 로 표시함. **2026-09-25 갱신**: 커밋 `a95ba6c` 에서 팀 브랜치 `origin/feature/cabbage-place-fix` 의 `standalone_app.py` 와 위 `scripts/` 새 모듈 5개를 그대로 반입했음. 내가 넣은 곳은 그 안의 `[navigation 2026-09-23]` 표시 부분뿐이고, `open_scene()` 의 fullScan 6줄은 팀이 `1e7fbc7` 로 정리해 현재는 팀 코드임(§ADR_nav2 2.4, `smart_farm_navigation/docs/standalone_app_changes.md`).
 5. 병합 충돌은 pull 된 쪽(development)이 이김. 병합 뒤 당신의 추가분이 사라졌는지 §ADR_nav2 2.4 목록으로 점검함.
 
 ---
@@ -151,8 +151,9 @@ isaac_ros() {
 ---
 
 ### [1차 목표 — 완료 2026-09-21] /cmd_vel 경로 주행으로 통로 탈출 → 컨베이어 앞 정지. 코드는 `path_runner*`, `config/path_runner*.yaml` 에 남아 있으며 Nav2 트랙에서는 쓰지 않음.
-### [2차 목표 — 완료 2026-09-22] 결합카터가 Pallet_01 을 든 채 RViz2 Nav2 Goal 클릭 한 번으로 FEEDER_APPROACH 까지 자율주행하고, `feeder_dock` 으로 TurnTable 앞면 기준 0.90 m 에 뒤(팔 쪽)를 직각으로 맞춰 정지함. 2026-09-22 고피2 실측 3회 중 2회 성공.
-### [다음] 도킹 중 방향 이탈 1회의 원인 규명, 팀 통합(`/navigation/command` → `go_to_station`) 검증, 도킹 후 Place 절차와의 연결.
+### [2차 목표 — 완료 2026-09-22] 결합카터가 Pallet_01 을 든 채 RViz2 Nav2 Goal 클릭 한 번으로 FEEDER_APPROACH 까지 자율주행하고, `feeder_dock` 으로 TurnTable 앞면 기준 정해진 거리에 뒤(팔 쪽)를 직각으로 맞춰 정지함. 2026-09-22 고피2 실측 3회 중 2회 성공. (그때 쓰던 도킹 거리는 당시 값이며 **현행값은 §ADR_nav2 2.2 의 `standoff_m` 0.92** 임.)
+### [3차 목표 — 2026-09-25 기준 진행 중] 팀 place 수정(`feature/cabbage-place-fix`)과 장면·지도 v014 를 반입한 상태로 주행 → 도킹(0.92) → PLACE_INSPECT 전 구간을 실측 1회 통과시킴. 검증은 아직 고피3 모의뿐임.
+### [다음] 위 전 구간 실측, 그 기록(`[도킹] 카터 본체 world …` 줄)으로 팔 자세 허용 범위 확정, 도킹 횡 오차 허용치(`lat_tol_m`) 재조정.
 
 ---
 

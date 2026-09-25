@@ -21,7 +21,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from smart_farm_navigation.feeder_dock import DockLogic, DockParams, wrap  # noqa: E402
 
-# v011 장면: TurnTable 앞면 y −3.60, x −2.76~−1.61, 법선 +y (면 -> 로봇)
+# 장면 v011·v014 공통: TurnTable 앞면 y −3.60(USD 기준), x −2.76~−1.61, 법선 +y (면 -> 로봇).
+# 라이다가 실제로 검출해 도킹 기준이 되는 면은 y −3.645 다 (ADR_nav2 2.2).
 FACE_C = (-2.185, -3.60)
 FACE_N = (0.0, 1.0)
 FACE_LEN = 1.15
