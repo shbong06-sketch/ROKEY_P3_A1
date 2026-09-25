@@ -52,7 +52,8 @@
 |---|---|---|---|
 | 솎아내기 그리퍼 힘 `cull_standalone.GRIPPER_DRIVE_MAX_FORCE` | 1e4 N·m | **약 8** | 1e4 는 손끝 수백 kN → 어떤 물체도 관통. 8 N·m 에서 6칸 모두 파지 성공(미끄럼 ≤ 1 mm) |
 | `feeder_dock` `standoff_m` | 0.85 | **0.92** (가이드 허용 0.78~0.94) | 0.85 에서 팔 베이스→놓을 자리 0.72 m, DESCEND_5 관절 20.7°(한계 20°)로 한 번 실패. 0.92 → 0.79 m 성공 |
-| 비전 연동 | 컨베이어 10 s 뒤 자동 배출 | `CONVEYOR_AUTO_RESUME_SECONDS = None` + `inspection_done()` | 비전 노드 붙일 때 |
+| 비전 연동 | 반영됨: 스테이션이 끝나면 `inspection_done()` (`--no-vision-station` 이면 예전처럼 10 s 자동 배출) | — | 6-1 절 |
+| 컨베이어 줄 ↔ 비전 로봇 거리 (R-C04) | 줄 y -6.73 은 도달 밖 | 푸셔 이송(현재) 또는 줄/로봇 배치 재합의 | 6-1 절 |
 | v011 씬 `/clock` | 없음 | v013 사용 | Nav2 는 use_sim_time |
 
 ## 6. 검증 (이 PC, 양배추 v013 room core)
@@ -64,6 +65,34 @@
 | PICK_HARVEST → **실제 Nav2** FEEDER_DOCK → PLACE_INSPECT | SUCCEEDED (도킹 면 0.869 m, 방향 1.55°, 좌우 5 mm) |
 | 컨베이어 | 줄기 → 교차점 → 비전룸 정지 (-0.495, -6.727) → 10 s 뒤 배출 |
 | 운반 중 포기 | Nav2 주행까지 최대 1.5 mm / 1.8°, 컨베이어 교차점 전환에서 최대 6.6 mm / 8.7° 후 복귀 |
+
+## 6-1. 비전 검사 → 솎아내기 → 컨베이어 재가동 (2026-09-25 추가)
+
+`scripts/inspection_cull_station.py` (+ `inspection_yolo_worker.py`, `cull_motion.py` 원본). 컨베이어가 카메라 앞에 세운 팔레트를 스테이션이 받아 끝까지 처리하고 `inspection_done()` 으로 다시 내보낸다 (시간이 아니라 솎아내기 완료가 재가동 조건).
+
+| 순서 | 내용 |
+|---|---|
+| 정지 | `conveyor.install(vision_x=-0.69)` → 트레이 중심이 비전 M0609 base 와 같은 x 에 섬 |
+| 푸셔 이송 | 컨베이어 줄(y -6.73)은 팔이 닿지 않음(위에서 집기 + 접근 18 cm 는 트레이 중심 0.48 m 까지). 로우폴리 푸셔(`/World/VisionTransfer`, 앞 푸셔 판+로드+하우징, 롤러 아래에서 올라오는 뒤 푸셔)가 트레이를 물리로 밀어 y -7.00 으로. 이동 중 포기 칸 이탈 0.1 mm |
+| 검사 | 손목 RealSense(640x640) 3 프레임 → YOLO `romaine3_v012_640sq_yolo11n_best.pt` → 카메라 모델로 포기 투영 후 칸 배정 → 다수결 |
+| 판정 | green = 정상, **yellow · brown = 제거** (양배추 결정) |
+| 솎아내기 | 팀 `CullMotion` 실행기 + 계획 OPEN→APPROACH→DESCEND→GRASP→LIFT→**VIA**→PLACE→RELEASE→RETREAT. 집는 좌표 = 트레이 자세 + 칸 배치(비전 좌표는 대조, 오차 2~10 mm). 버리는 곳 SortBin_1 / SortBin_2 번갈아, 같은 통은 긴 변을 따라 자리 바꿈. 한 포기 끝나면 검사 자세로 복귀 |
+| 재검사 | 제거 칸이 비었는지 다시 촬영 |
+| 복귀·배출 | 앞 푸셔 물림 → 뒤 푸셔가 벨트 줄로 되밈 → `inspection_done()` |
+
+시험(`09_inspection_cull_station_test.py`, v013 양배추 씬): 불량 4칸 트레이 4/4 제거·통 안 착지, 3칸 트레이 3/3, 비전 판정 6/6 일치, 트레이 벨트 복귀 후 배출.
+
+씬 복사본에서 바뀐 것 (`06_make_cabbage_scene.py`, 원본 씬은 그대로)
+
+| 항목 | 내용 |
+|---|---|
+| 비전 M0609 받침대 | 컨베이어 쪽으로 +0.146 m (프레임에 붙음), 로봇 base (-0.672, -7.480) |
+| SortBox → SortBin | 속이 찬 큐브라 포기가 뚜껑에 얹혔음 → 같은 크기·색의 윗면 열린 통(바닥+벽 4장), 받침대 양옆 (-1.017 / -0.327, -7.70) |
+| 비전룸 벽 통로 | 윗부분(BackWall_03/04_Head)에 가운데가 파인 홈 → 평판으로 교체 |
+| 컨베이어 교차점 | `Feeder/Geometry/SM_ConveyorBelt_A49_01` 충돌체가 롤러보다 2 mm 높아 교차점 출구(x -1.42)에서 트레이가 걸림(접촉 보고로 확인) → 이 프레임 부품 충돌 끔 |
+| 카터 리프트 프레임 | 기둥+윗가로대(z 1.48)를 팔이 관통 → 텔레스코픽: 바깥 기둥 0.78 m 로 낮춤 + 리프트 판에 안쪽 기둥 0.63 m. 로봇 위치·리프트 행정 그대로 |
+| 공정 카메라 | `/World/ProcessCameras/Cam0_Perspective, Cam1_Harvest, Cam2_Nav2Place, Cam4_CullPickPlace` (검사 화면 = 손목 RealSense) |
+| 삭제 | 벨트 위 시험 트레이 Pallet_Inspect/_01/_02/_03, Lettuce_1~3 |
 
 ## 7. Windows 한 대로 돌리는 법 (참고)
 

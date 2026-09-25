@@ -10,6 +10,8 @@ carried), plus the Nova Carter chassis track and every tray pose.
 import builtins, json, math, os, runpy, sys
 
 OUT = os.environ.get("CABBAGE_MONITOR_OUT", "cabbage_monitor.json")
+VIEW_TRIGGER = r"D:\smartfarm-sim\out\SAVE_VIEW_CAMERA"          # save_view_camera.ps1 [name]
+VIEW_SAVED = r"D:\smartfarm-sim\out\saved_view_cameras.json"      # read by 06_make_cabbage_scene.py
 _orig_import = builtins.__import__
 _state = {"installed": False, "sub": None}
 
@@ -37,13 +39,59 @@ def _install():
         return np.array(t["position"], float), rot(t["rotation"])
 
     def dump():
-        out = {"sim_time_s": round(S["t"], 2), "heads": S["stats"], "trays": S["trays"], "chassis_track": S["track"][-2000:]}
+        out = {"sim_time_s": round(S["t"], 2), "heads": S["stats"], "trays": S["trays"], "chassis_track": S["track"][-2000:],
+               "pallet01_track": S.get("tray_track", [])[-2000:]}
         with open(OUT, "w") as f:
             json.dump(out, f, indent=1)
+
+    def capture(stage, spec):
+        """CABBAGE_CAPTURE_CAMS = "name=ex,ey,ez,tx,ty,tz;name2=..." -> <out>/cap_<name>_<t>.png|.npz"""
+        import omni.replicator.core as rep
+        from pxr import Gf, UsdGeom as G
+        if "annot" not in S:
+            S["annot"] = {}
+            for item in spec.split(";"):
+                name, look = item.split("=")
+                if look.startswith("/"):          # an existing camera prim of the scene (e.g. /World/ProcessCameras/...)
+                    cam_path, res = look, (960, 540)
+                    if "realsense" in look.lower():
+                        res = (640, 640)          # wrist camera: same framing as the YOLO input
+                else:
+                    e = [float(v) for v in look.split(",")]
+                    cam = G.Camera.Define(stage, f"/World/_Cap_{name}")
+                    cam.CreateFocalLengthAttr(16.0)
+                    cam.CreateClippingRangeAttr(Gf.Vec2f(0.05, 1000.0))
+                    m = Gf.Matrix4d().SetLookAt(Gf.Vec3d(*e[:3]), Gf.Vec3d(*e[3:]), Gf.Vec3d(0, 0, 1)).GetInverse()
+                    G.Xformable(cam).ClearXformOpOrder(); G.Xformable(cam).AddTransformOp().Set(m)
+                    cam_path, res = str(cam.GetPath()), (960, 540)
+                rp = rep.create.render_product(cam_path, res)
+                a = rep.AnnotatorRegistry.get_annotator("rgb"); a.attach([rp])
+                S["annot"][name] = a
+            os.makedirs(os.path.join(os.path.dirname(OUT), "captures"), exist_ok=True)
+            return
+        for name, a in S["annot"].items():
+            data = a.get_data()
+            if data is None or getattr(data, "size", 0) == 0:
+                continue
+            base = os.path.join(os.path.dirname(OUT), "captures", "cap_%s_%06.1f" % (name, S["t"]))
+            try:
+                from PIL import Image
+                Image.fromarray(np.asarray(data)[..., :3]).save(base + ".jpg", quality=88)
+            except ImportError:
+                np.savez_compressed(base + ".npz", rgb=np.asarray(data)[..., :3])
 
     def on_step(dt):
         S["n"] += 1
         S["t"] += dt
+        cams = os.environ.get("CABBAGE_CAPTURE_CAMS", "")
+        every = max(1, int(round(float(os.environ.get("CABBAGE_CAPTURE_EVERY", "3.0")) * 60)))
+        if cams and S["n"] % every == 0:     # before the 15-step monitor gate (else captures drop to 1 per second)
+            try:   # fixed process cameras rendered off-screen (the GUI viewport is left alone)
+                capture(omni.usd.get_context().get_stage(), cams)
+            except Exception as error:  # noqa: BLE001
+                if not S.get("cap_err"):
+                    print(f"[MONITOR] capture failed: {error}", flush=True)
+                    S["cap_err"] = True
         if S["n"] % 15:
             return
         stage = omni.usd.get_context().get_stage()
@@ -90,6 +138,26 @@ def _install():
                     capture_viewport_to_file(vp, os.path.join(os.path.dirname(OUT), "snap_%06.1f.png" % S["t"]))
             except Exception as error:  # noqa: BLE001
                 print(f"[MONITOR] snapshot failed: {error}", flush=True)
+        if S["n"] % 60 == 0 and os.path.exists(VIEW_TRIGGER):
+            try:   # save the GUI viewport's current view as a camera (save_view_camera.ps1 drops the trigger file)
+                from omni.kit.viewport.utility import get_active_viewport
+                from pxr import Gf, UsdGeom as G
+                vp = get_active_viewport()
+                src = stage.GetPrimAtPath(vp.camera_path)
+                m = G.Xformable(src).ComputeLocalToWorldTransform(0)
+                focal = G.Camera(src).GetFocalLengthAttr().Get() or 18.147
+                saved = json.load(open(VIEW_SAVED)) if os.path.exists(VIEW_SAVED) else []
+                name = open(VIEW_TRIGGER, encoding="utf-8-sig").read().strip() or f"Cam0_View{len(saved) + 1}"
+                saved.append({"name": name, "matrix": [float(m[i][j]) for i in range(4) for j in range(4)], "focal": float(focal),
+                              "from": str(vp.camera_path), "eye": [round(float(v), 3) for v in m.ExtractTranslation()]})
+                json.dump(saved, open(VIEW_SAVED, "w"), indent=1)
+                cam = G.Camera.Define(stage, f"/World/ProcessCameras/{name}")
+                cam.CreateFocalLengthAttr(float(focal))
+                G.Xformable(cam).ClearXformOpOrder(); G.Xformable(cam).AddTransformOp().Set(m)
+                print(f"[MONITOR] viewport view saved as /World/ProcessCameras/{name} -> {VIEW_SAVED}", flush=True)
+            except Exception as error:  # noqa: BLE001
+                print(f"[MONITOR] view save failed: {error}", flush=True)
+            os.remove(VIEW_TRIGGER)
         if S["n"] % 60 == 0:
             c = pose(CHASSIS)
             if c is not None:
@@ -98,7 +166,11 @@ def _install():
             for _, tray in (S["heads"] or []):
                 pt = pose(tray)
                 if pt is not None:
-                    S["trays"][tray.replace("/World/SmartFarm/Placed/", "")] = [round(float(v), 4) for v in pt[0]]
+                    yaw = math.degrees(math.atan2(pt[1][1, 0], pt[1][0, 0]))
+                    key = tray.replace("/World/SmartFarm/Placed/", "")
+                    S["trays"][key] = [round(float(v), 4) for v in pt[0]] + [round(yaw, 2)]
+                    if key.startswith("Pallet_01"):
+                        S.setdefault("tray_track", []).append([round(S["t"], 1)] + S["trays"][key])
             dump()
 
     _state["sub"] = phys.subscribe_physics_step_events(on_step)

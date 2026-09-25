@@ -76,6 +76,9 @@ CONVEYOR_BELT_PALLETS = tuple(
 )
 # 비전 노드가 아직 붙지 않았으므로 카메라 앞에서 이 시간 뒤 스스로 내보낸다. 비전 연동 시 None.
 CONVEYOR_AUTO_RESUME_SECONDS = 10.0
+# [올인원 2026-09-25] 비전룸 검사·솎아내기 스테이션(scripts/inspection_cull_station.py)을 켜면 스테이션이 끝낼 때
+# inspection_done() 을 부르므로 자동 배출은 끈다. 트레이를 비전 M0609 base 와 같은 x 에 세운다(도달거리).
+VISION_STATION_STOP_X = -0.69
 # 장면의 Pallet_Inspect* 는 시험용 배치(y -7.0 / -6.58)라 conveyor.py 가 세우는 옆가이드(y -6.56 / -6.94)에
 # 걸친다. 그대로 두면 가이드가 트레이를 관통한 채 생겨 트레이와 작물이 튕겨 나간다.
 # conveyor_standalone.py 와 같이 줄기 서쪽 빈 바닥에 세워 두고 시작한다(세션 레이어, 장면 파일은 그대로).
@@ -113,6 +116,11 @@ def parse_args():
         "--no-conveyor",
         action="store_true",
         help="[올인원 2026-09-25] 컨베이어 반송(scripts/conveyor.py)을 끄고 실행",
+    )
+    parser.add_argument(
+        "--no-vision-station",
+        action="store_true",
+        help="[올인원 2026-09-25] 비전 검사·솎아내기 스테이션을 끄고 실행 (컨베이어가 10초 뒤 스스로 배출)",
     )
     return parser.parse_known_args()
 
@@ -301,6 +309,7 @@ class SimulationRuntime:
     place_wait_seconds: float = 0.0
     hold_fault_logged: bool = False   # [navigation 2026-09-24] 운반 중 팔레트 감시 예외를 한 번만 기록
     conveyor: object = None           # [올인원 2026-09-25] scripts/conveyor.ConveyorController (--no-conveyor 면 None)
+    station: object = None            # [올인원 2026-09-25] scripts/inspection_cull_station.VisionCullStation
 
 
 class TransferOperation:
@@ -623,7 +632,7 @@ def create_simulation_runtime(scene_path):
         park_x, park_y, park_z, park_gap = CONVEYOR_PARK
         for index, path in enumerate(CONVEYOR_BELT_PALLETS):
             prim = stage.GetPrimAtPath(path)
-            if not prim.IsValid():
+            if not prim.IsValid() or not prim.IsActive():   # 양배추 씬 복사본에서는 시험 트레이를 지웠다
                 continue
             for op in UsdGeom.Xformable(prim).GetOrderedXformOps():
                 if op.GetOpName() == "xformOp:translate":
@@ -634,17 +643,28 @@ def create_simulation_runtime(scene_path):
         watched = [
             path
             for path in CONVEYOR_CARRIED_PALLETS + CONVEYOR_BELT_PALLETS
-            if stage.GetPrimAtPath(path).IsValid()
+            if stage.GetPrimAtPath(path).IsValid() and stage.GetPrimAtPath(path).IsActive()
         ]
+        use_station = not args.no_vision_station
         conveyor = install_conveyor(
             stage,
             watched,
-            auto_resume=CONVEYOR_AUTO_RESUME_SECONDS,
+            auto_resume=None if use_station else CONVEYOR_AUTO_RESUME_SECONDS,
             carried_paths=CONVEYOR_CARRIED_PALLETS,
+            **({"vision_x": VISION_STATION_STOP_X} if use_station else {}),
         )
+    station = None
+    if conveyor is not None and not args.no_vision_station:
+        # [올인원 2026-09-25] 비전 M0609 + 손목 RealSense + YOLO(best.pt) + 팀 CullMotion. world.reset() 전에 등록.
+        enable_extension("omni.replicator.core")
+        import inspection_cull_station
+
+        station = inspection_cull_station.install(stage, world, M0609_DIR)
     world.reset()
     if conveyor is not None:
         conveyor.attach()
+    if station is not None:
+        station.attach(conveyor)
     print("[시작] World reset이 완료되었습니다.", flush=True)
     world.pause()
 
@@ -695,6 +715,7 @@ def create_simulation_runtime(scene_path):
         transfer=transfer,
         pallets=pallets,
         conveyor=conveyor,
+        station=station,
     )
 
 
@@ -708,9 +729,13 @@ def initialize_scene(runtime, transfer_operation, step_world):
     runtime.wheels_released = False
     if runtime.conveyor is not None:
         runtime.conveyor.reset()        # Stop -> Play: reset() -> world.reset() -> attach() (conveyor.py 계약)
+    if runtime.station is not None:
+        runtime.station.reset()
     runtime.world.reset()
     if runtime.conveyor is not None:
         runtime.conveyor.attach()
+    if runtime.station is not None:
+        runtime.station.attach(runtime.conveyor)
     brake_wheels(runtime.stage, RIG_PATH)
 
     print(f"[장면] 안정화를 위해 {SETTLE_STEPS} physics step을 진행합니다.")
@@ -1083,6 +1108,8 @@ def run():
         )
         if runtime.conveyor is not None:
             runtime.conveyor.update(PHYSICS_DT)   # [올인원 2026-09-25] 벨트는 Play 중 계속 돈다
+        if runtime.station is not None:
+            runtime.station.update(PHYSICS_DT, render=runtime.world.render)   # 카메라 앞 팔레트 검사·솎아내기
 
     try:
         if args.autoplay:
@@ -1246,6 +1273,8 @@ def run():
                     reset_required=False,
                 )
         finally:
+            if runtime.station is not None:
+                runtime.station.close()     # [올인원 2026-09-25] YOLO 워커 종료
             node.destroy_node()
             if rclpy.ok():
                 rclpy.shutdown()
