@@ -1,0 +1,11 @@
+28 %, 4515 MiB
+[INFO] [1790381295.205572780] [nav2_link_check]: listening for 8 s ...
+[INFO] [1790381303.285186793] [nav2_link_check]: [1] /clock               7.1 Hz
+[INFO] [1790381303.285871258] [nav2_link_check]:     sim time now 7.7 s, real-time factor 0.37
+[INFO] [1790381303.286451282] [nav2_link_check]: [2] /tf odom->base_link   7.4 Hz
+[INFO] [1790381303.287008550] [nav2_link_check]: [3] /chassis/odom        7.4 Hz
+[INFO] [1790381303.287578497] [nav2_link_check]: [4] /front_2d_lidar/scan           0.0 Hz,      0.0 kB/s, frame ''
+[INFO] [1790381303.288193763] [nav2_link_check]: [5] /front_3d_lidar/lidar_points   1.0 Hz,    495.4 kB/s, frame 'front_3d_lidar', 41272 points/msg
+[INFO] [1790381303.288842695] [nav2_link_check]: [6] self returns inside the rig box: 0 of 41272 points/scan (rear 0, mid 0, front 0; highest z 0.00 m)
+[INFO] [1790381303.289546252] [nav2_link_check]: RESULT FAIL - no lidar topic arrives at >= 3 Hz
+[ros2run]: Process exited with failure 2

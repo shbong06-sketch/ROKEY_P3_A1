@@ -13,8 +13,8 @@
 |---|---|
 | 환경 줄 | 고피3 는 **4줄**이다. `FASTRTPS_DEFAULT_PROFILES_FILE` 을 넣지 않는다(화이트리스트가 교육장 랜선 IP 전용이라 VM 안에서는 통신이 전부 끊긴다). 도메인은 101 |
 | 한 대에서 도는 것 | Isaac(터미널 2), Nav2·RViz2·`/scan` 생성·정밀 도킹·bag(터미널 3), 주행 노드(터미널 4), 결과 구독(터미널 5·6), 명령 발행(터미널 1) |
-| 화면 | 이 VM 에는 화면(`DISPLAY`)이 없다. 그래서 **Isaac 은 `--headless`, Nav2 는 `use_rviz:=false`** 로 띄운다. 판정은 화면이 아니라 터미널 로그와 bag 으로 한다 |
-| **Isaac 이 이 VM 에서 도는지는 아직 확인되지 않았다** | 고피3 에서 Isaac 을 띄운 기록이 없다(Kit 로그 없음). 그래서 3절에 **예비 점검**을 두었다. 본 시험 전에 반드시 먼저 한다 |
+| 화면 | 이 VM 에는 화면(`DISPLAY`)이 없다. **그렇다고 `--headless` 로 띄우면 안 된다**(0-2절: ROS 토픽이 하나도 안 나온다). **가상 디스플레이 `xvfb-run` 으로 띄운다.** Nav2 는 `use_rviz:=false` 로 띄운다. 판정은 화면이 아니라 터미널 로그와 bag 으로 한다 |
+| Isaac 은 이 VM 에서 돈다 (2026-09-26 확인) | `xvfb-run` 으로 띄우면 씬이 열리고 `/clock`·`/tf`·`/chassis/odom`·3D 라이다가 모두 발행된다(0-2절). **단 실시간 배율이 0.37 이라 교육장(1.12)보다 3배 느리게 진행된다.** 센서 주기는 시뮬 기준으로는 교육장과 거의 같다 |
 | 장면 | `scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd`. 그 폴더가 있으면 팀 앱이 `--scene` 없이 자동으로 이 씬을 연다 |
 | 지도 | `maps/Collected_smartfarm_v014.yaml` 을 `nav2.launch.py` 가 자동으로 쓴다 |
 | 집는 팔레트 | **`Pallet_01`** 이다(랙 L1 선반, `standalone_app.py:293` 의 `HARVEST_TASK = Task(PALLET_1_PATH, None, pick_only=True)`). 게다가 `PICK_HARVEST` 는 명령 네 필드가 **`recipe_id: HARVEST_RACK_L1` / `pallet_id: PALLET_001` / `source: RACK_L1` / `destination: CARRY`** 와 정확히 일치하지 않으면 `INVALID_COMMAND` 로 거부한다(`standalone_app.py:892~903`). 그래서 7-1 의 명령이 유일한 유효 조합이다. 참고로 `Pallet_02`·`Pallet_03` 은 랙 안에서 선반을 옮기는 `TRANSFER` 연산이 쓰는 것이고 이번 범위가 아니다 |
@@ -71,6 +71,59 @@ python3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/sim_test/rep
 ```
 
 (그 bag 이 이 기기에 없으면 돌지 않는다. 교육장 내피에 있던 기록이다.)
+
+### 고피3 Isaac 기동 파일럿 결과 (2026-09-26 · 이 기기에서 직접 확인함)
+
+이 기기에서 Isaac 을 처음 띄워 본 기록이다. **팔레트를 집거나 주행시키지는 않았고 기동과 토픽 발행만 봤다.**
+
+| 시도 | 방법 | 결과 |
+|---|---|---|
+| 1차 | `python.sh standalone_app.py --autoplay --headless --no-vision-station` | **실패.** 씬은 열리고 `[READY]`·`[대기]` 까지 갔으나 **ROS 토픽이 하나도 흐르지 않았다** |
+| 2차 | 위 명령에서 `--headless` 를 빼고 **`xvfb-run -a -s "-screen 0 1920x1080x24"`** 로 감쌈 | **성공.** `/clock` 7.1 Hz, `/tf` 7.4 Hz, `/chassis/odom` 7.4 Hz, 3D 라이다 41,272 점/스캔 |
+
+1차가 왜 실패했는지 (`results/isaacpilot_20260925_2356.txt`, `linkpilot_20260926_0002.txt`):
+
+| 관찰 | 뜻 |
+|---|---|
+| `/clock` 토픽은 목록에 있고 `Publisher count 1` 인데 메시지는 0 건 | 발행 노드는 만들어졌지만 **tick 이 돌지 않았다** |
+| `/front_3d_lidar/lidar_points` 는 토픽 자체가 없음 | RTX 라이다는 렌더 파이프에 붙어 있는데 **렌더가 돌지 않았다** |
+| GPU 사용률 0 % (메모리만 4.2 GB) | 같은 뜻 |
+| `[대기] 팔 베이스 정지를 기다리는 중` 이 117 초까지 증가 (코드 제한은 sim 15 초) | **시뮬 시계가 사실상 흐르지 않았다** |
+
+팀이 Windows 에서 남긴 기록(*headless 올인원에서 odom/clock 없음 → GUI 모드로 해결*)이 리눅스 standalone 에서도 그대로 재현된 것이다. **가상 디스플레이를 주면 GUI 모드로 뜨면서 렌더·물리·ROS 그래프가 모두 돈다.**
+
+2차에서 실제로 나온 값 (`results/isaacpilot2_xvfb_20260926_0004.txt`, `linkpilot2_0008.txt`):
+
+| 항목 | 값 | 판단 |
+|---|---|---|
+| 실시간 배율 | **0.37** | 벽시계 1 초에 시뮬 0.37 초. 교육장 고피보다 느릴 수 있다 |
+| `/clock` | 7.1 Hz | 정상 |
+| `/tf` odom→base_link, `/chassis/odom` | 7.4 Hz | 정상 |
+| 3D 라이다 | **1.0 Hz**(벽시계), 41,272 점/스캔, frame `front_3d_lidar` | 점 수 정상(fullScan). **시뮬 기준 약 2.7 Hz 로 교육장과 거의 같다**(아래) |
+| 자기 반사 | 리그 상자 안 **0 / 41,272 점** | 과거 실측 기준은 35~66 점이었다. 팀이 카터 몸체 속 부품을 뺀 경량본을 쓰기 때문으로 보인다 |
+| GPU | 28~46 %, 4.5 GB | 여유 있음 |
+| `nav2_link_check` 판정 | `RESULT FAIL - no lidar topic arrives at >= 3 Hz` | **기준이 벽시계라서 생긴 오판이다**(아래) |
+
+**`RESULT FAIL` 은 성능 문제이지 센서 설정 문제가 아니다.** 같은 통합 앱으로 교육장에서 잰 값과 나란히 놓으면 분명하다.
+
+| | 교육장 고피 (2026-09-23, `link_20260923_2154.txt`) | 고피3 (2026-09-26) |
+|---|---|---|
+| 실시간 배율 | **1.12~1.15** | **0.37** |
+| 라이다 (벽시계) | 3.8~3.9 Hz | 1.0 Hz |
+| 라이다 (시뮬 환산) | **약 3.4 Hz** | **약 2.7 Hz** |
+| 점 수 | 41,538~41,880 | 41,272 |
+| 판정 | `RESULT OK` | `RESULT FAIL` |
+
+즉 **시뮬 기준 스캔율은 3.4 → 2.7 Hz 로 큰 차이가 없고, 벽시계 주기가 낮은 것은 순전히 실시간 배율이 3배 느리기 때문이다.** `nav2_link_check` 의 `>= 3 Hz` 는 벽시계 기준이라 배율 0.37 에서는 통과할 수 없는 기준이다. Nav2·`feeder_dock` 의 시간 판정은 모두 `/clock` 기준(`use_sim_time: true`)이므로 **시뮬 기준이 같으면 동작 조건은 교육장과 같다.** 실제로 원래부터 10 Hz 가 아니라 3.4 Hz 였다(팀 앱의 `RENDER_EVERY = 3` 때문으로 보인다).
+
+**대신 벽시계 시간이 3배 걸린다.** 팀 기준 전 구간 4분 19초(시뮬)는 이 기기에서 벽시계 약 12분이다. 씬 로딩만 3~5분 더 든다.
+
+부수로 확인한 씬 문제 두 가지:
+
+| 증상 | 원인 | 조치 |
+|---|---|---|
+| `Could not open asset .../SubUSDs/materials.usd` | 실제 파일명은 **`Materials.usd`(대문자 M)**. 리눅스는 대소문자를 가리므로 팀 Windows PC 에서는 안 나던 오류다 | 심볼릭 링크 `materials.usd -> Materials.usd` 를 만들어 해결했다(씬 폴더는 git 제외라 저장소 영향 없음) |
+| `Could not load sublayer .../env_dressing.usd; skipping` | 그 파일이 **팀 공유 zip 에 아예 없다**(`env_dressing_tex/`, `env_dressing_navmap/` 만 있다) | 우리 v014 지도도 같은 USD 를 읽어 만들었으므로 지도와 시뮬은 서로 어긋나지 않는다(v011 지도와 36 픽셀만 달랐던 것과 일치). **팀에 확인이 필요하다** |
 
 ### 지금까지 고친 것 (읽기만)
 
@@ -138,28 +191,35 @@ python3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/sim_test/doc
 
 **이 절을 마친 뒤에는 회귀 시험 프로세스가 모두 끝났는지 확인한다.** 본 시험 중에 남아 있으면 Nav2 가 두 벌이 되어 서로 `/cmd_vel` 을 쏜다.
 
-## 3. 터미널 2 — Isaac 예비 점검 (본 시험 전에 반드시 한 번)
+## 3. 터미널 2 — Isaac 기동과 예비 점검 (본 시험 전에 반드시 한 번)
 
-**고피3 에서 Isaac 을 띄운 적이 아직 없다.** 화면이 없는 VM 이라 `--headless` 로 돌려야 하는데, 그 상태에서 ROS 토픽(`/clock`, `/chassis/odom`, 3D 라이다)이 제대로 나오는지가 확인되지 않았다(팀은 Windows 에서 headless 일 때 `/clock`·odom 이 안 나온 적이 있다). 그래서 본 시험 전에 이것만 먼저 본다.
-
-터미널 2 에서 Isaac 을 띄운다. **이 터미널에서는 워크스페이스를 `source` 하지 않는다**(팀 앱이 Isaac 번들 ROS 라이브러리를 먼저 써야 한다).
+**이 터미널에서는 워크스페이스를 `source` 하지 않는다**(팀 앱이 Isaac 번들 ROS 라이브러리를 먼저 써야 한다).
+**`--headless` 를 쓰지 않는다. 대신 가상 디스플레이로 감싼다**(0-2절에서 확인한 사실).
 
 ```bash
 export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 export PYTHONUNBUFFERED=1
-isaac_python /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay --headless --no-vision-station 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/isaac_$(date +%Y%m%d_%H%M).txt
+xvfb-run -a -s "-screen 0 1920x1080x24" /home/nitrouriah92/isaacsim/python.sh /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py --autoplay --no-vision-station 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/isaac_$(date +%Y%m%d_%H%M).txt
 ```
 
-기대(뜨는 데 수 분 걸린다):
+- `xvfb-run` 이 없으면 `sudo apt-get install -y xvfb` 로 넣는다(2026-09-26 에 이 기기에 설치해 두었다).
+- Isaac 경로의 `$HOME` 만은 다른 기기와 다르다(`/home/nitrouriah92`). 위 명령의 `python.sh` 경로를 그대로 쓴다.
+- 씬 로딩까지 **3~5 분** 걸린다. 기대 순서:
 
 ```
 [시작] Scene을 불러옵니다: /home/rokey/ROKEY_P3_A1/.../Collected_smartfarm_v014_room_core_cabbage.usd
 [라이다] 3D 라이다 fullScan=True (1개 helper)
+[컨베이어] 통로 확인됨 — 벽 개구부 이상 없음
 [READY] Collected_smartfarm_v014_room_core_cabbage scene ready; ...
 [대기] /sim_task/command의 String/JSON 명령을 기다립니다
 ```
 
-`[대기]` 가 뜨면 **터미널 1** 에서 토픽이 실제로 오는지 본다.
+- 첫 줄 씬 이름에 `_cabbage` 가 없으면 v014 폴더를 못 찾은 것이다. `--scene /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd` 를 붙여 다시 띄운다.
+- Isaac 의 Stop 버튼은 누르지 않는다(팀 앱이 종료 처리에서 죽는다). 끝낼 때는 Ctrl+C, 또는 다른 터미널에서 `pkill -f standalone_app.py`.
+- **Isaac 을 다시 띄우면 4·5절도 다시 띄운다.** 시뮬 시각이 0 으로 돌아가 TF·센서 시각이 어긋난다.
+
+`[대기]` 가 뜨면 **터미널 1** 에서 토픽이 실제로 흐르는지 본다.
 
 ```bash
 export ROS_DOMAIN_ID=101
@@ -169,17 +229,25 @@ source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 ros2 run smart_farm_navigation nav2_link_check 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/link_$(date +%Y%m%d_%H%M).txt
 ```
 
-기대: `/clock`·`/tf`·`/chassis/odom` 이 15 Hz 이상, `/front_3d_lidar/lidar_points` 가 3 Hz 이상, 마지막 줄 `RESULT OK - nav2.launch.py scan_mode:=cloud`.
+2026-09-26 에 이 기기에서 나온 값과 견주어 판단한다.
 
-| 결과 | 다음 행동 |
-|---|---|
-| `RESULT OK` | 그대로 4절로 간다. **Isaac 은 끄지 않고 그대로 둔다** |
-| `/clock` 이 0 Hz | headless 에서 ROS 그래프가 돌지 않는 경우다. Isaac 로그와 `link_*.txt` 를 그대로 보고한다. (대안은 가상 디스플레이나 라이브스트림인데 팀 앱을 고쳐야 할 수 있어 지시 없이는 하지 않는다) |
-| 라이다만 0 Hz | 렌더가 안 도는 경우다. 같은 두 파일을 보고한다 |
-| Isaac 이 뜨다가 죽음 | 로그 마지막 20 줄과 `nvidia-smi` 출력을 보고한다. 이 VM 의 GPU 는 L4 23 GB, RAM 47 GB 다 |
+| 항목 | 2026-09-26 관측값 | 판단 |
+|---|---|---|
+| `/clock` | 7.1 Hz, 실시간 배율 **0.37** | 정상 |
+| `/tf` odom→base_link, `/chassis/odom` | 7.4 Hz | 정상 |
+| `/front_3d_lidar/lidar_points` | 1.0 Hz(벽시계), **41,272 점/스캔** | 정상 (아래 환산으로 판단한다) |
+| 자기 반사 | 0 / 41,272 점 | 경량 카터라서 그렇다. `cloud_self_filter` 의 제거 상자가 할 일이 없을 뿐 오류가 아니다 |
+| 마지막 줄 | `RESULT FAIL - no lidar topic arrives at >= 3 Hz` | **이 기기에서는 이 판정을 그대로 믿지 않는다**(아래) |
 
-- Isaac 의 Stop 버튼은 누르지 않는다(팀 앱이 종료 처리에서 죽는다). 끝낼 때는 Ctrl+C 를 쓴다.
-- **Isaac 을 다시 띄우면 4·5절도 다시 띄운다.** 시뮬레이션 시각이 0 으로 돌아가 TF·센서 시각이 어긋난다.
+**판정은 이렇게 한다.** `nav2_link_check` 의 `>= 3 Hz` 는 벽시계 기준이라 실시간 배율 0.37 인 이 기기에서는 통과할 수 없다. 대신 **시뮬 기준으로 환산해서 본다.**
+
+> 시뮬 기준 스캔율 = (라이다 Hz) ÷ (실시간 배율). 예: 1.0 ÷ 0.37 = **2.7 Hz**.
+> 교육장 통합 앱 실측이 3.8 ÷ 1.12 = **3.4 Hz** 였으므로, **2.5 Hz 이상이면 진행한다.**
+
+- 점 수가 **41,000 안팎**이면 fullScan 이 제대로 걸린 것이다. 6,900 점 근처면 fullScan 이 꺼진 것이므로 진행하지 않는다.
+- 시뮬 환산이 2.5 Hz 미만이거나 점 수가 이상하면 `link_*.txt` 와 `isaac_*.txt` 를 보고한다.
+- `/clock` 이 0 Hz 이면 `xvfb-run` 없이 띄웠거나 `--headless` 가 붙어 있는 것이다. 명령을 다시 확인한다.
+- **벽시계로는 교육장의 3배가 걸린다.** 7-1~7-3 을 다 돌리는 데 벽시계 12분 안팎을 잡는다. 제한 시간은 모두 `/clock` 기준이라 타임아웃이 앞당겨지지는 않는다.
 - GPU 를 함께 보려면(**선택**) 다른 터미널에서:
 
 ```bash
@@ -305,6 +373,10 @@ ros2 topic pub --once --max-wait-time-secs 15 /sim_task/command std_msgs/msg/Str
 | 증상 | 조치 |
 |---|---|
 | Isaac 이 안 뜨거나 `/clock` 0 Hz | 3절 표를 따른다. 본 시험으로 넘어가지 않는다 |
+| `/clock` 0 Hz, 라이다 토픽 없음, GPU 0 % | `--headless` 로 띄웠다. 3절대로 `xvfb-run` 으로 다시 띄운다 |
+| `nav2_link_check` 가 `RESULT FAIL - no lidar topic arrives at >= 3 Hz` | 이 기기에서는 정상일 수 있다. 3절의 시뮬 환산(라이다 Hz ÷ 실시간 배율 ≥ 2.5)과 점 수 41,000 안팎을 보고 판단한다 |
+| `Could not open asset .../SubUSDs/materials.usd` | 대소문자 문제다. `ln -sfn Materials.usd /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/SubUSDs/materials.usd` (2026-09-26 에 이미 걸어 두었다) |
+| `Could not load sublayer .../env_dressing.usd; skipping` | 그 파일이 팀 zip 에 없다. 지도와는 어긋나지 않으므로 진행해도 되나 팀에 확인한다 |
 | 3절 첫 줄 씬 이름에 `_cabbage` 가 없음 | v014 폴더를 못 찾았다. `--scene /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd` 를 붙여 다시 띄운다 |
 | `Unknown package 'smart_farm_interfaces'` / `The passed message type is invalid` | 그 터미널에서 `source .../install/setup.bash` 를 하지 않았다. 블록을 통째로 붙인다 |
 | 발행 명령이 15 초 뒤 오류로 끝남 | 구독자를 못 찾았다. `/navigation/command` 면 5절 터미널이, `/sim_task/command` 면 3절 Isaac 이 `[대기]` 인지 본다 |
