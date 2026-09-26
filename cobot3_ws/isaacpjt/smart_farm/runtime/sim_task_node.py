@@ -197,6 +197,7 @@ class SimTaskNode(Node):
             "state": self._state,
             "task_id": command.task_id if command else "",
             "command_id": command.command_id if command else "",
+            "pallet_id": command.pallet_id if command else "",
             "operation": command.operation if command else "",
             "phase": self._phase,
             "detail": self._detail,
@@ -282,6 +283,7 @@ class SimTaskNode(Node):
         payload = {
             "task_id": command.task_id,
             "command_id": command.command_id,
+            "pallet_id": command.pallet_id,
             "operation": command.operation,
             "status": status,
             "phase": phase,
@@ -313,6 +315,7 @@ class SimTaskNode(Node):
         payload = {
             "task_id": command.task_id,
             "command_id": command.command_id,
+            "pallet_id": command.pallet_id,
             "operation": command.operation,
             "status": "FAILED",
             "phase": "COMMAND_VALIDATION",
