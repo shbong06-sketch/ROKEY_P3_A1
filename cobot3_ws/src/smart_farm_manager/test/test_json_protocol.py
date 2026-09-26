@@ -57,6 +57,20 @@ def test_sim_task_result_json_is_converted_to_internal_model():
     assert result.unknown_slots == ()
 
 
+def test_convey_result_keeps_pallet_and_destination():
+    result = TaskManagerNode._task_result_from_json(json.dumps({
+        "task_id": "TASK-001",
+        "command_id": "TASK-001-CMD-005",
+        "operation": "CONVEY_TO_INSPECT",
+        "pallet_id": "PALLET_001",
+        "status": "SUCCEEDED",
+        "reached_station": "INSPECT_STOP",
+    }))
+
+    assert result.pallet_id == "PALLET_001"
+    assert result.reached_station == "INSPECT_STOP"
+
+
 def test_sim_task_status_json_is_converted_for_preflight():
     raw_message = json.dumps(
         {
