@@ -30,6 +30,8 @@ class CycleStateMachine:
         "TRANSFER",
         "PICK_HARVEST",
         "PLACE_INSPECT",
+        "CONVEY_TO_INSPECT",
+        "PREPARE_INSPECT",
         "CULL",
         "CONVEYOR_OUT",
     }
@@ -268,6 +270,10 @@ class CycleStateMachine:
             and result.task_id == command.task_id
             and result.command_id == command.command_id
             and result.operation == command.operation
+            and (
+                command.operation not in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT"}
+                or result.pallet_id == command.pallet_id
+            )
         )
 
     def _validate_success(
@@ -282,6 +288,12 @@ class CycleStateMachine:
 
             if not self.EXPECTED_TRANSFER_UNITS.issubset(completed):
                 return "TRANSFER_INCOMPLETE"
+
+        elif command.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT"}:
+            if result.pallet_id != command.pallet_id:
+                return "PALLET_MISMATCH"
+            if result.reached_station != command.destination:
+                return "POSITION_NOT_CONFIRMED"
 
         elif command.operation == "PICK_HARVEST":
             if not result.safe_to_navigate:
@@ -333,6 +345,14 @@ class CycleStateMachine:
 
         elif command.operation == "PLACE_INSPECT":
             self.pallet_locations["PALLET_001"] = "INSPECT_STATION"
+            self.state = CycleState.CONVEY_TO_INSPECT
+
+        elif command.operation == "CONVEY_TO_INSPECT":
+            self.pallet_locations["PALLET_001"] = "INSPECT_STOP"
+            self.state = CycleState.PREPARE_INSPECT
+
+        elif command.operation == "PREPARE_INSPECT":
+            self.pallet_locations["PALLET_001"] = "INSPECT_WORK_POS"
             self.state = CycleState.INSPECT
 
         elif command.operation == "INSPECT":
