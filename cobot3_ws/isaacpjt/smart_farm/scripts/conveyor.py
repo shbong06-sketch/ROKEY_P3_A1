@@ -414,6 +414,24 @@ class ConveyorController:
     def zone_of(self, pallet_path):
         return self._find(pallet_path).zone
 
+    def fault_of(self, pallet_path):
+        """명령 대상 팔레트의 정체 실패만 반환한다."""
+        return self._find(pallet_path).fault
+
+    def is_locked(self, pallet_path):
+        """검사 정지선에서 물리 고정된 대상인지 확인한다."""
+        return self._find(pallet_path).locked
+
+    def lock_at_vision(self, pallet_path):
+        """[navigation 2026-09-26] 지그 준비 완료·실패 시 팔레트를 제자리에 보존한다."""
+        pallet = self._find(pallet_path)
+        if pallet.zone is not Zone.VISION:
+            raise ConveyorError(f"{pallet.name} is not at inspection stop")
+        if pallet.rigid is None:
+            raise ConveyorError(f"{pallet.name} rigid body is unavailable")
+        pallet.rigid.disable_rigid_body_physics()
+        pallet.locked = True
+
     def pallet_position(self, pallet_path=None):
         """팔레트의 월드 좌표 (x, y, z). 로봇에 넘길 좌표는 이걸 쓰세요.
 
