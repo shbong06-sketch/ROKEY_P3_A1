@@ -112,6 +112,11 @@ def parse_args():
     )
     parser.add_argument("--headless", action="store_true")
     parser.add_argument(
+        "--livestream",
+        action="store_true",
+        help="일반 headless Isaac 초기화 후 WebRTC 화면 스트리밍 활성화",
+    )
+    parser.add_argument(
         "--autoplay",
         action="store_true",
         help="timeline을 자동 재생하고 ROS 명령을 기다림",
@@ -214,6 +219,8 @@ def configure_ros_environment():
 args, kit_args = parse_args()
 if os.environ.get("HEADLESS") == "1":
     args.headless = True
+if args.livestream:
+    args.headless = True
 args.autoplay = args.autoplay or args.headless or args.demo
 
 configure_ros_environment()
@@ -224,6 +231,7 @@ from isaacsim import SimulationApp  # noqa: E402
 app = SimulationApp(
     {
         "headless": args.headless,
+        **({"hide_ui": False} if args.livestream else {}),
         "extra_args": kit_args,
     }
 )
@@ -239,6 +247,12 @@ from isaacsim.core.prims import (  # noqa: E402
     SingleXFormPrim,
 )
 from isaacsim.core.utils.extensions import enable_extension  # noqa: E402
+
+if args.livestream:
+    app.set_setting("/app/window/drawMouse", True)
+    enable_extension("omni.services.livestream.nvcf")
+    app.update()
+
 from isaacsim.robot.manipulators.manipulators import (  # noqa: E402
     SingleManipulator,
 )
@@ -1159,7 +1173,7 @@ def run():
         step_count += 1
         runtime.world.step(
             render=(
-                not args.headless
+                (not args.headless or args.livestream)
                 and RENDER_EVERY > 0
                 and step_count % RENDER_EVERY == 0
             )
