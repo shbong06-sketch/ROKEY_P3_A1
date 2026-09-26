@@ -677,6 +677,7 @@ class TaskManagerNode(Node):
                 required=True,
             ),
             status=cls._json_string(payload, "status", required=True),
+            pallet_id=cls._json_string(payload, "pallet_id"),
             phase=cls._json_string(payload, "phase"),
             reason=cls._json_string(payload, "reason", default="NONE"),
             safe_to_navigate=cls._json_bool(
