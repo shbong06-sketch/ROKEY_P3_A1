@@ -88,7 +88,7 @@ python3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/sim_test/rep
 | `/clock` 토픽은 목록에 있고 `Publisher count 1` 인데 메시지는 0 건 | 발행 노드는 만들어졌지만 **tick 이 돌지 않았다** |
 | `/front_3d_lidar/lidar_points` 는 토픽 자체가 없음 | RTX 라이다는 렌더 파이프에 붙어 있는데 **렌더가 돌지 않았다** |
 | GPU 사용률 0 % (메모리만 4.2 GB) | 같은 뜻 |
-| `[대기] 팔 베이스 정지를 기다리는 중` 이 117 초까지 증가 (코드 제한은 sim 15 초) | **시뮬 시계가 사실상 흐르지 않았다** |
+| `[대기] 팔 베이스 정지를 기다리는 중` 이 계속 증가 | **이 줄은 이상 신호가 아니다.** `robot_motion.py:345` 의 감시기가 매 스텝 누적 시간을 주기적으로 찍는 것이라 명령이 없어도 계속 나온다(정상 기동한 2차에서도 1,230 초까지 늘었다). 즉 물리 스텝은 돌고 있었고, 돌지 않은 것은 **ROS 발행(OmniGraph tick)** 이다 |
 
 팀이 Windows 에서 남긴 기록(*headless 올인원에서 odom/clock 없음 → GUI 모드로 해결*)이 리눅스 standalone 에서도 그대로 재현된 것이다. **가상 디스플레이를 주면 GUI 모드로 뜨면서 렌더·물리·ROS 그래프가 모두 돈다.**
 
@@ -320,7 +320,12 @@ xvfb-run -a -s "-screen 0 1920x1080x24" /home/nitrouriah92/isaacsim/python.sh /h
 ```
 
 - 첫 줄 씬 이름에 `_cabbage` 가 없으면 v014 폴더를 못 찾은 것이다. `--scene /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd` 를 붙여 다시 띄운다.
-- Isaac 의 Stop 버튼은 누르지 않는다(팀 앱이 종료 처리에서 죽는다). 끝낼 때는 Ctrl+C, 또는 다른 터미널에서 `pkill -f standalone_app.py`.
+- Isaac 의 Stop 버튼은 누르지 않는다(팀 앱이 종료 처리에서 죽는다). 끝낼 때는 **그 판에서 Ctrl+C** 를 쓴다.
+- **`pkill -f standalone_app.py` 같은 패턴 종료는 쓰지 않는다.** `-f` 는 명령줄 전체를 보므로 그 문자열이 들어간 **다른 셸까지 함께 죽인다**(2026-09-26 에 실제로 겪었다). 굳이 밖에서 끄려면 PID 를 찾아서 끈다.
+  ```bash
+  ps -ef | grep isaacsim | grep -v grep     # PID 확인
+  kill <그 PID>
+  ```
 - **Isaac 을 다시 띄우면 4·5절도 다시 띄운다.** 시뮬 시각이 0 으로 돌아가 TF·센서 시각이 어긋난다.
 
 `[대기]` 가 뜨면 **터미널 1** 에서 토픽이 실제로 흐르는지 본다.
@@ -478,7 +483,9 @@ ros2 topic pub --once --max-wait-time-secs 15 /sim_task/command std_msgs/msg/Str
 | 증상 | 조치 |
 |---|---|
 | Isaac 이 안 뜨거나 `/clock` 0 Hz | 3절 표를 따른다. 본 시험으로 넘어가지 않는다 |
-| `/clock` 0 Hz, 라이다 토픽 없음, GPU 0 % | `--headless` 로 띄웠다. 3절대로 `xvfb-run` 으로 다시 띄운다 |
+| `/clock` 0 Hz, 라이다 토픽 없음, GPU 0 % | `--headless` 로 띄웠다. 3절대로 `xvfb-run`(또는 2-1절의 녹화 장비)으로 다시 띄운다 |
+| `[대기] 팔 베이스 정지를 기다리는 중 (N초)` 가 계속 늘어남 | **정상이다.** 감시기의 주기 로그이며 명령이 없어도 계속 찍힌다 |
+| 무언가를 끄려다 엉뚱한 셸이 같이 죽음 | `pkill -f <패턴>` 이 다른 셸의 명령줄까지 잡은 것이다. PID 를 찾아 `kill` 한다 |
 | `nav2_link_check` 가 `RESULT FAIL - no lidar topic arrives at >= 3 Hz` | 이 기기에서는 정상일 수 있다. 3절의 시뮬 환산(라이다 Hz ÷ 실시간 배율 ≥ 2.5)과 점 수 41,000 안팎을 보고 판단한다 |
 | `Could not open asset .../SubUSDs/materials.usd` | 대소문자 문제다. `ln -sfn Materials.usd /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/SubUSDs/materials.usd` (2026-09-26 에 이미 걸어 두었다) |
 | `Could not load sublayer .../env_dressing.usd; skipping` | 그 파일이 팀 zip 에 없다. 지도와는 어긋나지 않으므로 진행해도 되나 팀에 확인한다 |

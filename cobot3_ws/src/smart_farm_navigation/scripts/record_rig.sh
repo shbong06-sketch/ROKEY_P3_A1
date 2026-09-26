@@ -45,7 +45,8 @@ start_display() {   # $1 디스플레이 번호, $2 해상도
     if [ -e "/tmp/.X11-unix/X$1" ]; then
         echo "  [실패] :$1 는 이미 쓰이고 있다."
         echo "         앞서 띄워 둔 Isaac 이 그 화면을 쓰고 있을 수 있다. 확인: ps -ef | grep Xvfb"
-        echo "         그 Isaac 을 끄거나(pkill -f standalone_app.py) 다른 번호를 준다."
+        echo "         그 Isaac 을 끄거나(PID 를 찾아 kill. pkill -f 는 다른 셸까지 죽이므로 쓰지 않는다)"
+        echo "         다른 번호를 준다: DISP_ISAAC=89 DISP_RVIZ=88 DISP_TERM=87 $0 start"
         return 1
     fi
     Xvfb ":$1" -screen 0 "$2x24" -nolisten tcp >"$RUN/xvfb_$1.log" 2>&1 &
