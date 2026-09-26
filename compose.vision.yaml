@@ -12,8 +12,9 @@ services:
     shm_size: "2gb"
 
     environment:
-      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-0}"
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:?export ROS_DOMAIN_ID before starting vision}"
       ROS_LOCALHOST_ONLY: "0"
+      FASTDDS_BUILTIN_TRANSPORTS: "UDPv4"
       YOLO_CONFIG_DIR: "/tmp/"
 
     volumes:
