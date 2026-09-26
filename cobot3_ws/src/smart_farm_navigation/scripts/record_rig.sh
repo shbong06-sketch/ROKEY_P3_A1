@@ -43,7 +43,9 @@ FPS=${FPS:-10}                         # 렌더가 초당 7 회 수준이라 10 
 
 start_display() {   # $1 디스플레이 번호, $2 해상도
     if [ -e "/tmp/.X11-unix/X$1" ]; then
-        echo "  [건너뜀] :$1 는 이미 쓰이고 있다. 다른 번호를 주거나 먼저 정리한다."
+        echo "  [실패] :$1 는 이미 쓰이고 있다."
+        echo "         앞서 띄워 둔 Isaac 이 그 화면을 쓰고 있을 수 있다. 확인: ps -ef | grep Xvfb"
+        echo "         그 Isaac 을 끄거나(pkill -f standalone_app.py) 다른 번호를 준다."
         return 1
     fi
     Xvfb ":$1" -screen 0 "$2x24" -nolisten tcp >"$RUN/xvfb_$1.log" 2>&1 &
@@ -96,10 +98,13 @@ start)
     mkdir -p "$RUN"
     ln -sfn "$RUN" "$CURRENT"
 
+    # 시작 도중 실패하면 흔적을 지우고 나간다. 안 그러면 다음 start 가 "이미 녹화 중" 으로 막힌다.
+    abort() { rm -f "$CURRENT"; echo "시작하지 못했다. 위 메시지를 보고 정리한 뒤 다시 실행한다."; exit 1; }
+
     echo "[1/4] 가상 화면 3개를 띄운다"
-    start_display "$DISP_ISAAC" "$SIZE_ISAAC" || exit 1
-    start_display "$DISP_RVIZ"  "$SIZE_RVIZ"  || exit 1
-    start_display "$DISP_TERM"  "$SIZE_TERM"  || exit 1
+    start_display "$DISP_ISAAC" "$SIZE_ISAAC" || abort
+    start_display "$DISP_RVIZ"  "$SIZE_RVIZ"  || abort
+    start_display "$DISP_TERM"  "$SIZE_TERM"  || abort
 
     echo "[2/4] :$DISP_TERM 에 터미널(xterm + tmux '$SES')을 띄운다"
     tmux has-session -t "$SES" 2>/dev/null || tmux new-session -d -s "$SES"
