@@ -80,3 +80,5 @@ cobot3_ws/isaacpjt/smart_farm/scenes/*.zip
 /cobot3_ws/src/smart_farm_navigation/errored/
 /frames_*.gv
 /frames_*.pdf
+
+station_out/*
