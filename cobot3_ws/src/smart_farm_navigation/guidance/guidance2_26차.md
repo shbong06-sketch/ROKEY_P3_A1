@@ -155,6 +155,36 @@ python3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/sim_test/rep
 - Isaac 뷰포트의 기본 카메라는 Perspective 라 비전룸을 보고 있다. 씬의 `/World/ProcessCameras` 에 `Cam0_Perspective`, `Cam1_Harvest`, `Cam2_Nav2Place`, `Cam4_CullPickPlace`, `Cam5_Pusher` 가 있으므로 **녹화 전에 보고 싶은 공정의 카메라로 바꾼다.**
 - 이 검증에서 남긴 증거는 `results/media_log/` 에 있다(`pilot_isaac_only.png`, `pilot_isaac_rviz.png`, `pilot_capture_8s.mp4`). 이 경로는 git 에 올라가지 않는다.
 
+### 고피3 전 구간 통과 기록 (2026-09-26 · Isaac 실기동, 교육장 아님)
+
+**파지 → 주행·도킹 → 턴테이블 Place 를 이 기기에서 한 번에 통과했다.** 모의가 아니라 Isaac 을 실제로 돌린 결과다. 다만 교육장 고피가 아니라 고피3 이므로 교육장 실측을 대신하지는 않는다.
+
+| 단계 | 결과 | 근거 |
+|---|---|---|
+| PICK_HARVEST | `SUCCEEDED` | `results/simresult_20260926_0133.txt` |
+| NAVIGATION (주행+도킹) | `SUCCEEDED / NONE`, `reached_station: FEEDER_DOCK` | `results/navresult_20260926_0133.txt` |
+| 도킹 품질 | **면까지 0.937 m**(목표 0.92), **방향 오차 +1.08°**(허용 3°), **횡 0.0 m**(허용 0.06) | `results/navnode_20260926_0133.txt` |
+| PLACE_INSPECT | `SUCCEEDED` | `results/simresult_20260926_0133.txt` |
+| 컨베이어 | 놓는 동안 줄기 벨트 정지 → 재가동 → 반송 → 카메라 앞 정지 `(-0.496, -6.728)` | `results/isaac_20260926_0132.txt` |
+
+**받아야 했던 값(팔 자세 허용 범위용)이 나왔다.**
+
+```
+[도킹] 카터 본체 world (-2.161, -2.738), place 대상까지 x -0.026 m, y -1.169 m, 직선 1.170 m
+[Place] 목표 팔레트 원점 [-2.1866, -3.7486, 0.7952], 놓는 방향 yaw +90.0°, 팔 베이스까지 0.809 m
+```
+
+- **팔 베이스 ~ 놓을 자리 0.809 m** 에서 Place 가 성공했다. 팀 기록의 실패 사례는 `standoff_m` 0.85 일 때 0.72 m 였다. 0.92 가 맞는 값임이 이 기기에서도 확인됐다.
+- 카터 정지 위치 world (x −2.161, y −2.738) 는 `stations.yaml` 의 FEEDER_DOCK 어림값 (x −2.19, y −2.73) 과 x 0.029 m, y 0.008 m 차이다.
+
+그 밖에 확인된 것:
+
+| 항목 | 값 |
+|---|---|
+| 전체 소요 | 벽시계 **10분 9초** (Isaac 로딩 약 4분 포함). 실시간 배율 0.32 |
+| 자기 반사 | **운반 중에도 0 / 41,252 점.** `cloud_self_filter` 가 지울 것이 없다는 뜻이며 도킹·주행에 지장 없었다 |
+| 녹화 | 세 화면 594 초, 실제 경과 609 초의 98 %. 프레임 손실은 무시할 수준 |
+
 ### 지금까지 고친 것 (읽기만)
 
 | 판 | 증상 | 조치 |
