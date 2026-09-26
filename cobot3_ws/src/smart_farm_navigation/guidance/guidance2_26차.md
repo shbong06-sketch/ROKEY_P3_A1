@@ -378,6 +378,7 @@ ros2 launch smart_farm_navigation nav2.launch.py record:=true use_rviz:=false 2>
 기대: `rosbag -> ~/.ros/smart_farm_navigation/bags/nav2_…` → `scan_mode auto -> cloud` → `AMCL initial pose (-0.421, 1.006, 90.0deg)` → `Managed nodes are active` → `[feeder_dock]: [IDLE] waiting`.
 
 - **2-1절로 녹화를 켰다면 `use_rviz:=true` 로 바꾸고** 그 판에서 `export DISPLAY=:98` 을 먼저 한다. RViz2 화면이 `rviz.mp4` 로 녹화된다.
+- **RViz2 는 켜자마자 지도 전체가 보이도록 맞춰 두었다(마우스로 끌 필요 없다).** `nav2_smartfarm.rviz` 의 뷰를 중심 map (x 2.60, y 1.47) · 배율 38 · 각도 0 으로 고쳤다. 지도가 14.25 m × 23.00 m 이고 3D 화면이 약 967 × 959 픽셀이라 이 값이면 네 변이 모두 들어온다(2026-09-26 `map_server` 만 띄워 확인). 예전 값(중심 x −5.41, y 0 · 배율 54)은 지도 일부가 화면 밖으로 나갔다.
 - **`use_rviz:=false` 는 이 VM 에 화면이 없기 때문이다.** RViz2 없이도 절차는 전부 돈다. 초기 위치는 launch 가 AMCL 에 직접 넣으므로 `2D Pose Estimate` 클릭이 필요 없다.
 - `record:=true` 는 판정 근거다. 화면이 없으니 이번 시험의 증거는 사실상 이 bag 과 로그뿐이다.
 
