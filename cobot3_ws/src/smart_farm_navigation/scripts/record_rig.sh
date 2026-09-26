@@ -38,9 +38,16 @@ SIZE_RVIZ=${SIZE_RVIZ:-1680x1050}
 SIZE_TERM=${SIZE_TERM:-1600x900}
 XTERM_GEOM=${XTERM_GEOM:-200x50}       # tmux 는 붙어 있는 클라이언트 중 가장 작은 것에 맞춰진다
 XTERM_FONT=${XTERM_FONT:-13}
-# [2026-09-26] 한글이 모두 빈칸으로 찍히던 문제. 이 기기에 한글 글꼴이 하나도 없었다.
-#   sudo apt-get install -y fonts-nanum-coding  로 넣고 고정폭 한글 글꼴을 직접 지정한다.
-XTERM_FONT_FAMILY=${XTERM_FONT_FAMILY:-NanumGothicCoding}
+# [2026-09-26] 글꼴은 영문과 한글을 나눠서 준다.
+#   영문까지 한글 글꼴로 그리면 자간이 벌어져 읽기 나쁘다. xterm 은 보통 폭 글자를 -fa 로,
+#   한글 같은 두 칸 폭 글자를 -fw 로 그리므로 각각 맞는 글꼴을 준다.
+#   한글 글꼴이 없으면 한글이 빈칸으로 나온다: sudo apt-get install -y fonts-noto-cjk
+#   조합 비교(2026-09-26 캡처로 확인):
+#     한글 글꼴을 -fa 에도 주면  -> 영문까지 자간이 벌어져 읽기 나쁘다
+#     Noto CJK 를 -fa 에 주면    -> 더 심하게 벌어진다
+#     아래 조합                   -> 영문 정상, 한글도 간격이 자연스럽다
+XTERM_FONT_FAMILY=${XTERM_FONT_FAMILY:-DejaVu Sans Mono}                 # 영문·숫자
+XTERM_FONT_FAMILY_WIDE=${XTERM_FONT_FAMILY_WIDE:-Noto Sans Mono CJK KR}  # 한글
 FPS=${FPS:-10}                         # 렌더가 초당 7 회 수준이라 10 이면 충분하다
 
 
@@ -114,7 +121,7 @@ start)
     tmux has-session -t "$SES" 2>/dev/null || tmux new-session -d -s "$SES"
     tmux set-option -t "$SES" -g history-limit 100000 >/dev/null
     DISPLAY=":$DISP_TERM" xterm -geometry "$XTERM_GEOM" \
-        -fa "$XTERM_FONT_FAMILY" -fw "$XTERM_FONT_FAMILY" -fs "$XTERM_FONT" -bg black -fg white \
+        -fa "$XTERM_FONT_FAMILY" -fw "$XTERM_FONT_FAMILY_WIDE" -fs "$XTERM_FONT" -bg black -fg white \
         -e tmux attach -t "$SES" >"$RUN/xterm.log" 2>&1 &
     echo $! > "$RUN/xterm.pid"
     sleep 2
