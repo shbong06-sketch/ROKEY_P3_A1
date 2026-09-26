@@ -136,13 +136,16 @@ python3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/sim_test/rep
 | 영상으로 받아지는가 | `ffmpeg -f x11grab -framerate 10 -video_size 1920x1080 -i :99` 로 8 초 | **된다.** 1920x1080 / 10 fps / 8.0 s 정상 생성 |
 | 자원 | Isaac + RViz2 동시 | GPU 49 %, 4.5 GB / 23 GB. 디스크 여유 190 GB |
 
-**걸림돌 하나: 창 관리자가 없어 창이 겹치고 잘린다.** RViz2 창이 화면 좌표 +1091+222 에 1610x893 으로 떠서, 그 안의 3D 뷰(x=1455 부터 897 폭)가 화면 오른쪽 끝 1920 을 넘어가 **잘린다.** 그대로 녹화하면 RViz2 의 3D 화면이 안 나온다. 해법은 셋이다.
+**걸림돌 하나가 있었고 해결했다: 창 관리자가 없어 창이 겹치고 잘렸다.** RViz2 창이 화면 좌표 +1091+222 에 1610x893 으로 떠서, 그 안의 3D 뷰(x=1455 부터 897 폭)가 화면 오른쪽 끝 1920 을 넘어가 **잘린다.** 그대로 녹화하면 RViz2 의 3D 화면이 안 나온다. 해법은 셋이다.
 
-| 방법 | 내용 | 평가 |
-|---|---|---|
-| 디스플레이를 둘로 나눈다 | `Xvfb :99` 에 Isaac, `Xvfb :98` 에 RViz2 를 띄우고 **각각 따로 녹화** | **가장 단순하고 확실하다.** 편집에서 두 영상을 나란히 붙이면 된다 |
-| 화면을 키운다 | `Xvfb :99 -screen 0 2560x1440x24` | 창은 여전히 겹칠 수 있지만 잘림은 줄어든다 |
-| 창 관리자를 넣는다 | `matchbox-window-manager` 등을 같은 디스플레이에 띄워 배치 | 배치가 자유롭지만 설치·설정이 는다 |
+**택한 방법(2026-09-26 사용자 결정): 화면을 셋으로 나눈다.** `:99` Isaac, `:98` RViz2, `:97` 터미널(xterm + tmux). 화면마다 창이 하나뿐이라 겹칠 일이 없다. 잘림은 두 가지로 막았다.
+
+| 조치 | 내용 |
+|---|---|
+| `rviz/nav2_smartfarm.rviz` 의 창 위치 수정 | 저장된 값이 `X: 1091, Y: 222, Width: 1610` 이라 화면 밖으로 나갔다. **`X: 0, Y: 0, Width: 1680`** 으로 고쳤다. 교육장에서도 좌상단에 크게 뜰 뿐 문제 없다. **고친 뒤 `colcon build` 를 해야 적용된다**(launch 는 `install/` 복사본을 읽는다) |
+| `record_rig.sh fit` | 창 관리자가 없어도 `xdotool` 로 창을 좌상단 0,0 으로 옮기고 화면 크기에 맞춘다. Isaac·RViz2 를 띄운 뒤 한 번 실행한다 |
+
+이 둘을 적용한 뒤 RViz2 3D 뷰가 화면 안에 온전히 들어오는 것을 확인했다(`results/media_log/` 의 캡처).
 
 녹화용 참고:
 
@@ -218,10 +221,84 @@ python3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/sim_test/doc
 
 **이 절을 마친 뒤에는 회귀 시험 프로세스가 모두 끝났는지 확인한다.** 본 시험 중에 남아 있으면 Nav2 가 두 벌이 되어 서로 `/cmd_vel` 을 쏜다.
 
+## 2-1. (선택이지만 이번 판의 목적) 화면 녹화를 켜고 시작한다
+
+실측 영상을 남기려면 **여기서 녹화를 켜고, 그 뒤 3~7절을 전부 tmux 안에서 실행한다.** 녹화를 하지 않을 것이면 이 절을 건너뛰고 3절로 간다(그때는 3절 명령을 `xvfb-run` 으로 감싼 형태 그대로 쓴다).
+
+화면을 셋으로 나눠 따로 녹화한다. 가상 화면에는 창 관리자가 없어 한 화면에 두 창을 띄우면 겹치고 잘리기 때문이다.
+
+| 화면 | 무엇이 뜨는가 | 결과 파일 |
+|---|---|---|
+| `:99` | Isaac Sim 뷰포트 | `isaac.mp4` |
+| `:98` | RViz2 | `rviz.mp4` |
+| `:97` | 터미널 (xterm + tmux `farm`) | `terminal.mp4` |
+
+### 2-1-1. 녹화 시작
+
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/record_rig.sh start
+```
+
+화면 3개, tmux 세션 `farm`, 녹화기 3개가 뜬다. 저장 폴더 이름(`results/media_log/run_<날짜>_<시각>`)이 출력된다.
+
+### 2-1-2. 같은 tmux 에 붙는다
+
+```bash
+tmux attach -t farm
+```
+
+**여기서부터 치는 모든 명령이 `:97` 화면의 xterm 에도 그대로 나타나 `terminal.mp4` 에 녹화된다.**
+
+- tmux 는 **붙어 있는 클라이언트 중 가장 작은 것**에 맞춰 크기가 정해진다. SSH 브라우저 창을 최대한 키우고 글자를 줄여(브라우저 축소) 두면 영상 쪽도 그만큼 넓게 나온다.
+- 판 나누기: `Ctrl+b` 다음 `"`(위아래), `%`(좌우). 판 이동: `Ctrl+b` 다음 화살표.
+- 이번 판에 필요한 터미널은 여섯이다. 판 넷을 한 화면에 두고(Isaac / Nav2 / 주행 노드 / 명령), 결과 구독 둘은 새 창(`Ctrl+b` `c`)에 두면 영상이 읽기 좋다.
+
+### 2-1-3. 각 판의 첫 줄
+
+**판마다 어느 화면에 그릴지 지정해야 한다.** 이것이 녹화하지 않을 때와 다른 유일한 점이다.
+
+| 판 | 무엇을 실행하는가 | 첫 줄에 넣을 것 |
+|---|---|---|
+| Isaac | 3절 | `export DISPLAY=:99` — 그리고 **3절 명령에서 `xvfb-run -a -s "…"` 를 뺀다** |
+| Nav2 | 4절 | `export DISPLAY=:98` — 그리고 **4절을 `use_rviz:=true` 로 바꾼다** |
+| 주행 노드 | 5절 | 화면이 필요 없다 |
+| 결과 구독 2개 | 6절 | 화면이 필요 없다 |
+| 명령 | 7절 | 화면이 필요 없다 |
+
+### 2-1-4. Isaac 과 RViz2 가 뜬 뒤 한 번
+
+```bash
+bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/record_rig.sh fit
+```
+
+두 창을 각자 화면의 좌상단에 화면 크기로 맞춘다. 이걸 빼먹으면 RViz2 의 3D 화면이 잘려 나온다.
+
+### 2-1-5. 녹화 종료
+
+```bash
+bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/record_rig.sh stop
+```
+
+녹화기를 끊어 파일을 마무리하고, 터미널 창과 가상 화면을 닫는다(tmux 세션은 남는다). 파일 이름·크기·길이와 내려받는 명령이 출력된다.
+
+### 2-1-6. 알아 둘 점
+
+- 세 영상은 **같은 시각에 시작**하고, 시작 시각이 `start_time.txt` 에 남으며 터미널 화면 첫 줄에도 `=== 녹화 시작 … (UTC) ===` 로 찍힌다. 나중에 영상 셋을 맞출 때 이 줄을 기준으로 삼는다.
+- 캡처는 초당 10 장이다. 렌더가 초당 7 회 수준이라 그 이상은 용량만 는다.
+- 용량 감(2026-09-26 시험 155 초 기준): 터미널 5.3 MB, RViz2 0.46 MB, Isaac 은 화면이 비어 있어 0.1 MB 였다. 실제 장면이 움직이면 더 커지지만, 디스크 여유가 190 GB 라 한 번의 실측에는 충분하다.
+- **Isaac 뷰포트의 기본 카메라는 Perspective 라 비전룸을 비춘다.** 씬의 `/World/ProcessCameras` 에 `Cam1_Harvest`, `Cam2_Nav2Place`, `Cam4_CullPickPlace`, `Cam5_Pusher` 가 있으므로, 보고 싶은 공정이 있으면 녹화 전에 뷰포트 카메라를 바꾼다.
+- 진행 상황은 `record_rig.sh status` 로 본다.
+- 영상은 `results/media_log/` 아래에 쌓이고 **git 에 올라가지 않는다.** 내려받기: `gcloud compute scp --recurse <인스턴스>:<폴더> .`
+
 ## 3. 터미널 2 — Isaac 기동과 예비 점검 (본 시험 전에 반드시 한 번)
 
 **이 터미널에서는 워크스페이스를 `source` 하지 않는다**(팀 앱이 Isaac 번들 ROS 라이브러리를 먼저 써야 한다).
 **`--headless` 를 쓰지 않는다. 대신 가상 디스플레이로 감싼다**(0-2절에서 확인한 사실).
+**2-1절로 녹화를 켰다면** 화면이 이미 떠 있으므로 `xvfb-run …` 부분을 빼고 그 판에서 `export DISPLAY=:99` 만 한 뒤 `python.sh` 부터 실행한다.
 
 ```bash
 export ROS_DOMAIN_ID=101
@@ -295,6 +372,7 @@ ros2 launch smart_farm_navigation nav2.launch.py record:=true use_rviz:=false 2>
 
 기대: `rosbag -> ~/.ros/smart_farm_navigation/bags/nav2_…` → `scan_mode auto -> cloud` → `AMCL initial pose (-0.421, 1.006, 90.0deg)` → `Managed nodes are active` → `[feeder_dock]: [IDLE] waiting`.
 
+- **2-1절로 녹화를 켰다면 `use_rviz:=true` 로 바꾸고** 그 판에서 `export DISPLAY=:98` 을 먼저 한다. RViz2 화면이 `rviz.mp4` 로 녹화된다.
 - **`use_rviz:=false` 는 이 VM 에 화면이 없기 때문이다.** RViz2 없이도 절차는 전부 돈다. 초기 위치는 launch 가 AMCL 에 직접 넣으므로 `2D Pose Estimate` 클릭이 필요 없다.
 - `record:=true` 는 판정 근거다. 화면이 없으니 이번 시험의 증거는 사실상 이 bag 과 로그뿐이다.
 
@@ -442,6 +520,7 @@ ros2 topic pub --once --max-wait-time-secs 15 /sim_task/command std_msgs/msg/Str
 | `smart_farm_navigation/nav2_link_check.py` | 토픽 도달과 자기 반사 점검(3절 예비 점검에 씀) |
 | `config/stations.yaml` | 작업점 좌표(FEEDER_APPROACH, FEEDER_DOCK)와 기준 장면 이름 |
 | `config/nav2_params.yaml` | Nav2 설정. Smac Hybrid-A*, RPP `desired_linear_vel` 0.3 m/s |
+| `scripts/record_rig.sh` | 실측 녹화 장비(2-1절). 가상 화면 3개(:99 Isaac / :98 RViz2 / :97 터미널)와 녹화기 3개, tmux 세션을 띄우고 끈다. `start`/`fit`/`status`/`stop` |
 | `sim_test/dock_regression.py` | 본 시험 전 회귀(2절). 합성 로봇 + 현장 launch 로 10 시나리오 |
 | `sim_test/dock_sim.py` | 도킹 상태기계 오프라인 격자 모의(225 케이스) |
 | `smart_farm_interfaces` | 명령·결과 메시지. 명령을 보내는 터미널에 빌드·`source` 되어 있어야 한다 |
