@@ -82,3 +82,9 @@ cobot3_ws/isaacpjt/smart_farm/scenes/*.zip
 /frames_*.pdf
 
 station_out/*
+
+# 호스트별 Docker Compose ROS 도메인
+/.env
+
+# VM instance 스트리밍 실행 산출물
+NvStreamer-*.etli
