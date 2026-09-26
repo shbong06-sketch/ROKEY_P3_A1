@@ -1,6 +1,6 @@
 # TRANSFER → PLACE_INSPECT 실기 확인 (Ubuntu)
 
-이 절차는 `DEMO_HARVEST_01` 생산 시나리오를 그대로 실행한다. `PLACE_INSPECT`의 terminal result 뒤에 Task Manager가 `INSPECT`를 자동 발행한다. 네 단계만 따로 성공 처리하거나 사이클을 `COMPLETE`로 바꾸지 않는다. 구간 판정은 아래 명령·결과 기록에서 한다.
+이 절차는 `DEMO_HARVEST_01` 생산 시나리오를 그대로 실행한다. `PLACE_INSPECT`의 terminal result 뒤에 Task Manager가 `CONVEY_TO_INSPECT`, `PREPARE_INSPECT`를 순서대로 발행하고, 두 명령이 성공한 뒤 `INSPECT`를 발행한다. 네 단계만 따로 성공 처리하거나 사이클을 `COMPLETE`로 바꾸지 않는다. 구간 판정은 아래 명령·결과 기록에서 한다. 뒤 구간의 절차는 [POST_PLACE_TO_INSPECT_CHECK.md](POST_PLACE_TO_INSPECT_CHECK.md)를 참조한다.
 
 ## 준비
 
@@ -136,7 +136,7 @@ ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_i
 | 3 | `/navigation/command` TaskCommand `NAVIGATION`, `CMD-003`, `destination=FEEDER_DOCK` | `/navigation/result` TaskResult `SUCCEEDED`, `reached_station=FEEDER_DOCK`; 상태 `PLACE_INSPECT` |
 | 4 | `/sim_task/command` String/JSON `PLACE_INSPECT`, `CMD-004`, `pallet_id=PALLET_001` | `/sim_task/result` `SUCCEEDED`; 상태 `INSPECT` |
 
-전체 `command_id`는 `/start_cycle` 응답의 `task_id` 뒤에 `-CMD-001`처럼 붙는다. Place 결과 후 `/inspection/command` `INSPECT`, `CMD-005`가 나오는 것은 현 생산 시나리오의 예상 동작이다. 이 결과로 네 단계의 성공을 대체하지 않는다. 현재 올인원 스테이션도 Place 후 컨베이어·검사·솎아내기를 자동 진행하므로 이후 구간의 정상 통합을 이 시험에서 주장하지 않는다.
+전체 `command_id`는 `/start_cycle` 응답의 `task_id` 뒤에 `-CMD-001`처럼 붙는다. Place 결과 후 `/sim_task/command`의 `CONVEY_TO_INSPECT` (`CMD-005`), `PREPARE_INSPECT` (`CMD-006`), 그 다음 `/inspection/command`의 `INSPECT` (`CMD-007`)가 현 생산 시나리오의 예상 동작이다. 이 결과로 앞 네 단계의 성공을 대체하지 않는다. 통합 런타임은 Place 뒤 팔레트를 자동 이송·검사하지 않으며, 이 시험만으로 뒤 구간의 성공을 주장하지 않는다.
 
 ## 실패 시 로그 확인 순서
 
