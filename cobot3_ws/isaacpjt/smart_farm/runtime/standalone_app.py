@@ -1101,10 +1101,36 @@ def fail_operation(
         )
 
 
+def select_view_camera():
+    """[navigation 2026-09-26] 화면에 보여 줄 카메라를 환경변수로 고른다.
+
+    씬에 저장된 기본 Perspective(/OmniverseKit_Persp)가 비전룸을 비추고 있어
+    녹화할 때 카터가 보이지 않는다. SMARTFARM_VIEW_CAMERA 에 카메라 prim 경로를
+    주면 그 카메라로 바꾼다. 예) /World/ProcessCameras/Cam2_Nav2Place
+    환경변수가 없으면 아무것도 하지 않으므로 기존 실행에는 영향이 없다.
+    headless 로 띄우면 뷰포트가 없어 조용히 넘어간다.
+    """
+    camera = os.environ.get("SMARTFARM_VIEW_CAMERA", "").strip()
+    if not camera:
+        return
+    try:
+        from omni.kit.viewport.utility import get_active_viewport
+
+        viewport = get_active_viewport()
+        if viewport is None:
+            print("[화면] 뷰포트가 없어 카메라를 바꾸지 않았습니다(headless).", flush=True)
+            return
+        viewport.camera_path = camera
+        print(f"[화면] 뷰포트 카메라를 {camera} 로 바꿨습니다.", flush=True)
+    except Exception as error:  # 녹화 편의 기능이므로 실패해도 실행을 막지 않는다
+        print(f"[화면] 카메라 전환 실패 (무시): {error}", flush=True)
+
+
 def run():
     print(f"[시작] Scene을 불러옵니다: {args.scene.resolve()}", flush=True)
     runtime = create_simulation_runtime(args.scene.resolve())
     print("[시작] Scene과 제어기 구성이 완료되었습니다.", flush=True)
+    select_view_camera()   # [navigation 2026-09-26]
     transfer_operation = TransferOperation(
         runtime.transfer,
         runtime.pallets,
