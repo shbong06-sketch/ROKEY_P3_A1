@@ -125,6 +125,33 @@ python3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/sim_test/rep
 | `Could not open asset .../SubUSDs/materials.usd` | 실제 파일명은 **`Materials.usd`(대문자 M)**. 리눅스는 대소문자를 가리므로 팀 Windows PC 에서는 안 나던 오류다 | 심볼릭 링크 `materials.usd -> Materials.usd` 를 만들어 해결했다(씬 폴더는 git 제외라 저장소 영향 없음) |
 | `Could not load sublayer .../env_dressing.usd; skipping` | 그 파일이 **팀 공유 zip 에 아예 없다**(`env_dressing_tex/`, `env_dressing_navmap/` 만 있다) | 우리 v014 지도도 같은 USD 를 읽어 만들었으므로 지도와 시뮬은 서로 어긋나지 않는다(v011 지도와 36 픽셀만 달랐던 것과 일치). **팀에 확인이 필요하다** |
 
+### 화면 녹화 가능 여부 (2026-09-26 검증 · 읽기만)
+
+실측 영상을 남길 수 있는지 확인한 결과다. **둘 다 된다.**
+
+| 검증 | 방법 | 결과 |
+|---|---|---|
+| Isaac 화면이 가상 디스플레이에 실제로 그려지는가 | `DISPLAY=:99` 에서 `xwininfo -root -tree`, `import -window root` | **그려진다.** 창 `Isaac Sim Python 5.1.0` 1440x900, 뷰포트·Stage·Content·Property 패널 전부 정상 |
+| RViz2 를 같은 화면에 띄울 수 있는가 | 같은 `DISPLAY=:99` 로 `rviz2 -d rviz/nav2_smartfarm.rviz` | **뜬다. `OpenGl version: 4.5` — 소프트웨어 렌더가 아니라 GPU 가속이다.** Displays(Grid/LaserScan/Map/Stations/Global Planner/Controller)와 Nav2 패널 정상 |
+| 영상으로 받아지는가 | `ffmpeg -f x11grab -framerate 10 -video_size 1920x1080 -i :99` 로 8 초 | **된다.** 1920x1080 / 10 fps / 8.0 s 정상 생성 |
+| 자원 | Isaac + RViz2 동시 | GPU 49 %, 4.5 GB / 23 GB. 디스크 여유 190 GB |
+
+**걸림돌 하나: 창 관리자가 없어 창이 겹치고 잘린다.** RViz2 창이 화면 좌표 +1091+222 에 1610x893 으로 떠서, 그 안의 3D 뷰(x=1455 부터 897 폭)가 화면 오른쪽 끝 1920 을 넘어가 **잘린다.** 그대로 녹화하면 RViz2 의 3D 화면이 안 나온다. 해법은 셋이다.
+
+| 방법 | 내용 | 평가 |
+|---|---|---|
+| 디스플레이를 둘로 나눈다 | `Xvfb :99` 에 Isaac, `Xvfb :98` 에 RViz2 를 띄우고 **각각 따로 녹화** | **가장 단순하고 확실하다.** 편집에서 두 영상을 나란히 붙이면 된다 |
+| 화면을 키운다 | `Xvfb :99 -screen 0 2560x1440x24` | 창은 여전히 겹칠 수 있지만 잘림은 줄어든다 |
+| 창 관리자를 넣는다 | `matchbox-window-manager` 등을 같은 디스플레이에 띄워 배치 | 배치가 자유롭지만 설치·설정이 는다 |
+
+녹화용 참고:
+
+- 디스플레이 번호를 **고정**해서 띄우면 캡처가 쉽다: `Xvfb :99 -screen 0 1920x1080x24 &` → `export DISPLAY=:99` 후 3절 명령을 `xvfb-run` 없이 그대로 실행.
+- `xvfb-run -a` 로 띄웠다면 번호는 `ps -ef | grep Xvfb` 로 찾고, `XAUTHORITY` 도 그 줄의 `-auth` 경로를 써야 한다.
+- 렌더가 초당 7 회 수준이므로 캡처 `-framerate` 는 **10** 이면 충분하다. 그 이상은 용량만 는다.
+- Isaac 뷰포트의 기본 카메라는 Perspective 라 비전룸을 보고 있다. 씬의 `/World/ProcessCameras` 에 `Cam0_Perspective`, `Cam1_Harvest`, `Cam2_Nav2Place`, `Cam4_CullPickPlace`, `Cam5_Pusher` 가 있으므로 **녹화 전에 보고 싶은 공정의 카메라로 바꾼다.**
+- 이 검증에서 남긴 증거는 `results/media_log/` 에 있다(`pilot_isaac_only.png`, `pilot_isaac_rviz.png`, `pilot_capture_8s.mp4`). 이 경로는 git 에 올라가지 않는다.
+
 ### 지금까지 고친 것 (읽기만)
 
 | 판 | 증상 | 조치 |
