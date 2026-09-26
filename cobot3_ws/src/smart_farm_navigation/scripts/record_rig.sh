@@ -38,6 +38,9 @@ SIZE_RVIZ=${SIZE_RVIZ:-1680x1050}
 SIZE_TERM=${SIZE_TERM:-1600x900}
 XTERM_GEOM=${XTERM_GEOM:-200x50}       # tmux 는 붙어 있는 클라이언트 중 가장 작은 것에 맞춰진다
 XTERM_FONT=${XTERM_FONT:-13}
+# [2026-09-26] 한글이 모두 빈칸으로 찍히던 문제. 이 기기에 한글 글꼴이 하나도 없었다.
+#   sudo apt-get install -y fonts-nanum-coding  로 넣고 고정폭 한글 글꼴을 직접 지정한다.
+XTERM_FONT_FAMILY=${XTERM_FONT_FAMILY:-NanumGothicCoding}
 FPS=${FPS:-10}                         # 렌더가 초당 7 회 수준이라 10 이면 충분하다
 
 
@@ -111,7 +114,7 @@ start)
     tmux has-session -t "$SES" 2>/dev/null || tmux new-session -d -s "$SES"
     tmux set-option -t "$SES" -g history-limit 100000 >/dev/null
     DISPLAY=":$DISP_TERM" xterm -geometry "$XTERM_GEOM" \
-        -fa Monospace -fs "$XTERM_FONT" -bg black -fg white \
+        -fa "$XTERM_FONT_FAMILY" -fw "$XTERM_FONT_FAMILY" -fs "$XTERM_FONT" -bg black -fg white \
         -e tmux attach -t "$SES" >"$RUN/xterm.log" 2>&1 &
     echo $! > "$RUN/xterm.pid"
     sleep 2
