@@ -1,7 +1,0 @@
-[INFO] [1789991900.167612933] [basic_navigator]: Nav2 is ready for use!
-[INFO] [1789991900.169546365] [go_to_station_args]: Nav2 active
-[WARN] [1789991902.893186215] [go_to_station_args]: in zone RACK1_CORRIDOR but the rear points 178deg away from the exit; not backing up
-[INFO] [1789991902.894667181] [go_to_station_args]: goToPose INSPECTION_DOCK: (3.33, -5.25, 90.0deg)
-[INFO] [1789991902.897504289] [basic_navigator]: Navigating to goal: 3.328 -5.251...
-[INFO] [1789991902.951591523] [go_to_station_args]: RESULT FAILED for INSPECTION_DOCK after 0s
-[ros2run]: Process exited with failure 2

@@ -1,4 +1,0 @@
-data: '{"task_id":"TASK-20260926-001","command_id":"TASK-20260926-001-CMD-001","operation":"PICK_HARVEST","status":"SUCCEEDED","phase":...'
----
-data: '{"task_id":"TASK-20260926-001","command_id":"TASK-20260926-001-CMD-003","operation":"PLACE_INSPECT","status":"SUCCEEDED","phase"...'
----

@@ -1,8 +1,0 @@
-[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-20-16-42-11-055644-IsaacSim03-80115
-[INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [path_runner_smooth-1]: process started with pid [80120]
-[path_runner_smooth-1] [0m[INFO] [1789890131.319329693] [path_runner_smooth]: path_runner ready on /cmd_vel; 2 waypoint(s); auto_start=true[0m
-[path_runner_smooth-1] [0m[INFO] [1789890139.363945208] [path_runner_smooth]: path: 136 points, curve from (1.50,0.00) to approach (4.10,-0.45), final (4.90,-0.45) heading 0deg[0m
-[path_runner_smooth-1] [0m[INFO] [1789890139.364146005] [path_runner_smooth]: Phase TRACK at odom x=0.000 y=0.000 heading=0.0deg[0m
-[path_runner_smooth-1] [31m[ERROR] [1789890143.713743480] [path_runner_smooth]: Path ABORTED at odom x=0.504 y=0.001 heading=0.0deg: no fresh Odometry[0m
-[ERROR] [path_runner_smooth-1]: process has died [pid 80120, exit code 2, cmd '/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/lib/smart_farm_navigation/path_runner_smooth --ros-args -r __node:=path_runner_smooth --params-file /home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation/share/smart_farm_navigation/config/path_runner_smooth.yaml --params-file /tmp/launch_params_hut4lxju'].

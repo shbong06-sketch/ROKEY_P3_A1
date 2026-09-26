@@ -1,8 +1,0 @@
-[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-26-01-33-38-294639-gc-isaacsim-lwh-66213
-[INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [navigation_node-1]: process started with pid [66226]
-[navigation_node-1] [0m[INFO] [1790386419.443451726] [navigation_node]: navigation_node ready; destinations: ['FEEDER_DOCK', 'RACK_DOCK', 'CORRIDOR_EXIT'][0m
-[navigation_node-1] [0m[INFO] [1790386675.159387673] [navigation_node]: goToPose FEEDER_APPROACH: -2.19, -1.55[0m
-[navigation_node-1] [0m[INFO] [1790386711.089763876] [navigation_node]: 정밀 도킹 시작 요청: run_id=TASK-20260926-001-CMD-002[0m
-[navigation_node-1] [0m[INFO] [1790386769.211754826] [navigation_node]: 도킹 결과 SUCCEEDED: face_dist=0.937 yaw_err=1.08 lat=0.0[0m
-[navigation_node-1] [0m[INFO] [1790386769.212781440] [navigation_node]: result SUCCEEDED/NONE for TASK-20260926-001-CMD-002 (phase ARRIVED)[0m

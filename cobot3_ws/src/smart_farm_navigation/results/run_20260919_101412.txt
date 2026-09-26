@@ -1,2 +1,0 @@
-== gopi_run.sh 20260919_101412  args:   host: IsaacSim03  commit: 967aca3 ==
-/opt/ros/jazzy/setup.bash: line 8: AMENT_TRACE_SETUP_FILES: unbound variable

@@ -1,8 +1,0 @@
-[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-23-20-06-53-684385-lwh19180-25375
-[INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [navigation_node-1]: process started with pid [25389]
-[navigation_node-1] [0m[INFO] [1790161615.309077685] [navigation_node]: navigation_node ready; destinations: ['FEEDER_DOCK', 'RACK_DOCK', 'CORRIDOR_EXIT'][0m
-[navigation_node-1] [0m[INFO] [1790161700.376475010] [navigation_node]: goToPose FEEDER_APPROACH: -2.19, -1.55[0m
-[navigation_node-1] [0m[INFO] [1790161711.388773756] [navigation_node]: 정밀 도킹 시작 요청: run_id=TASK-20260923-001-CMD-002[0m
-[navigation_node-1] [0m[INFO] [1790161725.210688559] [navigation_node]: 도킹 결과 SUCCEEDED: face_dist=0.758 yaw_err=0.31 lat=-0.086[0m
-[navigation_node-1] [0m[INFO] [1790161725.212312773] [navigation_node]: result SUCCEEDED/NONE for TASK-20260923-001-CMD-002 (phase ARRIVED)[0m

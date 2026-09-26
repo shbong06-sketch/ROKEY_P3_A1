@@ -1,9 +1,0 @@
-[INFO] [1790160084.620690726] [nav2_link_check]: listening for 8 s ...
-[INFO] [1790160092.623304324] [nav2_link_check]: [1] /clock              23.1 Hz
-[INFO] [1790160092.625307496] [nav2_link_check]:     sim time now 31.4 s, real-time factor 1.15
-[INFO] [1790160092.627496496] [nav2_link_check]: [2] /tf odom->base_link  23.1 Hz
-[INFO] [1790160092.629588190] [nav2_link_check]: [3] /chassis/odom       23.1 Hz
-[INFO] [1790160092.631906644] [nav2_link_check]: [4] /front_2d_lidar/scan           0.0 Hz,      0.0 kB/s, frame ''
-[INFO] [1790160092.634252104] [nav2_link_check]: [5] /front_3d_lidar/lidar_points   3.8 Hz,   1873.0 kB/s, frame 'front_3d_lidar', 41615 points/msg
-[INFO] [1790160092.635996418] [nav2_link_check]: [6] self returns inside the rig box: 18 of 41615 points/scan (rear 0, mid 16, front 2; highest z 0.55 m)   <- cloud_self_filter removes these
-[INFO] [1790160092.637908070] [nav2_link_check]: RESULT OK - nav2.launch.py scan_mode:=cloud

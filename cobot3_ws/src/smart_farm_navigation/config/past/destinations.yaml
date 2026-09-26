@@ -1,9 +1,0 @@
-# navigation_node: destination 이름 -> 실행할 주행(launch + params). 인터페이스 설계의 작업점 이름을 그대로 씀.
-# 경유지는 각 params 파일에 시작 기준 좌표계로 들어 있음 (로봇의 현재 위치·정면 기준 상대 이동).
-destinations:
-  INSPECTION_DOCK:
-    launch: path_smooth.launch.py
-    params: path_runner_smooth.yaml
-  RACK_DOCK:
-    launch: carter2_dock.launch.py
-    params: carter2_dock.yaml
