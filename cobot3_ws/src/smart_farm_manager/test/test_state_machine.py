@@ -84,6 +84,25 @@ def complete_place_inspect(machine: CycleStateMachine) -> None:
     assert outcome.accepted is True
 
 
+def complete_inspection_preparation(machine: CycleStateMachine) -> None:
+    convey = machine.create_command()
+    assert convey.operation == "CONVEY_TO_INSPECT"
+    assert convey.pallet_id == "PALLET_001"
+    assert machine.state == CycleState.CONVEY_TO_INSPECT
+    machine.handle_result(success_result(
+        convey, pallet_id="PALLET_001", reached_station="INSPECT_STOP",
+    ))
+    assert machine.state == CycleState.PREPARE_INSPECT
+
+    prepare = machine.create_command()
+    assert prepare.operation == "PREPARE_INSPECT"
+    assert prepare.pallet_id == "PALLET_001"
+    machine.handle_result(success_result(
+        prepare, pallet_id="PALLET_001", reached_station="INSPECT_WORK_POS",
+    ))
+    assert machine.state == CycleState.INSPECT
+
+
 def test_full_cycle_with_defects():
     machine = start_machine()
 
@@ -100,8 +119,10 @@ def test_full_cycle_with_defects():
     assert machine.state == CycleState.PLACE_INSPECT
 
     complete_place_inspect(machine)
+    assert machine.state == CycleState.CONVEY_TO_INSPECT
+    complete_inspection_preparation(machine)
     assert machine.state == CycleState.INSPECT
-    assert machine.pallet_locations["PALLET_001"] == "INSPECT_STATION"
+    assert machine.pallet_locations["PALLET_001"] == "INSPECT_WORK_POS"
 
     inspect_command = machine.create_command()
     inspect_result = success_result(
@@ -140,6 +161,7 @@ def test_cycle_skips_cull_when_no_defect_exists():
     complete_pick_harvest(machine)
     complete_navigation(machine)
     complete_place_inspect(machine)
+    complete_inspection_preparation(machine)
 
     inspect_command = machine.create_command()
     inspect_result = success_result(
@@ -162,6 +184,7 @@ def test_unknown_inspection_slot_causes_error():
     complete_pick_harvest(machine)
     complete_navigation(machine)
     complete_place_inspect(machine)
+    complete_inspection_preparation(machine)
 
     command = machine.create_command()
     result = success_result(
@@ -184,6 +207,7 @@ def test_inspection_rejects_slot_outside_six_slot_contract():
     complete_pick_harvest(machine)
     complete_navigation(machine)
     complete_place_inspect(machine)
+    complete_inspection_preparation(machine)
 
     command = machine.create_command()
     result = success_result(
@@ -235,6 +259,63 @@ def test_mismatched_result_is_ignored():
 
     assert machine.state == CycleState.TRANSFER
     assert machine.active_command == command
+
+
+def test_pallet_detection_status_cannot_advance_convey_command():
+    machine = start_machine()
+    complete_transfer(machine)
+    complete_pick_harvest(machine)
+    complete_navigation(machine)
+    complete_place_inspect(machine)
+
+    command = machine.create_command()
+    assert command.operation == "CONVEY_TO_INSPECT"
+    # PALLET_DETECTED는 executor status이며 handle_result 호출 대상이 아니다.
+    assert machine.state == CycleState.CONVEY_TO_INSPECT
+    assert machine.active_command == command
+
+    wrong = success_result(
+        command, pallet_id="PALLET_999", reached_station="INSPECT_STOP",
+    )
+    outcome = machine.handle_result(wrong)
+    assert outcome.accepted is False
+    assert outcome.reason == "MISMATCHED_RESULT"
+    assert machine.state == CycleState.CONVEY_TO_INSPECT
+    assert machine.active_command == command
+
+    wrong = success_result(
+        command, pallet_id="PALLET_001", reached_station="",
+    )
+    outcome = machine.handle_result(wrong)
+    assert outcome.accepted is True
+    assert machine.state == CycleState.ERROR
+    assert machine.failure_reason == "POSITION_NOT_CONFIRMED"
+
+
+def test_prepare_failure_does_not_start_inspection():
+    machine = start_machine()
+    complete_transfer(machine)
+    complete_pick_harvest(machine)
+    complete_navigation(machine)
+    complete_place_inspect(machine)
+
+    convey = machine.create_command()
+    machine.handle_result(success_result(
+        convey, pallet_id="PALLET_001", reached_station="INSPECT_STOP",
+    ))
+    prepare = machine.create_command()
+    outcome = machine.handle_result(TaskResultData(
+        task_id=prepare.task_id,
+        command_id=prepare.command_id,
+        operation=prepare.operation,
+        pallet_id=prepare.pallet_id,
+        status="FAILED",
+        reason="PREPARE_TIMEOUT",
+    ))
+    assert outcome.accepted is True
+    assert machine.state == CycleState.ERROR
+    assert machine.failure_reason == "PREPARE_TIMEOUT"
+    assert machine.terminal_status == "RESET_REQUIRED"
 
 
 def test_incomplete_transfer_requires_reset():
