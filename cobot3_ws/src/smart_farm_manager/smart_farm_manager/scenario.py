@@ -76,7 +76,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 executor=ExecutorName.SIM_TASK,
                 operation="TRANSFER",
                 recipe_id="RACK_REARRANGE_01",
-                timeout_sec=180.0,
+                timeout_sec=400.0,
             ),
             StepDefinition(
                 state=CycleState.PICK_HARVEST,
@@ -86,7 +86,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="RACK_L1",
                 destination="CARRY",
-                timeout_sec=90.0,
+                timeout_sec=200.0,
             ),
             StepDefinition(
                 state=CycleState.NAVIGATION,
@@ -105,7 +105,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="CARRY",
                 destination="INSPECT_STATION",
-                timeout_sec=90.0,
+                timeout_sec=300.0,
             ),
             StepDefinition(
                 state=CycleState.INSPECT,
@@ -113,7 +113,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 operation="INSPECT",
                 pallet_id="PALLET_001",
                 source="INSPECT_STATION",
-                timeout_sec=30.0,
+                timeout_sec=300.0,
             ),
             StepDefinition(
                 state=CycleState.CULL,
@@ -123,7 +123,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="INSPECT_STATION",
                 destination="INSPECT_STATION",
-                timeout_sec=120.0,
+                timeout_sec=400.0,
                 optional=True,
             ),
             StepDefinition(
@@ -134,7 +134,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="INSPECT_STATION",
                 destination="PACK_OUT",
-                timeout_sec=60.0,
+                timeout_sec=300.0,
             ),
         ),
     )
