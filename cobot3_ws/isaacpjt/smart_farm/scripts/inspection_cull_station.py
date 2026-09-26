@@ -208,7 +208,7 @@ def _world_matrix(stage, path):
 
 
 # ── 설치 ────────────────────────────────────────────────
-def install(stage, world, m0609_dir, out_dir=None):
+def install(stage, world, m0609_dir, out_dir=None, managed=False):
     """world.reset() 전에 부른다. 팔·그리퍼 드라이브를 세션 값으로 바꾸고 articulation 을 등록한다."""
     for name in ARM_JOINTS:
         drive = UsdPhysics.DriveAPI.Get(stage.GetPrimAtPath(f"{ROBOT_PATH}/joints/{name}"), "angular")
@@ -222,7 +222,7 @@ def install(stage, world, m0609_dir, out_dir=None):
     base_y = _world_matrix(stage, BASE_PATH)[1, 3]
     target_y = float(np.clip(base_y + TRAY_REACH, *TRANSFER_Y_LIMIT))
     build_transfer_frame(stage)
-    return VisionCullStation(stage, world, Path(m0609_dir), out_dir, target_y)
+    return VisionCullStation(stage, world, Path(m0609_dir), out_dir, target_y, managed=managed)
 
 
 def _box(stage, path, size, offset, color, collide=False):
@@ -332,11 +332,12 @@ class _YoloClient:
 
 
 class VisionCullStation:
-    def __init__(self, stage, world, m0609_dir, out_dir=None, target_y=-7.0):
+    def __init__(self, stage, world, m0609_dir, out_dir=None, target_y=-7.0, managed=False):
         from isaacsim.core.prims import SingleArticulation
         from isaacsim.robot.manipulators.grippers import ParallelGripper
 
         self._target_y = target_y      # 이송 프레임이 트레이 중심을 밀어 놓는 y
+        self._managed = managed        # [navigation 2026-09-26] 통합 명령 전에는 PUSH_IN/검사를 시작하지 않는다.
         self._stage = stage
         self._world = world
         self._m0609_dir = m0609_dir
@@ -348,7 +349,9 @@ class VisionCullStation:
             joint_opened_positions=np.array([GRIPPER_OPEN] * 2), joint_closed_positions=np.array([GRIPPER_CLOSE] * 2),
             action_deltas=None)
         scene_file = stage.GetRootLayer().realPath
-        self._yolo = _YoloClient(self._out, Path(scene_file).parent if scene_file else None)
+        # [navigation 2026-09-26] 통합 경로의 검출은 별도 Inspection 노드가 담당한다.
+        self._yolo = None if managed else _YoloClient(
+            self._out, Path(scene_file).parent if scene_file else None)
         self._rgb = None
         self._conveyor = None
         self._drop_index = 0          # SortBox_1 / SortBox_2 번갈아
@@ -381,6 +384,8 @@ class VisionCullStation:
         self._frames = []
         self._record = None
         self._via = None
+        self._requested_pallet = None
+        self.failure_reason = ""
 
     def attach(self, conveyor):
         """world.reset() 뒤. 팔을 준비 자세로 두고 RMPflow 를 만든다."""
@@ -431,7 +436,8 @@ class VisionCullStation:
         self.reset()
 
     def close(self):
-        self._yolo.close()
+        if self._yolo is not None:
+            self._yolo.close()
 
     # ── 조회 ──
     def _base_pose(self):
@@ -445,6 +451,38 @@ class VisionCullStation:
     def busy(self):
         return self.state != "IDLE"
 
+    @property
+    def prepared_pallet(self):
+        return self._pallet if self.state == "PREPARED" else None
+
+    def start_prepare(self, pallet_path):
+        """[navigation 2026-09-26] 명령을 받은 팔레트만 기존 PUSH_IN 물리 순서로 준비한다."""
+        if not self._managed or self.state != "IDLE":
+            raise RuntimeError("inspection jig is not idle")
+        if self._conveyor is None or self._conveyor.inspecting != pallet_path:
+            raise RuntimeError("requested pallet is not held at inspection stop")
+        self._requested_pallet = pallet_path
+        try:
+            self._state_idle(0.0)
+        finally:
+            self._requested_pallet = None
+        if self.state != "PUSH_IN":
+            raise RuntimeError("inspection jig did not start")
+
+    def stop_prepare(self, reason):
+        """[navigation 2026-09-26] 준비 실패 후 지그·팔레트를 그 위치에 보존한다."""
+        if not self._managed:
+            raise RuntimeError("inspection jig is not command-managed")
+        self.failure_reason = str(reason)
+        self._moves = []
+        self._motion = None
+        self.state = "FAILED"
+        if self._pallet is not None and self._conveyor is not None:
+            try:
+                self._conveyor.lock_at_vision(self._pallet)
+            except Exception as error:  # noqa: BLE001 - 원래 실패 사유를 보존한다.
+                _log(f"[검사 준비] 팔레트 고정 실패: {error}")
+
     # ── 매 스텝 ──
     def update(self, dt, render=None):
         """render: 카메라 프레임을 새로 그리게 하는 함수 (world.render). 없으면 world.render."""
@@ -453,6 +491,17 @@ class VisionCullStation:
         try:
             getattr(self, f"_state_{self.state.lower()}")(dt)
         except Exception as error:  # noqa: BLE001 - 스테이션 실패가 올인원을 죽이지 않게
+            if self._managed:
+                self.failure_reason = str(error)
+                self._motion = None
+                self.state = "FAILED"
+                if self._pallet is not None:
+                    try:
+                        self._conveyor.lock_at_vision(self._pallet)
+                    except Exception as lock_error:  # noqa: BLE001 - 원래 실패 결과를 보존한다.
+                        _log(f"[검사 준비] 팔레트 고정 실패: {lock_error}")
+                _log(f"[검사 준비] 실패: {error} — 팔레트는 배출하지 않습니다")
+                return
             _log(f"[솎아내기] 실패 ({self.state}): {error} — 팔레트를 벨트로 돌려보냅니다")
             if self._record is not None:
                 self._record["error"] = f"{self.state}: {error}"
@@ -465,10 +514,14 @@ class VisionCullStation:
             self._begin_transfer_out()
 
     def _state_idle(self, dt):
+        if self._managed and self._requested_pallet is None:
+            return
         if self._conveyor is None:
             return
         path = self._conveyor.inspecting
         if path is None:
+            return
+        if self._managed and path != self._requested_pallet:
             return
         self._pallet = path
         root = self._stage.GetPrimAtPath(path)
@@ -556,10 +609,27 @@ class VisionCullStation:
         self._record["pushed_xy"] = [round(float(tray_p[0]), 3), round(float(tray_p[1]), 3)]
         self._record["seat_error_after_push_mm"] = round(seat, 1)
         _log(f"[솎아내기] 프레임 이송 완료 — 트레이 ({tray_p[0]:+.3f}, {tray_p[1]:+.3f}), 포기 칸 이탈 최대 {seat:.1f} mm")
+        if self._managed:
+            velocity = np.asarray(self._rigid.get_velocities())[self._tray_index, :3]
+            if (abs(float(tray_p[0]) - self._frame_x) > 0.05
+                    or abs(float(tray_p[1]) - self._target_y) > 0.05
+                    or float(np.linalg.norm(velocity)) > 0.05
+                    or seat > 20.0):
+                raise RuntimeError("tray did not settle in inspection work position")
+            self._conveyor.lock_at_vision(self._pallet)
+            self._event("PUSH_DONE_PREPARED")
+            self.state = "PREPARED"
+            return
         self._event("PUSH_DONE_INSPECT_MOVE")
         self._timer = 0
         self._start_inspect_move()
         self.state = "MOVE_INSPECT"
+
+    def _state_prepared(self, dt):
+        """[navigation 2026-09-26] 다음 INSPECT 명령 전까지 지그와 팔레트를 유지한다."""
+
+    def _state_failed(self, dt):
+        """[navigation 2026-09-26] 실패 위치를 보존하고 자동 복구·배출을 막는다."""
 
     # ── 팔 이동 (팀 CullMotion 을 계획만 바꿔 씀) ──
     def _new_motion(self, tool_q_world, target_path=None):
