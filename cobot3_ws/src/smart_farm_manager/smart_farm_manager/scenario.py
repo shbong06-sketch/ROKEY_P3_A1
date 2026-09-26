@@ -15,6 +15,8 @@ class CycleState(str, Enum):
     PICK_HARVEST = "PICK_HARVEST"
     NAVIGATION = "NAVIGATION"
     PLACE_INSPECT = "PLACE_INSPECT"
+    CONVEY_TO_INSPECT = "CONVEY_TO_INSPECT"
+    PREPARE_INSPECT = "PREPARE_INSPECT"
     INSPECT = "INSPECT"
     CULL = "CULL"
     CONVEYOR_OUT = "CONVEYOR_OUT"
@@ -108,11 +110,33 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 timeout_sec=300.0,
             ),
             StepDefinition(
+                state=CycleState.CONVEY_TO_INSPECT,
+                executor=ExecutorName.SIM_TASK,
+                operation="CONVEY_TO_INSPECT",
+                recipe_id="CONVEY_TO_INSPECT",
+                pallet_id="PALLET_001",
+                source="INSPECT_STATION",
+                destination="INSPECT_STOP",
+                # Isaac 물리 시간 120초 제한보다 넉넉한 벽시계 제한.
+                timeout_sec=600.0,
+            ),
+            StepDefinition(
+                state=CycleState.PREPARE_INSPECT,
+                executor=ExecutorName.SIM_TASK,
+                operation="PREPARE_INSPECT",
+                recipe_id="PREPARE_INSPECT",
+                pallet_id="PALLET_001",
+                source="INSPECT_STOP",
+                destination="INSPECT_WORK_POS",
+                # Isaac 물리 시간 90초 제한보다 넉넉한 벽시계 제한.
+                timeout_sec=450.0,
+            ),
+            StepDefinition(
                 state=CycleState.INSPECT,
                 executor=ExecutorName.INSPECTION,
                 operation="INSPECT",
                 pallet_id="PALLET_001",
-                source="INSPECT_STATION",
+                source="INSPECT_WORK_POS",
                 timeout_sec=300.0,
             ),
             StepDefinition(
