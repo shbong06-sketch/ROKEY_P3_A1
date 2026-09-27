@@ -1,6 +1,6 @@
 # Task Manager 통합 확인: TRANSFER → INSPECT (Ubuntu)
 
-`DEMO_HARVEST_01`의 실제 명령과 terminal result를 확인하는 절차다. Task Manager는 `TRANSFER → PICK_HARVEST → NAVIGATION → PLACE_INSPECT → CONVEY_TO_INSPECT → PREPARE_INSPECT → MOVE_TO_INSPECT → INSPECT`를 순서대로 발행한다. 각 전이는 활성 명령과 일치하는 `SUCCEEDED` terminal result로만 진행한다. `PALLET_DETECTED` 등 상태 알림만으로 전이하지 않는다. 검사 이후의 `CULL`·`CONVEYOR_OUT`은 이 절차의 통과 범위가 아니며, 현재 Sim Executor의 물리 명령으로 구현되지 않았다. 생산 시나리오의 다음 명령이 실패하더라도 앞 단계의 결과를 위조하거나 시나리오를 `COMPLETE`로 바꾸지 않는다.
+`DEMO_HARVEST_01`의 실제 명령과 terminal result를 확인하는 절차다. Task Manager는 `TRANSFER → PICK_HARVEST → NAVIGATION → PLACE_INSPECT → CONVEY_TO_INSPECT → PREPARE_INSPECT → MOVE_TO_INSPECT → INSPECT`를 순서대로 발행한다. 각 전이는 활성 명령과 일치하는 `SUCCEEDED` terminal result로만 진행한다. `PALLET_DETECTED` 등 상태 알림만으로 전이하지 않는다. 이번 절차는 `CULL`의 실제 배출 결과까지 확인한다. 뒤따르는 `CONVEYOR_OUT`은 아직 Sim Executor의 물리 명령으로 구현되지 않았다. 생산 시나리오의 다음 명령이 실패하더라도 앞 단계의 결과를 위조하거나 시나리오를 `COMPLETE`로 바꾸지 않는다.
 
 ## 준비 및 외부 자산
 
@@ -105,17 +105,20 @@ ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_i
 | 5 | `/sim_task/command` `CONVEY_TO_INSPECT` (`CMD-005`, `PALLET_001`) | `SUCCEEDED`, `reached_station=INSPECT_STOP` → `PREPARE_INSPECT` |
 | 6 | `/sim_task/command` `PREPARE_INSPECT` (`CMD-006`, `PALLET_001`) | `SUCCEEDED`, `reached_station=INSPECT_WORK_POS` → `MOVE_TO_INSPECT` |
 | 7 | `/sim_task/command` `MOVE_TO_INSPECT` (`CMD-007`, `PALLET_001`) | 비전 M0609이 검사 카메라 자세에 도달해 안정화된 뒤 `SUCCEEDED`, `reached_station=INSPECT_CAMERA_POSE` → `INSPECT` |
-| 8 | `/inspection/command` `INSPECT` (`CMD-008`, `PALLET_001`) | `/inspection/result`에서 같은 명령의 `SUCCEEDED` 또는 명시적 `FAILED`; 성공 후 생산 시나리오가 다음 명령을 발행할 수 있음 |
+| 8 | `/inspection/command` `INSPECT` (`CMD-008`, `PALLET_001`) | `SUCCEEDED`이면 불량 슬롯을 저장. 불량이 있으면 `CULL`, 없으면 `CONVEYOR_OUT`으로 전이 |
+| 9 | `/sim_task/command` `CULL` (`CMD-009`, `PALLET_001`, 불량 슬롯이 있을 때만) | 실제로 상자 안에 떨어진 슬롯만 `completed_units`에 포함한 `SUCCEEDED` → `CONVEYOR_OUT`; 일부라도 실패하면 `FAILED` |
 
 ## 컨베이어·지그의 물리 완료 조건
 
 | 명령 | 시작 조건 | 물리 완료 조건 | 주요 실패 사유·제한 |
 |---|---|---|---|
 | `CONVEY_TO_INSPECT` | 같은 런타임의 `PLACE_INSPECT` 성공, 포크 인출 완료, 팔레트 미운반, 스테이션 `IDLE`; `recipe_id=CONVEY_TO_INSPECT`, `source=INSPECT_STATION`, `destination=INSPECT_STOP` | 대상 팔레트가 컨베이어 `VISION` 영역에서 검출·고정되고 월드 위치의 프레임당 변위 ≤0.002 m가 물리 시간 0.5초 지속 | `INVALID_COMMAND`, `INVALID_STATE`, `NOT_READY`, `PALLET_LOST`, 컨베이어 정체 코드, `CONVEY_TIMEOUT`(물리 120초), `CONVEYOR_FAILED`; Task Manager 벽시계 600초 |
-| `PREPARE_INSPECT` | 직전 Convey 성공, 같은 팔레트 `VISION` 고정, 스테이션 `IDLE`; `recipe_id=PREPARE_INSPECT`, `source=INSPECT_STOP`, `destination=INSPECT_WORK_POS` | 지그 진입·하강·밀기 후 트레이 월드 x/y 각각 목표 0.05 m 이내, 선속도 ≤0.05 m/s, 자리 오차 ≤20 mm, 재고정 및 스테이션 `PREPARED` | `INVALID_COMMAND`, `INVALID_STATE`, `JIG_FAILED`, `PREPARE_TIMEOUT`(물리 90초); Task Manager 벽시계 450초 |
+| `PREPARE_INSPECT` | 직전 Convey 성공, 같은 팔레트 `VISION` 고정, 스테이션 `IDLE`; `recipe_id=PREPARE_INSPECT`, `source=INSPECT_STOP`, `destination=INSPECT_WORK_POS` | 지그 진입·하강·밀기 후 트레이 월드 x/y 각각 목표 0.05 m 이내, 선속도 ≤0.05 m/s, 자리 오차 ≤20 mm, 스테이션 `PREPARED`. 기존 올인원처럼 트레이·포기의 강체 물리를 켠 채 유지 | `INVALID_COMMAND`, `INVALID_STATE`, `JIG_FAILED`, `PREPARE_TIMEOUT`(물리 90초); Task Manager 벽시계 450초 |
 | `MOVE_TO_INSPECT` | 같은 팔레트의 Prepare 성공, 스테이션 `PREPARED`, 팔레트 고정; `recipe_id=MOVE_TO_INSPECT`, `source=INSPECT_WORK_POS`, `destination=INSPECT_CAMERA_POSE` | 기존 올인원의 검사 자세 모션이 끝나고 20 물리 프레임 안정화 후 스테이션 `INSPECT_READY` | `INVALID_COMMAND`, `INVALID_STATE`, `INSPECT_POSE_FAILED`, `INSPECT_POSE_TIMEOUT`(물리 90초); Task Manager 벽시계 300초 |
 
 `CONVEY_TO_INSPECT/PALLET_DETECTED` 상태가 나와도 `/cycle/status`는 Convey에 머물러야 한다. 세 물리 명령 모두 성공 terminal result가 다음 명령의 유일한 전이 조건이다. 물리 실패·시간 초과 때 임의로 배출하지 않고 `FAILED`를 반환한다. Sim Task가 `ERROR; scene reset required`가 되면 새 장면으로 재시작한다. 통합 경로의 컨베이어 자동 배출 타이머와 스테이션의 팔레트 감지 후 자동 PUSH_IN·검사 시작 경로는 사용하지 않는다.
+
+`conveyor.is_locked()`는 검사 정지 때 세운 플래그로, 지그 진입을 위해 강체 물리를 다시 켜도 `True`로 남는다. 따라서 이 값만으로 물리 고정 상태를 판정할 수 없다. `PREPARE_INSPECT`에서는 지그가 밀기 전에 트레이·포기의 강체 물리를 다시 켜고, 완료 뒤에도 재잠그지 않는다. 검사와 CULL 중 포기는 그리퍼 접촉으로 실제로 움직일 수 있다.
 
 ## INSPECT 결과와 Cull용 2D 검출 데이터
 
@@ -143,6 +146,18 @@ ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_i
 Sim은 물리적으로 성공한 `PREPARE_INSPECT`의 `task_id/pallet_id`와 검사 컨텍스트의 `inspection_command_id`에 맞는 검출만 저장한다. 컨텍스트보다 검출이 먼저 오면 임시 보류 후 대조하고, 새 팔레트 준비·장면 재시작 시 이전 데이터를 지운다. 여섯 슬롯, 영상 시각, 픽셀 범위, 클래스 판정도 검증한다. `STORED`는 저장 완료만 뜻하며 Cull을 시작시키지 않는다.
 
 검사 시에는 `PREPARE_INSPECT` 성공 → `MOVE_TO_INSPECT`의 `INSPECT_READY` 물리 상태 및 성공 결과 → 같은 식별자의 `/sim_task/inspection_context`와 `/inspection/command` → 새 영상 시각의 `/inspection/detections_2d` (`valid_for_cull=true`) → `/sim_task/inspection_data_status`의 `STORED` → `/inspection/result`의 같은 명령 terminal 결과를 확인한다. ROS 전달 순서에 따라 검출과 컨텍스트·결과의 도착 순서는 달라질 수 있으므로 각 메시지의 식별자와 시각으로 대조한다. 필요하면 `ros2 topic echo /rgb --field header`로 영상 시각을 관찰한다.
+
+## CULL의 좌표·완료 계약
+
+`INSPECT`가 `SUCCEEDED`이고 `defect_slots`가 비어 있지 않을 때, Task Manager는 같은 검사 ID의 `/sim_task/inspection_data_status=STORED`까지 확인한 뒤 `CULL`을 발행한다. `STORED`만으로 공정이 전이되지 않는다. 저장 거부 또는 벽시계 15초 내 미수신은 `INSPECTION_DATA_REJECTED`·`INSPECTION_DATA_TIMEOUT`으로 CULL 발행 전에 실패한다. `target_slots`는 그 불량 슬롯 전체이며, `recipe_id=CULL_DEFECT_SLOTS`, `pallet_id=PALLET_001`, `source=INSPECT_STATION`, `destination=INSPECT_STATION`이다. 불량이 없으면 CULL 명령 없이 바로 `CONVEYOR_OUT`으로 전이한다. CULL 뒤의 배출 명령은 아직 구현 범위 밖이다.
+
+Sim은 저장된 `/inspection/detections_2d`의 `task_id`, `pallet_id`, `inspection_command_id`, 여섯 슬롯 판정과 CULL의 `target_slots`를 대조한다. 대상은 판정된 불량 슬롯 집합과 정확히 같아야 하고, 각 슬롯에 유효한 검출이 있어야 한다. 불일치나 데이터 누락은 물리 동작 전에 `INSPECTION_ID_MISMATCH`, `INSPECTION_DATA_MISSING`, `CULL_TARGET_MISMATCH`, `CULL_COORDINATE_MISSING`으로 실패한다.
+
+첫 통합의 파지 목표 **XY는 픽셀 좌표가 아니다**. 검사 준비 때 보관한 각 포기 위치의 트레이 로컬 오프셋을 현재 트레이 월드 자세에 적용한 다음 비전 M0609 base 좌표로 바꾼다. 목표 높이는 트레이 평면의 Z + `AIM_ABOVE_TRAY`(0.090 m)를 기준으로 계획하고, 실제 파지는 `GRIP_ABOVE_TRAY`(0.078 m) 높이를 사용한다. 기존 올인원의 `cull_motion.py` 계획과 RMPflow 실행기를 그대로 사용한다. 영상에는 depth가 없으므로 검출 픽셀 중심으로 3D 파지점을 직접 만들지 않는다. 진단용 `vision_to_pick_xy_mm`만 USD 카메라의 focal length·horizontal aperture, 현재 카메라 월드 자세, 트레이 위의 가정 평면(Z + 0.090 m)으로 환산해 기하 목표와 비교한다. 원본 영상 시각의 카메라 자세를 별도로 저장하지 않으므로 이 수치는 파지 목표나 정밀 보정값으로 사용하지 않는다.
+
+각 대상 포기는 `LIFT` 뒤 실제 상승량이 최소 50 mm인지 확인하고, `RELEASE` 뒤 45 물리 프레임을 기다려 머리 중심이 배출 상자의 3D 경계 안에 있는지 확인한다. 이 확인을 통과한 슬롯만 `completed_units`에 추가한다. 리프트 뒤 포기가 따라오지 않으면 `PICK_FAILED`, 상자 안에 내려놓지 못하면 `DROP_FAILED`, 다른 물리 오류는 `CULL_FAILED`, 물리 180초 제한은 `CULL_TIMEOUT`으로 확인된 슬롯만 포함한 `FAILED` 결과를 보내고 자동 재검사·배출은 시작하지 않는다. Task Manager의 CULL 벽시계 제한은 900초다.
+
+Ubuntu 재시험에서는 새 장면과 다시 빌드한 Task Manager로 위 별도 프로세스를 시작하고 bag을 먼저 기록한다. `/inspection/result`의 `defect_slots`와 `/sim_task/command`의 `CULL.target_slots`가 같은지, `/sim_task/status`가 `CULL/CULL`·`CULL/HOME`을 거쳐 결과를 내는지, `/sim_task/result.completed_units`가 실제 상자 안에 들어간 슬롯만 담는지 확인한다. Isaac 로그의 `[솎아내기] SLOT_XX 버림 성공/실패`, `[CULL:검증] 대상 상승량`, `station_out/station_events.json`의 `CULL_DONE_*` 또는 `CULL_FAILED_*`도 대조한다. 실패 뒤 `CONVEYOR_OUT`이 발행되면 안 된다. CULL 성공 후에는 생산 시나리오가 `CONVEYOR_OUT`을 발행하지만 현재 Sim Executor는 이를 지원하지 않아 그 단계에서 실패한다.
 
 ## Task Manager 없이 Sim Task 명령 시험
 
