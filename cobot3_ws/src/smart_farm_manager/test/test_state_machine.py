@@ -243,6 +243,26 @@ def test_cycle_skips_cull_when_no_defect_exists():
     assert conveyor_command.operation == "CONVEYOR_OUT"
 
 
+def test_cull_does_not_succeed_with_only_some_confirmed_slots():
+    machine = start_machine()
+    complete_transfer(machine)
+    complete_pick_harvest(machine)
+    complete_navigation(machine)
+    complete_place_inspect(machine)
+    complete_inspection_preparation(machine)
+    inspect = machine.create_command()
+    machine.handle_result(success_result(
+        inspect, defect_slots=("SLOT_03", "SLOT_05"),
+    ))
+    cull = machine.create_command()
+    assert cull.target_slots == ("SLOT_03", "SLOT_05")
+    machine.handle_result(success_result(
+        cull, completed_units=("SLOT_03",),
+    ))
+    assert machine.state == CycleState.ERROR
+    assert machine.failure_reason == "CULL_INCOMPLETE"
+
+
 def test_unknown_inspection_slot_causes_error():
     machine = start_machine()
 
