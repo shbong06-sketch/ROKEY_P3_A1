@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # WSL 쪽: 중계기(ros_tcp_relay.py wsl) -> 팀 Nav2(nav2.launch.py) -> feeder_dock -> navigation_node. 로그는 OUT 아래.
 #   bash start_nav2_stack.sh OUT_DIR [rviz true|false]      (run_allinone.ps1 이 부른다)
-# 환경 변수: STANDOFF (feeder_dock standoff_m), HUMAN=1 (사람 돌발상황), LANE=1 (바닥 차선 주행)
+# 환경 변수: STANDOFF (feeder_dock standoff_m), HUMAN=1 (사람 돌발상황), LANE=1 (바닥 차선 주행), SPEED (주행 최고속도 m/s)
 # 전제: ~/nav2_env.sh 가 ROS 2 Jazzy + 팀 워크스페이스(cobot3_ws/install)를 source 한다.
 HERE=$(cd "$(dirname "$0")" && pwd)
 OUT=${1:?OUT_DIR}
@@ -18,11 +18,12 @@ for i in $(seq 1 900); do
 done
 grep -m1 "connected" "$OUT/relay_wsl.log"
 EXTRA=""
-if [ "$HUMAN" = "1" ] || [ "$LANE" = "1" ]; then
+if [ "$HUMAN" = "1" ] || [ "$LANE" = "1" ] || [ -n "$SPEED" ]; then
   # 팀 nav2_params.yaml 을 읽어 시험용 복사본을 만든다 (팀 파일은 그대로)
   SRC=$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/nav2_params.yaml
   FLAGS=""
   [ "$HUMAN" = "1" ] && FLAGS="$FLAGS --human"
+  [ -n "$SPEED" ] && FLAGS="$FLAGS --speed $SPEED"
   if [ "$LANE" = "1" ]; then
     cp "$HERE/lane_route_bt.xml" "$OUT/lane_route_bt.xml"
     FLAGS="$FLAGS --lane $OUT/lane_route_bt.xml"

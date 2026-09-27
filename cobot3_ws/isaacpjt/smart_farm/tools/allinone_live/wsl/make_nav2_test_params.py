@@ -13,6 +13,8 @@
   - collision_monitor HumanSlow (slowdown 50 %): 후진 -0.62 ~ -2.60 m, 전진 0.15 ~ 1.90 m, 폭 ±0.38 m
   - 장애물 지도 inf_is_valid (사람 자국 지우기), RPP use_collision_detection off, movement_time_allowance 30 s
 --lane BT.xml  바닥 노란 차선 주행: bt_navigator 기본 BT 를 lane_route_bt.xml 로 (lane_planner.py 와 함께)
+--speed V      주행 최고속도 실험 (m/s): RPP desired_linear_vel + velocity_smoother max/min_velocity x.
+               가감속(max_accel/decel)은 팀 값 그대로. Isaac 쪽 differential_controller 상한은 1.0 m/s.
 """
 import sys
 
@@ -21,8 +23,16 @@ import yaml
 src, dst = sys.argv[1], sys.argv[2]
 human = "--human" in sys.argv
 lane_bt = sys.argv[sys.argv.index("--lane") + 1] if "--lane" in sys.argv else None
+speed = float(sys.argv[sys.argv.index("--speed") + 1]) if "--speed" in sys.argv else None
 p = yaml.safe_load(open(src))
 notes = []
+
+if speed:
+    p["controller_server"]["ros__parameters"]["FollowPath"]["desired_linear_vel"] = speed
+    vs = p["velocity_smoother"]["ros__parameters"]
+    vs["max_velocity"] = [speed] + list(vs["max_velocity"][1:])
+    vs["min_velocity"] = [-speed] + list(vs["min_velocity"][1:])
+    notes.append(f"speed {speed} m/s")
 
 if human:
     FOOT = "[[0.14, 0.25], [0.14, -0.25], [-1.10, -0.25], [-1.10, 0.25]]"

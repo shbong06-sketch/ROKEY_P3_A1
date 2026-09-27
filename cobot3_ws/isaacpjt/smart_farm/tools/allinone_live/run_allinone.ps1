@@ -7,6 +7,7 @@
 #   -Human   사람 돌발상황: 작업자가 카터 경로에 들어왔다 비킨다. 카터는 트레이 끝 0.8 m 앞에서 멈췄다가 다시 간다.
 #            (scripts/human_crossing.py + Nav2 설정 복사본의 HumanStop/HumanSlow. 사람 에셋을 NVIDIA 서버에서 받으므로 인터넷 필요)
 #   -Lane    바닥 노란 차선 주행: 랙 통로 차선 중앙선을 따라 후진 -> 모서리 곡선 45 deg 까지 -> Nav2 기본 경로로 FEEDER
+#   -Speed   주행 최고속도(m/s) 실험: Nav2 설정 복사본의 RPP desired_linear_vel·velocity_smoother 만 바꾼다
 #   -NoFlow  Nav2·Isaac 만 띄우고 명령은 보내지 않음 (직접 보내려면 wsl/run_flow.py)
 #   -Scene   씬 USD (기본 DEFAULT = standalone_app 의 기본 씬, scenes/Collected_smartfarm_v014/...cabbage.usd)
 # 팀 파일은 바꾸지 않는다: Nav2 는 팀 nav2_params.yaml 을 읽어 만든 복사본(OUT/nav2_params_test.yaml)을 쓴다.
@@ -15,6 +16,7 @@ param([string]$OutDir = "$HOME\smartfarm_runs\allinone_run",
       [switch]$Human, [switch]$Lane, [switch]$NoFlow, [switch]$NoRviz,
       [string]$Scene = "DEFAULT",
       [string]$Standoff = "0.92",
+      [string]$Speed = "",          # 주행 최고속도 실험 (m/s). 비우면 팀 값(0.3)
       [string]$IsaacDir = "D:\isaacsim",
       [string]$Distro = "Ubuntu-24.04",
       [string]$PyLib = "")          # 중계기(Windows 쪽)용 추가 라이브러리 폴더. 비우면 ~\smartfarm_runs\pylib 에 pyyaml·numpy 를 자동 설치
@@ -34,10 +36,10 @@ Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*run_with_m
 wsl --terminate $Distro | Out-Null
 Start-Sleep 2
 
-"[2/5] WSL: 중계기 + Nav2(+RViz2) + navigation_node  (Human=$Human Lane=$Lane)"
+"[2/5] WSL: 중계기 + Nav2(+RViz2) + navigation_node  (Human=$Human Lane=$Lane Speed=$Speed)"
 $rviz = if ($NoRviz) { "false" } else { "true" }
 Start-Process -FilePath wsl.exe -WindowStyle Hidden -RedirectStandardOutput "$OutDir\stack.txt" -RedirectStandardError "$OutDir\stack.err" `
-    -ArgumentList "-d",$Distro,"--","env","STANDOFF=$Standoff","HUMAN=$(if ($Human) {'1'} else {'0'})","LANE=$(if ($Lane) {'1'} else {'0'})",`
+    -ArgumentList "-d",$Distro,"--","env","STANDOFF=$Standoff","HUMAN=$(if ($Human) {'1'} else {'0'})","LANE=$(if ($Lane) {'1'} else {'0'})","SPEED=$Speed",`
                   "bash","$wslHere/start_nav2_stack.sh",$wslOut,$rviz | Out-Null
 
 "[3/5] Windows: Isaac Sim GUI + standalone_app (+기록) + 중계기"

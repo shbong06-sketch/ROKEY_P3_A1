@@ -3,7 +3,8 @@
   <Isaac>\\python.bat run_with_monitor.py <smart_farm>\\runtime\\standalone_app.py [standalone_app 옵션...]
 
 환경 변수
-  CABBAGE_MONITOR_OUT    기록 json 경로 (시뮬레이션 약 1 s 마다 저장). 카터 chassis 궤적(chassis_track: t, x, y, yaw),
+  CABBAGE_MONITOR_OUT    기록 json 경로 (시뮬레이션 약 1 s 마다 저장). 카터 chassis 궤적
+                         (chassis_track: t_sim, x, y, yaw, roll, pitch, 벽시계),
                          Pallet_01 궤적, 양배추 포기별 트레이 기준 흔들림
   CABBAGE_CAPTURE_CAMS   "이름=/카메라/prim/경로;이름2=..." 이면 그 카메라를 화면 밖에서 렌더해
                          <기록 폴더>/captures/cap_<이름>_<시뮬레이션 초>.jpg 로 저장 (예: human=/World/Characters/HumanViewCam)
@@ -17,6 +18,7 @@ import math
 import os
 import runpy
 import sys
+import time
 
 OUT = os.environ.get("CABBAGE_MONITOR_OUT", "cabbage_monitor.json")
 CHASSIS = "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link"
@@ -47,7 +49,9 @@ def _install():
 
     def dump():
         out = {"sim_time_s": round(S["t"], 2), "heads": S["stats"], "trays": S["trays"], "chassis_track": S["track"][-2000:],
-               "pallet01_track": S.get("tray_track", [])[-2000:]}
+               "pallet01_track": S.get("tray_track", [])[-2000:],
+               "tilt_max_deg": S.get("tilt_max", 0.0), "tilt_max_t": S.get("tilt_max_t"),
+               "tilt_samples_over_0p5deg": S.get("tilt_samples", [])[-4000:]}
         with open(OUT, "w") as f:
             json.dump(out, f, indent=1)
 
@@ -89,6 +93,14 @@ def _install():
         if S["n"] % 15:
             return
         stage = omni.usd.get_context().get_stage()
+        c = pose(CHASSIS)
+        if c is not None:        # 차체 기울기(롤·피치 중 큰 값) 최대치: 0.25 s 마다 (궤적은 1 s 마다라 짧은 흔들림을 놓친다)
+            tilt = max(abs(math.degrees(math.atan2(c[1][2, 1], c[1][2, 2]))),
+                       abs(math.degrees(math.asin(max(-1.0, min(1.0, -c[1][2, 0]))))))
+            if tilt > 0.5:
+                S.setdefault("tilt_samples", []).append([round(S["t"], 2), round(tilt, 3)])
+            if tilt > S.get("tilt_max", 0.0):
+                S["tilt_max"], S["tilt_max_t"] = round(tilt, 3), round(S["t"], 2)
         if S["heads"] is None:
             S["heads"] = [(str(p.GetPath()), str(p.GetPath()).split("/root_001/")[0] + "/Cube_011_001")
                           for p in stage.Traverse()
@@ -111,8 +123,13 @@ def _install():
         if S["n"] % 60 == 0:
             c = pose(CHASSIS)
             if c is not None:
-                yaw = math.degrees(math.atan2(c[1][1, 0], c[1][0, 0]))
-                S["track"].append([round(S["t"], 2), round(float(c[0][0]), 4), round(float(c[0][1]), 4), round(yaw, 2)])
+                R = c[1]
+                yaw = math.degrees(math.atan2(R[1, 0], R[0, 0]))
+                pitch = math.degrees(math.asin(max(-1.0, min(1.0, -R[2, 0]))))
+                roll = math.degrees(math.atan2(R[2, 1], R[2, 2]))
+                # t_sim, x, y, yaw, roll, pitch, 벽시계(초) — 벽시계는 flow.log 등의 명령 시각을 시뮬레이션 시간으로 바꿀 때 쓴다
+                S["track"].append([round(S["t"], 2), round(float(c[0][0]), 4), round(float(c[0][1]), 4), round(yaw, 2),
+                                   round(roll, 2), round(pitch, 2), round(time.time(), 2)])
             for _, tray in (S["heads"] or []):
                 pt = pose(tray)
                 if pt is not None:
