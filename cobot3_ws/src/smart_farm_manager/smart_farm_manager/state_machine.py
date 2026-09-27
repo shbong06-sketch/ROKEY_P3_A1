@@ -281,7 +281,8 @@ class CycleStateMachine:
             and result.command_id == command.command_id
             and result.operation == command.operation
             and (
-                command.operation not in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT", "CONVEYOR_OUT"}
+                command.operation not in self.PHYSICAL_OPERATIONS
+                or not command.pallet_id
                 or result.pallet_id == command.pallet_id
             )
         )
