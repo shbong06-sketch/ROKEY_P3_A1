@@ -607,8 +607,12 @@ class InspectionExecutorNode(Node):
             or not command.pallet_id
         ):
             return 'INVALID_ID'
-        if command.operation != 'INSPECT':
+        if command.operation not in {'INSPECT', 'RECHECK'}:
             return 'INVALID_COMMAND'
+        if (command.operation == 'RECHECK'
+                and (len(command.target_slots) != len(set(command.target_slots))
+                     or any(slot not in SLOT_IDS for slot in command.target_slots))):
+            return 'INVALID_SLOT_ID'
         return None
 
     def _inference_tick(self) -> None:
@@ -734,6 +738,9 @@ class InspectionExecutorNode(Node):
             detections,
             width,
             height,
+            expected_removed=(tuple(command.target_slots)
+                              if command is not None and command.operation == 'RECHECK'
+                              else ()),
         )
 
         try:
@@ -797,9 +804,19 @@ class InspectionExecutorNode(Node):
             )
             return
 
+        if command.operation == 'RECHECK' and assessment.defect_slots:
+            self._finish_active_command(
+                status='FAILED',
+                phase='SLOT_CLASSIFICATION',
+                reason='DEFECT_REMAINS',
+                defect_slots=assessment.defect_slots,
+            )
+            return
+
         self._finish_active_command(
             status='SUCCEEDED',
-            phase='INSPECTION_COMPLETE',
+            phase=('RECHECK_COMPLETE' if command.operation == 'RECHECK'
+                   else 'INSPECTION_COMPLETE'),
             reason='NONE',
             defect_slots=assessment.defect_slots,
         )
@@ -812,6 +829,7 @@ class InspectionExecutorNode(Node):
         detections: list[Detection],
         image_width: int,
         image_height: int,
+        expected_removed: tuple[str, ...] = (),
     ) -> SlotAssessment:
         assigned: list[AssignedDetection] = []
         detections_by_slot = {
@@ -856,6 +874,9 @@ class InspectionExecutorNode(Node):
         slot_states: dict[str, str] = {}
         for slot_id in SLOT_IDS:
             slot_detections = detections_by_slot[slot_id]
+            if slot_id in expected_removed and not slot_detections and slot_id not in conflict_slots:
+                slot_states[slot_id] = 'REMOVED'
+                continue
             if (
                 slot_id in conflict_slots
                 or len(slot_detections) != 1
@@ -868,6 +889,8 @@ class InspectionExecutorNode(Node):
                 class_name,
                 'UNKNOWN',
             )
+            if slot_id in expected_removed and slot_states[slot_id] == 'NORMAL':
+                slot_states[slot_id] = 'UNKNOWN'
 
         defect_slots = tuple(
             slot_id
@@ -926,13 +949,15 @@ class InspectionExecutorNode(Node):
             },
             'task_id': command.task_id,
             'command_id': command.command_id,
+            'operation': command.operation,
             'inspection_command_id': command.command_id,
             'pallet_id': command.pallet_id,
             'coordinate_frame': 'image_pixels',
             'image_width': image_width,
             'image_height': image_height,
             'slot_states': assessment.slot_states,
-            'valid_for_cull': not inference_failed and not assessment.unknown_slots,
+            'valid_for_cull': (command.operation == 'INSPECT'
+                               and not inference_failed and not assessment.unknown_slots),
             'detections': [
                 {
                     'slot_id': assigned.slot_id,
