@@ -9,6 +9,7 @@
   CABBAGE_CAPTURE_CAMS   "이름=/카메라/prim/경로;이름2=..." 이면 그 카메라를 화면 밖에서 렌더해
                          <기록 폴더>/captures/cap_<이름>_<시뮬레이션 초>.jpg 로 저장 (예: human=/World/Characters/HumanViewCam)
   CABBAGE_CAPTURE_EVERY  캡처 간격(시뮬레이션 초, 기본 3.0)
+  CABBAGE_HEAD_MASS      양배추 포기 질량(kg) 실험. 비우면 에셋 값(0.3)
 Windows 창 녹화(gdigrab)로는 Isaac 3D 뷰포트가 갱신되지 않으므로 영상은 이 캡처로 만든다.
 기록은 standalone_app 이 sim_task_node 를 import 할 때(SimulationApp 이 뜬 뒤) 물리 스텝 콜백으로 설치된다.
 """
@@ -35,6 +36,23 @@ def _install():
     phys = omni.physx.get_physx_interface()
     S = {"n": 0, "t": 0.0, "heads": None, "ref": {}, "stats": {}, "track": [], "trays": {}}
 
+    def set_head_mass(stage, when):
+        """CABBAGE_HEAD_MASS (kg): 양배추 포기 질량 실험. 에셋 0.3 kg 대신 실물(미니 0.45~0.9, 보통 1.5~4 kg)에 가깝게."""
+        m = os.environ.get("CABBAGE_HEAD_MASS")
+        if not m or S.get("mass_set"):
+            return
+        heads = [p for p in stage.Traverse() if p.GetName().startswith("Cabbage_") and p.HasAPI(UsdPhysics.RigidBodyAPI)]
+        for p in heads:
+            UsdPhysics.MassAPI.Apply(p).CreateMassAttr().Set(float(m))
+        if heads:
+            S["mass_set"] = True
+            print(f"[MONITOR] head mass {m} kg on {len(heads)} heads ({when})", flush=True)
+
+    try:
+        set_head_mass(omni.usd.get_context().get_stage(), "install")
+    except Exception as error:  # noqa: BLE001
+        print(f"[MONITOR] head mass at install failed: {error}", flush=True)
+
     def rot(q):   # x y z w -> 3x3
         x, y, z, w = q
         return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
@@ -50,6 +68,9 @@ def _install():
     def dump():
         out = {"sim_time_s": round(S["t"], 2), "heads": S["stats"], "trays": S["trays"], "chassis_track": S["track"][-2000:],
                "pallet01_track": S.get("tray_track", [])[-2000:],
+               # 1 s 마다 [t_sim, Pallet_01 포기 중 트레이 기준 최대 변위 mm, 최대 기울기 deg (그 1 s 안의 최대),
+               #            트레이의 chassis 기준 위치 x y z] - 운반 구간(주행·도킹) 흔들림을 선별 구간과 나눠 보기 위함
+               "pallet01_heads_series": S.get("p1_series", [])[-2000:],
                "tilt_max_deg": S.get("tilt_max", 0.0), "tilt_max_t": S.get("tilt_max_t"),
                "tilt_samples_over_0p5deg": S.get("tilt_samples", [])[-4000:]}
         with open(OUT, "w") as f:
@@ -93,6 +114,7 @@ def _install():
         if S["n"] % 15:
             return
         stage = omni.usd.get_context().get_stage()
+        set_head_mass(stage, "t=%.1f s" % S["t"])
         c = pose(CHASSIS)
         if c is not None:        # 차체 기울기(롤·피치 중 큰 값) 최대치: 0.25 s 마다 (궤적은 1 s 마다라 짧은 흔들림을 놓친다)
             tilt = max(abs(math.degrees(math.atan2(c[1][2, 1], c[1][2, 2]))),
@@ -120,8 +142,16 @@ def _install():
             if d > st["max_rel_disp_mm"]:
                 st["max_rel_disp_mm"], st["t_max"] = round(d, 2), round(S["t"], 2)
             st["max_rel_tilt_deg"] = round(max(st["max_rel_tilt_deg"], tilt), 2)
+            if h.split("/World/SmartFarm/Placed/")[-1].startswith("Pallet_01"):
+                S["win_d"], S["win_t"] = max(S.get("win_d", 0.0), d), max(S.get("win_t", 0.0), tilt)
         if S["n"] % 60 == 0:
             c = pose(CHASSIS)
+            p1 = next((pose(tr) for hh, tr in (S["heads"] or []) if "/Pallet_01/" in hh), None)
+            if c is not None and p1 is not None:
+                rel = c[1].T @ (p1[0] - c[0])
+                S.setdefault("p1_series", []).append([round(S["t"], 2), round(S.get("win_d", 0.0), 2), round(S.get("win_t", 0.0), 2)]
+                                                     + [round(float(v), 4) for v in rel])
+            S["win_d"] = S["win_t"] = 0.0
             if c is not None:
                 R = c[1]
                 yaw = math.degrees(math.atan2(R[1, 0], R[0, 0]))

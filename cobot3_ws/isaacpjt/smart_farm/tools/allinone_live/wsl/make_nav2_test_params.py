@@ -15,6 +15,7 @@
 --lane BT.xml  바닥 노란 차선 주행: bt_navigator 기본 BT 를 lane_route_bt.xml 로 (lane_planner.py 와 함께)
 --speed V      주행 최고속도 실험 (m/s): RPP desired_linear_vel + velocity_smoother max/min_velocity x.
                가감속(max_accel/decel)은 팀 값 그대로. Isaac 쪽 differential_controller 상한은 1.0 m/s.
+--accel A      직진 가감속 실험 (m/s^2): velocity_smoother max_accel / max_decel x (팀 값 0.3 / -0.35)
 """
 import sys
 
@@ -24,6 +25,7 @@ src, dst = sys.argv[1], sys.argv[2]
 human = "--human" in sys.argv
 lane_bt = sys.argv[sys.argv.index("--lane") + 1] if "--lane" in sys.argv else None
 speed = float(sys.argv[sys.argv.index("--speed") + 1]) if "--speed" in sys.argv else None
+accel = float(sys.argv[sys.argv.index("--accel") + 1]) if "--accel" in sys.argv else None
 p = yaml.safe_load(open(src))
 notes = []
 
@@ -33,6 +35,12 @@ if speed:
     vs["max_velocity"] = [speed] + list(vs["max_velocity"][1:])
     vs["min_velocity"] = [-speed] + list(vs["min_velocity"][1:])
     notes.append(f"speed {speed} m/s")
+
+if accel:
+    vs = p["velocity_smoother"]["ros__parameters"]
+    vs["max_accel"] = [accel] + list(vs["max_accel"][1:])
+    vs["max_decel"] = [-accel] + list(vs["max_decel"][1:])
+    notes.append(f"accel {accel} m/s^2")
 
 if human:
     FOOT = "[[0.14, 0.25], [0.14, -0.25], [-1.10, -0.25], [-1.10, 0.25]]"

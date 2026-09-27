@@ -8,6 +8,8 @@
 #            (scripts/human_crossing.py + Nav2 설정 복사본의 HumanStop/HumanSlow. 사람 에셋을 NVIDIA 서버에서 받으므로 인터넷 필요)
 #   -Lane    바닥 노란 차선 주행: 랙 통로 차선 중앙선을 따라 후진 -> 모서리 곡선 45 deg 까지 -> Nav2 기본 경로로 FEEDER
 #   -Speed   주행 최고속도(m/s) 실험: Nav2 설정 복사본의 RPP desired_linear_vel·velocity_smoother 만 바꾼다
+#   -Accel   직진 가감속(m/s^2) 실험: Nav2 설정 복사본의 velocity_smoother max_accel/max_decel
+#   -DockArgs feeder_dock 파라미터 실험 (팀 코드는 그대로, 실행 인자로만 준다)
 #   -NoFlow  Nav2·Isaac 만 띄우고 명령은 보내지 않음 (직접 보내려면 wsl/run_flow.py)
 #   -Scene   씬 USD (기본 DEFAULT = standalone_app 의 기본 씬, scenes/Collected_smartfarm_v014/...cabbage.usd)
 # 팀 파일은 바꾸지 않는다: Nav2 는 팀 nav2_params.yaml 을 읽어 만든 복사본(OUT/nav2_params_test.yaml)을 쓴다.
@@ -17,6 +19,8 @@ param([string]$OutDir = "$HOME\smartfarm_runs\allinone_run",
       [string]$Scene = "DEFAULT",
       [string]$Standoff = "0.92",
       [string]$Speed = "",          # 주행 최고속도 실험 (m/s). 비우면 팀 값(0.3)
+      [string]$Accel = "",          # 직진 가감속 실험 (m/s^2). 비우면 팀 값(0.3 / 0.35)
+      [string]$DockArgs = "",       # feeder_dock 파라미터 실험 "reverse_speed_mps:=0.15,quiet_s:=1.0" (쉼표로 구분)
       [string]$IsaacDir = "D:\isaacsim",
       [string]$Distro = "Ubuntu-24.04",
       [string]$PyLib = "")          # 중계기(Windows 쪽)용 추가 라이브러리 폴더. 비우면 ~\smartfarm_runs\pylib 에 pyyaml·numpy 를 자동 설치
@@ -36,10 +40,10 @@ Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*run_with_m
 wsl --terminate $Distro | Out-Null
 Start-Sleep 2
 
-"[2/5] WSL: 중계기 + Nav2(+RViz2) + navigation_node  (Human=$Human Lane=$Lane Speed=$Speed)"
+"[2/5] WSL: 중계기 + Nav2(+RViz2) + navigation_node  (Human=$Human Lane=$Lane Speed=$Speed Accel=$Accel Dock=$DockArgs)"
 $rviz = if ($NoRviz) { "false" } else { "true" }
 Start-Process -FilePath wsl.exe -WindowStyle Hidden -RedirectStandardOutput "$OutDir\stack.txt" -RedirectStandardError "$OutDir\stack.err" `
-    -ArgumentList "-d",$Distro,"--","env","STANDOFF=$Standoff","HUMAN=$(if ($Human) {'1'} else {'0'})","LANE=$(if ($Lane) {'1'} else {'0'})","SPEED=$Speed",`
+    -ArgumentList "-d",$Distro,"--","env","STANDOFF=$Standoff","HUMAN=$(if ($Human) {'1'} else {'0'})","LANE=$(if ($Lane) {'1'} else {'0'})","SPEED=$Speed","ACCEL=$Accel","DOCK_ARGS=$DockArgs",`
                   "bash","$wslHere/start_nav2_stack.sh",$wslOut,$rviz | Out-Null
 
 "[3/5] Windows: Isaac Sim GUI + standalone_app (+기록) + 중계기"
