@@ -99,6 +99,36 @@ def test_inspection_dispatch_sends_sim_context_before_command():
             rclpy.shutdown()
 
 
+def test_recheck_dispatch_does_not_replace_initial_inspection_context():
+    started_context = not rclpy.ok()
+    if started_context:
+        rclpy.init()
+    node = TaskManagerNode()
+    events = []
+
+    class Recorder:
+        def __init__(self, name):
+            self.name = name
+
+        def publish(self, message):
+            events.append((self.name, message))
+
+    try:
+        node.machine.start("TASK-001", "DEMO_HARVEST_01")
+        node.machine.complete_preflight(ready=True)
+        node.machine.state = CycleState.RECHECK
+        node.machine.defect_slots = ("SLOT_03",)
+        node.inspection_context_publisher = Recorder("context")
+        node.command_publishers["inspection"] = Recorder("command")
+        node._dispatch_current_step()
+        assert [name for name, _ in events] == ["command"]
+        assert list(events[0][1].target_slots) == ["SLOT_03"]
+    finally:
+        node.destroy_node()
+        if started_context:
+            rclpy.shutdown()
+
+
 def test_cull_waits_for_matching_stored_detections_after_inspection_result():
     started_context = not rclpy.ok()
     if started_context:
@@ -233,6 +263,32 @@ def test_convey_result_keeps_pallet_and_destination():
 
     assert result.pallet_id == "PALLET_001"
     assert result.reached_station == "INSPECT_STOP"
+
+
+def test_post_inspection_command_timeouts_are_terminal():
+    for state, expected_status in (
+        (CycleState.RECHECK, "FAILED"),
+        (CycleState.RELEASE_INSPECT, "RESET_REQUIRED"),
+        (CycleState.CONVEYOR_OUT, "RESET_REQUIRED"),
+    ):
+        started_context = not rclpy.ok()
+        if started_context:
+            rclpy.init()
+        node = TaskManagerNode()
+        try:
+            node.machine.start("TASK-TIMEOUT", "DEMO_HARVEST_01")
+            node.machine.complete_preflight(ready=True)
+            node.machine.state = state
+            node.machine.create_command()
+            node.command_deadline = 0.0
+            node._check_command_timeout()
+            assert node.machine.state == CycleState.ERROR
+            assert node.machine.failure_reason == "RESULT_TIMEOUT"
+            assert node.machine.terminal_status == expected_status
+        finally:
+            node.destroy_node()
+            if started_context:
+                rclpy.shutdown()
 
 
 def test_sim_task_status_json_is_converted_for_preflight():
