@@ -117,6 +117,22 @@ class SimTaskNode(Node):
         self._detail = detail
         self.publish_status()
 
+    def begin_scene_reset(self) -> None:
+        """Stop 뒤 이전 장면의 대기 명령과 검사 데이터를 폐기한다."""
+
+        if self._active_command is not None:
+            raise RuntimeError("finish the active command before resetting the scene")
+        self._ready = False
+        queued = self._queued_command
+        self._queued_command = None
+        if queued is not None:
+            self._publish_immediate_failure(queued, "RESET_REQUIRED")
+        self.clear_inspection_data()
+        self._state = "STARTING"
+        self._phase = "SCENE_RESET"
+        self._detail = "timeline stopped; press Play to reload the scene"
+        self.publish_status()
+
     def mark_inspection_prepared(self, command: SimTaskCommand) -> None:
         """[navigation 2026-09-27] 물리 준비 완료 팔레트에만 검출 수신을 허용한다."""
         self.inspection_data.mark_prepared(command.task_id, command.pallet_id)
