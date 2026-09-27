@@ -194,7 +194,8 @@ def test_slot_assessment_uses_yaml_class_outcomes(node_factory):
 
     assert assessment.slot_states['SLOT_01'] == 'NORMAL'
     assert assessment.slot_states['SLOT_02'] == 'DEFECT'
-    assert assessment.slot_states['SLOT_03'] == 'UNKNOWN'
+    assert assessment.slot_states['SLOT_03'] == 'DEFECT'
+    assert assessment.defect_slots == ('SLOT_02', 'SLOT_03')
     assert assessment.assigned[1].slot_id == 'SLOT_02'
 
 
@@ -279,6 +280,24 @@ def test_command_waits_for_a_frame_received_after_registration(node_factory):
     assert detector.calls == 1
 
 
+def test_command_rejects_repeated_old_image_timestamp(node_factory):
+    node, detector = node_factory()
+    replace_outputs(node)
+    node._image_callback(make_image(stamp_sec=10))
+    node._command_callback(make_command())
+
+    node._image_callback(make_image(stamp_sec=10))
+    node._inference_tick()
+    assert detector.calls == 0
+
+    node._image_callback(make_image(stamp_sec=11))
+    node._last_inference_started_at = 0.0
+    node._inference_tick()
+    wait_for_future(node)
+    node._inference_tick()
+    assert detector.calls == 1
+
+
 def test_detection_precedes_result_and_preserves_image_metadata(node_factory):
     """Detection metadata comes from the inferred RGB image."""
     detector = FakeDetector(
@@ -307,10 +326,46 @@ def test_detection_precedes_result_and_preserves_image_metadata(node_factory):
     assert payload['image_height'] == 200
     assert payload['task_id'] == 'TASK-001'
     assert payload['command_id'] == 'CMD-001'
+    assert payload['inspection_command_id'] == 'CMD-001'
     assert payload['pallet_id'] == 'PALLET_001'
+    assert payload['coordinate_frame'] == 'image_pixels'
+    assert payload['valid_for_cull'] is True
+    assert payload['slot_states']['SLOT_02'] == 'DEFECT'
     assert payload['detections'][0]['center_u'] == pytest.approx(50.0)
     assert result.status == 'SUCCEEDED'
     assert list(result.defect_slots) == ['SLOT_02']
+
+
+def test_yellow_is_a_defect_and_not_unknown(node_factory):
+    detector = FakeDetector(make_detections(
+        ('lettuce_dark_green', 'lettuce_yellow')
+        + ('lettuce_dark_green',) * 4
+    ))
+    node, _ = node_factory(detector)
+    replace_outputs(node)
+
+    finish_command(node, make_command())
+
+    result = node._result_publisher.messages[-1]
+    assert result.status == 'SUCCEEDED'
+    assert list(result.defect_slots) == ['SLOT_02']
+    assert list(result.unknown_slots) == []
+
+
+def test_missing_image_stamp_fails_without_cull_data(node_factory):
+    node, _ = node_factory(FakeDetector(
+        make_detections(('lettuce_dark_green',) * 6)
+    ))
+    replace_outputs(node)
+
+    node._image_callback(make_image(stamp_sec=1))
+    node._command_callback(make_command())
+    node._image_callback(make_image(stamp_sec=0))
+
+    result = node._result_publisher.messages[-1]
+    assert result.status == 'FAILED'
+    assert result.reason == 'INVALID_IMAGE_METADATA'
+    assert node._detections_publisher.messages == []
 
 
 def test_missing_slot_produces_unknown_slot_failure(node_factory):
@@ -327,6 +382,7 @@ def test_missing_slot_produces_unknown_slot_failure(node_factory):
     assert result.status == 'FAILED'
     assert result.reason == 'UNKNOWN_SLOT'
     assert list(result.unknown_slots) == ['SLOT_06']
+    assert json.loads(node._detections_publisher.messages[-1].data)['valid_for_cull'] is False
 
 
 def test_duplicate_slot_produces_unknown_slot_failure(node_factory):
@@ -361,6 +417,7 @@ def test_inference_error_is_terminal_but_does_not_stop_node(node_factory):
     ]
     assert result.status == 'FAILED'
     assert result.reason == 'INSPECTION_FAILED'
+    assert json.loads(node._detections_publisher.messages[-1].data)['valid_for_cull'] is False
     assert not node._stopping
     assert node._active_command is None
 
