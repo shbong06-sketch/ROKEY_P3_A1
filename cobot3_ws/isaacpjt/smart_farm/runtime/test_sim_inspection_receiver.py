@@ -64,3 +64,46 @@ def test_recheck_detections_do_not_replace_initial_cull_data():
         node.destroy_node()
         if owns_context:
             rclpy.shutdown()
+
+
+def test_scene_reset_rejects_queued_command_and_clears_inspection_data():
+    owns_context = not rclpy.ok()
+    if owns_context:
+        rclpy.init()
+    node = SimTaskNode(supported_operations={"PREPARE_INSPECT"})
+    results = []
+
+    class Recorder:
+        def publish(self, message):
+            results.append(json.loads(message.data))
+
+    try:
+        node.mark_ready()
+        node.mark_inspection_prepared(SimTaskCommand(
+            task_id="TASK-001", command_id="TASK-001-CMD-001",
+            operation="PREPARE_INSPECT", pallet_id="PALLET_001",
+        ))
+        node._result_publisher = Recorder()
+        node._command_callback(message({
+            "task_id": "TASK-001", "command_id": "TASK-001-CMD-002",
+            "operation": "PREPARE_INSPECT", "pallet_id": "PALLET_001",
+        }))
+
+        node.begin_scene_reset()
+
+        assert node._queued_command is None
+        assert node.inspection_data.prepared_task_id == ""
+        assert node._state == "STARTING"
+        assert node._ready is False
+        assert results == [{
+            "task_id": "TASK-001", "command_id": "TASK-001-CMD-002",
+            "pallet_id": "PALLET_001", "operation": "PREPARE_INSPECT",
+            "status": "FAILED", "phase": "COMMAND_VALIDATION",
+            "reason": "RESET_REQUIRED", "safe_to_navigate": False,
+            "reached_station": "", "completed_units": [],
+            "defect_slots": [], "unknown_slots": [],
+        }]
+    finally:
+        node.destroy_node()
+        if owns_context:
+            rclpy.shutdown()
