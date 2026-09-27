@@ -137,6 +137,8 @@ class SimTaskNode(Node):
     def _inspection_detections_callback(self, message: String) -> None:
         try:
             payload = json.loads(message.data)
+            if isinstance(payload, dict) and payload.get("operation") == "RECHECK":
+                return
             stored = self.inspection_data.receive(payload)
         except (ValueError, TypeError, DetectionContractError) as error:
             self._publish_inspection_data_status("REJECTED", str(error))
