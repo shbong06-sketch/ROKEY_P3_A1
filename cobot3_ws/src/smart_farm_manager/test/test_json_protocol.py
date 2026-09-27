@@ -275,20 +275,80 @@ def test_post_inspection_command_timeouts_are_terminal():
         if started_context:
             rclpy.init()
         node = TaskManagerNode()
+        published = []
+
+        class Recorder:
+            def publish(self, message):
+                published.append(message)
+
         try:
             node.machine.start("TASK-TIMEOUT", "DEMO_HARVEST_01")
             node.machine.complete_preflight(ready=True)
             node.machine.state = state
             node.machine.create_command()
+            node.command_publishers["sim_task"] = Recorder()
             node.command_deadline = 0.0
             node._check_command_timeout()
+            node._tick()
             assert node.machine.state == CycleState.ERROR
             assert node.machine.failure_reason == "RESULT_TIMEOUT"
             assert node.machine.terminal_status == expected_status
+            assert node.machine.active_command is None
+            assert published == []
         finally:
             node.destroy_node()
             if started_context:
                 rclpy.shutdown()
+
+
+@pytest.mark.parametrize(
+    ("state", "executor", "reason"),
+    (
+        (CycleState.RECHECK, "inspection", "UNKNOWN_SLOT"),
+        (CycleState.CULL, "sim_task", "CULL_COORDINATE_MISSING"),
+    ),
+)
+def test_failed_terminal_result_stops_following_physical_commands(
+    state, executor, reason,
+):
+    started_context = not rclpy.ok()
+    if started_context:
+        rclpy.init()
+    node = TaskManagerNode()
+    published = []
+
+    class Recorder:
+        def publish(self, message):
+            published.append(message)
+
+    try:
+        node.machine.start("TASK-FAILED", "DEMO_HARVEST_01")
+        node.machine.complete_preflight(ready=True)
+        node.machine.state = state
+        if state == CycleState.CULL:
+            node.machine.defect_slots = ("SLOT_03",)
+        command = node.machine.create_command()
+        node.command_publishers["sim_task"] = Recorder()
+
+        node._handle_result(TaskResultData(
+            task_id=command.task_id,
+            command_id=command.command_id,
+            operation=command.operation,
+            pallet_id=command.pallet_id,
+            status="FAILED",
+            reason=reason,
+        ), executor)
+        node._tick()
+        node._tick()
+
+        assert node.machine.state == CycleState.ERROR
+        assert node.machine.failure_reason == reason
+        assert node.machine.active_command is None
+        assert published == []
+    finally:
+        node.destroy_node()
+        if started_context:
+            rclpy.shutdown()
 
 
 def test_sim_task_status_json_is_converted_for_preflight():
