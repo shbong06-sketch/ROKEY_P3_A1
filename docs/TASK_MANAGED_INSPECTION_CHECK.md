@@ -1,27 +1,29 @@
-# Task Manager 통합 확인: TRANSFER → INSPECT (Ubuntu)
+# Task Manager 전체 공정 확인: TRANSFER → COMPLETE (Ubuntu)
 
 `DEMO_HARVEST_01`의 실제 명령과 terminal result를 확인하는 절차다. Task Manager는 `TRANSFER → PICK_HARVEST → NAVIGATION → PLACE_INSPECT → CONVEY_TO_INSPECT → PREPARE_INSPECT → MOVE_TO_INSPECT → INSPECT → (불량이 있으면 CULL) → RECHECK → RELEASE_INSPECT → CONVEYOR_OUT`을 순서대로 발행한다. 각 전이는 활성 명령과 일치하는 `SUCCEEDED` terminal result로만 진행한다. `PALLET_DETECTED` 등 상태 알림만으로 전이하지 않는다.
 
 ## 준비 및 외부 자산
 
 - 모든 호스트 ROS 터미널과 Vision 컨테이너에 같은 `ROS_DOMAIN_ID`를 설정한다. 두 PC를 사용하면 DDS로 `/clock`, `/tf`, `/chassis/odom`, `/scan`, `/rgb`가 필요한 프로세스에 도달해야 한다. Isaac 터미널에는 시스템 ROS를 source하지 않는다.
-- Git 외부 자산인 `cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd`와 참조 로봇 자산, v014 지도, `cobot3_ws/src/smart_farm_vision/resource/best.pt`를 준비한다.
+- Git 외부 장면 `cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd`와 장면이 참조하는 로봇·재질 자산을 준비한다. 현재 브랜치의 `cobot3_ws/src/smart_farm_navigation/maps/Collected_smartfarm_v014.yaml`·PNG와 `cobot3_ws/src/smart_farm_vision/resource/best.pt`는 Git에 포함되어 있으나, 대상 PC의 설치 overlay와 Vision 이미지에 반영됐는지 확인한다.
 - Inspection Executor는 `compose.vision.yaml`의 별도 GPU 컨테이너에서 실행한다. 컨테이너에 `torch`, `ultralytics`, OpenCV, `cv_bridge`가 필요하다. 통합 경로의 Isaac 검사 스테이션은 자체 YOLO worker를 시작하지 않으므로 Isaac Python에 `ultralytics`를 설치할 필요가 없다. 호스트에서 Vision 노드를 직접 실행하면 호스트 Python의 `torch` 부재로 중단될 수 있다.
 - Docker를 실행하는 각 호스트(VM과 RTX 5080 노트북 모두)에 NVIDIA 드라이버와 Container Toolkit이 필요하다. `could not select device driver "nvidia"`가 나오면 [NVIDIA Container Toolkit 설치 안내](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)에 따라 해당 호스트의 Docker GPU runtime을 구성한다. `service "vision" is not running`은 보통 그 시작 실패의 후속 메시지다. 현재 Vision Dockerfile의 PyTorch/CUDA 빌드가 대상 GPU에서 동작하는지도 실제 CUDA 연산으로 확인한다.
 
-저장소 루트가 `/path/to/ROKEY_P3_A1`인 예시다. 각 ROS 터미널에서 `/opt/ros/jazzy/setup.bash`와 빌드된 `cobot3_ws/install/setup.bash`를 source한다. 코드 변경 후에는 기존 프로세스를 종료하고 새 장면·노드로 시작한다.
+아래 명령은 저장소가 `~/ROKEY_P3_A1`, Isaac Sim이 `~/isaacsim`에 설치된 Ubuntu 호스트를 기준으로 한다. 경로가 다르면 해당 두 경로만 바꾼다. 모든 ROS 터미널에서 **이번에 빌드한 동일한 overlay**를 source한다. 저장소 루트의 `install/`과 `cobot3_ws/install/`을 혼용하면 이전 실행 코드가 로드될 수 있다. 코드 변경 후에는 기존 프로세스를 종료하고 새 장면·노드로 시작한다.
 
 ```bash
-cd /path/to/ROKEY_P3_A1/cobot3_ws
+cd ~/ROKEY_P3_A1/cobot3_ws
 source /opt/ros/jazzy/setup.bash
 colcon build --packages-up-to smart_farm_manager smart_farm_navigation smart_farm_vision --symlink-install
 source install/setup.bash
+ros2 pkg prefix smart_farm_manager
+ros2 pkg prefix smart_farm_navigation
 ```
 
 Vision 코드나 설정이 바뀌었다면 저장소 루트에서 이미지를 다시 빌드하고 컨테이너를 재생성한다. `compose.vision.yaml`은 `ROS_DOMAIN_ID`를 저장소 루트의 `.env` 또는 셸 환경에서 받는다. `down -v`는 `.env`를 삭제하지 않지만, 재생성 전에 도메인 값이 호스트 ROS 터미널과 같은지 확인한다. `FASTDDS_BUILTIN_TRANSPORTS=UDPv4`도 컨테이너 환경에 적용되어야 한다.
 
 ```bash
-cd /path/to/ROKEY_P3_A1
+cd ~/ROKEY_P3_A1
 cat .env
 test -f cobot3_ws/src/smart_farm_vision/resource/best.pt
 sudo docker compose -f compose.vision.yaml build vision
@@ -34,29 +36,32 @@ sudo docker compose -f compose.vision.yaml exec vision /entrypoint.sh python3 -c
 
 ## 별도 프로세스 기동
 
-아래 항목을 각각 별도 터미널에서 실행한다. 2~5번 및 관찰용 터미널에는 위 ROS 환경을 source한다. `run_flow.py`, PowerShell 올인원 도구, mock executor는 이 실기동 경로에 사용하지 않는다.
+아래 항목을 각각 별도 터미널에서 실행한다. 2~5번 및 관찰용 터미널에서는 매번 `source /opt/ros/jazzy/setup.bash`와 `source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash`를 실행하고 동일한 `ROS_DOMAIN_ID`를 설정한다. `run_flow.py`, PowerShell 올인원 도구, mock executor는 이 실기동 경로에 사용하지 않는다. Nav2가 `active`가 되지 않았는데 Navigation Executor가 `READY`라고 표시될 수 있으므로, 5번 이전에 lifecycle 상태를 따로 확인한다.
 
 1. **Isaac Sim / Sim Executor** — 시스템 ROS를 source하지 않은 터미널에서 저장소 루트로 이동한다. `--no-vision-station`은 사용하지 않는다.
 
    ```bash
-   /path/to/isaacsim/python.sh cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py \
+   cd ~/ROKEY_P3_A1
+   ~/isaacsim/python.sh cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py \
      --autoplay --scene cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd
    ```
 
    원격 화면이 필요하면 같은 명령에 `--livestream`과 접속 가능한 서버 주소를 준다.
 
    ```bash
-   /path/to/isaacsim/python.sh cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py \
+   cd ~/ROKEY_P3_A1
+   ~/isaacsim/python.sh cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py \
      --livestream --autoplay \
      --scene cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd \
      --/app/livestream/publicEndpointAddress=서버_IP --/app/livestream/port=49100
    ```
 
-2. **Nav2** — `ros2 launch smart_farm_navigation nav2.launch.py scan_mode:=auto use_rviz:=false`
+2. **Nav2** — `ros2 launch smart_farm_navigation nav2.launch.py scan_mode:=auto use_rviz:=false record:=true`. `record:=true`는 Nav2의 `/clock`, TF, 지도, costmap, 계획과 주행 토픽을 별도 bag에 남긴다. 설치된 launch의 기본값은 `false`이다.
 3. **Navigation Executor** — `ros2 launch smart_farm_navigation navigation_node.launch.py`
 4. **Inspection Executor** — 저장소 루트에서 다음 명령을 실행한 터미널을 유지한다.
 
    ```bash
+   cd ~/ROKEY_P3_A1
    sudo docker compose -f compose.vision.yaml exec vision \
      /entrypoint.sh ros2 launch smart_farm_vision object_detection.launch.py \
      config_file:=/config/object_detection.yaml
@@ -72,20 +77,27 @@ ros2 topic echo --once /navigation/status
 ros2 topic echo --once /inspection/status
 ros2 topic hz /rgb
 ros2 action list
+ros2 lifecycle get /map_server
+ros2 lifecycle get /amcl
+ros2 lifecycle get /planner_server
+ros2 lifecycle get /bt_navigator
 ```
+
+네 lifecycle 노드는 모두 `active`여야 한다. `/map_server`가 지도 파일을 읽었다는 로그만으로는 `/map` 발행이 확인되지 않는다. 06·07번 실행처럼 AMCL 전이가 멈추면 costmap에 `no map received`가 반복되고 `bt_navigator`가 목표를 거부할 수 있으므로, 이 상태에서는 `/start_cycle`을 호출하지 않는다.
 
 ## Bag 기록과 자동 실행
 
-별도 ROS 터미널에서 사이클 시작 **전**에 bag을 기록한다. `/tmp`는 재부팅 후 사라질 수 있으므로 저장소 아래 영구 경로를 사용한다. 출력 디렉터리가 이미 존재하면 `post_inspect_02`처럼 새 이름을 준다. `/rgb` 원본 영상은 용량이 크므로 기본 목록에서 제외한다. 영상 시각은 `/inspection/detections_2d`의 `header.stamp`와 필요 시 `/rgb` 헤더로 확인한다.
+별도 ROS 터미널에서 사이클 시작 **전**에 bag을 기록한다. `/tmp`는 재부팅 후 사라질 수 있으므로 저장소 아래 영구 경로를 사용한다. 실행마다 `full_cycle_01`, `full_cycle_02`처럼 새 이름을 준다. `/inspection/debug_image`는 RECHECK의 ROI·잔존 불량을 확인하기 위해 포함한다. `/rgb` 원본 영상은 용량이 크므로 기본 목록에서 제외한다. 원본이 필요한 실행에만 별도 기록한다.
 
 ```bash
-mkdir -p /path/to/ROKEY_P3_A1/results/bags
-ros2 bag record -o /path/to/ROKEY_P3_A1/results/bags/post_inspect_01 \
+mkdir -p ~/ROKEY_P3_A1/results/bags
+ros2 bag record -o ~/ROKEY_P3_A1/results/bags/full_cycle_01 \
   /cycle/status /sim_task/command /sim_task/result /sim_task/status \
   /navigation/command /navigation/result /navigation/status \
   /feeder_dock/status /feeder_dock/result \
   /sim_task/inspection_context /sim_task/inspection_data_status \
-  /inspection/command /inspection/status /inspection/detections_2d /inspection/result
+  /inspection/command /inspection/status /inspection/detections_2d /inspection/result \
+  /inspection/debug_image /clock
 ```
 
 세 Executor의 `READY`를 확인한 후 다른 ROS 터미널에서 시작한다.
@@ -93,6 +105,8 @@ ros2 bag record -o /path/to/ROKEY_P3_A1/results/bags/post_inspect_01 \
 ```bash
 ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_id: DEMO_HARVEST_01}"
 ```
+
+`/start_cycle`은 실행당 **한 번만** 호출한다. 실패 후 같은 장면에서 재호출하지 않는다. 기록을 종료한 뒤 `ros2 bag info ~/ROKEY_P3_A1/results/bags/full_cycle_01`로 실제 저장 토픽과 건수를 확인한다. Nav2의 보조 bag은 `~/.ros/smart_farm_navigation/bags/nav2_<시각>/`에 저장된다.
 
 `task_id`는 `/start_cycle` 응답의 값이며 명령 ID는 보통 그 값에 `-CMD-001`부터 붙는다. 실제 성공 판정에는 같은 `task_id`, 해당 활성 명령과 결과의 `command_id`·`operation`, 요구되는 `pallet_id`와 물리 완료 필드를 대조한다. `/sim_task/command`, `/sim_task/result`, `/sim_task/status`는 `std_msgs/msg/String` JSON이고, Navigation·Inspection의 명령과 결과는 각각 `smart_farm_interfaces/msg/TaskCommand`, `TaskResult`다. 현재 `TaskResult.msg`에는 `pallet_id` 필드가 없으므로 Navigation·Inspection에서는 명령·결과 ID와 결과 내용을 대조한다.
 
@@ -110,6 +124,26 @@ ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_i
 | 10 | `/inspection/command` `RECHECK` (`CMD-010`, 불량이 없어서 CULL을 건너뛰면 `CMD-009`) | 명령 후 새 프레임에서 잔존 불량·UNKNOWN이 없는 `SUCCEEDED` → `RELEASE_INSPECT` |
 | 11 | `/sim_task/command` `RELEASE_INSPECT` (앞 단계 다음 ID) | 트레이가 벨트 줄로 복귀하고 지그가 후퇴한 `SUCCEEDED`, `reached_station=INSPECT_STOP` → `CONVEYOR_OUT`; 벨트 배출은 아직 시작하지 않음 |
 | 12 | `/sim_task/command` `CONVEYOR_OUT` (앞 단계 다음 ID) | `inspection_done()` 후 컨베이어 배출 구역 `GONE` 도착을 확인한 `SUCCEEDED`, `reached_station=PACK_OUT` → `COMPLETE` |
+
+## 세 경로의 합격 기준
+
+| 경로 | bag에서 확인할 명령·결과 | 물리 화면과 이벤트에서 확인할 사항 |
+|---|---|---|
+| 정상 판정 | `INSPECT SUCCEEDED`와 빈 `defect_slots` → `CULL` 명령 없음 → `RECHECK`의 빈 `target_slots`와 `SUCCEEDED` → `RELEASE_INSPECT SUCCEEDED` → `CONVEYOR_OUT SUCCEEDED` → `/cycle/status`의 `COMPLETE/SUCCEEDED` | 여섯 칸 정상 판정, 지그가 트레이를 검사 벨트로 되돌린 뒤 팔레트가 배출 구역을 통과. `PUSH_BACK_DONE_HELD`가 배출 시작보다 먼저 기록됨 |
+| 불량 판정 | `INSPECT SUCCEEDED`의 불량 슬롯 = `CULL.target_slots` = 실제 배출 확인된 `CULL.completed_units`; 이어 `RECHECK SUCCEEDED`의 제거 슬롯은 `REMOVED`, 나머지는 `NORMAL`; 이후 `RELEASE_INSPECT` → `CONVEYOR_OUT` → `COMPLETE/SUCCEEDED` | 각 대상 포기가 상자 안으로 들어가고 지그가 검사 자세로 돌아옴. `CULL_DONE_*`, `PUSH_BACK_DONE_HELD`, `CONVEYOR_OUT_DONE` 순서 확인 |
+| 실패 | 활성 명령의 `FAILED`·`TIMEOUT` 또는 CULL 데이터의 `CULL_COORDINATE_MISSING` 등 검증 실패 → `/cycle/status`의 `ERROR` (`FAILED` 또는 `RESET_REQUIRED`) | ERROR 시점 뒤 Task Manager가 다음 `/.../command`를 발행하지 않음. 자동 지그 복귀·배출도 시작되지 않음 |
+
+정상 경로도 재검사를 거친다. `RECHECK`는 정상 슬롯 전체를 새 프레임에서 다시 확인하므로, 정상 판정이라는 이유만으로 복귀·배출로 건너뛰지 않는다. 09번 실행처럼 CULL의 물리 성공과 RECHECK 영상 판정이 다르면 `ERROR`가 맞다. `UNKNOWN_SLOT`이 하나라도 있으면 잔존 불량과 함께 기록하되 최종 사유는 `UNKNOWN_SLOT`이다.
+
+### 식별자와 전이 추적
+
+1. `/start_cycle` 응답의 `task_id`를 하나 기록한다. `/cycle/status.task_id` 및 모든 명령·결과의 `task_id`가 이 값인지 확인한다.
+2. 각 `/.../command`의 `command_id`, `operation`, `pallet_id`를 적고 같은 executor의 `/.../result`와 대조한다. 성공 전이에는 활성 명령과 같은 `task_id`·`command_id`·`operation`의 terminal `SUCCEEDED`가 필요하다. Sim 명령의 팔레트 작업은 JSON 결과의 `pallet_id`도 같아야 한다. `TRANSFER`와 `NAVIGATION` 명령의 `pallet_id`는 비어 있다.
+3. Navigation·Inspection의 `TaskResult.msg`에는 `pallet_id` 필드가 없다. 이 둘은 같은 ID의 명령에 기록된 `pallet_id`를 조인해 추적한다. `INSPECT`와 `RECHECK`의 명령 `pallet_id`는 `PALLET_001`; CULL용 `/inspection/detections_2d`에는 별도의 `pallet_id`와 최초 검사 `inspection_command_id`가 있다.
+4. `/cycle/status.active_command_id`가 현재 명령 ID인지 확인한다. `SUCCEEDED` 뒤 다음 명령으로 바뀌어야 하며, `ERROR` 뒤에는 빈 값이어야 한다. 상태 알림(`/.../status`)이나 검출 데이터만으로 단계가 바뀌면 안 된다.
+5. 실패 사유는 `/.../result.reason`과 마지막 `/cycle/status.reason`을 함께 남긴다. Task Manager의 벽시계 제한은 자체 `RESULT_TIMEOUT`으로 끝나며 executor에서 뒤늦게 온 결과는 현재 사이클을 되살리지 않는다. 이 제한은 Isaac의 활성 물리 명령을 취소하지 않으므로, timeout이 발생했다면 장면을 정지·초기화한 뒤 새 실행을 시작한다.
+
+bag 기록이 끝난 뒤 `ros2 bag info`로 위 7개 명령·결과 토픽과 `/cycle/status`의 건수를 확인한다. 필요하면 별도 터미널에서 `ros2 topic echo /cycle/status smart_farm_interfaces/msg/CycleStatus`, `ros2 topic echo /inspection/result smart_farm_interfaces/msg/TaskResult`, `ros2 topic echo /sim_task/result std_msgs/msg/String`을 실행해 terminal 결과를 바로 관찰한다. `ros2 bag play`는 실제 Executor가 실행 중인 ROS 도메인에서 사용하지 않는다. 저장된 명령이 다시 물리 실행될 수 있다.
 
 ## 컨베이어·지그의 물리 완료 조건
 
@@ -205,5 +239,13 @@ ros2 topic pub --once --max-wait-time-secs 15 /sim_task/command std_msgs/msg/Str
 4. Place가 멈추면 Isaac의 `WAIT_BASE_SETTLED`, `ARM_PLACE`, 포크 인출 및 TurnTable 로그를 본다. `[대기] 팔 베이스 정지를 기다리는 중`은 BaseWatcher의 주기적 안내이므로 실제 대기 여부는 `/sim_task/status.phase`로 확인한다. Place의 해당 대기는 물리 시간 15초 제한이 있고 Transfer/Pick의 `WAIT_BASE_SETTLE`에는 내부 제한이 없다.
 5. Convey가 지연되면 Isaac의 벨트 감지·카메라 앞 정지·정체 로그와 `/sim_task/status`의 `zone/still`을 본다. Prepare는 지그의 프레임 이송·밀기 실패 로그, `station_out/station_events.json`의 `PUSH_DONE_PREPARED`, 월드 x/y·`seat_error_after_push_mm`·트레이 속도를 본다. Move는 Isaac의 `[비전] 검사 자세로 이동`, `INSPECT_POSE_READY` 이벤트, `/sim_task/status`의 `MOVE_TO_INSPECT/MOVING`, terminal result를 본다. `PALLET_DETECTED` 직후 다음 명령이 나왔다면 Task Manager의 결과 처리 경로를 점검한다.
 6. Inspect 실패는 Vision의 `IMAGE_TIMEOUT`, `INSPECTION_FAILED`, `UNKNOWN_SLOT`, `INVALID_IMAGE_METADATA`, `/inspection/debug_image`, `/inspection/detections_2d`를 본다. Sim의 `Inspection detections rejected`와 `/sim_task/inspection_data_status`, Task Manager의 `Result ignored`·`Command timeout`을 대조한다.
+
+## development 대비 PR 검토 지점
+
+- Task Manager는 `INSPECT → (불량이면 CULL) → RECHECK → RELEASE_INSPECT → CONVEYOR_OUT → COMPLETE`를 수행한다. `CULL`을 건너뛰어도 `RECHECK`와 물리 복귀·배출을 수행한다. 이전 `CONVEYOR_OUT` 직접 전이와 충돌하는 테스트·문서를 확인한다.
+- Nav2는 새 `nav2.launch.py`, v014 지도, `stations.yaml`, `destinations_nav2.yaml`을 사용한다. PR에서 지도와 장면의 원점·축·도킹 좌표, AMCL 초기 자세, `/clock`·TF·스캔, map server와 navigator의 `active` 상태를 확인한다. 지도 파일 로드 로그만으로 활성화를 판정하지 않는다.
+- v014 검사 장면 본체는 Git에 없고, `development` 대비 로봇·포크·랙 자산에는 삭제·이동과 팔레트 트레이 USD 수정이 있다. PR 검토 PC에서 USD 참조가 모두 열리는지, 비전 M0609·포크·그리퍼와 트레이 강체가 통합 장면에 일치하는지 확인한다. 작은 `smart_farm_nav2_01*.usd` 파일이 v014 검사 장면을 대체하지는 않는다.
+- Vision 패키지·Docker 이미지·`best.pt`·`object_detection.yaml`은 `development` 대비 새 구성이다. 클래스 판정(`dark_green=NORMAL`, `yellow/brown=DEFECT`), 여섯 ROI, CUDA 장치, `/rgb`, 모델 버전과 컨테이너 코드가 같아야 한다. 호스트 소스 변경 후에는 Docker 이미지를 재빌드해야 한다.
+- Sim Executor는 관리형 검사 스테이션에서 감지 후 자동 PUSH_IN·검사·배출을 시작하지 않는다. `RELEASE_INSPECT` 성공 전에는 `conveyor.inspection_done()` 호출이 없고, `CONVEYOR_OUT` 명령 후에만 배출한다. 물리 실패·시간 초과 시 팔레트를 임의로 배출하지 않는지 확인한다.
 
 bag의 terminal result와 Isaac 물리 화면·로그가 실기동 판정 근거다. 정적·단위 검증만으로 도킹, 이송, 검사 영상의 성공을 주장하지 않는다.
