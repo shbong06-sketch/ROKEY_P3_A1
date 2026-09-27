@@ -7,7 +7,7 @@ import sys
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from inspection_detection_store import DetectionContractError, InspectionDetectionStore
+from inspection_detection_store import CullContractError, DetectionContractError, InspectionDetectionStore
 
 
 def sample_detections(task_id="TASK-001", command_id="TASK-001-CMD-007"):
@@ -66,6 +66,50 @@ def test_stores_only_matching_inspection_after_preparation():
     assert store.receive(payload) is True
     assert store.data == payload
     assert store.data is not payload
+
+
+def test_cull_requires_exact_defect_slots_and_current_ids():
+    store = prepared_store()
+    store.expect_inspection(context())
+    store.receive(sample_detections())
+    data = store.require_cull("TASK-001", "PALLET_001", ("SLOT_02",))
+    assert data["inspection_command_id"] == "TASK-001-CMD-007"
+    assert data is not store.data
+    for task, pallet, slots, reason in (
+        ("TASK-OLD", "PALLET_001", ("SLOT_02",), "INSPECTION_ID_MISMATCH"),
+        ("TASK-001", "PALLET_002", ("SLOT_02",), "INSPECTION_ID_MISMATCH"),
+        ("TASK-001", "PALLET_001", (), "CULL_TARGET_MISMATCH"),
+        ("TASK-001", "PALLET_001", ("SLOT_01",), "CULL_TARGET_MISMATCH"),
+        ("TASK-001", "PALLET_001", ("SLOT_02", "SLOT_02"), "CULL_TARGET_MISMATCH"),
+    ):
+        with pytest.raises(CullContractError) as error:
+            store.require_cull(task, pallet, slots)
+        assert error.value.reason == reason
+
+
+def test_cull_rejects_missing_or_stale_detection_coordinates():
+    store = prepared_store()
+    with pytest.raises(CullContractError) as error:
+        store.require_cull("TASK-001", "PALLET_001", ("SLOT_02",))
+    assert error.value.reason == "INSPECTION_DATA_MISSING"
+    store.expect_inspection(context())
+    store.receive(sample_detections())
+    store.data["detections"] = [
+        item for item in store.data["detections"] if item["slot_id"] != "SLOT_02"
+    ]
+    with pytest.raises(CullContractError) as error:
+        store.require_cull("TASK-001", "PALLET_001", ("SLOT_02",))
+    assert error.value.reason == "CULL_COORDINATE_MISSING"
+
+
+def test_cull_rejects_detection_from_previous_inspection_command():
+    store = prepared_store()
+    store.expect_inspection(context())
+    store.receive(sample_detections())
+    store.inspection_command_id = "TASK-001-CMD-008"
+    with pytest.raises(CullContractError) as error:
+        store.require_cull("TASK-001", "PALLET_001", ("SLOT_02",))
+    assert error.value.reason == "INSPECTION_ID_MISMATCH"
 
 
 def test_detection_can_arrive_before_context_without_bypassing_validation():
