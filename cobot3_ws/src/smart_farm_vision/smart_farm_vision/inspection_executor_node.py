@@ -46,7 +46,7 @@ DEFAULT_SLOT_ROIS = {
 }
 DEFAULT_CLASS_OUTCOMES = {
     'lettuce_dark_green': 'NORMAL',
-    'lettuce_yellow': 'UNKNOWN',
+    'lettuce_yellow': 'DEFECT',
     'lettuce_brown': 'DEFECT',
 }
 VALID_OUTCOMES = frozenset({'NORMAL', 'DEFECT', 'UNKNOWN'})
@@ -99,6 +99,7 @@ class InspectionExecutorNode(Node):
 
         self._active_command: TaskCommand | None = None
         self._command_min_frame_sequence = 0
+        self._command_min_frame_stamp = (0, 0)
         self._command_deadline = 0.0
         self._terminal_results: dict[str, TaskResult] = {}
 
@@ -351,6 +352,11 @@ class InspectionExecutorNode(Node):
             raise ValueError(
                 f'unsupported class outcomes: {invalid_outcomes}'
             )
+        if self._class_outcomes != DEFAULT_CLASS_OUTCOMES:
+            raise ValueError(
+                'class_outcomes must map dark_green=NORMAL and '
+                'yellow/brown=DEFECT'
+            )
 
     def _validate_model_contract(self) -> None:
         if self._detector.class_names != EXPECTED_CLASS_NAMES:
@@ -403,6 +409,20 @@ class InspectionExecutorNode(Node):
     def _image_callback(self, message: Image) -> None:
         encoding = message.encoding.strip().lower()
         self._last_encoding = encoding
+
+        if (not message.header.frame_id
+                or (message.header.stamp.sec == 0
+                    and message.header.stamp.nanosec == 0)):
+            self._log_conversion_warning(
+                encoding, ValueError('camera frame_id and nonzero stamp are required'),
+            )
+            if self._active_command is not None:
+                self._finish_active_command(
+                    status='FAILED',
+                    phase='IMAGE_METADATA',
+                    reason='INVALID_IMAGE_METADATA',
+                )
+            return
 
         try:
             bgr_image = self._convert_to_bgr(message)
@@ -560,9 +580,15 @@ class InspectionExecutorNode(Node):
 
         with self._frame_lock:
             current_sequence = self._frame_sequence
+            current_header = self._latest_header
+            current_stamp = (
+                (int(current_header.stamp.sec), int(current_header.stamp.nanosec))
+                if current_header is not None else (0, 0)
+            )
 
         self._active_command = copy.deepcopy(command)
         self._command_min_frame_sequence = current_sequence
+        self._command_min_frame_stamp = current_stamp
         self._command_deadline = (
             time.monotonic() + self._image_timeout_sec
         )
@@ -619,6 +645,11 @@ class InspectionExecutorNode(Node):
             if self._latest_frame is None:
                 return
             if self._frame_sequence <= minimum_sequence:
+                return
+            if (command is not None and self._latest_header is not None
+                    and (int(self._latest_header.stamp.sec),
+                         int(self._latest_header.stamp.nanosec))
+                    <= self._command_min_frame_stamp):
                 return
             if self._frame_sequence == self._last_submitted_sequence:
                 return
@@ -725,12 +756,22 @@ class InspectionExecutorNode(Node):
                 )
             return
 
+        if (not header.frame_id
+                or (header.stamp.sec == 0 and header.stamp.nanosec == 0)):
+            self._finish_active_command(
+                status='FAILED',
+                phase='IMAGE_METADATA',
+                reason='INVALID_IMAGE_METADATA',
+            )
+            return
+
         detection_message = self._build_detection_message(
             command,
             header,
             width,
             height,
             assessment,
+            inference_failed=error is not None,
         )
         self._detections_publisher.publish(detection_message)
 
@@ -873,6 +914,7 @@ class InspectionExecutorNode(Node):
         image_width: int,
         image_height: int,
         assessment: SlotAssessment,
+        inference_failed: bool = False,
     ) -> String:
         payload = {
             'header': {
@@ -884,9 +926,13 @@ class InspectionExecutorNode(Node):
             },
             'task_id': command.task_id,
             'command_id': command.command_id,
+            'inspection_command_id': command.command_id,
             'pallet_id': command.pallet_id,
+            'coordinate_frame': 'image_pixels',
             'image_width': image_width,
             'image_height': image_height,
+            'slot_states': assessment.slot_states,
+            'valid_for_cull': not inference_failed and not assessment.unknown_slots,
             'detections': [
                 {
                     'slot_id': assigned.slot_id,
