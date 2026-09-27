@@ -16,6 +16,14 @@ class DetectionContractError(ValueError):
     """검출 메시지가 현재 검사 또는 픽셀 좌표 계약과 맞지 않음."""
 
 
+class CullContractError(DetectionContractError):
+    """Cull 명령과 저장된 검사 결과가 맞지 않음."""
+
+    def __init__(self, reason, detail):
+        super().__init__(detail)
+        self.reason = reason
+
+
 class InspectionDetectionStore:
     """Cull 시작 없이 검증된 한 번의 검사 결과만 보관한다."""
 
@@ -80,6 +88,33 @@ class InspectionDetectionStore:
             if detection["slot_id"] in SLOT_IDS
         ]
         return True
+
+    def require_cull(self, task_id, pallet_id, target_slots):
+        """현재 검사에서 판정한 모든 불량 슬롯의 검출을 반환한다."""
+        if self.data is None or not self.inspection_command_id:
+            raise CullContractError("INSPECTION_DATA_MISSING", "no completed inspection detections")
+        data = self.data
+        if (task_id != self.prepared_task_id
+                or pallet_id != self.prepared_pallet_id
+                or data["task_id"] != task_id
+                or data["pallet_id"] != pallet_id
+                or data["inspection_command_id"] != self.inspection_command_id):
+            raise CullContractError("INSPECTION_ID_MISMATCH", "Cull belongs to another inspection or pallet")
+        targets = tuple(target_slots)
+        expected = {
+            slot for slot, state in data["slot_states"].items()
+            if state == "DEFECT"
+        }
+        if (not targets or len(targets) != len(set(targets))
+                or set(targets) != expected):
+            raise CullContractError("CULL_TARGET_MISMATCH", "target_slots differ from inspection defects")
+        by_slot = {
+            detection["slot_id"]: detection
+            for detection in data["detections"]
+        }
+        if any(slot not in by_slot for slot in targets):
+            raise CullContractError("CULL_COORDINATE_MISSING", "defect slot has no detection")
+        return copy.deepcopy(data)
 
     @classmethod
     def _validate_frame_and_slots(cls, payload):
