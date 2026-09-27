@@ -69,6 +69,10 @@ sudo docker compose -f compose.vision.yaml exec vision /entrypoint.sh python3 -c
 
 5. **Task Manager** — `ros2 launch smart_farm_manager task_manager.launch.py`
 
+Isaac 화면에서 **Stop → Play**를 누르면 `standalone_app.py`는 같은 프로세스에서 원본 USD를 다시 열고 로봇·팔레트·포기·검사 지그를 초기 배치로 재구성한다. Stop 중 `/sim_task/status`는 `STARTING/SCENE_RESET`, Play 뒤 초기화가 끝나면 `READY/IDLE`이어야 한다. 터미널의 `[장면] Stop → Play: 원본 USD를 다시 엽니다.`와 `[READY]`를 확인한다. 이 기능은 Sim Executor의 장면 복원이며, `COMPLETE/ERROR`인 Task Manager와 Nav2의 위치 추정까지 초기화하지는 않는다. 전체 공정을 다시 시작할 때는 해당 ROS 프로세스도 새 사이클용으로 재시작한다.
+
+화면 없이 이 경로만 시험하려면 Isaac 터미널에서 `--verify-stop-play`를 붙여 실행한다. 이 옵션은 `PALLET_001`을 잠시 옮기고 Stop 상태를 120 Kit update 동안 유지한 뒤 Play하여 원래 월드 위치와 리프트 보정을 확인하고 종료한다. 스트리밍 구성까지 확인할 때는 `--livestream --verify-stop-play`를 함께 준다. 성공 로그는 `[RESET_CHECK] PASS`이다. 검증 옵션이므로 실제 시연 명령에는 붙이지 않는다.
+
 PREFLIGHT는 Sim Task, Navigation, Inspection의 최근 `READY` heartbeat를 모두 요구한다. Inspection은 모델 로드와 `/rgb`의 유효한 영상 수신 후 `READY`가 된다. 시작 전에 다음을 확인한다.
 
 ```bash
