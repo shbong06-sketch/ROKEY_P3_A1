@@ -390,6 +390,7 @@ class ConveyorController:
         self._vision_x = vision_x
         self._auto_resume_seconds = auto_resume
         self._stem_hold = False    # [올인원 2026-09-25] 로봇이 줄기에 내려놓는 동안 줄기 벨트 정지
+        self._outfeed_hold = False
 
     # ── 읽기 ────────────────────────────────────────
     @property
@@ -520,9 +521,14 @@ class ConveyorController:
             self._stem_hold = hold
             print(f"[컨베이어] 줄기 벨트 {'정지 (로봇 놓기 중)' if hold else '재가동'}")
 
+    def hold_outfeed(self, hold):
+        """배출 실패·시간 초과 시 가로줄기 롤러를 정지한다."""
+        self._outfeed_hold = bool(hold)
+
     def reset(self):
         """감시 상태를 초기화합니다. Stop → Play 사이에 부르세요."""
         self._stem_hold = False
+        self._outfeed_hold = False
         for pallet in self._pallets:
             pallet.release()
             pallet.reset_state()
@@ -652,7 +658,7 @@ class ConveyorController:
             self._drive.stem.set_speed(0.0, 0.0)   # [올인원 2026-09-25] 로봇 놓기 중 인터록
 
         # 가로줄기: 검사 중인 팔레트가 있으면 멈춥니다.
-        if vision_busy:
+        if vision_busy or self._outfeed_hold:
             self._drive.line_stop()
         else:
             self._drive.line_run()
