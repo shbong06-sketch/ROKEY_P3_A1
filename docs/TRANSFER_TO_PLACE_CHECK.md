@@ -134,7 +134,7 @@ ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_i
 | 1 | `/sim_task/command` String/JSON `TRANSFER`, `CMD-001` | `/sim_task/result` `SUCCEEDED`, `completed_units`에 `PALLET_002:RACK_L3:RACK_L2`, `PALLET_003:RACK_L4:RACK_L3`; 상태 `PICK_HARVEST` |
 | 2 | `/sim_task/command` String/JSON `PICK_HARVEST`, `CMD-002`, `pallet_id=PALLET_001` | `/sim_task/result` `SUCCEEDED`, `safe_to_navigate=true`; 상태 `NAVIGATION` |
 | 3 | `/navigation/command` TaskCommand `NAVIGATION`, `CMD-003`, `destination=FEEDER_DOCK` | `/navigation/result` TaskResult `SUCCEEDED`, `reached_station=FEEDER_DOCK`; 상태 `PLACE_INSPECT` |
-| 4 | `/sim_task/command` String/JSON `PLACE_INSPECT`, `CMD-004`, `pallet_id=PALLET_001` | `/sim_task/result` `SUCCEEDED`; 상태 `INSPECT` |
+| 4 | `/sim_task/command` String/JSON `PLACE_INSPECT`, `CMD-004`, `pallet_id=PALLET_001` | `/sim_task/result` `SUCCEEDED`; 상태 `CONVEY_TO_INSPECT` |
 
 전체 `command_id`는 `/start_cycle` 응답의 `task_id` 뒤에 `-CMD-001`처럼 붙는다. Place 결과 후 `/sim_task/command`의 `CONVEY_TO_INSPECT` (`CMD-005`), `PREPARE_INSPECT` (`CMD-006`), 그 다음 `/inspection/command`의 `INSPECT` (`CMD-007`)가 현 생산 시나리오의 예상 동작이다. 이 결과로 앞 네 단계의 성공을 대체하지 않는다. 통합 런타임은 Place 뒤 팔레트를 자동 이송·검사하지 않으며, 이 시험만으로 뒤 구간의 성공을 주장하지 않는다.
 
@@ -144,6 +144,8 @@ ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_i
 2. Sim 명령이 없으면 Task Manager의 `Command published`와 `/sim_task/command` 녹화를 본다. Sim 결과가 실패하면 Isaac 터미널의 `Sim command queued`, `Sim result published`, `MOTION_FAILED`, 장면 초기화 오류와 `/sim_task/status.phase`를 본다.
 3. `NAVIGATION`이 실패하면 Navigation 터미널의 `goToPose`, Nav2 액션 서버·목표 거부 로그, `/feeder_dock/status`·`/feeder_dock/result`의 `run_id`를 본다. `/clock`, `/tf`, `/chassis/odom`, `/scan`도 확인한다.
 4. Place 실패 또는 timeout이면 Isaac의 `WAIT_BASE_SETTLED`, `ARM_PLACE`, TurnTable 목표·포크 인출 로그를 본다. Task Manager의 `Command timeout`과 `/cycle/status.reason`을 함께 확인한다.
+
+`PICK_HARVEST`의 Task Manager 제한은 벽시계 400초다. 2026-09-27 실기동에서는 이전 200초 제한 직후 리프트 높이 약 1.038 m에 도달하고 Sim Executor가 terminal result를 보냈으나, Task Manager는 이미 timeout으로 활성 명령을 닫아 `Result ignored: no active command`를 출력했다. 결과가 timeout 직후 도착해도 해당 사이클은 복구되지 않는다. 수정된 패키지로 Task Manager를 재시작하고 Isaac 장면을 초기 상태로 다시 시작한 뒤 새 사이클에서 검증한다.
 
 `[대기] 팔 베이스 정지를 기다리는 중`은 `BaseWatcher.update()`가 정지 여부와 관계없이 3초마다 출력하는 안내다. Isaac은 Place 명령이 없어도 이 감시기를 매 물리 스텝 갱신하므로, 이 줄만으로 정지 대기 상태라고 판정하지 않는다. 실제 대기라면 `/sim_task/status`의 JSON `phase`가 `TRANSFER_UNIT_XX/WAIT_BASE_SETTLE`, `PICK_HARVEST/WAIT_BASE_SETTLE`, 또는 `PLACE_INSPECT/WAIT_BASE_SETTLED`로 유지된다. 감시 기준은 연속 물리 스텝 간 팔 베이스 world 위치 이동 0.002 m 이하가 0.5초 누적되는 것이다. Place 대기는 시뮬레이션 시간 15초가 지나면 실패하고, Transfer/Pick의 `WAIT_BASE_SETTLE`에는 제어기 내부 timeout이 없다. 대기가 실제로 지속되면 `phase`, `detail`, terminal result와 함께 `/cmd_vel`, `/chassis/odom`, 리프트·팔 베이스 흔들림을 확인한다.
 
