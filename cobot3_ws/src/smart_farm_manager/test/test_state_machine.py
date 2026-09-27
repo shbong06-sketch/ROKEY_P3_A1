@@ -444,6 +444,27 @@ def test_mismatched_result_is_ignored():
     assert machine.active_command == command
 
 
+def test_pick_and_place_ignore_results_for_a_different_pallet():
+    for operation in ("PICK_HARVEST", "PLACE_INSPECT"):
+        machine = start_machine()
+        complete_transfer(machine)
+        if operation == "PLACE_INSPECT":
+            complete_pick_harvest(machine)
+            complete_navigation(machine)
+
+        command = machine.create_command()
+        assert command.operation == operation
+        wrong = success_result(
+            command, pallet_id="PALLET_999", safe_to_navigate=True,
+        )
+        outcome = machine.handle_result(wrong)
+
+        assert outcome.accepted is False
+        assert outcome.reason == "MISMATCHED_RESULT"
+        assert machine.state.value == operation
+        assert machine.active_command == command
+
+
 def test_pallet_detection_status_cannot_advance_convey_command():
     machine = start_machine()
     complete_transfer(machine)
