@@ -20,6 +20,8 @@ class CycleState(str, Enum):
     MOVE_TO_INSPECT = "MOVE_TO_INSPECT"
     INSPECT = "INSPECT"
     CULL = "CULL"
+    RECHECK = "RECHECK"
+    RELEASE_INSPECT = "RELEASE_INSPECT"
     CONVEYOR_OUT = "CONVEYOR_OUT"
 
     COMPLETE = "COMPLETE"
@@ -164,14 +166,32 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 optional=True,
             ),
             StepDefinition(
+                state=CycleState.RECHECK,
+                executor=ExecutorName.INSPECTION,
+                operation="RECHECK",
+                pallet_id="PALLET_001",
+                source="INSPECT_WORK_POS",
+                timeout_sec=300.0,
+            ),
+            StepDefinition(
+                state=CycleState.RELEASE_INSPECT,
+                executor=ExecutorName.SIM_TASK,
+                operation="RELEASE_INSPECT",
+                recipe_id="RELEASE_INSPECT",
+                pallet_id="PALLET_001",
+                source="INSPECT_WORK_POS",
+                destination="INSPECT_STOP",
+                timeout_sec=450.0,
+            ),
+            StepDefinition(
                 state=CycleState.CONVEYOR_OUT,
                 executor=ExecutorName.SIM_TASK,
                 operation="CONVEYOR_OUT",
                 recipe_id="CONVEY_TO_PACK_OUT",
                 pallet_id="PALLET_001",
-                source="INSPECT_STATION",
+                source="INSPECT_STOP",
                 destination="PACK_OUT",
-                timeout_sec=300.0,
+                timeout_sec=600.0,
             ),
         ),
     )
