@@ -573,7 +573,7 @@ class TaskManagerNode(Node):
 
         executor = step.executor.value
         publisher = self.command_publishers[executor]
-        if executor == "inspection":
+        if executor == "inspection" and command_data.operation == "INSPECT":
             context = String()
             context.data = json.dumps({
                 "task_id": command_data.task_id,
@@ -622,6 +622,7 @@ class TaskManagerNode(Node):
             task_id=command.task_id,
             command_id=command.command_id,
             operation=command.operation,
+            pallet_id=command.pallet_id,
             status="TIMEOUT",
             phase="RESULT_TIMEOUT",
             reason="RESULT_TIMEOUT",
