@@ -26,6 +26,7 @@ def success_result(command, **overrides) -> TaskResultData:
         "status": "SUCCEEDED",
         "phase": "RESULT",
         "reason": "NONE",
+        "pallet_id": command.pallet_id,
     }
     values.update(overrides)
     return TaskResultData(**values)
@@ -210,10 +211,21 @@ def test_full_cycle_with_defects():
     )
     machine.handle_result(cull_result)
 
+    assert machine.state == CycleState.RECHECK
+
+    recheck_command = machine.create_command()
+    assert recheck_command.operation == "RECHECK"
+    assert recheck_command.target_slots == ("SLOT_03", "SLOT_06")
+    machine.handle_result(success_result(recheck_command))
+    assert machine.state == CycleState.RELEASE_INSPECT
+
+    release_command = machine.create_command()
+    assert release_command.operation == "RELEASE_INSPECT"
+    machine.handle_result(success_result(release_command, reached_station="INSPECT_STOP"))
     assert machine.state == CycleState.CONVEYOR_OUT
 
     conveyor_command = machine.create_command()
-    machine.handle_result(success_result(conveyor_command))
+    machine.handle_result(success_result(conveyor_command, reached_station="PACK_OUT"))
 
     assert machine.state == CycleState.COMPLETE
     assert machine.terminal_status == "SUCCEEDED"
@@ -237,10 +249,95 @@ def test_cycle_skips_cull_when_no_defect_exists():
     )
     machine.handle_result(inspect_result)
 
-    assert machine.state == CycleState.CONVEYOR_OUT
+    assert machine.state == CycleState.RECHECK
 
-    conveyor_command = machine.create_command()
-    assert conveyor_command.operation == "CONVEYOR_OUT"
+    recheck_command = machine.create_command()
+    assert recheck_command.operation == "RECHECK"
+    assert recheck_command.target_slots == ()
+    machine.handle_result(success_result(recheck_command))
+    assert machine.state == CycleState.RELEASE_INSPECT
+    release_command = machine.create_command()
+    machine.handle_result(success_result(release_command, reached_station="INSPECT_STOP"))
+    assert machine.state == CycleState.CONVEYOR_OUT
+    out_command = machine.create_command()
+    machine.handle_result(success_result(out_command, reached_station="PACK_OUT"))
+    assert machine.state == CycleState.COMPLETE
+
+
+def test_recheck_residual_defect_and_unknown_stop_before_release():
+    for slots, unknown, reason in (
+        (("SLOT_03",), (), "DEFECT_REMAINS"),
+        ((), ("SLOT_04",), "UNKNOWN_SLOT"),
+    ):
+        machine = start_machine()
+        complete_transfer(machine)
+        complete_pick_harvest(machine)
+        complete_navigation(machine)
+        complete_place_inspect(machine)
+        complete_inspection_preparation(machine)
+        inspect = machine.create_command()
+        machine.handle_result(success_result(inspect))
+        recheck = machine.create_command()
+        machine.handle_result(success_result(
+            recheck, defect_slots=slots, unknown_slots=unknown,
+        ))
+        assert machine.state == CycleState.ERROR
+        assert machine.failure_reason == reason
+
+
+def test_release_and_out_require_confirmed_destinations():
+    machine = start_machine()
+    complete_transfer(machine)
+    complete_pick_harvest(machine)
+    complete_navigation(machine)
+    complete_place_inspect(machine)
+    complete_inspection_preparation(machine)
+    inspect = machine.create_command()
+    machine.handle_result(success_result(inspect))
+    recheck = machine.create_command()
+    machine.handle_result(success_result(recheck))
+    release = machine.create_command()
+    machine.handle_result(success_result(release, reached_station=""))
+    assert machine.state == CycleState.ERROR
+    assert machine.failure_reason == "POSITION_NOT_CONFIRMED"
+
+
+def test_post_inspection_failures_and_timeouts_stop_the_cycle():
+    for operation, reason in (
+        ("RECHECK", "DEFECT_REMAINS"),
+        ("RELEASE_INSPECT", "RELEASE_FAILED"),
+        ("CONVEYOR_OUT", "CONVEYOR_TIMEOUT"),
+    ):
+        for status, expected_reason in (("FAILED", reason), ("TIMEOUT", "RESULT_TIMEOUT")):
+            machine = start_machine()
+            complete_transfer(machine)
+            complete_pick_harvest(machine)
+            complete_navigation(machine)
+            complete_place_inspect(machine)
+            complete_inspection_preparation(machine)
+            inspect = machine.create_command()
+            machine.handle_result(success_result(inspect))
+            if operation != "RECHECK":
+                recheck = machine.create_command()
+                machine.handle_result(success_result(recheck))
+            if operation == "CONVEYOR_OUT":
+                release = machine.create_command()
+                machine.handle_result(success_result(release, reached_station="INSPECT_STOP"))
+            command = machine.create_command()
+            assert command.operation == operation
+            machine.handle_result(TaskResultData(
+                task_id=command.task_id,
+                command_id=command.command_id,
+                operation=command.operation,
+                pallet_id=command.pallet_id,
+                status=status,
+                reason=expected_reason,
+            ))
+            assert machine.state == CycleState.ERROR
+            assert machine.failure_reason == expected_reason
+            assert machine.terminal_status == (
+                "FAILED" if operation == "RECHECK" else "RESET_REQUIRED"
+            )
 
 
 def test_cull_does_not_succeed_with_only_some_confirmed_slots():
