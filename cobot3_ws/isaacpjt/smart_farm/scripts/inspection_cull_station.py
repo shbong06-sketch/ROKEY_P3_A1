@@ -381,11 +381,13 @@ class VisionCullStation:
         self._timer = 0
         self._motion = None
         self._queue = []
+        self._completed_cull_slots = []
         self._frames = []
         self._record = None
         self._via = None
         self._requested_pallet = None
         self.failure_reason = ""
+        self.failure_code = ""
 
     def attach(self, conveyor):
         """world.reset() 뒤. 팔을 준비 자세로 두고 RMPflow 를 만든다."""
@@ -459,6 +461,80 @@ class VisionCullStation:
     def inspection_ready_pallet(self):
         return self._pallet if self.state == "INSPECT_READY" else None
 
+    @property
+    def completed_cull_slots(self):
+        return tuple(self._completed_cull_slots)
+
+    def start_cull(self, pallet_path, target_slots, detections):
+        """검사 슬롯 판정으로 기존 CullMotion 계획을 시작한다."""
+        if not self._managed or self.state != "INSPECT_READY" or self._pallet != pallet_path:
+            raise RuntimeError("inspection arm or pallet is not ready for Cull")
+        if self._conveyor is None or self._conveyor.inspecting != pallet_path:
+            raise RuntimeError("Cull pallet is not held at the inspection work position")
+        heads = {
+            "SLOT_" + head.GetName().split("_")[-1]: head
+            for head in self._heads
+        }
+        by_slot = {item["slot_id"]: item for item in detections}
+        if any(slot not in heads or heads[slot].GetName() not in self._seat_offsets_local
+               or slot not in by_slot for slot in target_slots):
+            raise RuntimeError("Cull slot lacks a head, seat offset, or detection")
+        tray_z = _world_matrix(self._stage, str(self._tray.GetPath()))[2, 3]
+        try:
+            camera_model = self._camera_model()
+        except Exception as error:
+            camera_model = None
+            _log(f"[솎아내기] 픽셀 대조용 카메라 보정값 조회 실패: {error}")
+        queue = []
+        for slot in target_slots:
+            item = by_slot[slot]
+            vision_aim = None
+            if camera_model is not None:
+                try:
+                    candidate = self._ray_plane(
+                        camera_model, item["center_u"], item["center_v"],
+                        tray_z + AIM_ABOVE_TRAY,
+                    )
+                    if np.all(np.isfinite(candidate)):
+                        vision_aim = candidate
+                except Exception as error:
+                    _log(f"[솎아내기] {slot} 픽셀 좌표 대조 실패: {error}")
+            queue.append((heads[slot], vision_aim, CLASS_SHORT[item["class_name"]]))
+        self._queue = queue
+        self._completed_cull_slots = []
+        self.failure_code = ""
+        self._record["culls"] = []
+        self._next_cull()
+
+    def start_release(self, pallet_path):
+        """재검사 성공 후 트레이를 벨트 줄로 되밀되 아직 배출하지 않는다."""
+        if not self._managed or self.state not in ("INSPECT_READY", "CULLED"):
+            raise RuntimeError("inspection station is not ready to release")
+        if self._pallet != pallet_path or self._conveyor.inspecting != pallet_path:
+            raise RuntimeError("release pallet does not match the inspection pallet")
+        self._begin_transfer_out()
+
+    def start_conveyor_out(self, pallet_path):
+        """지그 후퇴가 끝난 팔레트에 한해 컨베이어 배출을 시작한다."""
+        if not self._managed or self.state != "RELEASED" or self._pallet != pallet_path:
+            raise RuntimeError("inspection jig has not released this pallet")
+        if self._conveyor.inspecting != pallet_path:
+            raise RuntimeError("released pallet is not at the inspection stop")
+        if not self._conveyor.inspection_done():
+            raise RuntimeError("conveyor did not accept inspection completion")
+        self.state = "OUTFEED"
+
+    def finish_conveyor_out(self, pallet_path):
+        """물리 배출선 통과 후에만 작업 결과를 기록하고 스테이션을 비운다."""
+        if not self._managed or self.state != "OUTFEED" or self._pallet != pallet_path:
+            raise RuntimeError("conveyor out did not start for this pallet")
+        self._record["elapsed_wall_s"] = round(time.time() - self._record.pop("sim_start"), 1)
+        self.results.append(self._record)
+        with open(self._out / "station_results.json", "w", encoding="utf-8") as stream:
+            json.dump(self.results, stream, ensure_ascii=False, indent=1)
+        self._event("CONVEYOR_OUT_DONE")
+        self.reset(keep_frame=True)
+
     def start_inspect_move(self, pallet_path):
         """명령받은 팔레트에 대해 기존 검사 자세 이동만 실행한다."""
         if not self._managed or self.state != "PREPARED" or self._pallet != pallet_path:
@@ -506,6 +582,10 @@ class VisionCullStation:
             getattr(self, f"_state_{self.state.lower()}")(dt)
         except Exception as error:  # noqa: BLE001 - 스테이션 실패가 올인원을 죽이지 않게
             if self._managed:
+                if self.state == "CULL":
+                    from cull_motion import PhysicalPickError
+                    if isinstance(error, PhysicalPickError):
+                        self.failure_code = "PICK_FAILED"
                 self.failure_reason = str(error)
                 self._motion = None
                 self.state = "FAILED"
@@ -555,6 +635,12 @@ class VisionCullStation:
         tray_p = positions[self._tray_index]
         self._lane_y = float(tray_p[1])
         self._seat_offsets = {name: positions[i] - tray_p for name, i in self._head_index.items()}
+        from cull_target_geometry import seat_offset_local
+        tray_matrix = _world_matrix(self._stage, str(self._tray.GetPath()))
+        self._seat_offsets_local = {
+            name: seat_offset_local(tray_matrix, positions[index])
+            for name, index in self._head_index.items()
+        }
         self._record = {"pallet": path.rsplit("/", 1)[-1], "stop_xy": [round(float(tray_p[0]), 3), round(float(tray_p[1]), 3)],
                         "sim_start": time.time()}
         _log(f"[솎아내기] {self._record['pallet']} 도착 ({tray_p[0]:+.3f}, {tray_p[1]:+.3f}) — 이송 프레임이 내려와 "
@@ -630,7 +716,8 @@ class VisionCullStation:
                     or float(np.linalg.norm(velocity)) > 0.05
                     or seat > 20.0):
                 raise RuntimeError("tray did not settle in inspection work position")
-            self._conveyor.lock_at_vision(self._pallet)
+            # 기존 올인원처럼 PUSH_IN에서 켠 트레이·포기 강체 물리를 CULL까지 유지한다.
+            # conveyor의 locked 플래그는 물리를 다시 켜도 True로 남는다. 재잠그면 포기까지 멈춘다.
             self._event("PUSH_DONE_PREPARED")
             self.state = "PREPARED"
             return
@@ -644,6 +731,9 @@ class VisionCullStation:
 
     def _state_inspect_ready(self, dt):
         """별도 Inspection Executor가 검사하는 동안 카메라 자세를 유지한다."""
+
+    def _state_culled(self, dt):
+        """후속 명령 전까지 검사 지그와 팔레트를 그대로 유지한다."""
 
     def _state_failed(self, dt):
         """[navigation 2026-09-26] 실패 위치를 보존하고 자동 복구·배출을 막는다."""
@@ -871,8 +961,12 @@ class VisionCullStation:
         truth = _world_matrix(self._stage, str(head.GetPath()))[:3, 3]
         # 집는 좌표 = 트레이 자세(컨베이어·이송기가 아는 값) + 6구 칸 배치. 비전은 '어느 칸' 을 정하고 좌표는 대조만 한다.
         # 비전 좌표를 그대로 쓰면 오차 2~10 mm 에서 RG2 여유(한쪽 10.8 mm)를 넘겨 들다 놓친 적이 있다.
-        aim = tray_m[:3, 3] + self._seat_offsets[head.GetName()]
-        aim[2] = vision_aim[2]
+        if self._managed:
+            from cull_target_geometry import pick_target_world
+            aim = pick_target_world(tray_m, self._seat_offsets_local[head.GetName()], AIM_ABOVE_TRAY)
+        else:
+            aim = tray_m[:3, 3] + self._seat_offsets[head.GetName()]
+            aim[2] = vision_aim[2]
         box_index = self._drop_index % len(self._boxes)
         box_name, drop, box_top = self._boxes[box_index]
         use = self._drop_index // len(self._boxes)
@@ -891,13 +985,16 @@ class VisionCullStation:
         plan.insert(5, CullStep("VIA", tuple(self._via)))
         motion = self._new_motion(_qmul(self._base_q, np.array(TOOL_Q)), str(head.GetPath()))
         self._run_plan(motion, plan)
-        err = np.linalg.norm(vision_aim[:2] - truth[:2]) * 1000
+        err = None if vision_aim is None else float(np.linalg.norm(vision_aim[:2] - aim[:2]) * 1000)
         self._current = {"slot": "SLOT_" + head.GetName()[-2:], "colour": colour, "box": box_name,
-                         "vision_xy_error_mm": round(float(err), 1),
+                         "vision_xy_error_mm": (None if vision_aim is None else round(
+                             float(np.linalg.norm(vision_aim[:2] - truth[:2]) * 1000), 1)),
+                         "vision_to_pick_xy_mm": None if err is None else round(err, 1),
                          "pick_xy_error_mm": round(float(np.linalg.norm(aim[:2] - truth[:2]) * 1000), 1),
                          "head": head, "box_top": box_top,
                          "box_path": self._box_paths[box_index]}
-        _log(f"[솎아내기] SLOT_{head.GetName()[-2:]} ({colour}) -> {box_name} · 비전 좌표 대조 {err:.1f} mm")
+        delta = "unavailable" if err is None else f"{err:.1f} mm"
+        _log(f"[솎아내기] SLOT_{head.GetName()[-2:]} ({colour}) -> {box_name} · 비전/파지 XY 차이 {delta}")
         self.state = "CULL"
 
     def _state_cull(self, dt):
@@ -921,14 +1018,25 @@ class VisionCullStation:
         rng = UsdGeom.BBoxCache(Usd.TimeCode.Default(), [UsdGeom.Tokens.default_, UsdGeom.Tokens.render]) \
             .ComputeWorldBound(self._stage.GetPrimAtPath(cur["box_path"])).ComputeAlignedRange()
         lo, hi = rng.GetMin(), rng.GetMax()
-        inside = lo[0] <= hp[0] <= hi[0] and lo[1] <= hp[1] <= hi[1] and hp[2] <= cur["box_top"]
+        from cull_target_geometry import head_inside_box
+        inside = head_inside_box(hp, lo, (hi[0], hi[1], cur["box_top"]))
         entry = {k: v for k, v in cur.items() if k not in ("head", "box_top", "box_path", "_stage")}
         entry["in_box"] = bool(inside)
         entry["head_final"] = [round(float(v), 3) for v in hp]
         self._record["culls"].append(entry)
         _log(f"[솎아내기] {cur['slot']} 버림 {'성공' if inside else '실패'} — {cur['box']} "
              f"({hp[0]:+.3f}, {hp[1]:+.3f}, {hp[2]:.3f})")
-        self._event(f"CULL_DONE_{cur['slot']}_{cur['box']}")
+        self._event(f"CULL_{'DONE' if inside else 'FAILED'}_{cur['slot']}_{cur['box']}")
+        if self._managed:
+            if not inside:
+                self.failure_code = "DROP_FAILED"
+                raise RuntimeError(f"{cur['slot']} did not settle inside {cur['box']}")
+            self._completed_cull_slots.append(cur["slot"])
+            if not self._queue:
+                self._start_inspect_move(via=self._via)
+                self._timer = 0
+                self.state = "HOME"
+                return
         if not self._queue:
             self._start_recheck()
             return
@@ -938,6 +1046,11 @@ class VisionCullStation:
 
     def _state_home(self, dt):
         if not self._motion_step():
+            return
+        if self._managed and not self._queue:
+            self._timer += 1
+            if self._timer >= SETTLE_FRAMES:
+                self.state = "CULLED"
             return
         self._next_cull()
 
@@ -980,6 +1093,20 @@ class VisionCullStation:
         self._set_guide(True)                 # 트레이가 다시 가이드 사이로 돌아왔다
         positions, _ = self._rigid.get_world_poses()
         tray_p = np.asarray(positions)[self._tray_index]
+        if self._managed:
+            frame_p = np.asarray(self._frame_op()[1], dtype=float)
+            if (abs(float(tray_p[0]) - self._frame_x) > 0.05
+                    or abs(float(tray_p[1]) - self._lane_y) > 0.05
+                    or abs(float(frame_p[2]) - FRAME_Z_UP) > 0.01
+                    or self._conveyor.inspecting != self._pallet):
+                raise RuntimeError("tray or jig did not return to the inspection belt")
+            tray_velocity = np.asarray(self._rigid.get_velocities())[self._tray_index, :3]
+            if float(np.linalg.norm(tray_velocity)) > 0.05:
+                return
+            self._record["returned_xy"] = [round(float(tray_p[0]), 3), round(float(tray_p[1]), 3)]
+            self._event("PUSH_BACK_DONE_HELD")
+            self.state = "RELEASED"
+            return
         self._record["returned_xy"] = [round(float(tray_p[0]), 3), round(float(tray_p[1]), 3)]
         self._record["elapsed_wall_s"] = round(time.time() - self._record.pop("sim_start"), 1)
         self.results.append(self._record)
@@ -991,3 +1118,9 @@ class VisionCullStation:
         self._event("PUSH_BACK_DONE_RELEASED")
         self._conveyor.inspection_done()
         self.reset(keep_frame=True)
+
+    def _state_released(self, dt):
+        """CONVEYOR_OUT 명령 전까지 팔레트를 검사 정지선에 둔다."""
+
+    def _state_outfeed(self, dt):
+        """배출 위치 도착 결과가 나올 때까지 지그는 후퇴 자세를 유지한다."""
