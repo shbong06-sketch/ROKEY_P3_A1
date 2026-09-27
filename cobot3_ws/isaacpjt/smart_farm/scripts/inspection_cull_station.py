@@ -93,7 +93,7 @@ GRIPPER_JOINTS = ("finger_joint", "right_inner_knuckle_joint")
 GRIPPER_OPEN, GRIPPER_CLOSE = 0.0, 1.18
 ARM_DRIVE = (1.0e8, 1.0e4, 1.0e8)                              # cull_standalone 과 같음
 # 팀 기본 1e4 N·m 는 손가락이 포기를 관통한다. 8 N·m 에서 6칸 모두 파지 성공(05_m0609_pick_place_test).
-GRIPPER_DRIVE = (1.0e5, 1.0e3, 8.0)
+GRIPPER_DRIVE = (1.0e5, 1.0e3, float(os.environ.get("SMARTFARM_GRIP_FORCE", "8.0")))   # maxForce N·m (실험용 환경변수, 기본 8)
 TOOL_Q = (0.0, 1.0 / math.sqrt(2.0), -1.0 / math.sqrt(2.0), 0.0)   # cull_standalone 의 위에서 집기 자세
 TCP_OFFSET = (0.0, 0.0, 0.19671)
 
@@ -233,6 +233,7 @@ def install(stage, world, m0609_dir, out_dir=None):
     finger.GetStiffnessAttr().Set(GRIPPER_DRIVE[0])
     finger.GetDampingAttr().Set(GRIPPER_DRIVE[1])
     finger.GetMaxForceAttr().Set(GRIPPER_DRIVE[2])
+    print(f"[솎아내기] RG2 finger_joint maxForce {GRIPPER_DRIVE[2]} N·m", flush=True)
     base_y = _world_matrix(stage, BASE_PATH)[1, 3]
     target_y = float(np.clip(base_y + TRAY_REACH, *TRANSFER_Y_LIMIT))
     build_transfer_frame(stage)
