@@ -100,7 +100,73 @@ def complete_inspection_preparation(machine: CycleStateMachine) -> None:
     machine.handle_result(success_result(
         prepare, pallet_id="PALLET_001", reached_station="INSPECT_WORK_POS",
     ))
+    assert machine.state == CycleState.MOVE_TO_INSPECT
+
+    move = machine.create_command()
+    assert move.operation == "MOVE_TO_INSPECT"
+    assert move.pallet_id == "PALLET_001"
+    assert move.source == "INSPECT_WORK_POS"
+    assert move.destination == "INSPECT_CAMERA_POSE"
+    machine.handle_result(success_result(
+        move, pallet_id="PALLET_001", reached_station="INSPECT_CAMERA_POSE",
+    ))
     assert machine.state == CycleState.INSPECT
+
+
+def test_inspection_waits_for_matching_pose_move_result():
+    machine = start_machine()
+    complete_transfer(machine)
+    complete_pick_harvest(machine)
+    complete_navigation(machine)
+    complete_place_inspect(machine)
+    convey = machine.create_command()
+    machine.handle_result(success_result(
+        convey, pallet_id="PALLET_001", reached_station="INSPECT_STOP",
+    ))
+    prepare = machine.create_command()
+    machine.handle_result(success_result(
+        prepare, pallet_id="PALLET_001", reached_station="INSPECT_WORK_POS",
+    ))
+    move = machine.create_command()
+    assert machine.state == CycleState.MOVE_TO_INSPECT
+    assert machine.handle_result(success_result(
+        move, command_id="old-command", pallet_id="PALLET_001",
+        reached_station="INSPECT_CAMERA_POSE",
+    )).accepted is False
+    assert machine.state == CycleState.MOVE_TO_INSPECT
+    assert machine.handle_result(success_result(
+        move, pallet_id="PALLET_001", reached_station="INSPECT_CAMERA_POSE",
+    )).accepted is True
+    assert machine.state == CycleState.INSPECT
+
+
+def test_inspection_pose_failure_stops_before_vision_command():
+    machine = start_machine()
+    complete_transfer(machine)
+    complete_pick_harvest(machine)
+    complete_navigation(machine)
+    complete_place_inspect(machine)
+    convey = machine.create_command()
+    machine.handle_result(success_result(
+        convey, pallet_id="PALLET_001", reached_station="INSPECT_STOP",
+    ))
+    prepare = machine.create_command()
+    machine.handle_result(success_result(
+        prepare, pallet_id="PALLET_001", reached_station="INSPECT_WORK_POS",
+    ))
+    move = machine.create_command()
+    outcome = machine.handle_result(TaskResultData(
+        task_id=move.task_id,
+        command_id=move.command_id,
+        operation=move.operation,
+        status="FAILED",
+        phase="MOVE_TO_INSPECT/FAULT",
+        reason="INSPECT_POSE_FAILED",
+        pallet_id="PALLET_001",
+    ))
+    assert outcome.accepted is True
+    assert machine.state == CycleState.ERROR
+    assert machine.failure_reason == "INSPECT_POSE_FAILED"
 
 
 def test_full_cycle_with_defects():
