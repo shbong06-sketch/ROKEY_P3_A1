@@ -258,6 +258,12 @@ class CycleStateMachine:
             reason="NONE",
         )
 
+    def fail_before_command(self, reason: str) -> None:
+        """후속 물리 명령을 내기 전 데이터 준비 실패로 사이클을 종료한다."""
+        if self.active_command is not None or not self.is_running:
+            raise RuntimeError("cannot fail an active or terminal cycle before command")
+        self._fail(reason=reason, reset_required=False)
+
     def _matches_active_command(
         self,
         result: TaskResultData,
@@ -315,12 +321,12 @@ class CycleStateMachine:
 
             if result.unknown_slots:
                 return "UNKNOWN_SLOT"
+            if len(result.defect_slots) != len(set(result.defect_slots)):
+                return "INVALID_SLOT_ID"
 
         elif command.operation == "CULL":
-            completed_slots = set(result.completed_units)
-            expected_slots = set(command.target_slots)
-
-            if not expected_slots.issubset(completed_slots):
+            if (len(result.completed_units) != len(command.target_slots)
+                    or set(result.completed_units) != set(command.target_slots)):
                 return "CULL_INCOMPLETE"
 
         return None
