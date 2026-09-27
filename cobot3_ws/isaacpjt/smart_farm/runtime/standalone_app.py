@@ -46,6 +46,8 @@ CONVEY_TO_INSPECT_TIMEOUT = 120.0
 PREPARE_INSPECT_TIMEOUT = 90.0
 MOVE_TO_INSPECT_TIMEOUT = 90.0
 CULL_TIMEOUT = 180.0
+RELEASE_INSPECT_TIMEOUT = 90.0
+CONVEYOR_OUT_TIMEOUT = 120.0
 INSPECT_STOP_STILL_SECONDS = 0.5
 INSPECT_STOP_STEP_TOL = 0.002
 RENDER_EVERY = 3
@@ -352,6 +354,8 @@ class SimulationRuntime:
     prepare_wait_seconds: float = 0.0
     inspect_move_wait_seconds: float = 0.0
     cull_wait_seconds: float = 0.0
+    release_wait_seconds: float = 0.0
+    out_wait_seconds: float = 0.0
     hold_fault_logged: bool = False   # [navigation 2026-09-24] 운반 중 팔레트 감시 예외를 한 번만 기록
     conveyor: object = None           # [올인원 2026-09-25] scripts/conveyor.ConveyorController (--no-conveyor 면 None)
     station: object = None            # [올인원 2026-09-25] scripts/inspection_cull_station.VisionCullStation
@@ -798,6 +802,8 @@ def initialize_scene(runtime, transfer_operation, step_world):
     runtime.prepare_wait_seconds = 0.0
     runtime.inspect_move_wait_seconds = 0.0
     runtime.cull_wait_seconds = 0.0
+    runtime.release_wait_seconds = 0.0
+    runtime.out_wait_seconds = 0.0
     runtime.wheels_released = False
     if runtime.conveyor is not None:
         runtime.conveyor.reset()        # Stop -> Play: reset() -> world.reset() -> attach() (conveyor.py 계약)
@@ -1027,6 +1033,43 @@ def start_operation(command, runtime, transfer_operation, node):
         node.set_phase("CULL/STARTED", detail=f"target_slots={','.join(command.target_slots)}")
         return
 
+    if command.operation == "RELEASE_INSPECT":
+        if (command.recipe_id != "RELEASE_INSPECT"
+                or command.pallet_id != "PALLET_001"
+                or command.source != "INSPECT_WORK_POS"
+                or command.destination != "INSPECT_STOP"):
+            node.fail(reason="INVALID_COMMAND", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        if (runtime.station is None or runtime.conveyor is None
+                or runtime.station.state not in {"INSPECT_READY", "CULLED"}
+                or runtime.conveyor.inspecting != path):
+            node.fail(reason="INVALID_STATE", phase="RELEASE_INSPECT/VALIDATION")
+            return
+        runtime.release_wait_seconds = 0.0
+        runtime.station.start_release(path)
+        node.set_phase("RELEASE_INSPECT/PUSH_OUT", detail="pallet_id=PALLET_001")
+        return
+
+    if command.operation == "CONVEYOR_OUT":
+        if (command.recipe_id != "CONVEY_TO_PACK_OUT"
+                or command.pallet_id != "PALLET_001"
+                or command.source != "INSPECT_STOP"
+                or command.destination != "PACK_OUT"):
+            node.fail(reason="INVALID_COMMAND", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        if (runtime.station is None or runtime.conveyor is None
+                or runtime.station.state != "RELEASED"
+                or runtime.conveyor.inspecting != path):
+            node.fail(reason="INVALID_STATE", phase="CONVEYOR_OUT/VALIDATION")
+            return
+        runtime.out_wait_seconds = 0.0
+        runtime.conveyor.hold_outfeed(False)
+        runtime.station.start_conveyor_out(path)
+        node.set_phase("CONVEYOR_OUT/MOVING", detail="pallet_id=PALLET_001")
+        return
+
     if command.operation != "PICK_HARVEST":
         node.fail(
             reason="INVALID_COMMAND",
@@ -1235,6 +1278,39 @@ def update_operation(node, runtime, transfer_operation):
             node.fail(reason="CULL_TIMEOUT", phase="CULL/TIMEOUT", completed_units=completed)
         return
 
+    if command.operation == "RELEASE_INSPECT":
+        runtime.release_wait_seconds += PHYSICS_DT
+        if runtime.station.failure_reason:
+            node.fail(reason="RELEASE_FAILED", phase="RELEASE_INSPECT/FAULT")
+            return
+        if runtime.station.state == "RELEASED":
+            node.succeed(phase="RESULT", reached_station="INSPECT_STOP")
+            return
+        node.set_phase("RELEASE_INSPECT/PUSH_OUT", detail=runtime.station.state)
+        if runtime.release_wait_seconds >= RELEASE_INSPECT_TIMEOUT:
+            runtime.station.stop_prepare("inspection release timed out")
+            node.fail(reason="RELEASE_TIMEOUT", phase="RELEASE_INSPECT/TIMEOUT")
+        return
+
+    if command.operation == "CONVEYOR_OUT":
+        runtime.out_wait_seconds += PHYSICS_DT
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        fault = runtime.conveyor.fault_of(path)
+        zone = runtime.conveyor.zone_of(path)
+        if zone is Zone.GONE:
+            runtime.station.finish_conveyor_out(path)
+            node.succeed(phase="RESULT", reached_station="PACK_OUT")
+            return
+        if fault is not None or zone is Zone.OFF:
+            runtime.conveyor.hold_outfeed(True)
+            node.fail(reason=fault[0] if fault else "PALLET_LOST", phase="CONVEYOR_OUT/FAULT")
+            return
+        node.set_phase("CONVEYOR_OUT/MOVING", detail=f"pallet_id=PALLET_001 zone={zone.value}")
+        if runtime.out_wait_seconds >= CONVEYOR_OUT_TIMEOUT:
+            runtime.conveyor.hold_outfeed(True)
+            node.fail(reason="CONVEYOR_TIMEOUT", phase="CONVEYOR_OUT/TIMEOUT")
+        return
+
     if command.operation == "PICK_HARVEST":
         if runtime.harvest_phase == "PICK":
             runtime.transfer.update(PHYSICS_DT)
@@ -1384,7 +1460,7 @@ def run():
     print("[시작] ROS 2 노드를 초기화합니다.", flush=True)
     rclpy.init()
     node = SimTaskNode(
-        supported_operations={"TRANSFER", "PICK_HARVEST", "PLACE_INSPECT", "CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL"},
+        supported_operations={"TRANSFER", "PICK_HARVEST", "PLACE_INSPECT", "CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT", "CONVEYOR_OUT"},
     )
     demo_publisher = (
         node.create_publisher(String, "/sim_task/command", 10)
@@ -1486,7 +1562,7 @@ def run():
                 ready_detail = (
                     f"{args.scene.stem} scene ready; "
                     "TRANSFER/PICK_HARVEST/PLACE_INSPECT/"
-                    "CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL physical profiles loaded"
+                    "CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL/RELEASE_INSPECT/CONVEYOR_OUT physical profiles loaded"
                 )
                 node.mark_ready(ready_detail)
                 print(f"[READY] {ready_detail}", flush=True)
@@ -1526,13 +1602,17 @@ def run():
                     )
                 except Exception as error:  # noqa: BLE001 - 활성 명령에 terminal 실패를 보낸다.
                     node.get_logger().error(str(error))
-                    if command.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL"}:
-                        if command.operation in {"PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL"}:
+                    if command.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT", "CONVEYOR_OUT"}:
+                        if command.operation in {"PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT"}:
                             runtime.station.stop_prepare(str(error))
+                        if command.operation == "CONVEYOR_OUT":
+                            runtime.conveyor.hold_outfeed(True)
                         node.fail(
                             reason=("CONVEYOR_FAILED" if command.operation == "CONVEY_TO_INSPECT"
                                     else "INSPECT_POSE_FAILED" if command.operation == "MOVE_TO_INSPECT"
                                     else "CULL_FAILED" if command.operation == "CULL"
+                                    else "RELEASE_FAILED" if command.operation == "RELEASE_INSPECT"
+                                    else "CONVEYOR_FAILED" if command.operation == "CONVEYOR_OUT"
                                     else "JIG_FAILED"),
                             phase="START_OPERATION",
                             completed_units=(runtime.station.completed_cull_slots
@@ -1554,13 +1634,17 @@ def run():
                     node.get_logger().error(str(error))
                     # [navigation 2026-09-26] 실패 시 자동 배출 경로를 열지 않는다.
                     active = node.active_command
-                    if active.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL"}:
-                        if active.operation in {"PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL"}:
+                    if active.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT", "CONVEYOR_OUT"}:
+                        if active.operation in {"PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT"}:
                             runtime.station.stop_prepare(str(error))
+                        if active.operation == "CONVEYOR_OUT":
+                            runtime.conveyor.hold_outfeed(True)
                         node.fail(
                             reason=("CONVEYOR_FAILED" if active.operation == "CONVEY_TO_INSPECT"
                                     else "INSPECT_POSE_FAILED" if active.operation == "MOVE_TO_INSPECT"
                                     else "CULL_FAILED" if active.operation == "CULL"
+                                    else "RELEASE_FAILED" if active.operation == "RELEASE_INSPECT"
+                                    else "CONVEYOR_FAILED" if active.operation == "CONVEYOR_OUT"
                                     else "JIG_FAILED"),
                             phase="EXECUTION",
                             completed_units=(runtime.station.completed_cull_slots
