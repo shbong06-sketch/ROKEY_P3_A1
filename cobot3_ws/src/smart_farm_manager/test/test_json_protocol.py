@@ -1,8 +1,10 @@
 import json
 
 import pytest
+import rclpy
 
 from smart_farm_manager.protocol import TaskCommandData
+from smart_farm_manager.scenario import CycleState
 from smart_farm_manager.task_manager_node import TaskManagerNode
 
 
@@ -55,6 +57,45 @@ def test_sim_task_result_json_is_converted_to_internal_model():
     assert result.status == "SUCCEEDED"
     assert result.safe_to_navigate is True
     assert result.unknown_slots == ()
+
+
+def test_inspection_dispatch_sends_sim_context_before_command():
+    started_context = not rclpy.ok()
+    if started_context:
+        rclpy.init()
+    node = TaskManagerNode()
+    events = []
+
+    class Recorder:
+        def __init__(self, name):
+            self.name = name
+
+        def publish(self, message):
+            events.append((self.name, message))
+
+    try:
+        node.machine.start("TASK-001", "DEMO_HARVEST_01")
+        node.machine.complete_preflight(ready=True)
+        node.machine.state = CycleState.INSPECT
+        node.machine.command_sequence = 6
+        node.inspection_context_publisher = Recorder("context")
+        node.command_publishers["inspection"] = Recorder("command")
+
+        node._dispatch_current_step()
+
+        assert [name for name, _ in events] == ["context", "command"]
+        context = json.loads(events[0][1].data)
+        command = events[1][1]
+        assert context == {
+            "task_id": command.task_id,
+            "inspection_command_id": command.command_id,
+            "pallet_id": command.pallet_id,
+            "operation": "INSPECT",
+        }
+    finally:
+        node.destroy_node()
+        if started_context:
+            rclpy.shutdown()
 
 
 def test_convey_result_keeps_pallet_and_destination():
