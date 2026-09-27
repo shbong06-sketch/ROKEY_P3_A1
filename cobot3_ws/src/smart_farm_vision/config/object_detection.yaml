@@ -20,5 +20,5 @@ object_detection:
     slot_rois.SLOT_06: [0.6666666666, 0.5, 0.3333333334, 0.5]
 
     class_outcomes.lettuce_dark_green: NORMAL
-    class_outcomes.lettuce_yellow: UNKNOWN
+    class_outcomes.lettuce_yellow: DEFECT
     class_outcomes.lettuce_brown: DEFECT
