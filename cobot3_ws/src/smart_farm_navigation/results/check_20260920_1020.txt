@@ -1,0 +1,7 @@
+[INFO] [1789867241.941765625] [scene_check]: [1] /cmd_vel: subscribers=1 publishers=0
+[INFO] [1789867241.942017720] [scene_check]: [1b] /clock publishers=1 (use_sim_time usable)
+[INFO] [1789867241.942243068] [scene_check]: [2] /chassis/odom: frame odom -> base_link, x=-0.005 y=-0.000 yaw=0.1deg, stamp=40.316
+[INFO] [1789867241.942456887] [scene_check]: [3] /tf: odom -> ['base_link']; base_link children=41
+[INFO] [1789867241.942656077] [scene_check]: [4] drift check: holding for 15 s without commands
+[INFO] [1789867256.983018575] [scene_check]:     moved 0.0008 m in 15.0 s wall; odom rate 24.7 Hz
+[INFO] [1789867256.983282834] [scene_check]: RESULT: OK

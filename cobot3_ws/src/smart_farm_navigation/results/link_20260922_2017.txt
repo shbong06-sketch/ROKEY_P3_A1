@@ -1,0 +1,9 @@
+[INFO] [1790075826.960221106] [nav2_link_check]: listening for 8 s ...
+[INFO] [1790075834.962059399] [nav2_link_check]: [1] /clock              23.8 Hz
+[INFO] [1790075834.963251957] [nav2_link_check]:     sim time now 17.9 s, real-time factor 0.39
+[INFO] [1790075834.964381275] [nav2_link_check]: [2] /tf odom->base_link  23.6 Hz
+[INFO] [1790075834.965705929] [nav2_link_check]: [3] /chassis/odom       23.6 Hz
+[INFO] [1790075834.966703959] [nav2_link_check]: [4] /front_2d_lidar/scan           0.0 Hz,      0.0 kB/s, frame ''
+[INFO] [1790075834.967825687] [nav2_link_check]: [5] /front_3d_lidar/lidar_points  23.6 Hz,   1951.4 kB/s, frame 'front_3d_lidar', 6875 points/msg   <- PARTIAL SLICES (fullScan off): cloud_self_filter merges them; AMCL/docking work but set fullScan in the Isaac script
+[INFO] [1790075834.968987888] [nav2_link_check]: [6] self returns inside the rig box: 0 of 6875 points/scan (rear 0, mid 0, front 0; highest z 0.00 m)
+[INFO] [1790075834.970208430] [nav2_link_check]: RESULT OK - nav2.launch.py scan_mode:=cloud
