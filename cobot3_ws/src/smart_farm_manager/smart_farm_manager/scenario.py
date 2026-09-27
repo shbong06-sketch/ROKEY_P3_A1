@@ -160,7 +160,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="INSPECT_STATION",
                 destination="INSPECT_STATION",
-                timeout_sec=400.0,
+                timeout_sec=900.0,
                 optional=True,
             ),
             StepDefinition(
