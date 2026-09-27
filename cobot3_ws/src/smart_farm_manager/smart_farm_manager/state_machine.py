@@ -32,6 +32,7 @@ class CycleStateMachine:
         "PLACE_INSPECT",
         "CONVEY_TO_INSPECT",
         "PREPARE_INSPECT",
+        "MOVE_TO_INSPECT",
         "CULL",
         "CONVEYOR_OUT",
     }
@@ -271,7 +272,7 @@ class CycleStateMachine:
             and result.command_id == command.command_id
             and result.operation == command.operation
             and (
-                command.operation not in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT"}
+                command.operation not in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT"}
                 or result.pallet_id == command.pallet_id
             )
         )
@@ -289,7 +290,7 @@ class CycleStateMachine:
             if not self.EXPECTED_TRANSFER_UNITS.issubset(completed):
                 return "TRANSFER_INCOMPLETE"
 
-        elif command.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT"}:
+        elif command.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT"}:
             if result.pallet_id != command.pallet_id:
                 return "PALLET_MISMATCH"
             if result.reached_station != command.destination:
@@ -353,6 +354,9 @@ class CycleStateMachine:
 
         elif command.operation == "PREPARE_INSPECT":
             self.pallet_locations["PALLET_001"] = "INSPECT_WORK_POS"
+            self.state = CycleState.MOVE_TO_INSPECT
+
+        elif command.operation == "MOVE_TO_INSPECT":
             self.state = CycleState.INSPECT
 
         elif command.operation == "INSPECT":
