@@ -136,6 +136,11 @@ def parse_args():
         help="timeline 재생 후 검증용 TRANSFER 명령을 자동 발행",
     )
     parser.add_argument(
+        "--verify-stop-play",
+        action="store_true",
+        help="headless에서 팔레트를 이동시킨 뒤 Stop → Play 복원을 한 번 검증하고 종료",
+    )
+    parser.add_argument(
         "--no-conveyor",
         action="store_true",
         help="[올인원 2026-09-25] 컨베이어 반송(scripts/conveyor.py)을 끄고 실행",
@@ -229,6 +234,8 @@ args, kit_args = parse_args()
 if os.environ.get("HEADLESS") == "1":
     args.headless = True
 if args.livestream:
+    args.headless = True
+if args.verify_stop_play:
     args.headless = True
 args.autoplay = args.autoplay or args.headless or args.demo
 
@@ -788,7 +795,7 @@ def create_simulation_runtime(scene_path):
 
 
 def initialize_scene(runtime, transfer_operation, step_world):
-    """Stop 후 Play를 포함해 Scene과 제어기를 초기 상태로 맞춘다."""
+    """새로 연 Scene과 제어기를 명령 대기 상태로 맞춘다."""
 
     transfer_operation.reset()
     runtime.harvest_phase = "IDLE"
@@ -820,7 +827,29 @@ def initialize_scene(runtime, transfer_operation, step_world):
     for _ in range(SETTLE_STEPS):
         step_world()
 
+    if not runtime.world.is_playing():
+        raise RuntimeError("scene initialization stopped before lift calibration")
+    if (runtime.world.physics_sim_view is None
+            or runtime.robot.get_joint_positions() is None):
+        print("[장면] Physics Simulation View를 다시 초기화합니다.", flush=True)
+        runtime.world.initialize_physics()
+        runtime.world.reset(soft=True)
+        for _ in range(SETTLE_STEPS):
+            step_world()
+    if runtime.robot.get_joint_positions() is None:
+        raise RuntimeError("Physics Simulation View is unavailable after scene reset")
     runtime.lift.calibrate()
+
+
+def reload_scene(runtime, scene_path):
+    """Stop 뒤 원본 USD를 다시 열어 이동한 팔레트와 포기까지 복원한다."""
+
+    runtime.world.stop()
+    if runtime.station is not None:
+        runtime.station.close()
+    World.clear_instance()
+    omni.usd.get_context().close_stage()
+    return create_simulation_runtime(scene_path)
 
 
 def report_dock_pose(runtime):
@@ -1471,8 +1500,12 @@ def run():
 
     step_count = 0
     needs_initialization = True
+    needs_scene_reload = False
     stopped_handled = False
     demo_command_sent = False
+    demo_cycle_index = 0
+    reset_check_position = None
+    reset_check_stopped_updates = 0
 
     def step_world():
         nonlocal step_count
@@ -1505,7 +1538,9 @@ def run():
             f"playing={runtime.world.is_playing()}",
             flush=True,
         )
-        while app.is_running() and rclpy.ok():
+        # SimulationApp.is_running()은 stage가 잠시 닫혀도 False가 된다.
+        # Stop → Play 재로드 중에는 Kit 프로세스의 실행 상태로 루프를 유지한다.
+        while app.app.is_running() and not app.is_exiting() and rclpy.ok():
             try:
                 rclpy.spin_once(node, timeout_sec=0.0)
             except Exception:  # noqa: BLE001 - 종료 신호와 실행 오류를 구분한다.
@@ -1517,12 +1552,11 @@ def run():
                 if not stopped_handled:
                     stopped_handled = True
                     needs_initialization = True
+                    needs_scene_reload = True
 
-                    try:
-                        transfer_operation.cancel()
-                    except RuntimeError as error:
-                        node.get_logger().error(f"stop failed: {error}")
-
+                    # Stop은 Physics Simulation View를 먼저 없앤다. 이 시점에
+                    # transfer.cancel()이 리프트 관절을 읽으면 None을 반환한다.
+                    # 이전 제어기는 다음 Play에서 장면과 함께 폐기한다.
                     if node.has_active_command:
                         node.fail(
                             reason="RESET_REQUIRED",
@@ -1531,22 +1565,37 @@ def run():
                                 transfer_operation.completed_units
                             ),
                         )
-                    else:
-                        node.mark_error(
-                            "timeline stopped; press Play to reinitialize"
-                        )
+                    node.begin_scene_reset()
+                    demo_command_sent = False
 
-                runtime.world.render()
+                # World.render()는 Stop으로 무효화된 PhysX view를 다시 참조한다.
+                # Kit UI/livestream만 갱신하며 이전 World 객체를 건드리지 않는다.
+                app.update()
+                if args.verify_stop_play and reset_check_position is not None:
+                    reset_check_stopped_updates += 1
+                    if reset_check_stopped_updates >= 120:
+                        print("[RESET_CHECK] 정지 상태 120 update 후 Play합니다.", flush=True)
+                        runtime.world.play()
                 continue
 
             if not runtime.world.is_playing():
-                runtime.world.render()
+                app.update()
                 continue
 
             stopped_handled = False
 
             if needs_initialization:
                 try:
+                    if needs_scene_reload:
+                        print("[장면] Stop → Play: 원본 USD를 다시 엽니다.", flush=True)
+                        runtime = reload_scene(runtime, args.scene.resolve())
+                        transfer_operation = TransferOperation(
+                            runtime.transfer, runtime.pallets, TRANSFER_UNITS,
+                        )
+                        select_view_camera()
+                        step_count = 0
+                        runtime.world.play()
+                        needs_scene_reload = False
                     initialize_scene(
                         runtime,
                         transfer_operation,
@@ -1567,12 +1616,34 @@ def run():
                 node.mark_ready(ready_detail)
                 print(f"[READY] {ready_detail}", flush=True)
 
+                if args.verify_stop_play:
+                    pallet = runtime.pallets[HARVEST_TASK.pallet_path]
+                    position, _ = pallet.get_world_pose()
+                    if reset_check_position is None:
+                        reset_check_position = tuple(float(value) for value in position)
+                        moved = (
+                            reset_check_position[0] + 0.5,
+                            reset_check_position[1],
+                            reset_check_position[2],
+                        )
+                        pallet.set_world_pose(position=moved)
+                        print("[RESET_CHECK] 팔레트를 옮기고 Stop → Play를 시작합니다.", flush=True)
+                        runtime.world.stop()
+                        continue
+                    error = math.dist(position, reset_check_position)
+                    if error > 0.02:
+                        raise RuntimeError(f"Stop → Play 팔레트 위치 복원 실패: {error:.3f} m")
+                    print(f"[RESET_CHECK] PASS: 팔레트 위치 오차 {error:.4f} m, 리프트 보정 완료", flush=True)
+                    return
+
                 if args.demo and not demo_command_sent:
+                    demo_cycle_index += 1
+                    demo_task_id = f"STANDALONE-DEMO-{demo_cycle_index:03d}"
                     message = String()
                     message.data = json.dumps(
                         {
-                            "task_id": "STANDALONE-DEMO",
-                            "command_id": "STANDALONE-DEMO-CMD-001",
+                            "task_id": demo_task_id,
+                            "command_id": f"{demo_task_id}-CMD-001",
                             "operation": "TRANSFER",
                             "recipe_id": "RACK_REARRANGE_01",
                         },
