@@ -455,6 +455,20 @@ class VisionCullStation:
     def prepared_pallet(self):
         return self._pallet if self.state == "PREPARED" else None
 
+    @property
+    def inspection_ready_pallet(self):
+        return self._pallet if self.state == "INSPECT_READY" else None
+
+    def start_inspect_move(self, pallet_path):
+        """명령받은 팔레트에 대해 기존 검사 자세 이동만 실행한다."""
+        if not self._managed or self.state != "PREPARED" or self._pallet != pallet_path:
+            raise RuntimeError("inspection pallet is not prepared")
+        if self._conveyor is None or self._conveyor.inspecting != pallet_path:
+            raise RuntimeError("inspection pallet is not held at the work position")
+        self._start_inspect_move()
+        self._timer = 0
+        self.state = "MOVE_INSPECT"
+
     def start_prepare(self, pallet_path):
         """[navigation 2026-09-26] 명령을 받은 팔레트만 기존 PUSH_IN 물리 순서로 준비한다."""
         if not self._managed or self.state != "IDLE":
@@ -628,6 +642,9 @@ class VisionCullStation:
     def _state_prepared(self, dt):
         """[navigation 2026-09-26] 다음 INSPECT 명령 전까지 지그와 팔레트를 유지한다."""
 
+    def _state_inspect_ready(self, dt):
+        """별도 Inspection Executor가 검사하는 동안 카메라 자세를 유지한다."""
+
     def _state_failed(self, dt):
         """[navigation 2026-09-26] 실패 위치를 보존하고 자동 복구·배출을 막는다."""
 
@@ -704,6 +721,11 @@ class VisionCullStation:
             return
         self._timer += 1
         if self._timer < SETTLE_FRAMES:
+            return
+        if self._managed:
+            self._event("INSPECT_POSE_READY")
+            self._timer = 0
+            self.state = "INSPECT_READY"
             return
         self._frames = []
         self._timer = 0
