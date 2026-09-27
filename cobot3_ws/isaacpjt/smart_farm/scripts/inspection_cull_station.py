@@ -134,6 +134,20 @@ DROP_SPREAD = (0.0, -0.15, 0.15, -0.075, 0.075)
 VIA_RADIUS = 0.45              # 집은 자리 -> SortBox 사이에 거치는 base 둘레 중간점 반지름
 CAMERA_RES = (640, 640)
 SETTLE_FRAMES = 20
+# 비전 전용 모드 (SMARTFARM_VISION_ONLY=1): 시뮬레이터만 아는 실제 포기·트레이 위치를 쓰지 않는다 (실물 조건).
+#   트레이 위치 = 컨베이어 정지 x(STATION_X) + 이송 프레임이 민 y(목표 y) + 설계 높이, 칸 = 에셋 설계 배치,
+#   비전 검출 위치의 평균 어긋남으로 트레이 위치를 보정(한도 VISION_FIX_MAX). 실제 위치는 기록·평가에만 쓴다.
+VISION_ONLY = os.environ.get("SMARTFARM_VISION_ONLY") == "1"
+SLOT_LAYOUT = {"Cabbage_01": (-0.075, -0.189), "Cabbage_02": (0.075, -0.189), "Cabbage_03": (-0.075, 0.0),
+               "Cabbage_04": (0.075, 0.0), "Cabbage_05": (-0.075, 0.189), "Cabbage_06": (0.075, 0.189)}  # build_info
+TRAY_Z_NOMINAL = 0.769 + 0.02593     # 롤러 윗면 + 트레이 원점~바닥 (팔레트 원점 규칙)
+HEAD_ORIGIN_Z = 0.045                # 트레이 원점 -> 포기 원점 높이 (build_info origin_z 0.0445~0.0455)
+VISION_FIX_MAX = 0.025               # 비전 보정 한도 (m)
+# 2026-09-27 실측: 비전 위치는 약 4 mm 치우침이 있어(트레이 실제 위치는 설계와 1 mm 이내) 늘 보정하면 집기 오차가
+# 5~10 mm 로 커져 RG2 여유(한쪽 10.8 mm)를 넘었다 -> 어긋남이 이 값보다 클 때(트레이가 확실히 어긋남)만 보정
+VISION_FIX_DEADBAND = 0.008
+BAD_FRAME_MEAN = (15.0, 205.0)   # 이 밖의 평균 밝기(0~255) = 렌더 이상 프레임 -> 다시 찍음
+BAD_FRAME_RETRY = 30             # 연속 재시도 한도 (넘으면 그 프레임을 그대로 쓴다)
 
 # YOLO 설정 찾는 순서 (_yolo_setup):
 #   가중치  SMARTFARM_YOLO_WEIGHTS -> 씬 폴더의 *best*.pt -> smart_farm/models/*.pt -> 작성 PC 경로
@@ -379,6 +393,7 @@ class VisionCullStation:
         self._motion = None
         self._queue = []
         self._frames = []
+        self._bad_frames = 0
         self._record = None
         self._via = None
 
@@ -489,7 +504,22 @@ class VisionCullStation:
         self._lane_y = float(tray_p[1])
         self._seat_offsets = {name: positions[i] - tray_p for name, i in self._head_index.items()}
         self._record = {"pallet": path.rsplit("/", 1)[-1], "stop_xy": [round(float(tray_p[0]), 3), round(float(tray_p[1]), 3)],
-                        "sim_start": time.time()}
+                        "sim_start": time.time(), "vision_only": VISION_ONLY}
+        if VISION_ONLY:
+            # 적재 방향은 라인 설계값(90° 단위) — 실제 자세에서 가장 가까운 90° 로만 읽는다
+            m = _world_matrix(self._stage, str(self._tray.GetPath()))
+            yaw = round(math.degrees(math.atan2(m[1, 0], m[0, 0])) / 90.0) * 90.0
+            c, s = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
+            self._nominal = {h.GetName(): np.array([c * SLOT_LAYOUT[h.GetName()][0] - s * SLOT_LAYOUT[h.GetName()][1],
+                                                    s * SLOT_LAYOUT[h.GetName()][0] + c * SLOT_LAYOUT[h.GetName()][1],
+                                                    HEAD_ORIGIN_Z]) for h in self._heads}
+            self._vfix = np.zeros(2)
+            gap = max(float(np.linalg.norm(self._nominal[n][:2] - self._seat_offsets[n][:2])) for n in self._nominal) * 1000
+            self._record["nominal_vs_true_seat_mm"] = round(gap, 1)
+            _log(f"[비전전용] 트레이 적재 방향 {yaw:.0f}° · 설계 칸 배치 vs 실제 최대 {gap:.1f} mm (평가용) · "
+                 f"정지 위치는 설계값 ({STATION_X:+.3f}, {LANE_Y:+.3f}) 사용")
+            tray_p = np.array([STATION_X, LANE_Y, tray_p[2]])
+            self._lane_y = LANE_Y
         _log(f"[솎아내기] {self._record['pallet']} 도착 ({tray_p[0]:+.3f}, {tray_p[1]:+.3f}) — 이송 프레임이 내려와 "
              f"로봇 앞으로 {(self._target_y - tray_p[1]) * 1000:+.0f} mm 밀어 줍니다 (트레이 중심 수평거리 "
              f"{np.hypot(tray_p[0] - self._base_p[0], self._target_y - self._base_p[1]):.2f} m)")
@@ -583,9 +613,20 @@ class VisionCullStation:
         motion._plan = tuple(plan)       # 팀 CullMotion 은 Pick 계획만 만든다. 같은 실행기에 전체 계획을 넣는다.
         self._motion = motion
 
+    def _tray_centre(self):
+        """트레이 원점 월드 위치. 비전 전용이면 설계·이송기 값 + 비전 보정, 아니면 시뮬레이터 실제 값."""
+        if VISION_ONLY:
+            return np.array([STATION_X + self._vfix[0], self._target_y + self._vfix[1], TRAY_Z_NOMINAL])
+        return _world_matrix(self._stage, str(self._tray.GetPath()))[:3, 3]
+
+    def _slot_point(self, head):
+        """칸의 포기 원점 월드 위치 (비전 전용 = 설계 배치, 아니면 실제 포기 위치)."""
+        if VISION_ONLY:
+            return self._tray_centre() + self._nominal[head.GetName()]
+        return _world_matrix(self._stage, str(head.GetPath()))[:3, 3]
+
     def _inspect_pose(self):
-        tray = _world_matrix(self._stage, str(self._tray.GetPath()))
-        centre = tray[:3, 3] + np.array([0.0, 0.0, HEAD_TOP_ABOVE_TRAY])
+        centre = self._tray_centre() + np.array([0.0, 0.0, HEAD_TOP_ABOVE_TRAY])
         away = centre[:2] - self._base_p[:2]
         away /= np.linalg.norm(away)
         eye = centre.copy()
@@ -669,6 +710,16 @@ class VisionCullStation:
         if frame is None or getattr(frame, "size", 0) == 0:
             self._timer = 0
             return
+        # 렌더가 덜 된 프레임(전부 검정 / 노출이 안 맞아 하얗게 날아감)은 버리고 다시 찍는다 (2026-09-26: PC 상태에 따라
+        # 3장 중 2장이 흰 화면이 되어 전 칸 UNKNOWN 이 나왔다. 정상 프레임 평균 밝기 약 130~150, 흰 화면 227)
+        mean = float(np.asarray(frame)[..., :3].mean())
+        if not BAD_FRAME_MEAN[0] <= mean <= BAD_FRAME_MEAN[1] and self._bad_frames < BAD_FRAME_RETRY:
+            self._bad_frames += 1
+            self._timer = 0
+            return
+        if self._bad_frames:
+            _log(f"[비전] 렌더 이상 프레임 {self._bad_frames}장 버리고 다시 찍음 (지금 평균 밝기 {mean:.0f})")
+            self._bad_frames = 0
         index = len(self._frames)
         name = f"{self._record['pallet']}_{'recheck_' if self.state == 'RECHECK' else ''}{index}"
         npy = self._out / f"{name}.npy"
@@ -687,15 +738,37 @@ class VisionCullStation:
         return vs.GetVariantSelection("condition") if vs.HasVariantSet("condition") else "?"
 
     def _assign(self):
-        """프레임마다 검출을 가장 가까운 포기 투영점에 배정하고, 칸별 다수결."""
-        tray_z = _world_matrix(self._stage, str(self._tray.GetPath()))[2, 3]
+        """프레임마다 검출을 가장 가까운 포기 투영점에 배정하고, 칸별 다수결.
+        비전 전용: 설계 칸 위치로 한 번 배정 -> 검출 위치의 평균 어긋남으로 트레이 위치 보정 -> 다시 배정."""
+        labels = self._assign_once()
+        if VISION_ONLY and self.state != "RECHECK":
+            diffs = [aim[:2] - self._slot_point(h)[:2] for h in self._heads
+                     for aim in [labels[h.GetName()][1]] if aim is not None]
+            if len(diffs) >= 2:
+                fix = np.clip(np.median(np.array(diffs), axis=0), -VISION_FIX_MAX, VISION_FIX_MAX)
+                self._record["vision_offset_seen_mm"] = [round(float(v) * 1000, 1) for v in fix]
+                if np.linalg.norm(fix) < VISION_FIX_DEADBAND:
+                    fix = np.zeros(2)
+                self._vfix = self._vfix + fix
+                true_c = _world_matrix(self._stage, str(self._tray.GetPath()))[:2, 3]
+                err = np.linalg.norm(self._tray_centre()[:2] - true_c) * 1000
+                self._record["vision_fix_mm"] = [round(float(v) * 1000, 1) for v in self._vfix]
+                self._record["tray_centre_error_mm"] = round(float(err), 1)
+                _log(f"[비전전용] 비전이 본 어긋남 {self._record['vision_offset_seen_mm']} mm -> 적용 보정 "
+                     f"({self._vfix[0] * 1000:+.1f}, {self._vfix[1] * 1000:+.1f}) mm (데드밴드 {VISION_FIX_DEADBAND * 1000:.0f} mm) "
+                     f"· 검출 {len(diffs)}칸 · 보정 후 실제와 차이 {err:.1f} mm (평가용)")
+                labels = self._assign_once()
+        return labels
+
+    def _assign_once(self):
+        tray_z = TRAY_Z_NOMINAL if VISION_ONLY else _world_matrix(self._stage, str(self._tray.GetPath()))[2, 3]
         per_head = {h.GetName(): [] for h in self._heads}
         aims = {h.GetName(): [] for h in self._heads}
         for model, detections in self._frames:
             centres = {}
             for head in self._heads:
-                hp = _world_matrix(self._stage, str(head.GetPath()))[:3, 3]
-                if hp[2] < tray_z:                 # 이미 버린 포기
+                hp = self._slot_point(head)
+                if not VISION_ONLY and hp[2] < tray_z:       # 이미 버린 포기 (비전 전용은 빈 칸도 그대로 본다)
                     continue
                 uv = self._project(model, hp + np.array([0, 0, 0.035]))
                 if uv is not None:
@@ -733,14 +806,26 @@ class VisionCullStation:
         for head in self._heads:
             name = head.GetName()
             label, _ = labels.get(name, ("UNKNOWN", None))
-            removed = _world_matrix(self._stage, str(head.GetPath()))[2, 3] < tray_z
-            rows.append({"slot": "SLOT_" + name.split("_")[-1], "head": name,
-                         "label": "removed" if removed else CLASS_SHORT.get(label, label), "truth": self._truth(head)})
+            removed = _world_matrix(self._stage, str(head.GetPath()))[2, 3] < tray_z     # 평가용 실제 상태
+            if VISION_ONLY:
+                # 비전만으로 판정: 재검사에서 아무것도 안 잡힌 칸 = 빈 칸
+                shown = "empty" if (label == "UNKNOWN" and self.state == "RECHECK") else CLASS_SHORT.get(label, label)
+                truth = "empty" if removed else self._truth(head)
+                rows.append({"slot": "SLOT_" + name.split("_")[-1], "head": name, "label": shown,
+                             "truth": self._truth(head), "gt_removed": bool(removed), "correct": shown == truth})
+            else:
+                rows.append({"slot": "SLOT_" + name.split("_")[-1], "head": name,
+                             "label": "removed" if removed else CLASS_SHORT.get(label, label), "truth": self._truth(head)})
         tag = "재검사" if self.state == "RECHECK" else "판정"
         self._event("RECHECK_DONE" if tag == "재검사" else "INSPECTION_DONE")
-        _log(f"[비전] {self._record['pallet']} {tag}: " + " ".join(
-            f"{r['slot'][-2:]}={r['label']}{'' if r['label'] in (r['truth'], 'removed') else '(정답 ' + r['truth'] + ')'}"
-            for r in rows))
+        if VISION_ONLY:
+            _log(f"[비전] {self._record['pallet']} {tag}(비전 전용): " + " ".join(
+                f"{r['slot'][-2:]}={r['label']}{'' if r['correct'] else '(실제 ' + ('empty' if r['gt_removed'] else r['truth']) + ')'}"
+                for r in rows))
+        else:
+            _log(f"[비전] {self._record['pallet']} {tag}: " + " ".join(
+                f"{r['slot'][-2:]}={r['label']}{'' if r['label'] in (r['truth'], 'removed') else '(정답 ' + r['truth'] + ')'}"
+                for r in rows))
         self._record.setdefault("images", []).extend(
             sorted(p.name for p in self._out.glob(f"{self._record['pallet']}_{'recheck_' if tag == '재검사' else ''}?_yolo.jpg")))
         if self.state == "RECHECK":
@@ -775,11 +860,15 @@ class VisionCullStation:
             return
         head, vision_aim, colour = self._queue.pop(0)
         tray_m = _world_matrix(self._stage, str(self._tray.GetPath()))
-        tray_z = tray_m[2, 3]
-        truth = _world_matrix(self._stage, str(head.GetPath()))[:3, 3]
-        # 집는 좌표 = 트레이 자세(컨베이어·이송기가 아는 값) + 6구 칸 배치. 비전은 '어느 칸' 을 정하고 좌표는 대조만 한다.
+        tray_z = TRAY_Z_NOMINAL if VISION_ONLY else tray_m[2, 3]
+        truth = _world_matrix(self._stage, str(head.GetPath()))[:3, 3]      # 평가(오차 기록)에만 쓴다
+        # 집는 좌표 = 트레이 자세 + 6구 칸 배치. 비전은 '어느 칸' 을 정하고 좌표는 대조만 한다.
         # 비전 좌표를 그대로 쓰면 오차 2~10 mm 에서 RG2 여유(한쪽 10.8 mm)를 넘겨 들다 놓친 적이 있다.
-        aim = tray_m[:3, 3] + self._seat_offsets[head.GetName()]
+        # 기본 모드: 실제 트레이 자세 + 도착 때 실제 칸 배치 / 비전 전용: 설계 트레이 위치(+비전 보정) + 설계 칸 배치
+        if VISION_ONLY:
+            aim = self._slot_point(head)
+        else:
+            aim = tray_m[:3, 3] + self._seat_offsets[head.GetName()]
         aim[2] = vision_aim[2]
         box_index = self._drop_index % len(self._boxes)
         box_name, drop, box_top = self._boxes[box_index]
