@@ -88,7 +88,9 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="RACK_L1",
                 destination="CARRY",
-                timeout_sec=200.0,
+                # [navigation 2026-09-27] Isaac 물리 실행 중 리프트 상승이
+                # 벽시계 200초 제한 직후 끝난 실측을 반영한다.
+                timeout_sec=400.0,
             ),
             StepDefinition(
                 state=CycleState.NAVIGATION,
