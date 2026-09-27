@@ -101,6 +101,11 @@ class TaskManagerNode(Node):
                 10,
             ),
         }
+        # [navigation 2026-09-27] Isaac Python은 TaskCommand.msg를 직접 import하지 않는다.
+        # 같은 INSPECT 식별자를 String/JSON으로 알려 검출 데이터 재사용을 막는다.
+        self.inspection_context_publisher = self.create_publisher(
+            String, "/sim_task/inspection_context", 10,
+        )
 
         # 각 executor가 반환하는 terminal 작업 결과
         self.create_subscription(
@@ -507,6 +512,15 @@ class TaskManagerNode(Node):
 
         executor = step.executor.value
         publisher = self.command_publishers[executor]
+        if executor == "inspection":
+            context = String()
+            context.data = json.dumps({
+                "task_id": command_data.task_id,
+                "inspection_command_id": command_data.command_id,
+                "pallet_id": command_data.pallet_id,
+                "operation": command_data.operation,
+            }, separators=(",", ":"))
+            self.inspection_context_publisher.publish(context)
         if executor == "sim_task":
             command_message = self._task_command_to_json(command_data)
         else:
