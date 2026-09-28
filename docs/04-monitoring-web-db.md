@@ -974,3 +974,62 @@ ros2 launch smart_farm_monitor monitor.launch.py
 | 7 | 미해결 7건 |
 
 ADR_basic 에도 세 가지를 반영했음(사용자 지시): **§6-1** 가이던스는 패키지별 `guidance/` 에 두고 보관 폴더로 보내는 규칙, **§5-8** 실측·녹화 대행과 그 범위 제한, **§1** 적용 ADR 목록에 `ADR_web-monitor` 추가. `CLAUDE.md` 에도 같은 내용을 넣었음.
+
+---
+
+## 20. 파일럿 실측 결과 (2026-09-28, 고피3, 에이전트 대행)
+
+전문은 `cobot3_ws/src/smart_farm_monitor/results/log_media/monitor_pilot_20260928_1151/README.md` 임. 요점만 옮김.
+
+### 20.1 관제 계층은 실데이터로 전부 동작함
+
+| 확인 항목 | 결과 |
+|---|---|
+| 웹 시작 버튼 → 우편함 → recorder → `/start_cycle` | **ACCEPTED**, `task_id=TASK-20260928-115806` |
+| `cycle` 표 | 1행. `final_state=ERROR`, `terminal_status=FAILED`, `reason=INSPECTION_DATA_TIMEOUT` |
+| `step` 표 | **8행**, 전부 `duration_wall`·`duration_sim` 채워짐 |
+| `dock_attempt` 표 | 1행. **새로 넣은 `retry` 필드 수신 확인** |
+| `pallet_move` 표 | **6행** (`pallet_locations` 없이 대체 기록으로 동작) |
+| `inspection_verdict` | 1행 (`defect_slots=["SLOT_03","SLOT_06"]`, 모의 값) |
+| `live` 표 | `cycle`·`robot_pose` 갱신 → 대시보드·지도 뷰 동작 |
+| KPI | 도킹 성공률 1/1, 평균 재시도 0.0, 최대 횡 오차 0.017 m |
+
+### 20.2 ADR_basic 의 3차 목표 구간을 실측으로 통과함
+
+`TRANSFER → PICK_HARVEST → NAVIGATION(도킹) → PLACE_INSPECT` 가 모두 `SUCCEEDED` 였음. 그동안 "검증은 고피3 모의뿐" 이던 구간에 **실측 근거가 생겼음.** 특히 `standoff_m 0.92` 와 팀 place 코드의 짝이 맞는지가 미확인이었는데, 도킹 0.938 m 에서 PLACE_INSPECT 가 성공해 **그 짝이 실제로 맞음이 확인됐음**(관절 한계 실패 없음).
+
+### 20.3 `timeout_sec` 재설정의 첫 근거 (§12.5)
+
+| operation | 벽시계 | **sim** | 현행 `timeout_sec`(벽시계) |
+|---|---|---|---|
+| TRANSFER | 265.6 s | **94.3 s** | 400 |
+| PICK_HARVEST | 173.5 s | **60.3 s** | 400 |
+| NAVIGATION | 91.3 s | **31.2 s** | 400 |
+| PLACE_INSPECT | 66.1 s | **16.0 s** | 300 |
+| CONVEY_TO_INSPECT | 44.3 s | **15.8 s** | 600 |
+| PREPARE_INSPECT | 17.1 s | **6.0 s** | 450 |
+| MOVE_TO_INSPECT | 15.7 s | **5.0 s** | 300 |
+
+실시간 배율은 `nav2_link_check` 기준 **0.37**(측정 `sim/wall` 비 0.35~0.36 과 일치). **현행 `timeout_sec` 은 벽시계 기준으로도 이미 넉넉함** — 즉 §12.5 에서 "지금 시간 기준만 바꾸면 여유가 약 3배 늘어 실패를 더 못 잡는다" 고 적은 예측이 수치로 확인됐음. 시간 기준 전환은 값 재설정과 **반드시 함께** 해야 함.
+
+### 20.4 12단계를 끝까지 못 간 이유 — Docker 비전 노드가 필수임
+
+이 기기에 **`docker` 명령이 설치되어 있지 않음.** 팀 `mock_executor` 로 검사 executor 를 대체했으나 다음 두 가지 때문에 `CULL` 을 넘지 못함.
+
+1. `CULL` 은 `/sim_task/inspection_data_status` 가 `STORED` 여야 진행됨. 그 값은 `/inspection/detections_2d` 가 와야 생기는데 모의는 그 토픽을 발행하지 않음 → `cull_data_timeout_sec` 15 s 뒤 `INSPECTION_DATA_TIMEOUT`
+2. 설령 넘어가도 `mock_executor` 의 inspection 담당 operation 은 `{"INSPECT"}` 뿐이라 **`RECHECK` 를 받지 못함**(팀 mock 이 7단계 시절 판임)
+
+즉 **모의로 우회할 수 있는 경로가 없음.** 12단계 통과에는 Docker + 비전 노드가 반드시 필요함.
+
+### 20.5 미디어 (ADR_basic §5-8)
+
+창별 독립 가상 디스플레이로 캡처했음 — `:99` Isaac(창 1440×900), `:98` RViz2(창 1680×893), 둘 다 1920×1080 화면에 단독.
+
+| 파일 | 장수 | 크기 | 확인 |
+|---|---|---|---|
+| `isaac_<단계>.png` | 10 | 1920×1080 | 고유색 20,946~27,711 |
+| `rviz_<단계>.png` | 10 | 1920×1080 | 고유색 17,501~17,707 |
+
+모두 빈 화면이 아님을 고유색 수로 확인했음. 촬영 직후 프로세스 종료 뒤에 찍혀 빈 화면이 된 2장(`*_final_ERROR.png`, 고유색 1)은 지웠음.
+
+**영상 녹화는 하지 않았음.** 절차를 처음 통과시키는 판이라 최소 스냅샷만 남겼음. 발표 소재용 창별 녹화는 12단계가 통과한 뒤에 함.

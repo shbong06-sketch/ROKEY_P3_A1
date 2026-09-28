@@ -73,10 +73,18 @@ rosbag2_*
 # 관제 패키지는 코드를 추적하고 DB 파일만 제외함 (2026-09-28)
 /cobot3_ws/src/smart_farm_monitor/data/*
 !/cobot3_ws/src/smart_farm_monitor/data/README.md
-# 관제 패키지의 실행 기록: log 은 추적, 대용량 미디어는 제외(문서만 추적)
-/cobot3_ws/src/smart_farm_monitor/results/log_media/*
-!/cobot3_ws/src/smart_farm_monitor/results/log_media/*.md
-!/cobot3_ws/src/smart_farm_monitor/results/log_media/.gitkeep
+# 관제 패키지의 실행 기록: log 은 추적. log_media 는 회차 폴더 안의 문서·작은 로그만
+# 추적하고 이미지·영상은 확장자로 제외한다(폴더째 제외하면 하위 문서를 되살릴 수 없다).
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.png
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.jpg
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.jpeg
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.gif
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.bmp
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.mp4
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.webm
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.mkv
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.mov
+/cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.avi
 !/cobot3_ws/src/smart_farm_monitor/results/log/
 .pytest_cache/
 # Claude Code 로컬 상태 — 자격증명과 대화 기록이 들어 있으므로 절대 커밋하지 않음
