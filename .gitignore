@@ -62,6 +62,9 @@ __pycache__/
 rosbag2_*
 
 /cobot3_ws/src/smart_farm_navigation/results/media_log/*
+/cobot3_ws/src/smart_farm_navigation/results/log_media/*
+# results/log 은 실측 기록이라 위의 log/ 패턴에서 되살려 추적한다
+!/cobot3_ws/src/smart_farm_navigation/results/log/
 /cobot3_ws/src/smart_farm_navigation/results/bags/*
 /cobot3_ws/isaacpjt/smart_farm/scripts/lift_stroke.py
 /cobot3_ws/records/*
