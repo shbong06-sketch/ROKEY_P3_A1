@@ -23,6 +23,7 @@ CORESET_RATIO = 0.01
 
 
 def main() -> None:
+    """정상 ROI의 패치 특징을 모아 모델을 저장하고 재로드로 검증한다."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--patchcore-repo", type=Path, default=DEFAULT_REPO)
     parser.add_argument("--data-root", type=Path, default=PROJECT / "data/mvtec")
@@ -48,6 +49,7 @@ def main() -> None:
         parser.error(f"정상 학습 폴더가 없습니다: {data_root / 'cabbage/train/good'}")
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         parser.error(f"출력 폴더가 비어 있지 않습니다: {output}")
+    # 저장 모델이 어느 버전의 외부 PatchCore 구현으로 만들어졌는지 남긴다.
     try:
         commit = subprocess.check_output(
             ["git", "-C", str(repo), "rev-parse", "HEAD"], text=True
@@ -84,12 +86,14 @@ def main() -> None:
         str(data_root), classname="cabbage", resize=IMAGE_SIZE,
         imagesize=IMAGE_SIZE, split=patchcore.datasets.mvtec.DatasetSplit.TRAIN,
     )
+    # 원본 Dataset의 내부 목록에서 이미지 라벨과 마스크 경로를 직접 확인한다.
     if not dataset or any(item[1] != "good" or item[3] is not None
                           for item in dataset.data_to_iterate):
         parser.error("학습 Dataset에 정상 ROI 이외의 데이터가 있습니다")
     image_count = len(dataset)
     input_shape = dataset.imagesize
     if args.limit is not None:
+        # smoke test도 전체 학습과 같은 순서의 앞부분 이미지를 사용한다.
         if args.limit > image_count:
             parser.error(f"--limit {args.limit}이 정상 이미지 수 {image_count}보다 큽니다")
         image_count = args.limit
@@ -114,7 +118,7 @@ def main() -> None:
         ),
         nn_method=patchcore.common.FaissNN(False, 4),  # 특징 추출 장치와 무관하게 FAISS는 CPU 사용
     )
-    # 정상 패치 특징의 1%를 대표 집합으로 골라 FAISS 인덱스를 만든다.
+    # fit()은 정상 패치 특징의 1%를 대표 집합으로 골라 FAISS 인덱스를 만든다.
     model.fit(loader)
     output.mkdir(parents=True, exist_ok=True)
     model.save_to_path(str(output))
