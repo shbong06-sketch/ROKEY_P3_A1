@@ -92,7 +92,9 @@ Isaac Sim 실측은 사용자의 물리적 작업 시간이고 **영상 녹화 �
 - 위 경로 안이라도 **팀원 소유 파일**(`isaacpjt/smart_farm/runtime/`, `scripts/robot_motion*.py`, `scripts/pallet_transfer.py`, `scripts/lift.py`, `smart_farm_navigation/navigation_node.py`, `src/smart_farm_interfaces/`)은 수정 전 보고하고, 수정하면 주석 `[navigation YYYY-MM-DD]` 를 남김.
 - `docs/reference/` 는 해당 주제를 다루는 중이 아니면 열람을 자제함(토큰).
 - 저장소 트리 재구성 금지. 미사용 파일은 각 모듈의 `past/` 로 이동함.
-- 병합 충돌은 **pull 된 쪽(development)이 이김**. 병합 뒤 ADR_nav2 §2.4 점검표로 내 추가분이 사라졌는지 확인함.
+- 병합 충돌은 **마지막 수정일이 최신인 쪽이 이김**(대개 pull 된 쪽). 단 **삭제는 우리 기록을 이기지 못함** — `results/`·`errored/`·`docs/ADR`·`docs/prompt`·`docs/reference`·`guidance/`·각 모듈 `docs/`·`past/` 는 되살림 (ADR_basic §6-8).
+- **병합 직후 `git diff --cached --name-status --diff-filter=D` 로 조용히 지워진 파일을 확인함.** 우리가 손대지 않은 파일의 삭제는 충돌로 드러나지 않음. 그 다음 ADR_nav2 §2.4 점검표를 봄.
+- **git 운용 범위** (ADR_basic §6-7): 내 작업 브랜치의 생성·전환·커밋·푸시·병합과 원격 조회까지만 함. 팀원 브랜치 push, `development`·`main` push·merge, PR 조작, 브랜치·태그 삭제, `--force`, 히스토리 재작성은 **승인 없이 하지 않음.** 팀원 브랜치·파일은 열람만. 브랜치를 파거나 병합하면 답변에 반드시 보고함.
 
 ---
 

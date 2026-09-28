@@ -63,6 +63,8 @@ rosbag2_*
 
 /cobot3_ws/src/smart_farm_navigation/results/media_log/*
 /cobot3_ws/src/smart_farm_navigation/results/log_media/*
+# log_media 안의 트러블슈팅 문서는 추적한다(미디어 파일만 제외)
+!/cobot3_ws/src/smart_farm_navigation/results/log_media/*.md
 # results/log 은 실측 기록이라 위의 log/ 패턴에서 되살려 추적한다
 !/cobot3_ws/src/smart_farm_navigation/results/log/
 /cobot3_ws/src/smart_farm_navigation/results/bags/*
@@ -70,6 +72,7 @@ rosbag2_*
 /cobot3_ws/records/*
 # 관제 패키지는 코드를 추적하고 DB 파일만 제외함 (2026-09-28)
 /cobot3_ws/src/smart_farm_monitor/data/*
+!/cobot3_ws/src/smart_farm_monitor/data/README.md
 # Claude Code 로컬 상태 — 자격증명과 대화 기록이 들어 있으므로 절대 커밋하지 않음
 .claude/
 .claude.json
@@ -82,6 +85,11 @@ cobot3_ws/isaacpjt/smart_farm/scenes/*.zip
 # 개발 과정에 생성되는 로그와 프레임
 /cobot3_ws/src/smart_farm_navigation/results/
 /cobot3_ws/src/smart_farm_navigation/errored/
+# [2026-09-28] 위 두 줄은 팀 정리 커밋 19ca11d 가 넣은 것이다. results/ 와 errored/ 는
+# 실측 판정과 트러블슈팅의 근거이므로(ADR_basic §5-3, §5-5) 폴더를 다시 추적 대상으로 되살린다.
+# 대용량 미디어(log_media, media_log)와 bag 은 위쪽 규칙으로 계속 제외된다.
+!/cobot3_ws/src/smart_farm_navigation/results/
+!/cobot3_ws/src/smart_farm_navigation/errored/
 /frames_*.gv
 /frames_*.pdf
 

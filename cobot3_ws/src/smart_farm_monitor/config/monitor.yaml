@@ -1,0 +1,13 @@
+monitor_recorder:
+  ros__parameters:
+    # 공정 소요시간을 /clock 기준으로 적기 위해 반드시 true 로 둔다.
+    # Isaac 이 없는 상태로 시험할 때만 false 로 바꾼다.
+    use_sim_time: true
+
+    db_path: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db
+
+    # 웹이 넣은 명령을 몇 초마다 집어 갈지
+    web_poll_sec: 0.5
+
+    # executor 상태가 그대로여도 이 간격으로 한 줄은 남긴다(생존 표본)
+    status_keepalive_sec: 10.0
