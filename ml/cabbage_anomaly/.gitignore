@@ -3,3 +3,14 @@ data/raw/*
 data/dataset/*
 data/mvtec/*
 data/validation/*
+
+# 로컬 환경과 학습 결과
+.venv/
+__pycache__/
+*.py[cod]
+models/
+results/
+*.faiss
+*.pkl
+*.pt
+*.pth
