@@ -412,3 +412,140 @@ cobot3_ws/src/smart_farm_monitor/          ← 새 ROS 2 패키지 (승인 필�
 - `feeder_dock.py` 결과에 재시도 횟수(`retry`) 칸 추가 — **우리 소유 파일**이라 팀장님과 상의할 필요 없음. 사용자 승인만 받으면 됨.
 - 사이클 소요시간을 두 가지 시간으로 기록하는 것 — 관제 쪽에서만 처리함.
 - 웹 화면 구성, 프레임워크 선택 — 관제 담당 재량.
+
+---
+
+## 11. 고도화 기능 목록과 우선순위 (2026-09-28 작성)
+
+> 판단 기준: **발표·영상에서 보이는 효과 ÷ 구현 비용**, 그리고 **팀원 3인의 담당 업무에 직접 연결되는지**. 유행하는 프레임워크를 도입하는 것보다, 관제 화면이 갖춰야 할 다섯 가지(서버 푸시 / 도면 위 오버레이 / 이벤트 타임라인 / 리플레이 / 데이터 내보내기)가 있는지가 화면의 수준을 결정함.
+
+### P0 — 이게 없으면 나머지가 성립하지 않음
+
+| # | 기능 | 내용 | 비용 |
+|---|---|---|---|
+| 1 | 기록 파이프라인 | `recorder_node` → SQLite. 모든 화면·ML·사이클 분석의 전제 | 중 |
+| 2 | 서버 푸시(SSE) | 브라우저 폴링 대신 `text/event-stream` 으로 변경 즉시 밀어줌. `live` 테이블 1행을 UPDATE 로 유지해 고빈도 값(로봇 위치)을 이력 비대 없이 전달 | 낮음 |
+
+### P1 — 발표·영상 효과가 크고 비용이 낮음
+
+| # | 기능 | 내용 | 근거·연결 |
+|---|---|---|---|
+| 3 | **2D 지도 위 로봇 실시간 위치·경로** | `maps/Collected_smartfarm_v014.png`(285×460 px)을 배경으로 깔고, `map` 좌표계 x/y 를 `resolution 0.05`·`origin [-4.525, -10.025]` 로 픽셀 변환해 로봇 점·`/plan` 경로선·작업점 표시 | 심사자가 RViz 없이 볼 수 있는 유일한 주행 화면. 영상 소재 직결 |
+| 4 | 공정 타임라인(간트) | 사이클의 15단계를 가로 막대로. 병목이 눈에 보임 | 백승주 사이클 시간 최적화 직결. "몇 % 개선" 수치 근거 |
+| 5 | 검사 결과 오버레이 | 슬롯 6칸 그리드 + bbox·class·confidence. RECHECK 전후 비교 | CULL 챌린지 시각화 |
+| 6 | KPI 카드 | 사이클 성공률, 평균 사이클 시간(sim), 도킹 성공률·평균 재시도, 불량 검출 수 | 기획서 검증 지표와 1:1 |
+| 7 | 관제실 레이아웃 | 다크 테마, 1080p 고정 그리드 | CSS 뿐이라 비용 최저. 화면이 제품처럼 보임 |
+
+### P2 — 데이터가 쌓인 뒤
+
+| # | 기능 | 내용 | 근거·연결 |
+|---|---|---|---|
+| 8 | 사이클 A/B 비교 | 두 사이클의 단계별 시간을 나란히 | 최적화 전·후 대조 |
+| 9 | 리플레이(타임라인 스크럽) | 기록을 되감아 지도·상태를 재생 | 지도 뷰 재사용. 발표 데모로 강력 |
+| 10 | 이상 탐지 배너 + 사람 라벨링 | 팀장 ML 결과를 배너로. 사람이 "이건 이상" 클릭하면 학습 라벨 축적 | 봉승현 담당 직결, 챌린지 5번 |
+| 11 | 영상 타임코드 내보내기 | 단계별 시작 시각을 벽시계로 CSV 출력. 녹화 시작 시각만 넣으면 컷 지점 목록이 나옴 | **영상 편집 담당 업무 시간 단축.** 비용 아주 낮음 |
+| 12 | CSV·Parquet 내보내기 | `pandas.read_sql` 없이도 바로 받게 | 팀장·백승주 인계 |
+| 13 | 라이브 카메라 | `/rgb` MJPEG 스트림 | 대역폭 부담 큼. 검사 순간 스냅샷으로 대체 가능 |
+
+### P3 — 트렌드지만 이 프로젝트에는 실익이 낮음
+
+| # | 기능 | 왜 뒤로 미루는지 |
+|---|---|---|
+| 14 | `rosbridge_suite` + `roslibjs` (웹이 토픽 직접 구독) | 표준적인 방법이지만 SSE + `live` 테이블로 같은 결과를 얻음. 도입하면 의존·보안 설정이 늘고 **이력이 남지 않아** ML·사이클 분석에 쓸 수 없음. 지도 갱신이 체감상 답답할 때만 도입 |
+| 15 | three.js 3D 디지털 트윈 뷰 | Isaac Sim 화면이 이미 그 역할을 함. 비용 대비 중복 |
+| 16 | WebRTC 저지연 영상 | 녹화 영상으로 충분 |
+| 17 | 사용자 인증·권한, PWA, 모바일 반응형 | 단일 시연 환경이라 불필요 |
+| 18 | Grafana / Prometheus 도입 | 우리 데이터는 시계열 메트릭이 아니라 공정 이벤트라 궁합이 나쁨. 설치 부담이 크고, 직접 만드는 쪽이 발표에도 유리 |
+
+### 착수 순서 (내 판단)
+
+**P0 전체 → P1 3번(지도) → P1 4·6·7 → P1 5 → P2 11번(영상 타임코드) → 나머지 P2.**
+P1 3번을 4번보다 먼저 두는 이유는, 지도 뷰가 있으면 그 자체로 영상 소재가 되고 리플레이(P2 9번)까지 재사용되기 때문임.
+
+---
+
+## 12. Task Manager 의 시간 기준 — 위치와 변경 방법 (팀장님 요청, 2026-09-28)
+
+### 12.1 지금 시스템에서 시간 기준이 갈려 있음
+
+- **Nav2 전체와 `navigation_node` 는 `use_sim_time: True`** 임(`launch/nav2.launch.py` 여러 줄, `launch/navigation_node.launch.py:27`).
+- **Task Manager 만 `use_sim_time: false`** 임(`smart_farm_manager/config/demo_harvest.yaml`).
+- 즉 주행 쪽은 시뮬레이션 시각으로, 공정 관리 쪽은 컴퓨터 시계로 판단하고 있음.
+
+### 12.2 컴퓨터 실제 시계를 쓰는 곳 (파일·줄·용도)
+
+파일: `cobot3_ws/src/smart_farm_manager/smart_farm_manager/task_manager_node.py` (브랜치 `origin/feature/task-managed-integration`, `7beec39` 기준)
+
+| 줄 | 코드 | 용도 | 시각 기준을 바꿔야 하나 |
+|---|---|---|---|
+| 178~185 | `Clock(clock_type=ClockType.STEADY_TIME)` + `create_timer(..., clock=self.steady_clock)` | 0.1 s 주기 tick 타이머 | **아니오. 그대로 둠** |
+| 230 | `self.preflight_started_at = time.monotonic()` | PREFLIGHT 시작 시각 | **아니오. 그대로 둠** |
+| 271 | `received_at=time.monotonic()` | executor heartbeat 수신 시각 | **아니오. 그대로 둠** |
+| 451 | `now = time.monotonic()` (`_tick_preflight`) | PREFLIGHT 경과, heartbeat age | **아니오. 그대로 둠** |
+| 592 | `self.command_deadline = time.monotonic() + step.timeout_sec` | **공정 제한시간 설정** | **예** |
+| 613 | `if time.monotonic() < self.command_deadline` | **공정 제한시간 판정** | **예** |
+| 375 | `self.cull_data_deadline = time.monotonic() + cull_data_timeout_sec` | 검사 데이터 저장 대기 | **예** |
+| 438 | `if ... time.monotonic() >= self.cull_data_deadline` | 위 판정 | **예** |
+
+### 12.3 왜 일부만 바꾸는가 — 중요한 구분
+
+- **바꿀 것(592·613·375·438)**: 이 네 곳은 **Isaac 안에서 로봇이 실제로 움직이는 시간**을 재고 있음. 시뮬레이션 배율이 기기마다 다르면(고피1·고피2·고피3의 GPU 성능 차이) 같은 파라미터가 서로 다른 여유를 주게 되어 **timeout 판정이 실행마다 달라짐.** 재현성이 없으면 반복 실험(백승주)과 이상 탐지(봉승현)의 입력에 기기 성능이 노이즈로 섞임.
+- **바꾸지 말 것(178·230·271·451)**: 이 네 곳은 **"상대 노드가 살아 있는가"** 를 판정함. 이건 시뮬레이션 밖의 사실임. 시뮬레이션 시각으로 바꾸면, **Isaac 이 죽어 `/clock` 이 끊긴 순간 시각이 멈춰서 Task Manager 가 영원히 기다림.** tick 타이머까지 `/clock` 에 걸면 Isaac 이 뜨기 전에는 노드가 아무 일도 못 하고, `task_manager_fake_test.launch.py`(Isaac 없이 mock_executor 만 쓰는 시험)가 아예 돌지 않음.
+
+### 12.4 구체적 변경 내용 (5군데)
+
+**(1) 헬퍼 한 개 추가** — `task_manager_node.py`
+
+```python
+    def _process_clock_sec(self) -> float:
+        """공정 제한시간 판정 기준 시각(초). use_sim_time 이 true 면 /clock 시각이다."""
+        return self.get_clock().now().nanoseconds * 1e-9
+```
+
+**(2) 네 곳의 `time.monotonic()` 을 교체**
+
+```python
+# :592
+self.command_deadline = self._process_clock_sec() + step.timeout_sec
+# :613
+if self._process_clock_sec() < self.command_deadline:
+# :375
+self.cull_data_deadline = (
+    self._process_clock_sec()
+    + float(self.get_parameter("cull_data_timeout_sec").value)
+)
+# :438
+if self.cull_data_deadline is not None and self._process_clock_sec() >= self.cull_data_deadline:
+```
+
+**(3) `/clock` 미수신 가드 두 줄** — `_dispatch_current_step()` 앞부분
+
+`use_sim_time: true` 인데 `/clock` 이 아직 안 오면 시각이 0 이라 제한시간이 걸리지 않음.
+
+```python
+        # /clock 이 오기 전에는 제한시간을 걸 수 없으므로 명령을 보내지 않는다.
+        if self._process_clock_sec() <= 0.0:
+            return
+```
+
+**(4) 런치에서만 `use_sim_time` 을 덮음.** `demo_harvest.yaml` 을 세 런치가 공유하므로 yaml 을 고치면 `fake_test` 가 깨짐.
+
+```python
+# task_manager.launch.py, task_manager_navigation_test.launch.py
+parameters=[parameter_file, {"use_sim_time": True}],
+# task_manager_fake_test.launch.py 는 그대로 둠 (Isaac 없음)
+```
+
+**(5) 장면 Stop → Play 되감김 가드 한 줄.** `/clock` 이 0 으로 돌아가면 기존 deadline 이 먼 미래가 되어 timeout 이 안 걸림. 팀이 이미 장면 리셋 시 대기 명령을 폐기하고 있으므로(`fix: clear pending command and inspection data during scene reset`), 그 경로에서 `self.command_deadline = None`·`self.cull_data_deadline = None` 만 함께 해 주면 됨.
+
+### 12.5 바꾸는 순서 — 지금 바로 바꾸면 안 되는 이유
+
+현재 `timeout_sec` 값(TRANSFER 400 s, CULL 900 s 등, `scenario.py`)은 **벽시계 기준으로 맞춰 둔 값**임. 시뮬레이션 시각으로 바꾸면 배율 0.3 에서 **실질 여유가 약 3배 늘어남.** 즉 지금 잡히던 실패도 안 잡히게 됨.
+
+따라서 순서는 다음이 맞음.
+
+1. 관제 DB 가 `step.duration_sim`(단계별 시뮬레이션 소요시간)을 실측으로 모음
+2. 그 값으로 `timeout_sec` 을 시뮬레이션 기준으로 다시 잡음
+3. 위 (1)~(5) 변경을 함께 반영
+
+**즉 이 변경은 관제 DB 기록이 먼저 돌아야 근거를 가짐.**
