@@ -383,6 +383,11 @@ def test_recheck_accepts_only_expected_empty_culled_slots(node_factory):
     assert result.status == 'SUCCEEDED'
     assert payload['slot_states']['SLOT_03'] == 'REMOVED'
     assert payload['valid_for_cull'] is False
+    assert len(node._debug_publisher.messages) == 1
+    debug = node._debug_publisher.messages[0]
+    assert debug.header.stamp.sec == 2
+    frame = CvBridge().imgmsg_to_cv2(debug, desired_encoding='bgr8')
+    assert tuple(frame[0, 200]) == (255, 255, 0)
 
 
 def test_recheck_waits_for_image_newer_than_previous_inspection(node_factory):
