@@ -1,69 +1,41 @@
-# 배추 이상 탐지 데이터셋
+# 배추 이상 탐지: PatchCore
 
-Isaac Sim 팔레트 RGB 원본에서 배추별 ROI를 잘라 PatchCore 학습·평가에 사용한다. 원본 한 장에는 배추 6개가 있으며, 같은 원본에서 나온 ROI는 항상 같은 분할에 둔다.
+정상 배추 ROI로 PatchCore 특징 인덱스를 만들고, 검증 데이터에서 이미지 단위 판정 임계값을 정한 뒤 최종 테스트와 녹화 영상에 적용한다. 데이터셋의 구성·분할·ROI 규칙은 [DATASET.md](data/DATASET.md)에 정리했다.
 
-## 디렉터리
+## 설치 준비
+
+다음 명령은 `ROKEY_P3_A1` 프로젝트 루트에서 실행한다. 원본 PatchCore 저장소는 프로젝트 **안이 아니라 같은 상위 디렉터리**에 둔다.
 
 ```text
-data/
-├── raw/                         # 640×640 원본; 빌드 과정에서 수정하지 않음
-│   ├── lighting_only/           # 200장
-│   ├── prim_rotation/           # 140장
-│   ├── synthetic_defect/        # 50장
-│   └── real/                    # 향후 실제 카메라 원본
-├── metadata/
-│   ├── scene_split.csv          # 원본 이미지별 분할
-│   └── roi_manifest.csv         # ROI 파일과 원본·슬롯·crop 좌표 연결
-├── validation/                  # 임계값 결정용; MVTec 로더와 별도 사용
-│   ├── good/
-│   ├── yellow/
-│   └── brown/
-└── mvtec/cabbage/               # PatchCore용 MVTec 형태
-    ├── train/good/
-    ├── test/{good,yellow,brown}/
-    └── ground_truth/{yellow,brown}/
+작업 디렉터리/
+├── ROKEY_P3_A1/
+└── patchcore-inspection/
 ```
-
-## 분할 기준
-
-원본 팔레트 이미지를 먼저 난수 시드 42로 분할한 뒤 ROI를 생성한다.
-
-| 원본 폴더 | train | validation | test | 출력 제외 |
-| --- | ---: | ---: | ---: | ---: |
-| `lighting_only` | 100 | 30 | 30 | 예비 40 |
-| `prim_rotation` | 70 | 15 | 15 | 이상 포함 40 |
-| `synthetic_defect` | 0 | 25 | 25 | 0 |
-
-`prim_rotation/rgb_0000.png`부터 `rgb_0099.png`까지만 정상 원본으로 사용한다. `rgb_0100.png`부터 `rgb_0139.png`까지는 이상 배추가 섞여 있어 `good`에 넣지 않고 `scene_split.csv`에 `excluded_defect`로 기록한다. `lighting_only` 예비 40장은 `reserve`로 기록하며 원본 상태로 보관한다.
-
-정상 원본에서는 여섯 슬롯을 모두 `good`으로 저장한다. 현재 `synthetic_defect` 원본의 배치는 `SLOT_03`, `SLOT_04`가 `yellow`, `SLOT_05`가 `brown`이다. 이 세 슬롯만 validation과 test에 저장한다. 이 배치가 바뀌면 생성 스크립트의 슬롯별 라벨도 확인해야 한다.
-
-## ROI와 파일명
-
-슬롯 번호는 `SLOT_01`~`SLOT_03`이 위쪽 왼쪽부터 오른쪽, `SLOT_04`~`SLOT_06`이 아래쪽 왼쪽부터 오른쪽 순서다. `scripts/build_dataset.py`는 object detection 설정의 슬롯 영역을 확인하고, 각 영역 안의 배추 중심을 기준으로 **96×96 픽셀**을 자른다. 중심 좌표는 현재 640×640 Isaac Sim 카메라에 맞춰져 있다.
-
-파일명은 `<원본 폴더>_<확장자를 뺀 원본 파일명>_<슬롯>.png` 형식이다. 예: `synthetic_defect_rgb_0000_SLOT_03.png`. `roi_manifest.csv`의 `x_min`, `y_min`, `x_max`, `y_max`는 원본 이미지 기준 crop 좌표이며 오른쪽·아래쪽 경계는 포함하지 않는다. CSV의 파일 경로는 `data/` 기준 상대 경로다.
-
-## 현재 생성 수량
-
-| 위치 | good | yellow | brown | 합계 |
-| --- | ---: | ---: | ---: | ---: |
-| `mvtec/cabbage/train` | 1,020 | 0 | 0 | 1,020 |
-| `validation` | 270 | 50 | 25 | 345 |
-| `mvtec/cabbage/test` | 270 | 50 | 25 | 345 |
-| **합계** | **1,560** | **100** | **50** | **1,710** |
-
-`ground_truth` 픽셀 마스크는 아직 없다. 현재 데이터셋은 이미지 단위 이상 판정에 사용하며, 픽셀 단위 평가는 마스크를 추가한 뒤 진행한다.
-
-## 생성
-
-저장소 루트에서 실행한다. Python 패키지 `Pillow`, `PyYAML`이 필요하다.
 
 ```bash
-python3 ml/cabbage_anomaly/scripts/build_dataset.py
+cd /path/to/ROKEY_P3_A1
+git clone https://github.com/amazon-science/patchcore-inspection.git ../patchcore-inspection
+# 저장된 전체 학습 모델이 사용한 원본 코드 버전
+git -C ../patchcore-inspection checkout fcaa92f124fb1ad74a7acf56726decd4b27cbcad
+
+python3.12 -m venv ml/cabbage_anomaly/.venv
+ml/cabbage_anomaly/.venv/bin/python -m pip install --upgrade pip
+ml/cabbage_anomaly/.venv/bin/python -m pip install -r ../patchcore-inspection/requirements.txt
+ml/cabbage_anomaly/.venv/bin/python -m pip install timm PyYAML opencv-python-headless
+ml/cabbage_anomaly/.venv/bin/python -c "import torch, faiss, timm, yaml, cv2; print('dependencies OK')"
 ```
 
-기본 시드는 42이며 `--seed`로 변경할 수 있다. 출력 CSV나 ROI 이미지가 이미 있으면 스크립트가 중단하므로 기존 분할을 덮어쓰지 않는다.
+원본 저장소의 파일명은 `requirements.txt`이며, `timm`은 원본 코드가 import하지만 해당 파일에 없어서 별도로 설치한다. `PyYAML`은 데이터셋 생성, `opencv-python-headless`는 녹화 영상 시연에 사용한다. Python 3.12는 현재 확인한 환경의 버전이다. 스크립트는 형제 저장소의 `src`를 직접 import하므로 원본 저장소를 프로젝트 안으로 복사하거나 수정하지 않는다.
+
+`data/` 원본 이미지, `models/patchcore/`의 전체 학습 모델, `results/image-level-full/threshold.json`은 Git에 포함되지 않는다. 다른 머신에서는 해당 파일을 별도로 준비하거나 아래 순서대로 데이터셋 생성 → 전체 학습 → 전체 평가를 실행해야 영상 시연까지 가능하다.
+
+## 데이터셋 준비
+
+원본 이미지 배치, 장면 분할, ROI 파일명과 수량은 [DATASET.md](data/DATASET.md)를 참고한다. `data/raw/`에 원본 이미지를 준비한 뒤 프로젝트 루트에서 생성한다. 이미 생성된 데이터셋은 덮어쓰지 않는다.
+
+```bash
+ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/build_dataset.py
+```
 
 ## PatchCore 정상 데이터 학습
 
@@ -112,3 +84,20 @@ ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/evaluate_image_le
 각 실행 폴더의 `scores.csv`에는 분할, ROI 파일명, 원본 장면, 슬롯, 라벨, 이진 라벨, 원본 이상 점수와 판정을 기록한다. `metrics.json`과 `report.md`에는 검증·테스트의 이미지 AUROC, TP/FP/TN/FN, 정상 오탐률, 이상 재현율, yellow·brown별 미탐 수와 슬롯별 점수·오탐·미탐 건수를 기록한다. `examples/`에는 오탐·미탐·올바르게 탐지한 이상 ROI의 예측 히트맵과 오버레이를 저장한다. 히트맵은 **정답 마스크가 아닌 PatchCore 예측**이다. 모든 그림에 공통으로 `vmin=0`, **검증 히트맵 픽셀의 99백분위수**를 `vmax`로 적용하며 값은 `threshold.json`에 기록한다.
 
 현재 전체 실행에서는 임계값 `0.3270235062`를 얻었다. 검증은 AUROC **0.9929**, TP/FP/TN/FN **75/5/265/0**이고, 최종 테스트는 AUROC **0.9999**, TP/FP/TN/FN **74/1/269/1**이다. 이 수치는 현재 합성 장면에 한정된다. 이상 배추가 항상 `SLOT_03·04=yellow`, `SLOT_05=brown`에 있어서 슬롯 위치·배경이 점수에 영향을 줄 수 있고, 같은 원본에서 나온 여러 ROI는 독립 표본이 아니다. 하위 그룹은 건수와 함께 읽어야 한다. 픽셀 AUROC, PRO, IoU 등 위치 정확도 지표는 계산하지 않는다.
+
+## 녹화 영상 시연
+
+`scripts/demo_video.py`는 `/rgb`에서 별도로 녹화한 **640×640 영상 파일**을 읽는다. 기존 ROS 2 노드와 연결하지 않는다. 데이터셋 생성 때와 같은 고정 좌표로 여섯 슬롯을 96×96으로 자르고, 전체 학습 PatchCore 모델과 검증에서 정한 임계값으로 각 슬롯의 이미지 단위 점수를 계산한다. 결과 영상에는 ROI별 예측 히트맵, 점수, `OK`/`NG`가 표시된다. 히트맵은 정답 마스크가 아니며 검증에서 정한 공통 색상 범위를 사용한다.
+
+입력은 녹화한 mp4 등 OpenCV가 읽는 영상 파일이며 결과는 mp4다. 기존 출력 파일은 덮어쓰지 않는다. 위 설치 절차로 OpenCV를 가상환경에 설치했다면 다음 명령을 사용한다.
+
+```bash
+ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/demo_video.py \
+  --input /path/to/recorded_rgb.mp4 \
+  --output ml/cabbage_anomaly/results/recorded_overlay.mp4 \
+  --max-frames 30
+```
+
+현재 개발 환경의 가상환경에는 OpenCV가 없고 시스템에만 있다. 이 환경에서 바로 실행할 때는 명령 앞에 `PYTHONPATH=/usr/lib/python3/dist-packages`를 붙인다.
+
+전체 영상을 처리할 때는 `--max-frames`를 생략한다. 고정 crop은 현재 640×640 Isaac Sim 장면에서만 확인됐으며, 영상 압축이나 카메라 구도 변화는 학습·평가 결과와 점수를 다르게 만들 수 있다. 이 시연은 녹화 영상의 동작 확인용으로, 실시간 처리 속도나 실제 카메라 성능을 증명하지 않는다.
