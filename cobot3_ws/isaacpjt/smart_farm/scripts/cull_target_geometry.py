@@ -29,7 +29,7 @@ def pick_target_world(tray_world_matrix, offset_local, aim_above_tray):
 
 
 def head_inside_box(head_position, lower_bound, upper_bound):
-    """물리 안정화 뒤 머리 중심이 상자 경계 안에 있는지 확인한다."""
+    """물리 안정화 뒤 머리 기준점의 XY가 상자 안이고 윗면보다 낮은지 확인한다."""
     head = np.asarray(head_position, dtype=float)
     lower = np.asarray(lower_bound, dtype=float)
     upper = np.asarray(upper_bound, dtype=float)
@@ -37,4 +37,5 @@ def head_inside_box(head_position, lower_bound, upper_bound):
         raise ValueError("Cull box bounds require xyz positions")
     if not all(np.all(np.isfinite(item)) for item in (head, lower, upper)):
         raise ValueError("Cull box bounds must be finite")
-    return bool(np.all(lower <= head) and np.all(head <= upper))
+    return bool(np.all(lower[:2] <= head[:2]) and np.all(head[:2] <= upper[:2])
+                and head[2] <= upper[2])
