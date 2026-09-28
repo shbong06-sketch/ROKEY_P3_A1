@@ -15,6 +15,7 @@ import time
 
 import rclpy
 from geometry_msgs.msg import PoseWithCovarianceStamped
+from rclpy.clock import Clock, ClockType
 from rclpy.node import Node
 from rclpy.qos import (
     QoSDurabilityPolicy,
@@ -99,9 +100,17 @@ class RecorderNode(Node):
         self._make_subscriptions()
 
         self.start_cycle_client = self.create_client(StartCycle, "/start_cycle")
+
+        # 우편함을 읽는 주기는 **벽시계**로 돈다. use_sim_time 이 true 인데 Isaac 이
+        # 아직 안 떠서 /clock 이 없으면 시뮬레이션 시각이 0 에 멈춰 노드 시계 타이머가
+        # 아예 안 뛴다. 그러면 웹의 시작 버튼이 영원히 응답을 못 받는다.
+        # 공정 시간을 재는 것이 아니라 "웹이 뭔가 넣었는지" 보는 것이므로
+        # 벽시계가 맞다 (ADR_basic §5-6 의 구분).
+        self.steady_clock = Clock(clock_type=ClockType.STEADY_TIME)
         self.create_timer(
             float(self.get_parameter("web_poll_sec").value),
             self._drain_web_commands,
+            clock=self.steady_clock,
         )
 
         self.get_logger().info(f"monitor_recorder ready: db={self.db_path}")
@@ -150,10 +159,14 @@ class RecorderNode(Node):
     # ------------------------------------------------------------------
 
     def _now(self):
-        """(wall, sim) 두 시각을 돌려준다. 둘 다 기록용이다."""
+        """(wall, sim) 두 시각을 돌려준다. 둘 다 기록용이다.
+
+        use_sim_time 이 true 인데 /clock 이 아직 안 오면 시각이 0 이다. 그때는
+        sim 을 None 으로 남긴다. 0 초로 적으면 소요시간이 0 으로 계산돼 분석을 망친다.
+        """
 
         sim = self.get_clock().now().nanoseconds * 1e-9
-        return time.time(), sim
+        return time.time(), (sim if sim > 0.0 else None)
 
     # ------------------------------------------------------------------
     # 사이클

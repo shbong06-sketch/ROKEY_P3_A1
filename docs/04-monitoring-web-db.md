@@ -893,3 +893,39 @@ ros2 launch smart_farm_monitor monitor.launch.py
 - `pallet_locations` 가 발행되면 `pallet_move` 의 위치 판정을 그 값으로 바꿈
 - 검사 디버그 영상(JPEG) 겹치기는 `cv_bridge` 의존이 늘어 선택 항목으로 둠
 - 실제 사이클로 채운 화면은 아직 없음. **Isaac 실행 시 `results/log_media/<수행한것>_<날짜>_<시각>/` 에 스냅샷을 남김**(§15.1)
+
+---
+
+## 18. 2026-09-28 결함 하나와 그 수정 — 시작 버튼이 응답을 못 받던 문제
+
+### 18.1 증상
+
+사용자가 `ros2 launch smart_farm_monitor monitor.launch.py` 로 관제만 띄운 뒤 웹의 `DEMO_HARVEST_01 시작` 을 눌렀더니 **`거절: SENT`** 가 나왔음.
+
+### 18.2 원인 — 내가 §12 에서 팀장님께 경고한 것과 같은 실수
+
+`config/monitor.yaml` 은 `use_sim_time: true` 임. 공정 소요시간을 `/clock` 기준으로 적기 위한 설정이 맞음. 그런데 **우편함을 읽는 타이머까지 노드 시계(시뮬레이션 시각)로 돌고 있었음.** Isaac 이 아직 안 떠서 `/clock` 이 없으면 시뮬레이션 시각이 0 에 멈추므로 **타이머가 한 번도 뛰지 않음.** 그래서 `web_command` 행이 `PENDING` 에 머물렀음.
+
+화면 쪽에도 잘못이 있었음. 8 초 기다린 뒤 아직 해소되지 않으면 `{state: 'SENT'}` 를 **하드코딩해서 돌려주고** 그것을 "거절" 로 표시했음. 즉 "응답이 안 왔다" 를 "거절당했다" 로 잘못 알렸음.
+
+재현으로 확인했음(고피3, `use_sim_time:=true`, `/clock` 없음): 5 초 뒤 `web_command` 가 `PENDING` 그대로였고 recorder 로그에는 `ready` 한 줄뿐이었음.
+
+이는 §12.3 에서 **"tick 타이머와 노드 생존 판정은 벽시계로 두어야 한다"** 고 적은 것과 정확히 같은 실패 형태임. 팀 Task Manager 는 그 부분을 이미 `ClockType.STEADY_TIME` 으로 두고 있었고, 내 노드만 그러지 못했음.
+
+### 18.3 수정
+
+| 파일 | 수정 |
+|---|---|
+| `recorder_node.py` | 우편함 타이머를 `Clock(clock_type=ClockType.STEADY_TIME)` 으로 돌림. 공정 시간을 재는 것이 아니라 "웹이 뭔가 넣었는지" 보는 것이므로 벽시계가 맞음 |
+| `recorder_node.py` | `_now()` 가 `/clock` 이 없을 때 sim 을 **0 이 아니라 `None`** 으로 돌려줌. 0 으로 적으면 소요시간이 0 으로 계산돼 분석을 망침 |
+| `web/index.html` | `PENDING` 은 `응답 없음 — recorder 노드 확인`, `SENT` 는 `응답 없음 — Task Manager 확인` 으로 구분해 표시. 기다리는 시간도 8 초 → 12 초로 늘림 |
+
+### 18.4 검증
+
+- 회귀 시험 `test_web_command_drains_without_clock` 추가. `use_sim_time=True` + `/clock` 없음 조건에서 `REJECTED / SERVICE_NOT_AVAILABLE` 이 되는지, `_now()` 의 sim 이 `None` 인지 확인함
+- 시험 **39건 통과** (store 17 + recorder 7 + web 15)
+- 실기동 재현: 같은 조건에서 **1 초 안에 `REJECTED / SERVICE_NOT_AVAILABLE`** 로 바뀜. recorder 로그에 `/start_cycle 이 아직 없다` 가 남음
+
+### 18.5 남는 사실
+
+관제만 띄운 상태에서 `거절: SERVICE_NOT_AVAILABLE` 은 **결함이 아니라 정상 동작**임. `/start_cycle` 을 제공하는 것은 Task Manager 이므로, 사이클을 시작하려면 Isaac·Nav2·주행 노드·검사 노드·Task Manager 가 함께 떠 있어야 함. 그 순서는 `guidance3_27차.md` 4장에 자립형으로 적었음.

@@ -297,3 +297,38 @@ def test_web_command_is_rejected_without_task_manager(rig):
     assert row["state"] == "REJECTED"
     assert json.loads(row["response"])["reason"] == "SERVICE_NOT_AVAILABLE"
     store.close()
+
+def test_web_command_drains_without_clock(tmp_path):
+    """use_sim_time 이 true 이고 /clock 이 없어도 우편함은 돌아야 한다.
+
+    2026-09-28 에 이 조건에서 타이머가 아예 안 뛰어 웹 시작 버튼이 응답을 못 받았다.
+    우편함 타이머는 벽시계(STEADY_TIME)로 돈다.
+    """
+
+    rclpy.init()
+    db_path = str(tmp_path / "farm.db")
+    recorder = RecorderNode(parameter_overrides=[
+        Parameter("db_path", value=db_path),
+        Parameter("use_sim_time", value=True),
+    ])
+    try:
+        writer = MonitorStore(db_path)
+        row_id = writer.queue_web_command(
+            "START_CYCLE", {"scenario_id": "DEMO_HARVEST_01"}, 1.0)
+        writer.close()
+
+        for _ in range(80):
+            rclpy.spin_once(recorder, timeout_sec=0.05)
+
+        store = MonitorStore(db_path, read_only=True)
+        row = store.conn.execute(
+            "SELECT * FROM web_command WHERE id = ?", (row_id,)).fetchone()
+        assert row["state"] == "REJECTED"
+        assert json.loads(row["response"])["reason"] == "SERVICE_NOT_AVAILABLE"
+
+        # /clock 이 없으면 sim 시각은 0 이 아니라 None 으로 남는다.
+        assert recorder._now()[1] is None
+        store.close()
+    finally:
+        recorder.destroy_node()
+        rclpy.shutdown()

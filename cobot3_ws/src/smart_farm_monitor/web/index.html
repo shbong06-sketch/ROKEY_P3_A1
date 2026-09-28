@@ -287,9 +287,16 @@ document.getElementById('start-btn').addEventListener('click', async (event) => 
     const queued = await postJson('/api/start_cycle', { scenario_id: 'DEMO_HARVEST_01' });
     const result = await waitForCommand(queued.queued_id);
     const answer = result.response ? JSON.parse(result.response) : {};
-    button.textContent = result.state === 'ACCEPTED'
-      ? '수락됨 — 진행 중'
-      : `거절: ${text(answer.reason, result.state)}`;
+    if (result.state === 'ACCEPTED') {
+      button.textContent = '수락됨 — 진행 중';
+    } else if (result.state === 'REJECTED') {
+      button.textContent = `거절: ${text(answer.reason, 'REJECTED')}`;
+    } else {
+      // PENDING 이면 recorder 가 우편함을 안 읽은 것, SENT 면 /start_cycle 이 응답을 안 준 것.
+      button.textContent = result.state === 'PENDING'
+        ? '응답 없음 — recorder 노드 확인'
+        : '응답 없음 — Task Manager 확인';
+    }
   } catch (error) {
     button.textContent = '요청 실패';
     console.error(error);
@@ -301,12 +308,14 @@ document.getElementById('start-btn').addEventListener('click', async (event) => 
 });
 
 async function waitForCommand(rowId) {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    const row = await getJson('/api/web_command/' + rowId);
+  let row = { state: 'PENDING', response: null };
+  // 12 초까지 기다린다. 그 뒤에도 PENDING/SENT 면 마지막으로 본 상태를 그대로 돌려준다.
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    row = await getJson('/api/web_command/' + rowId);
     if (row.state !== 'PENDING' && row.state !== 'SENT') return row;
     await new Promise((resolve) => setTimeout(resolve, 400));
   }
-  return { state: 'SENT', response: null };
+  return row;
 }
 
 setupMap().then(() => subscribeState(render));
