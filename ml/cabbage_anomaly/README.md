@@ -64,3 +64,27 @@ python3 ml/cabbage_anomaly/scripts/build_dataset.py
 ```
 
 기본 시드는 42이며 `--seed`로 변경할 수 있다. 출력 CSV나 ROI 이미지가 이미 있으면 스크립트가 중단하므로 기존 분할을 덮어쓰지 않는다.
+
+## PatchCore 정상 데이터 학습
+
+`scripts/train_patchcore.py`는 외부 저장소 `../patchcore-inspection/src`의 원본 PatchCore 구현을 import한다. 기본 외부 저장소 경로는 프로젝트와 같은 상위 폴더의 `patchcore-inspection`이며, 다른 위치에 있으면 `--patchcore-repo`로 지정한다. 학습에는 `mvtec/cabbage/train/good`의 정상 ROI만 사용한다. validation·test 이미지와 `ground_truth` 마스크는 읽지 않는다.
+
+입력 ROI는 이미 96×96이므로 원본 MVTec 학습 Dataset에 `resize=96`, `imagesize=96`을 전달한다. 즉 **96×96 resize → 96×96 center crop → ImageNet 정규화** 순서이며 가장자리 픽셀을 잘라내지 않는다. 사전학습 WideResNet50의 `layer2`, `layer3` 특징을 사용하고, embedding 차원은 1024→384, 패치 크기는 3, approximate greedy coreset 비율은 1%다. CNN 특징 추출과 coreset은 CUDA가 있으면 GPU를 사용하고, 최근접 이웃 검색 인덱스는 CPU FAISS로 만든다. 기본 시드는 42, 배치 크기는 8이다.
+
+프로젝트 루트에서 가상환경 Python으로 실행한다. `--output`은 빈 폴더를 지정해야 하며, 기존 모델을 덮어쓰지 않는다.
+
+```bash
+# 정상 ROI 4장 smoke test
+ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/train_patchcore.py \
+  --limit 4 --output ml/cabbage_anomaly/models/patchcore-smoke
+
+# 정상 ROI 1,020장 전체 학습
+ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/train_patchcore.py \
+  --output ml/cabbage_anomaly/models/patchcore
+```
+
+필요하면 `--data-root`로 `data/mvtec`의 위치를, `--device cpu`로 실행 장치를 바꿀 수 있다. 실행 전에 GPU 사용 가능 여부와 입력·출력 경로를 출력한다. 사전학습 가중치가 로컬에 없으면 첫 실행에서 torchvision이 다운로드할 수 있다.
+
+PatchCore의 `fit()`은 CNN 가중치를 새로 학습하지 않는다. 정상 이미지에서 특징을 추출해 대표 패치를 고른 뒤 FAISS 인덱스에 저장한다. 출력 폴더에는 `nnscorer_search_index.faiss`, `patchcore_params.pkl`, `training_metadata.json`이 생긴다. 마지막 JSON에는 설정, 정상 이미지 수, 시드, 외부 PatchCore commit SHA와 인덱스 크기를 기록한다. 스크립트는 저장 후 모델을 재로드하고 인덱스가 비어 있지 않은지도 확인한다.
+
+현재 환경에서 4장 smoke test와 1,020장 전체 학습·재로드를 완료했다. 전체 모델의 FAISS 인덱스에는 대표 패치 1,468개가 저장됐다. 이 단계에서는 결함 평가 지표를 계산하지 않는다.
