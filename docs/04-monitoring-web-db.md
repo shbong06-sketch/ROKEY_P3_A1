@@ -137,6 +137,7 @@ CREATE TABLE step (
   status        TEXT,              -- SUCCEEDED / FAILED / NULL(진행 중)
   phase         TEXT,
   reason        TEXT,
+  late_result   INTEGER DEFAULT 0,   -- Task Manager 가 TIMEOUT 판정한 뒤 늦게 도착한 결과면 1
   UNIQUE(task_id, command_id)
 );
 
@@ -210,7 +211,7 @@ CREATE TABLE web_command (
 
 | 화면 | 보여주는 것 | 근거 데이터 |
 |---|---|---|
-| ① 대시보드 | 현재 `CycleState`, 진행 중 명령, executor 3개 상태 램프, 경과 시간(sim·wall 병기), 15단계 체크리스트, 실패 사유 | `cycle`, `step`, `executor_status` |
+| ① 대시보드 | 현재 `CycleState`, 진행 중 명령, executor 3개 상태 램프, 경과 시간(sim·wall 병기), 12단계 체크리스트, 실패 사유 | `cycle`, `step`, `executor_status` |
 | ② 사이클 이력 | 사이클 목록(성공·실패·소요시간) → 클릭 시 단계별 소요시간 막대 | `cycle`, `step` |
 | ③ 검사 결과 | 슬롯 6칸 그리드, class·confidence, 불량/미판정 표시, RECHECK 전후 비교 | `detection`, `inspection_verdict` |
 | ④ 트레이 추적 | 팔레트별 현재 위치와 이동 이력, 기록 일치율 | `pallet_move` |
@@ -431,7 +432,7 @@ cobot3_ws/src/smart_farm_monitor/          ← 새 ROS 2 패키지 (승인 필�
 | # | 기능 | 내용 | 근거·연결 |
 |---|---|---|---|
 | 3 | **2D 지도 위 로봇 실시간 위치·경로** | `maps/Collected_smartfarm_v014.png`(285×460 px)을 배경으로 깔고, `map` 좌표계 x/y 를 `resolution 0.05`·`origin [-4.525, -10.025]` 로 픽셀 변환해 로봇 점·`/plan` 경로선·작업점 표시 | 심사자가 RViz 없이 볼 수 있는 유일한 주행 화면. 영상 소재 직결 |
-| 4 | 공정 타임라인(간트) | 사이클의 15단계를 가로 막대로. 병목이 눈에 보임 | 백승주 사이클 시간 최적화 직결. "몇 % 개선" 수치 근거 |
+| 4 | 공정 타임라인(간트) | 사이클의 12단계를 가로 막대로. 병목이 눈에 보임 | 백승주 사이클 시간 최적화 직결. "몇 % 개선" 수치 근거 |
 | 5 | 검사 결과 오버레이 | 슬롯 6칸 그리드 + bbox·class·confidence. RECHECK 전후 비교 | CULL 챌린지 시각화 |
 | 6 | KPI 카드 | 사이클 성공률, 평균 사이클 시간(sim), 도킹 성공률·평균 재시도, 불량 검출 수 | 기획서 검증 지표와 1:1 |
 | 7 | 관제실 레이아웃 | 다크 테마, 1080p 고정 그리드 | CSS 뿐이라 비용 최저. 화면이 제품처럼 보임 |
@@ -459,8 +460,12 @@ cobot3_ws/src/smart_farm_monitor/          ← 새 ROS 2 패키지 (승인 필�
 
 ### 착수 순서 (내 판단)
 
-**P0 전체 → P1 3번(지도) → P1 4·6·7 → P1 5 → P2 11번(영상 타임코드) → 나머지 P2.**
-P1 3번을 4번보다 먼저 두는 이유는, 지도 뷰가 있으면 그 자체로 영상 소재가 되고 리플레이(P2 9번)까지 재사용되기 때문임.
+**2026-09-28 사용자 결정: P0 전체 + P1 전체 + P2 10번만 구현. P2 의 나머지와 P3 는 구현하지 않음.**
+
+착수 순서: **P0 1 → P0 2 → P1 3(지도) → P1 6·7 → P1 4 → P1 5 → P2 10.**
+P1 3번을 먼저 두는 이유는 지도 뷰가 그 자체로 영상 소재가 되기 때문임. P2 10번(이상 탐지 배너·라벨링)은 봉승현 팀장님 ML 결과 토픽이 정해진 뒤에야 배선이 확정되므로 마지막임. 그때까지는 **사람 라벨링 UI 부분만 먼저 만들어 정상·이상 라벨을 모아 둠**(팀장님 학습 입력).
+
+구현하지 않기로 한 것: P2 8·9·11·12·13, P3 14~18. 다만 **P2 12(CSV 내보내기)는 팀장님·백승주님 인계 수단이므로, 필요해지면 `/export/steps.csv` 한 줄로 추가 가능하도록 `store.py` 에 조회 함수를 남겨 둠.**
 
 ---
 
@@ -549,3 +554,161 @@ parameters=[parameter_file, {"use_sim_time": True}],
 3. 위 (1)~(5) 변경을 함께 반영
 
 **즉 이 변경은 관제 DB 기록이 먼저 돌아야 근거를 가짐.**
+
+---
+
+## 13. 팀장님 2차 답변 반영 (2026-09-28)
+
+### 13.1 받은 답변 요지
+
+1. `feature/task-managed-integration` 이 통합 브랜치이며 `development` 로 **PR 을 이미 보냈음.** 내일 GPU 노트북 실환경 검증 후 merge 예정.
+2. Task Manager 는 **고정 시나리오를 내부에 저장해 FSM 으로 단계 실행**하는 구조라 시나리오가 외부로 발행되지 않음. "지금 구조로는 관제 웹에서 확인이 안 될 것" 이라고 보심.
+3. `_start_cycle_callback` 과 인터페이스를 교체하면 발행은 가능하나, **현재 service response 는 "명령이 잘 전달되었는지" 만 즉시 반환하는 용도**임. 어떤 response 가 필요한지 구체적으로 알려 달라고 하심.
+4. 시간 기준이 두 개가 된 것은 **의도가 아님.** 설계 당시 USD 에서 `/clock` 발행이 안 되던 상태라 자체 시각을 썼고, 이후 구조 변경 없이 기능만 붙였음. 지금은 **timeout 을 넉넉하게 주는 임시방편**으로 두었으며, sim 내부·외부 노드에 따라 시간 기준을 나누는 것이 구조적으로 더 안정적이라는 데 동의하심.
+5. 관제 기록 노드는 **별도 패키지로 두는 편이 안전**하다고 보시며, 선택은 이쪽에 맡기심.
+
+### 13.2 2번·3번에 대한 답 — **팀장님 코드 변경 없이 관제 웹은 동작함**
+
+이건 내가 질문을 팔레트 위치에 한정해 적어 오해를 산 부분임. 사실 관계는 다음과 같음.
+
+관제가 필요한 것은 전부 **이미 발행되고 있음.**
+
+| 관제가 얻는 것 | 어디서 |
+|---|---|
+| 현재 공정 단계, 사이클 최종 상태, 실패 사유 | `/cycle/status` (`state`, `status`, `reason`, `active_command_id`) |
+| 단계별 operation·팔레트·대상 슬롯 | `/sim_task/command`(String JSON), `/navigation/command`, `/inspection/command` (TaskCommand) |
+| 단계별 성공·실패·phase·사유 | `/sim_task/result`, `/navigation/result`, `/inspection/result` |
+| 단계별 소요시간 | 위 command 발행 시각과 result 수신 시각의 차 (관제가 직접 잼) |
+| executor 준비·진행 상태 | `/sim_task/status`, `/navigation/status`, `/inspection/status` |
+| 검사 결과 슬롯·클래스·bbox | `/inspection/detections_2d` |
+| 검사 데이터 저장 성공·거절 | `/sim_task/inspection_data_status` |
+| 도킹 품질 | `/feeder_dock/result` (navigation 쪽 우리 모듈) |
+
+발행되지 않는 것은 **`CycleStateMachine.pallet_locations`(팔레트 논리 위치) 하나뿐**이고, 그것도 없으면 정확도만 떨어지고 관제 자체는 돌아감.
+
+**따라서 `/start_cycle` 의 response 는 지금 그대로가 정확히 필요한 형태임.** 웹의 시작 버튼은 "수락되었는지" 만 즉시 알면 되고(`accepted`, `task_id`, `reason=BUSY`), 전체 결과는 `/cycle/status` 로 봄. 이 분담은 이미 `docs/02-interfaces.md` §4 에 그대로 적혀 있음. **인터페이스 교체는 필요 없음.**
+
+시나리오 정의(12단계 순서) 자체도 외부 발행이 안 되지만, 관제는 `CycleState` 순서를 화면에 그려 두면 되므로 문제 없음. 다만 **시나리오가 여러 개가 되거나 단계가 바뀌면 관제 화면도 같이 고쳐야 함.** 그때가 오면 `/cycle/scenario`(String JSON, latched)로 단계 목록을 한 번만 발행하는 방안을 제안함. 지금은 불필요함.
+
+### 13.3 4번 — 시간 기준: 순서만 맞추면 됨
+
+`/clock` 이 발행되지 않던 시절의 잔재라는 설명으로 §12 의 진단이 확인됨. 지금 `timeout_sec` 이 넉넉한 값(TRANSFER 400 s, CULL 900 s)인 것도 그 임시방편의 결과임.
+
+바꾸는 순서는 §12.5 그대로임. **관제 DB 가 `step.duration_sim` 을 모으는 것이 선행 조건**이며, 그 값 없이 지금 시간 기준만 바꾸면 여유가 약 3배 늘어 실패를 더 못 잡게 됨.
+
+### 13.4 PR 본문에서 확인한 미해결 항목이 DB 스키마에 미치는 영향
+
+PR #12 본문의 리뷰 요청 사항 중 다음이 관제에 직접 걸림.
+
+> "Task Manager 의 시간 초과가 진행 중인 Isaac 동작을 직접 취소하지 않으므로, 시간 초과 후 재시작 절차 확인"
+
+즉 Task Manager 가 TIMEOUT 으로 실패 처리한 뒤에도 **Isaac 안에서는 그 동작이 계속 돌고 있고, 늦게 도착한 result 가 토픽에 실제로 올라옴.** Task Manager 는 이를 `NO_ACTIVE_COMMAND`·`MISMATCHED_RESULT` 로 버리지만 **관제는 토픽을 구독하므로 그 늦은 결과를 받게 됨.**
+
+대응: `step` 표에 **`late_result` 플래그**를 둠(§3.3 반영 완료). 이러면 다음이 가능해짐.
+
+- 화면에서 "제한시간 초과로 실패 처리됐지만 실제로는 N초 뒤 성공했음" 을 구분해 표시함
+- **`timeout_sec` 값이 너무 짧다는 직접 증거**가 됨 → §12.5 의 재설정 근거가 데이터로 남음
+- 이상 탐지(봉승현) 라벨에서 "진짜 실패" 와 "제한시간만 짧았던 것" 을 분리할 수 있음
+
+---
+
+## 14. PR #12 분석 — 우리 워크스페이스와 관제 계획에 미치는 영향
+
+확인 방법: GitHub API 로 PR 메타데이터 조회 + `git diff` 로 브랜치 대조. (`gh` CLI 는 이 기기에 없음.)
+
+### 14.1 PR 개요
+
+| 항목 | 값 |
+|---|---|
+| 번호·제목 | #12 `feat: Task Manager 기반 스마트팜 전체 작업 흐름 통합` |
+| 상태 | **open**, `mergeable: true`, `mergeable_state: clean` |
+| base ← head | `development` ← `feature/task-managed-integration` (`7beec39`) |
+| 규모 | 커밋 309개, 변경 파일 176개, +16,616 / −1,147 |
+| 생성 | 2026-09-28 02:06 UTC |
+| 본문의 검증 문구 | "Ubuntu 실환경에서 전체 통합 흐름 실기동 확인" |
+
+**주의**: PR 본문은 실환경 확인을 완료했다고 적었으나, 팀장님 메시지는 "내일 GPU 노트북에서 실제 환경으로 검증한 뒤 merge 예정" 이라고 함. 두 진술이 다름. **merge 전까지는 실측 완료로 간주하지 않음**(ADR_basic §5-5).
+
+브랜치 `7beec39` 는 2026-09-28 01:50 이후 갱신이 없음. 즉 **내가 앞서 분석한 내용이 곧 최종본임.**
+
+### 14.2 우리 navigation 패키지 — 영향 없음
+
+`origin/feature/lwh` 와 `origin/feature/task-managed-integration` 의 `smart_farm_navigation` 핵심 파일 blob 해시가 **전부 동일**함.
+
+| 파일 | 대조 결과 |
+|---|---|
+| `smart_farm_navigation/feeder_dock.py` | 같음 |
+| `smart_farm_navigation/navigation_node.py` | 같음 |
+| `smart_farm_navigation/geometry.py` | 같음 |
+| `launch/nav2.launch.py` | 같음 |
+| `launch/navigation_node.launch.py` | 같음 |
+| `config/nav2_params.yaml` | 같음 |
+| `config/stations.yaml` | 같음 |
+
+두 브랜치 차이는 **277개 파일이 전부 "우리 브랜치에만 있고 팀 브랜치에 없음"** 이며 내용은 다음뿐임.
+
+- `results/log/*` 실측 기록 (팀이 가져가지 않은 것이 정상)
+- 옛 스크립트·설정: `nav_to_pose.py`, `scripts/odom_to_tf.py`, `scripts/inject_action_graph.py`, `scripts/run_all.sh`, `scripts/ros2_command_수정*차.txt`, `rviz2/mir100_navigation.rviz`
+
+즉 **팀 쪽에서 우리 코드를 고친 곳은 없음.** merge 후 `development` 를 우리 브랜치로 반입할 때 navigation 쪽 충돌 위험은 낮음. 다만 ADR_nav2 §2.4 점검표는 그대로 수행함.
+
+### 14.3 관제 계획에 반영해야 할 차이 — **여기가 중요**
+
+우리 브랜치가 들고 있는 `smart_farm_manager` 는 2026-09-26 판이고 **팀 최신판과 다름.** 관제 기록 노드는 **팀 최신판 기준으로 작성해야 함.**
+
+| 항목 | 우리 브랜치(구판) | 팀 최신판 |
+|---|---|---|
+| 공정 단계 수 (`scenario.py` 의 `StepDefinition`) | **7개** | **12개** |
+| Task Manager 가 다루는 토픽 | 11개 | **13개** (`/sim_task/inspection_context`, `/sim_task/inspection_data_status` 추가) |
+| `smart_farm_interfaces` msg·srv | — | **완전히 동일** |
+
+결론 3가지.
+
+1. **`smart_farm_interfaces` 가 동일하므로 관제 기록 노드의 메시지 계약은 안전함.** 팀 merge 를 기다리지 않고 작성 가능함.
+2. **대시보드 체크리스트는 12단계로 그림**(TRANSFER, PICK_HARVEST, NAVIGATION, PLACE_INSPECT, CONVEY_TO_INSPECT, PREPARE_INSPECT, MOVE_TO_INSPECT, INSPECT, CULL, RECHECK, RELEASE_INSPECT, CONVEYOR_OUT). 앞서 15단계로 적었던 것은 `CycleState` enum 값 수(16개, IDLE·PREFLIGHT·COMPLETE·ERROR 포함)와 공정 단계 수를 섞은 것이었음. 문서에서 정정했음.
+3. **`/sim_task/inspection_data_status` 를 기록 대상에 추가함.** 값이 `STORED`/`REJECTED` 이고, Task Manager 의 `INSPECTION_DATA_REJECTED`·`INSPECTION_DATA_TIMEOUT` 실패와 직결되므로 이상 탐지 입력으로 가치가 있음. `executor_status` 표에 `executor='sim_task_data'` 로 넣음.
+
+### 14.4 장면·지도 — 관제 지도 뷰의 데이터 출처는 유지됨
+
+- PR 이 지우는 `scenes/` 항목은 `rack_pick_test` 하위뿐임. `scenes/` 최상위 목록은 두 브랜치가 동일함.
+- **`maps/Collected_smartfarm_v014.png`·`.yaml` 은 팀 브랜치에 그대로 있음.** 즉 P1-3 지도 뷰의 배경 이미지와 좌표 변환 파라미터(`resolution 0.05`, `origin [-4.525, -10.025]`, 285×460 px)가 유지됨.
+- v014 USD 본체는 양쪽 모두 git 에 없음(ADR_nav2 2.4 의 대용량 USD 제외 규칙대로 로컬 파일임).
+
+### 14.5 merge 후 해야 할 일 (순서)
+
+1. 팀장님이 `development` 로 merge 완료했음을 확인함
+2. `development` 를 `feature/lwh` 로 반입함. `git pull` 은 사용자 확인 후 진행함
+3. ADR_nav2 §2.4 점검표로 navigation 추가분이 살아 있는지 확인함
+4. `smart_farm_manager` 12단계·13토픽 기준으로 기록 노드를 맞춤(이미 그 기준으로 작성하므로 확인만)
+5. `colcon build` 후 `test_store.py` 회귀 실행
+
+---
+
+## 15. 승인 반영 (2026-09-28)
+
+| 항목 | 결과 |
+|---|---|
+| 새 패키지 `cobot3_ws/src/smart_farm_monitor/` 생성 | **승인됨.** 팀장님도 별도 패키지를 권함 |
+| `.gitignore` 의 `/cobot3_ws/src/smart_farm_monitor/*` | `…/smart_farm_monitor/data/*` 로 좁혀 코드는 추적, DB 파일만 제외 |
+| 웹 프레임워크 | FastAPI + uvicorn |
+| 구현 범위 | P0 전체 + P1 전체 + P2 10번 |
+| Isaac Sim 실행 | 승인됨. **단, 아래 기록 의무를 지킴** |
+
+### 15.1 Isaac 실행 시 미디어 기록 의무 (사용자 지시)
+
+짧은 확인용 실행이라도 **미디어 자료를 반드시 남김.** 최소 스냅샷.
+
+- 저장 경로: `cobot3_ws/src/smart_farm_navigation/results/log_media/<수행한것>_<YYYYMMDD>_<HHMM>/`
+  - 예: `results/log_media/monitor_recorder_check_20260929_1430/`
+- 이 경로는 `.gitignore` 로 git 제외임(134 MB 미디어 사고 방지). **파일 목록과 무엇을 찍었는지는 답변과 가이던스에 표로 남김.**
+
+### 15.2 ADR_monitor.md 작성 절차 (사용자 지시)
+
+새 패키지 생성은 새 ADR 을 필요로 함. 절차는 다음으로 정함.
+
+1. 1차 코드 착수를 수행함
+2. 착수 중 겪은 것(막힌 지점, 구조 결정, 예상과 달랐던 점)을 **진단 내용으로 보고**함
+3. 사용자가 방향을 디렉팅함
+4. 그 방향을 `docs/ADR/ADR_monitor.md` 로 작성함
+
+**즉 ADR_monitor.md 를 미리 만들지 않음.** 그때까지 이 문서(`04-monitoring-web-db.md`)가 관제의 단일 출처임.
