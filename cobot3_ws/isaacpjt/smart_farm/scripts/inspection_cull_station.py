@@ -2,7 +2,7 @@
 
 컨베이어(conveyor.py)가 카메라 앞에 세우고 고정한 팔레트를 받아서
 비전 M0609 손목 RealSense + YOLO(best.pt) 로 칸별 색을 판정하고, 불량 칸 포기를
-팀 CullMotion(RMPflow, cull_motion.py 무수정) 으로 집어 SortBin_1 / SortBin_2 에 번갈아 버린 뒤
+팀 CullMotion(RMPflow, cull_motion.py 무수정) 으로 집어 yellow는 SortBin_1, brown은 SortBin_2에 버린 뒤
 팔레트를 벨트로 돌려보낸다. 컨베이어는 시간이 아니라 이 스테이션이 끝났을 때(inspection_done) 다시 돈다.
 
     station = install(stage, world, m0609_dir)       # world.reset() 전 (이송 프레임도 여기서 세운다)
@@ -354,7 +354,6 @@ class VisionCullStation:
             self._out, Path(scene_file).parent if scene_file else None)
         self._rgb = None
         self._conveyor = None
-        self._drop_index = 0          # SortBox_1 / SortBox_2 번갈아
         self.results = []
         self.events = []
         self._clock = 0.0             # update() 로 누적한 물리 시간 (aio_wrapper 캡처 시각과 같은 기준)
@@ -382,6 +381,7 @@ class VisionCullStation:
         self._motion = None
         self._queue = []
         self._completed_cull_slots = []
+        self._drop_count_by_box = {}
         self._frames = []
         self._record = None
         self._via = None
@@ -471,13 +471,12 @@ class VisionCullStation:
             raise RuntimeError("inspection arm or pallet is not ready for Cull")
         if self._conveyor is None or self._conveyor.inspecting != pallet_path:
             raise RuntimeError("Cull pallet is not held at the inspection work position")
-        heads = {
-            "SLOT_" + head.GetName().split("_")[-1]: head
-            for head in self._heads
-        }
+        # [navigation 2026-09-28] v014 Prim 번호와 영상 ROI 번호의 대응을 명시한다.
+        from cull_slot_mapping import select_cull_heads
+        selected = select_cull_heads(self._heads, target_slots)
         by_slot = {item["slot_id"]: item for item in detections}
-        if any(slot not in heads or heads[slot].GetName() not in self._seat_offsets_local
-               or slot not in by_slot for slot in target_slots):
+        if any(head.GetName() not in self._seat_offsets_local or slot not in by_slot
+               for slot, head in selected):
             raise RuntimeError("Cull slot lacks a head, seat offset, or detection")
         tray_z = _world_matrix(self._stage, str(self._tray.GetPath()))[2, 3]
         try:
@@ -486,8 +485,9 @@ class VisionCullStation:
             camera_model = None
             _log(f"[솎아내기] 픽셀 대조용 카메라 보정값 조회 실패: {error}")
         queue = []
-        for slot in target_slots:
+        for slot, head in selected:
             item = by_slot[slot]
+            colour = CLASS_SHORT.get(item["class_name"])
             vision_aim = None
             if camera_model is not None:
                 try:
@@ -499,7 +499,13 @@ class VisionCullStation:
                         vision_aim = candidate
                 except Exception as error:
                     _log(f"[솎아내기] {slot} 픽셀 좌표 대조 실패: {error}")
-            queue.append((heads[slot], vision_aim, CLASS_SHORT[item["class_name"]]))
+            queue.append((slot, head, vision_aim, colour))
+        # [navigation 2026-09-28] 모든 색상·상자를 첫 물리 동작 전에 확인한다.
+        from cull_bin_routing import validate_bin_routing
+        validate_bin_routing(
+            (colour for _, _, _, colour in queue),
+            [name for name, _, _ in self._boxes],
+        )
         self._queue = queue
         self._completed_cull_slots = []
         self.failure_code = ""
@@ -934,10 +940,10 @@ class VisionCullStation:
         for head in self._heads:
             label, aim = labels.get(head.GetName(), ("UNKNOWN", None))
             if label in CULL_CLASSES and aim is not None:
-                self._queue.append((head, aim, CLASS_SHORT[label]))
+                self._queue.append(("SLOT_" + head.GetName()[-2:], head, aim, CLASS_SHORT[label]))
         self._record["culls"] = []
         _log(f"[솎아내기] 대상 {len(self._queue)}개: " + ", ".join(
-            f"SLOT_{h.GetName()[-2:]}({c})" for h, _, c in self._queue))
+            f"{slot}({colour})" for slot, _, _, colour in self._queue))
         self._next_cull()
 
     # ── 솎아내기 ──
@@ -955,7 +961,7 @@ class VisionCullStation:
         if not self._queue:
             self._start_recheck()
             return
-        head, vision_aim, colour = self._queue.pop(0)
+        slot, head, vision_aim, colour = self._queue.pop(0)
         tray_m = _world_matrix(self._stage, str(self._tray.GetPath()))
         tray_z = tray_m[2, 3]
         truth = _world_matrix(self._stage, str(head.GetPath()))[:3, 3]
@@ -967,11 +973,16 @@ class VisionCullStation:
         else:
             aim = tray_m[:3, 3] + self._seat_offsets[head.GetName()]
             aim[2] = vision_aim[2]
-        box_index = self._drop_index % len(self._boxes)
+        # [navigation 2026-09-28] yellow→SortBin_1, brown→SortBin_2.
+        from cull_bin_routing import next_drop_position
+        box_index, spread_y = next_drop_position(
+            colour,
+            [name for name, _, _ in self._boxes],
+            self._drop_count_by_box,
+            DROP_SPREAD,
+        )
         box_name, drop, box_top = self._boxes[box_index]
-        use = self._drop_index // len(self._boxes)
-        self._drop_index += 1
-        drop = drop + np.array([0.0, DROP_SPREAD[use % len(DROP_SPREAD)], 0.0])   # 상자 긴 변 = y
+        drop = drop + np.array([0.0, spread_y, 0.0])   # 상자 긴 변 = 월드 y
         aim_base = self.to_base(aim)
         drop_base = self.to_base(drop)
         pick_z_offset = float((tray_z + GRIP_ABOVE_TRAY) - aim[2])
@@ -986,7 +997,8 @@ class VisionCullStation:
         motion = self._new_motion(_qmul(self._base_q, np.array(TOOL_Q)), str(head.GetPath()))
         self._run_plan(motion, plan)
         err = None if vision_aim is None else float(np.linalg.norm(vision_aim[:2] - aim[:2]) * 1000)
-        self._current = {"slot": "SLOT_" + head.GetName()[-2:], "colour": colour, "box": box_name,
+        self._current = {"slot": slot, "cabbage_prim": head.GetName(), "colour": colour, "box": box_name,
+                         "drop_spread_y_m": spread_y,
                          "vision_xy_error_mm": (None if vision_aim is None else round(
                              float(np.linalg.norm(vision_aim[:2] - truth[:2]) * 1000), 1)),
                          "vision_to_pick_xy_mm": None if err is None else round(err, 1),
@@ -994,7 +1006,7 @@ class VisionCullStation:
                          "head": head, "box_top": box_top,
                          "box_path": self._box_paths[box_index]}
         delta = "unavailable" if err is None else f"{err:.1f} mm"
-        _log(f"[솎아내기] SLOT_{head.GetName()[-2:]} ({colour}) -> {box_name} · 비전/파지 XY 차이 {delta}")
+        _log(f"[솎아내기] {slot} ({head.GetName()}, {colour}) -> {box_name} · 비전/파지 XY 차이 {delta}")
         self.state = "CULL"
 
     def _state_cull(self, dt):
@@ -1023,9 +1035,14 @@ class VisionCullStation:
         entry = {k: v for k, v in cur.items() if k not in ("head", "box_top", "box_path", "_stage")}
         entry["in_box"] = bool(inside)
         entry["head_final"] = [round(float(v), 3) for v in hp]
+        entry["box_bounds"] = {
+            "min": [round(float(v), 3) for v in lo],
+            "max": [round(float(v), 3) for v in hi],
+        }
         self._record["culls"].append(entry)
         _log(f"[솎아내기] {cur['slot']} 버림 {'성공' if inside else '실패'} — {cur['box']} "
-             f"({hp[0]:+.3f}, {hp[1]:+.3f}, {hp[2]:.3f})")
+             f"({hp[0]:+.3f}, {hp[1]:+.3f}, {hp[2]:.3f}); "
+             f"box z=[{lo[2]:.3f}, {hi[2]:.3f}], below_bottom={bool(hp[2] < lo[2])}")
         self._event(f"CULL_{'DONE' if inside else 'FAILED'}_{cur['slot']}_{cur['box']}")
         if self._managed:
             if not inside:
