@@ -30,6 +30,8 @@ IMAGE_SIZE = 96
 
 
 class ImageDataset(Dataset):
+    """마스크 없이 ROI 이미지만 읽고 학습과 같은 전처리를 적용한다."""
+
     def __init__(self, records, mean, std):
         self.records = records
         self.transform = transforms.Compose((
@@ -51,6 +53,7 @@ class ImageDataset(Dataset):
 
 
 def load_records(data_dir, manifest_path, limit_per_label):
+    """검증·테스트 ROI를 manifest의 원본 장면·슬롯·라벨과 연결한다."""
     with manifest_path.open(newline="") as file:
         manifest = list(csv.DictReader(file))
     by_path = {}
@@ -73,6 +76,7 @@ def load_records(data_dir, manifest_path, limit_per_label):
             if limit_per_label is not None:
                 paths = paths[:limit_per_label]
             for path in paths:
+                # 파일명만 믿지 않고 생성 당시 기록한 split·라벨을 대조한다.
                 key = path.relative_to(data_dir).as_posix()
                 row = by_path.get(key)
                 if row is None:
@@ -91,6 +95,7 @@ def load_records(data_dir, manifest_path, limit_per_label):
 
 
 def score_records(model, records, mean, std, batch_size):
+    """ROI 순서를 유지하며 이미지 점수와 예측 히트맵을 수집한다."""
     loader = DataLoader(ImageDataset(records, mean, std), batch_size=batch_size,
                         shuffle=False, num_workers=0)
     maps = {}
@@ -119,6 +124,7 @@ def choose_threshold(records):
     if good == 0 or anomaly == 0:
         raise ValueError("임계값 선정에는 정상과 이상 검증 이미지가 모두 필요합니다")
     scores = sorted({record["raw_score"] for record in records})
+    # 최대 점수보다 큰 후보도 넣어 '모두 정상' 판정을 비교한다.
     candidates = scores + [float(np.nextafter(scores[-1], np.inf))]
 
     def rank(threshold):
@@ -133,6 +139,7 @@ def choose_threshold(records):
 
 
 def metrics(records, threshold):
+    """한 split의 이미지 단위 순위 성능과 임계값 기준 오분류 수를 계산한다."""
     counts = Counter((record["binary_label"], record["raw_score"] >= threshold)
                      for record in records)
     tp, fp, tn, fn = counts[1, True], counts[0, True], counts[0, False], counts[1, False]
@@ -148,6 +155,7 @@ def metrics(records, threshold):
 
 
 def score_summary(records):
+    """라벨·슬롯별 점수 분포를 건수와 함께 요약한다."""
     if not records:
         return None
     values = np.asarray([record["raw_score"] for record in records])
@@ -156,6 +164,7 @@ def score_summary(records):
 
 
 def summarize_groups(records, threshold):
+    """결함 라벨과 슬롯별 오탐·미탐 건수를 분리한다."""
     slots = {}
     for slot in SLOTS:
         group = [record for record in records if record["slot"] == slot]
@@ -175,6 +184,7 @@ def summarize_groups(records, threshold):
 
 
 def save_example(record, heatmap, folder, vmin, vmax):
+    """ROI·예측 히트맵·오버레이를 같은 색상 범위로 그린다."""
     folder.mkdir(parents=True, exist_ok=True)
     with Image.open(record["path"]) as image:
         rgb = np.asarray(image.convert("RGB"))
@@ -194,6 +204,7 @@ def save_example(record, heatmap, folder, vmin, vmax):
 
 
 def write_report(output, summaries, groups, defects, distribution, threshold, example_paths, full_data):
+    """숫자와 해석 범위를 함께 읽을 수 있는 Markdown 보고서를 만든다."""
     lines = ["# PatchCore 이미지 단위 평가", "",
              f"임계값: `{threshold:.8g}`. 검증 balanced accuracy 최대; 점수 `>=`이면 이상, 동점이면 높은 임계값 선택.",
              "최종 테스트 점수는 임계값 선정에 사용하지 않았다.", "",
@@ -237,6 +248,7 @@ def write_report(output, summaries, groups, defects, distribution, threshold, ex
 
 
 def main():
+    """전체 학습 모델을 확인한 뒤 검증 임계값으로 두 split을 평가한다."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-dir", type=Path, default=PROJECT / "models/patchcore")
     parser.add_argument("--data-dir", type=Path, default=DATA)
@@ -254,8 +266,11 @@ def main():
     if args.batch_size < 1 or args.examples_per_category < 1:
         parser.error("배치 크기와 사례 수는 1 이상이어야 합니다")
 
-    model_dir, data_dir = args.model_dir.resolve(), args.data_dir.resolve()
-    manifest_path, repo, output = args.manifest.resolve(), args.patchcore_repo.resolve(), args.run_dir.resolve()
+    model_dir = args.model_dir.resolve()
+    data_dir = args.data_dir.resolve()
+    manifest_path = args.manifest.resolve()
+    repo = args.patchcore_repo.resolve()
+    output = args.run_dir.resolve()
     if output.exists():
         parser.error(f"실행 결과 폴더가 이미 있습니다: {output}")
     if not (repo / "src/patchcore/patchcore.py").is_file():
@@ -265,14 +280,22 @@ def main():
             parser.error(f"모델 파일이 없습니다: {model_dir / name}")
     with (model_dir / "training_metadata.json").open() as file:
         training = json.load(file)
-    expected = {"normal_image_count": 1020, "input_image_size": IMAGE_SIZE,
-                "resize": IMAGE_SIZE, "center_crop": IMAGE_SIZE,
-                "backbone": "wideresnet50", "layers": ["layer2", "layer3"],
-                "faiss_device": "cpu"}
+    # 4장 smoke 모델이나 다른 입력 변환으로 만든 모델의 결과를 섞지 않는다.
+    expected = {
+        "normal_image_count": 1020,
+        "input_image_size": IMAGE_SIZE,
+        "resize": IMAGE_SIZE,
+        "center_crop": IMAGE_SIZE,
+        "backbone": "wideresnet50",
+        "layers": ["layer2", "layer3"],
+        "faiss_device": "cpu",
+    }
     for key, value in expected.items():
         if training.get(key) != value:
             parser.error(f"학습 설정 불일치: {key}={training.get(key)!r}, 기대값={value!r}")
-    commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
+    commit = subprocess.check_output(
+        ["git", "-C", str(repo), "rev-parse", "HEAD"], text=True
+    ).strip()
     if training.get("patchcore_commit") != commit:
         parser.error("현재 PatchCore 소스 commit이 학습 때와 다릅니다")
     if not manifest_path.is_file():
@@ -295,15 +318,19 @@ def main():
 
     model = patchcore.patchcore.PatchCore(device)
     model.load_from_path(str(model_dir), device, patchcore.common.FaissNN(False, 4))
-    if (tuple(model.input_shape) != (3, IMAGE_SIZE, IMAGE_SIZE) or
-            model.backbone.name != training["backbone"] or
-            list(model.layers_to_extract_from) != training["layers"] or
-            model.anomaly_scorer.nn_method.search_index.ntotal != training["indexed_patches"]):
+    indexed_patches = model.anomaly_scorer.nn_method.search_index.ntotal
+    if (
+        tuple(model.input_shape) != (3, IMAGE_SIZE, IMAGE_SIZE)
+        or model.backbone.name != training["backbone"]
+        or list(model.layers_to_extract_from) != training["layers"]
+        or indexed_patches != training["indexed_patches"]
+    ):
         raise ValueError("저장 모델과 학습 메타데이터의 입력·백본·레이어·인덱스 설정이 다릅니다")
     mean, std = patchcore.datasets.mvtec.IMAGENET_MEAN, patchcore.datasets.mvtec.IMAGENET_STD
+
+    # 임계값을 정하기 전에는 검증 ROI만 추론한다. 테스트 점수는 이 결정에 사용하지 않는다.
     val_maps = score_records(model, records["val"], mean, std, args.batch_size)
     threshold = choose_threshold(records["val"])
-    # 이 줄 아래에서만 최종 테스트 데이터를 추론한다.
     test_maps = score_records(model, records["test"], mean, std, args.batch_size)
     all_records = records["val"] + records["test"]
     for record in all_records:
@@ -326,17 +353,25 @@ def main():
         writer.writeheader()
         writer.writerows({field: record[field] for field in fields} for record in all_records)
 
-    vmax = float(np.percentile(np.concatenate([value.ravel() for value in val_maps.values()]), 99))
+    # 예시 그림의 색상 범위도 검증 히트맵만으로 정해 테스트 그림에 동일하게 적용한다.
+    validation_pixels = np.concatenate([value.ravel() for value in val_maps.values()])
+    vmax = float(np.percentile(validation_pixels, 99))
     vmax = max(vmax, 1e-12)
     example_paths = {}
     for split, rows in records.items():
         categories = {
-            "false_positive": sorted((r for r in rows if r["binary_label"] == 0 and r["predicted_anomaly"]),
-                                     key=lambda r: r["raw_score"], reverse=True),
-            "false_negative": sorted((r for r in rows if r["binary_label"] == 1 and not r["predicted_anomaly"]),
-                                     key=lambda r: r["raw_score"]),
-            "true_positive": sorted((r for r in rows if r["binary_label"] == 1 and r["predicted_anomaly"]),
-                                    key=lambda r: r["raw_score"], reverse=True),
+            "false_positive": sorted(
+                (r for r in rows if r["binary_label"] == 0 and r["predicted_anomaly"]),
+                key=lambda r: r["raw_score"], reverse=True,
+            ),
+            "false_negative": sorted(
+                (r for r in rows if r["binary_label"] == 1 and not r["predicted_anomaly"]),
+                key=lambda r: r["raw_score"],
+            ),
+            "true_positive": sorted(
+                (r for r in rows if r["binary_label"] == 1 and r["predicted_anomaly"]),
+                key=lambda r: r["raw_score"], reverse=True,
+            ),
         }
         for category, examples in categories.items():
             key = f"{split}/{category}"
@@ -353,15 +388,26 @@ def main():
         "selection": "maximize validation balanced accuracy (Youden J)",
         "tie_break": "choose the highest threshold; scores equal to threshold are anomaly",
         "selection_split": "val",
-        "validation_counts": {label: sum(r["label"] == label for r in records["val"]) for label in LABELS},
+        "validation_counts": {
+            label: sum(r["label"] == label for r in records["val"])
+            for label in LABELS
+        },
         "validation_score_distribution": validation_distribution,
-        "heatmap_display": {"vmin": 0.0, "vmax": vmax, "vmax_source": "validation predicted heatmap pixel 99th percentile",
-                            "colormap": "inferno", "overlay_alpha": 0.45},
-        "model_dir": str(model_dir), "model_training_images": training["normal_image_count"],
+        "heatmap_display": {
+            "vmin": 0.0,
+            "vmax": vmax,
+            "vmax_source": "validation predicted heatmap pixel 99th percentile",
+            "colormap": "inferno",
+            "overlay_alpha": 0.45,
+        },
+        "model_dir": str(model_dir),
+        "model_training_images": training["normal_image_count"],
         "patchcore_commit": commit,
     }
     (output / "threshold.json").write_text(json.dumps(threshold_info, indent=2) + "\n")
-    (output / "metrics.json").write_text(json.dumps({"splits": summaries, "slots": groups, "defects": defects}, indent=2) + "\n")
+    (output / "metrics.json").write_text(
+        json.dumps({"splits": summaries, "slots": groups, "defects": defects}, indent=2) + "\n"
+    )
     full_data = args.limit_per_label is None
     write_report(output, summaries, groups, defects, validation_distribution,
                  threshold, example_paths, full_data)
