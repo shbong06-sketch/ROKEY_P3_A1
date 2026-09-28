@@ -20,15 +20,27 @@ DEFAULT_SCENE = (
 
 # 공정별 후보 카메라. 이름만 보고 고르지 않고 실제 화각을 확인한다.
 CANDIDATES = [
+    # 공정 구역 고정 카메라
     "/World/ProcessCameras/Cam1_Harvest",
     "/World/ProcessCameras/Cam2_Nav2Place",
     "/World/ProcessCameras/Cam4_CullPickPlace",
     "/World/ProcessCameras/Cam5_Pusher",
-    "/World/ProcessCameras/Cam0_Perspective",
+    # Cam0_Perspective 는 2026-09-28 확인 결과 벽과 천장만 보여 후보에서 뺐다.
+    # 비전룸 고정 카메라
     "/World/VisionRoom/Cameras/Inspect_Cam",
     "/World/VisionRoom/Cameras/M0609_Cam",
     "/World/VisionRoom/Cameras/M0609_Front",
-    "/OmniverseKit_Persp",
+    "/visionroom",
+    # 카터에 달린 카메라 (움직이는 prim 의 시점뷰)
+    "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/front_hawk/left/camera_left",
+    "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/back_hawk/left/camera_left",
+    "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/left_hawk/left/camera_left",
+    "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/right_hawk/left/camera_left",
+    "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/front_owl/camera",
+    "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/back_owl/camera",
+    # 비전룸 매니퓰레이터 엔드이펙터의 RealSense D455 (컬러/깊이)
+    "/World/SmartFarm/Placed/M0609/Asset/onrobot_rg2ft/angle_bracket/realsense_d455/RSD455/Camera_OmniVision_OV9782_Color",
+    "/World/SmartFarm/Placed/M0609/Asset/onrobot_rg2ft/angle_bracket/realsense_d455/RSD455/Camera_Pseudo_Depth",
 ]
 
 

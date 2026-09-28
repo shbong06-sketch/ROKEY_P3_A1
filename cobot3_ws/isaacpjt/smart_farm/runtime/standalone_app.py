@@ -1450,29 +1450,38 @@ def fail_operation(
         )
 
 
-# [navigation 2026-09-28] 공정 구역별 풀샷 녹화용 카메라 매핑.
-# 이름으로 고르지 않고 2026-09-28 에 카메라마다 한 장씩 실제로 렌더해 화각을 확인했다
-# (tools/preview_cameras.py, 결과는 results/log_media/camera_preview_20260928_1406/).
-#   Cam1_Harvest       (1.30, -0.60, 2.60)  랙 4단 + 카터 + M0609 + 팔레트가 한 화면. 확인함
-#   Cam2_Nav2Place     (1.00, -5.20, 3.20)  통로 주행 경로 전체 + 턴테이블 컨베이어. 확인함
-#   Cam4_CullPickPlace (0.25, -5.95, 2.25)  비전룸 풀샷. 검사 로봇 + 컨베이어 + 분류함. 확인함
-#   Cam5_Pusher        (-1.35, -6.05, 1.55) 컨베이어 베드 정면 + 검사 로봇. 팔레트 이동이 잘 보임
-#   Cam0_Perspective   (-1.34, -5.91, 2.20) **벽과 천장만 보인다. 쓰지 않는다**
-VIEW_CAMERA_BY_OPERATION = {
-    "TRANSFER": "/World/ProcessCameras/Cam1_Harvest",
-    "PICK_HARVEST": "/World/ProcessCameras/Cam1_Harvest",
-    "NAVIGATION": "/World/ProcessCameras/Cam2_Nav2Place",
-    "PLACE_INSPECT": "/World/ProcessCameras/Cam2_Nav2Place",
-    # 컨베이어로 비전룸에 들어가는 구간. Cam2 는 컨베이어가 화면 귀퉁이에만 걸려 쓰지 않는다.
-    "CONVEY_TO_INSPECT": "/World/ProcessCameras/Cam5_Pusher",
-    "PREPARE_INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
-    "MOVE_TO_INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
-    "INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
-    "CULL": "/World/ProcessCameras/Cam4_CullPickPlace",
-    "RECHECK": "/World/ProcessCameras/Cam4_CullPickPlace",
-    "RELEASE_INSPECT": "/World/ProcessCameras/Cam5_Pusher",
-    "CONVEYOR_OUT": "/World/ProcessCameras/Cam5_Pusher",
-}
+# [navigation 2026-09-28] 녹화용 시점 연출은 scripts/view_director.py 가 맡는다.
+# 카메라 목록·자리·전환 규칙은 그 파일에 있고, 여기서는 뷰포트를 바꾸는 함수만 넘긴다.
+_VIEW_DIRECTOR = None
+
+
+def get_view_director():
+    """녹화용 시점 연출기를 한 번만 만든다. 꺼져 있으면 None."""
+
+    global _VIEW_DIRECTOR
+    if _VIEW_DIRECTOR is None:
+        try:
+            from view_director import ViewDirector
+
+            _VIEW_DIRECTOR = ViewDirector(set_view_camera)
+        except Exception as error:  # 녹화 편의 기능이라 실패해도 실행을 막지 않는다
+            print(f"[화면] 시점 연출기 준비 실패 (무시): {error}", flush=True)
+            _VIEW_DIRECTOR = False
+    return _VIEW_DIRECTOR or None
+
+
+def update_view_director(node) -> None:
+    """[navigation 2026-09-28] 매 프레임 호출. 공정과 대상 위치로 카메라를 고른다."""
+
+    director = get_view_director()
+    if director is None:
+        return
+    command = node.active_command
+    operation = command.operation if command is not None else ""
+    try:
+        director.update(omni.usd.get_context().get_stage(), operation)
+    except Exception as error:
+        print(f"[화면] 시점 갱신 실패 (무시): {error}", flush=True)
 
 
 def set_view_camera(camera: str) -> None:
@@ -1505,30 +1514,6 @@ def select_view_camera():
     환경변수가 없으면 아무것도 하지 않으므로 기존 실행에는 영향이 없다.
     """
     set_view_camera(os.environ.get("SMARTFARM_VIEW_CAMERA", "").strip())
-
-
-def follow_operation_camera(operation: str) -> None:
-    """[navigation 2026-09-28] 공정이 바뀌면 그 구역을 비추는 카메라로 옮긴다.
-
-    SMARTFARM_VIEW_FOLLOW=1 일 때만 동작한다. 꺼 두면 기존 실행과 똑같다.
-    매핑을 바꾸려면 SMARTFARM_VIEW_CAMERA_MAP 에 JSON 을 준다.
-      예) '{"CULL": "/World/VisionRoom/Cameras/Inspect_Cam"}'
-    """
-    if os.environ.get("SMARTFARM_VIEW_FOLLOW", "").strip() not in ("1", "true", "True"):
-        return
-
-    mapping = dict(VIEW_CAMERA_BY_OPERATION)
-    override = os.environ.get("SMARTFARM_VIEW_CAMERA_MAP", "").strip()
-    if override:
-        try:
-            mapping.update(json.loads(override))
-        except ValueError as error:
-            print(f"[화면] SMARTFARM_VIEW_CAMERA_MAP 파싱 실패 (무시): {error}", flush=True)
-
-    camera = mapping.get(operation)
-    if camera:
-        print(f"[화면] 공정 {operation} -> 카메라 전환", flush=True)
-        set_view_camera(camera)
 
 
 def run():
@@ -1638,6 +1623,9 @@ def run():
                 app.update()
                 continue
 
+            # [navigation 2026-09-28] 녹화용 시점 연출 (SMARTFARM_VIEW_FOLLOW=1 일 때만)
+            update_view_director(node)
+
             stopped_handled = False
 
             if needs_initialization:
@@ -1720,8 +1708,6 @@ def run():
 
             command = node.take_command()
             if command is not None:
-                # [navigation 2026-09-28] 공정 구역별 풀샷 녹화를 위해 카메라를 옮긴다.
-                follow_operation_camera(command.operation)
                 try:
                     start_operation(
                         command,
