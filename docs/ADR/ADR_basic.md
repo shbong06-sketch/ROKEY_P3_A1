@@ -183,7 +183,7 @@ isaac_ros() {
 
 ### [1차 목표 — 완료 2026-09-21] /cmd_vel 경로 주행으로 통로 탈출 → 컨베이어 앞 정지. 코드는 `path_runner*`, `config/path_runner*.yaml` 에 남아 있으며 Nav2 트랙에서는 쓰지 않음.
 ### [2차 목표 — 완료 2026-09-22] 결합카터가 Pallet_01 을 든 채 RViz2 Nav2 Goal 클릭 한 번으로 FEEDER_APPROACH 까지 자율주행하고, `feeder_dock` 으로 TurnTable 앞면 기준 정해진 거리에 뒤(팔 쪽)를 직각으로 맞춰 정지함. 2026-09-22 고피2 실측 3회 중 2회 성공. (그때 쓰던 도킹 거리는 당시 값이며 **현행값은 §ADR_nav2 2.2 의 `standoff_m` 0.92** 임.)
-### [3차 목표 — 2026-09-25 기준 진행 중] 팀 place 수정(`feature/cabbage-place-fix`)과 장면·지도 v014 를 반입한 상태로 주행 → 도킹(0.92) → PLACE_INSPECT 전 구간을 실측 1회 통과시킴. 검증은 아직 고피3 모의뿐임.
+### [3차 목표 — 완료 2026-09-28] 팀 place 수정(`feature/cabbage-place-fix`)과 장면·지도 v014 를 반입한 상태로 주행 → 도킹(0.92) → PLACE_INSPECT 전 구간을 **고피3 실측 1회 통과함**(`task_id TASK-20260928-115806`, 에이전트 대행). TRANSFER·PICK_HARVEST·NAVIGATION·PLACE_INSPECT 4단계 모두 `SUCCEEDED`. 도킹은 `face_dist_m` 0.938 / `yaw_err_deg` 0.78 / `lat_m` 0.017 / `retry` 0 이었고, map 좌표 (x −2.235, y −2.680, yaw 88.42°)였음. **`standoff_m` 0.92 와 팀 place 코드의 짝이 맞음이 이때 확인됨**(관절 한계 실패 없음). 근거: `smart_farm_monitor/results/log_media/monitor_pilot_20260928_1151/README.md`, 같은 회차의 `results/log/` 로그 8건, bag `nav2_20260928_1154`.
 ### [다음] 위 전 구간 실측, 그 기록(`[도킹] 카터 본체 world …` 줄)으로 팔 자세 허용 범위 확정, 도킹 횡 오차 허용치(`lat_tol_m`) 재조정.
 
 ---

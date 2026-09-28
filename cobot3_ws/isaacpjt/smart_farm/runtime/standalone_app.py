@@ -1450,16 +1450,34 @@ def fail_operation(
         )
 
 
-def select_view_camera():
-    """[navigation 2026-09-26] 화면에 보여 줄 카메라를 환경변수로 고른다.
+# [navigation 2026-09-28] 공정 구역별 풀샷 녹화용 카메라 매핑.
+# 씬의 /World/ProcessCameras 에 실제로 있는 카메라만 쓴다(2026-09-28 USD 조회로 확인).
+#   Cam1_Harvest      world (1.30, -0.60, 2.60)  랙과 매니퓰레이터
+#   Cam2_Nav2Place    world (1.00, -5.20, 3.20)  카터 운반 ~ 턴테이블 place, 컨베이어 진입
+#   Cam4_CullPickPlace world (0.25, -5.95, 2.25) 비전룸 인식과 솎아내기
+#   Cam5_Pusher       world (-1.35, -6.05, 1.55) 퇴출구(푸셔)
+VIEW_CAMERA_BY_OPERATION = {
+    "TRANSFER": "/World/ProcessCameras/Cam1_Harvest",
+    "PICK_HARVEST": "/World/ProcessCameras/Cam1_Harvest",
+    "NAVIGATION": "/World/ProcessCameras/Cam2_Nav2Place",
+    "PLACE_INSPECT": "/World/ProcessCameras/Cam2_Nav2Place",
+    "CONVEY_TO_INSPECT": "/World/ProcessCameras/Cam2_Nav2Place",
+    "PREPARE_INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
+    "MOVE_TO_INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
+    "INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
+    "CULL": "/World/ProcessCameras/Cam4_CullPickPlace",
+    "RECHECK": "/World/ProcessCameras/Cam4_CullPickPlace",
+    "RELEASE_INSPECT": "/World/ProcessCameras/Cam5_Pusher",
+    "CONVEYOR_OUT": "/World/ProcessCameras/Cam5_Pusher",
+}
 
-    씬에 저장된 기본 Perspective(/OmniverseKit_Persp)가 비전룸을 비추고 있어
-    녹화할 때 카터가 보이지 않는다. SMARTFARM_VIEW_CAMERA 에 카메라 prim 경로를
-    주면 그 카메라로 바꾼다. 예) /World/ProcessCameras/Cam2_Nav2Place
-    환경변수가 없으면 아무것도 하지 않으므로 기존 실행에는 영향이 없다.
+
+def set_view_camera(camera: str) -> None:
+    """[navigation 2026-09-26] 뷰포트 카메라를 주어진 prim 경로로 바꾼다.
+
+    녹화 편의 기능이므로 실패해도 실행을 막지 않는다.
     headless 로 띄우면 뷰포트가 없어 조용히 넘어간다.
     """
-    camera = os.environ.get("SMARTFARM_VIEW_CAMERA", "").strip()
     if not camera:
         return
     try:
@@ -1471,8 +1489,43 @@ def select_view_camera():
             return
         viewport.camera_path = camera
         print(f"[화면] 뷰포트 카메라를 {camera} 로 바꿨습니다.", flush=True)
-    except Exception as error:  # 녹화 편의 기능이므로 실패해도 실행을 막지 않는다
+    except Exception as error:
         print(f"[화면] 카메라 전환 실패 (무시): {error}", flush=True)
+
+
+def select_view_camera():
+    """[navigation 2026-09-26] 시작 시 보여 줄 카메라를 환경변수로 고른다.
+
+    씬에 저장된 기본 Perspective(/OmniverseKit_Persp)가 비전룸을 비추고 있어
+    녹화할 때 카터가 보이지 않는다. SMARTFARM_VIEW_CAMERA 에 카메라 prim 경로를
+    주면 그 카메라로 바꾼다. 예) /World/ProcessCameras/Cam2_Nav2Place
+    환경변수가 없으면 아무것도 하지 않으므로 기존 실행에는 영향이 없다.
+    """
+    set_view_camera(os.environ.get("SMARTFARM_VIEW_CAMERA", "").strip())
+
+
+def follow_operation_camera(operation: str) -> None:
+    """[navigation 2026-09-28] 공정이 바뀌면 그 구역을 비추는 카메라로 옮긴다.
+
+    SMARTFARM_VIEW_FOLLOW=1 일 때만 동작한다. 꺼 두면 기존 실행과 똑같다.
+    매핑을 바꾸려면 SMARTFARM_VIEW_CAMERA_MAP 에 JSON 을 준다.
+      예) '{"CULL": "/World/VisionRoom/Cameras/Inspect_Cam"}'
+    """
+    if os.environ.get("SMARTFARM_VIEW_FOLLOW", "").strip() not in ("1", "true", "True"):
+        return
+
+    mapping = dict(VIEW_CAMERA_BY_OPERATION)
+    override = os.environ.get("SMARTFARM_VIEW_CAMERA_MAP", "").strip()
+    if override:
+        try:
+            mapping.update(json.loads(override))
+        except ValueError as error:
+            print(f"[화면] SMARTFARM_VIEW_CAMERA_MAP 파싱 실패 (무시): {error}", flush=True)
+
+    camera = mapping.get(operation)
+    if camera:
+        print(f"[화면] 공정 {operation} -> 카메라 전환", flush=True)
+        set_view_camera(camera)
 
 
 def run():
@@ -1664,6 +1717,8 @@ def run():
 
             command = node.take_command()
             if command is not None:
+                # [navigation 2026-09-28] 공정 구역별 풀샷 녹화를 위해 카메라를 옮긴다.
+                follow_operation_camera(command.operation)
                 try:
                     start_operation(
                         command,

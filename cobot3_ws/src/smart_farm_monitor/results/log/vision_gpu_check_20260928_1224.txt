@@ -1,0 +1,16 @@
+=== 이미지 ===
+smart-farm-vision:jazzy-cu124  3.77GB
+=== 컨테이너 기동 ===
+time="2026-09-28T12:33:33Z" level=warning msg="project has been loaded without an explicit name from a symlink. Using name \"ROKEY_P3_A1\""
+ Container rokey_p3_a1-vision-1  Creating
+ Container rokey_p3_a1-vision-1  Created
+ Container rokey_p3_a1-vision-1  Starting
+ Container rokey_p3_a1-vision-1  Started
+=== 환경 ===
+time="2026-09-28T12:34:27Z" level=warning msg="project has been loaded without an explicit name from a symlink. Using name \"ROKEY_P3_A1\""
+101
+UDPv4
+=== GPU 통과 ===
+time="2026-09-28T12:34:27Z" level=warning msg="project has been loaded without an explicit name from a symlink. Using name \"ROKEY_P3_A1\""
+2.4.1+cu124 12.4 True NVIDIA L4
+2.0

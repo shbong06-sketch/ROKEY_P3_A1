@@ -1,0 +1,96 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-28-12-35-53-737378-gc-isaacsim-lwh-122156
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [recorder-1]: process started with pid [122252]
+[INFO] [web-2]: process started with pid [122253]
+[web-2] INFO:     Started server process [122253]
+[web-2] INFO:     Waiting for application startup.
+[web-2] INFO:     Application startup complete.
+[web-2] INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+[recorder-1] [INFO] [1790598954.681684153] [monitor_recorder]: monitor_recorder ready: db=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db
+[web-2] 관제 웹: http://0.0.0.0:8080  (DB: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db)
+[web-2] INFO:     127.0.0.1:48382 - "POST /api/start_cycle HTTP/1.1" 200 OK
+[recorder-1] [INFO] [1790599056.159066976] [monitor_recorder]: start_cycle 요청: DEMO_HARVEST_01
+[recorder-1] [INFO] [1790599056.160341833] [monitor_recorder]: cycle opened: TASK-20260928-123736
+[recorder-1] [INFO] [1790599056.162594184] [monitor_recorder]: start_cycle 응답: accepted=True task_id=TASK-20260928-123736 reason=NONE
+[web-2] INFO:     127.0.0.1:52630 - "GET /api/web_command/4 HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47102 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34070 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47922 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35048 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35056 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36334 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43654 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51190 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36130 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36134 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53180 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36472 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43670 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47366 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37636 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37646 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49434 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49044 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40238 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:46820 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:46826 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50640 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34748 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47592 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49700 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49706 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:32826 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55494 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:46206 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:44240 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:44250 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57184 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37138 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58606 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:54922 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60874 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60884 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60270 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55012 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51024 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:41526 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:41540 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60142 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49182 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50624 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:56906 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:56918 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34532 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38984 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38688 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37562 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37572 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40574 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55616 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35520 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55136 - "GET /api/state HTTP/1.1" 200 OK
+[recorder-1] [INFO] [1790599519.658351694] [monitor_recorder]: cycle closed: TASK-20260928-123736 state=ERROR status=FAILED reason=NAV_FAILED
+[web-2] INFO:     127.0.0.1:55148 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40964 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:33336 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38658 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50316 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37012 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37024 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49630 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35500 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53164 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:42618 - "GET /api/state HTTP/1.1" 200 OK
+[recorder-1] [INFO] [1790599613.288221428] [monitor_recorder]: dock recorded: run_id=TASK-20260928-123736-CMD-003 status=SUCCEEDED lat_m=0.022 retry=0
+[recorder-1] [WARN] [1790599613.769344373] [monitor_recorder]: late result: command_id=TASK-20260928-123736-CMD-003 operation=NAVIGATION status=SUCCEEDED
+[web-2] INFO:     127.0.0.1:42630 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:56922 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:52602 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34914 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53634 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53646 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58542 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34256 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:41918 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60476 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40546 - "GET /api/state HTTP/1.1" 200 OK
