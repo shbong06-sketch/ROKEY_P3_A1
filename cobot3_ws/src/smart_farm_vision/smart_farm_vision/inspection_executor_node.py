@@ -994,6 +994,7 @@ class InspectionExecutorNode(Node):
             'NORMAL': (0, 200, 0),
             'DEFECT': (0, 0, 255),
             'UNKNOWN': (0, 165, 255),
+            'REMOVED': (255, 255, 0),
         }
 
         for slot_id, roi in self._slot_rois.items():
