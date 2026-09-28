@@ -1451,17 +1451,20 @@ def fail_operation(
 
 
 # [navigation 2026-09-28] 공정 구역별 풀샷 녹화용 카메라 매핑.
-# 씬의 /World/ProcessCameras 에 실제로 있는 카메라만 쓴다(2026-09-28 USD 조회로 확인).
-#   Cam1_Harvest      world (1.30, -0.60, 2.60)  랙과 매니퓰레이터
-#   Cam2_Nav2Place    world (1.00, -5.20, 3.20)  카터 운반 ~ 턴테이블 place, 컨베이어 진입
-#   Cam4_CullPickPlace world (0.25, -5.95, 2.25) 비전룸 인식과 솎아내기
-#   Cam5_Pusher       world (-1.35, -6.05, 1.55) 퇴출구(푸셔)
+# 이름으로 고르지 않고 2026-09-28 에 카메라마다 한 장씩 실제로 렌더해 화각을 확인했다
+# (tools/preview_cameras.py, 결과는 results/log_media/camera_preview_20260928_1406/).
+#   Cam1_Harvest       (1.30, -0.60, 2.60)  랙 4단 + 카터 + M0609 + 팔레트가 한 화면. 확인함
+#   Cam2_Nav2Place     (1.00, -5.20, 3.20)  통로 주행 경로 전체 + 턴테이블 컨베이어. 확인함
+#   Cam4_CullPickPlace (0.25, -5.95, 2.25)  비전룸 풀샷. 검사 로봇 + 컨베이어 + 분류함. 확인함
+#   Cam5_Pusher        (-1.35, -6.05, 1.55) 컨베이어 베드 정면 + 검사 로봇. 팔레트 이동이 잘 보임
+#   Cam0_Perspective   (-1.34, -5.91, 2.20) **벽과 천장만 보인다. 쓰지 않는다**
 VIEW_CAMERA_BY_OPERATION = {
     "TRANSFER": "/World/ProcessCameras/Cam1_Harvest",
     "PICK_HARVEST": "/World/ProcessCameras/Cam1_Harvest",
     "NAVIGATION": "/World/ProcessCameras/Cam2_Nav2Place",
     "PLACE_INSPECT": "/World/ProcessCameras/Cam2_Nav2Place",
-    "CONVEY_TO_INSPECT": "/World/ProcessCameras/Cam2_Nav2Place",
+    # 컨베이어로 비전룸에 들어가는 구간. Cam2 는 컨베이어가 화면 귀퉁이에만 걸려 쓰지 않는다.
+    "CONVEY_TO_INSPECT": "/World/ProcessCameras/Cam5_Pusher",
     "PREPARE_INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
     "MOVE_TO_INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
     "INSPECT": "/World/ProcessCameras/Cam4_CullPickPlace",
