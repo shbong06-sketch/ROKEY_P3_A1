@@ -1,0 +1,28 @@
+time="2026-09-28T22:56:03Z" level=warning msg="project has been loaded without an explicit name from a symlink. Using name \"ROKEY_P3_A1\""
+[INFO] [launch]: All log files can be found below /root/.ros/log/2026-09-28-22-56-04-382449-gc-isaacsim-lwh-391
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [object_detection-1]: process started with pid [414]
+[object_detection-1] [WARN] [1790636167.734817648] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[object_detection-1] [WARN] [1790636167.734839669] [rcl]: 'localhost_only' is disabled, 'automatic_discovery_range' and 'static_peers' will be used.
+[object_detection-1] [INFO] [1790636167.909244244] [object_detection]: Inspection executor initialized: model=/models/best.pt, device=cuda:0, camera=/rgb
+[object_detection-1] [WARN] [1790637481.909036082] [object_detection]: Camera image timeout: no valid image for 3.8s, topic=/rgb, last_encoding=rgb8
+[object_detection-1] Traceback (most recent call last):
+[object_detection-1]   File "/vision_ws/install/smart_farm_vision/lib/smart_farm_vision/object_detection", line 33, in <module>
+[object_detection-1]     sys.exit(load_entry_point('smart-farm-vision==0.0.0', 'console_scripts', 'object_detection')())
+[object_detection-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[object_detection-1]   File "/vision_ws/install/smart_farm_vision/lib/python3.12/site-packages/smart_farm_vision/inspection_executor_node.py", line 1178, in main
+[object_detection-1]     rclpy.spin(node)
+[object_detection-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+[object_detection-1]     executor.spin_once()
+[object_detection-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+[object_detection-1]     self._spin_once_impl(timeout_sec)
+[object_detection-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 907, in _spin_once_impl
+[object_detection-1]     handler, entity, node = self.wait_for_ready_callbacks(
+[object_detection-1]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[object_detection-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 877, in wait_for_ready_callbacks
+[object_detection-1]     return next(self._cb_iter)
+[object_detection-1]            ^^^^^^^^^^^^^^^^^^^
+[object_detection-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 785, in _wait_for_ready_callbacks
+[object_detection-1]     raise ExternalShutdownException()
+[object_detection-1] rclpy.executors.ExternalShutdownException
+[ERROR] [object_detection-1]: process has died [pid 414, exit code 1, cmd '/vision_ws/install/smart_farm_vision/lib/smart_farm_vision/object_detection --ros-args -r __node:=object_detection --params-file /config/object_detection.yaml'].

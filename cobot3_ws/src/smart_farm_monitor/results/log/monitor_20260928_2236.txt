@@ -1,0 +1,122 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-28-22-36-59-239644-gc-isaacsim-lwh-255899
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [recorder-1]: process started with pid [255988]
+[INFO] [web-2]: process started with pid [255989]
+[web-2] 관제 웹: http://0.0.0.0:8080  (DB: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db)
+[web-2] INFO:     Started server process [255989]
+[web-2] INFO:     Waiting for application startup.
+[web-2] INFO:     Application startup complete.
+[web-2] INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+[recorder-1] [INFO] [1790635020.143703761] [monitor_recorder]: monitor_recorder ready: db=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db
+[web-2] INFO:     127.0.0.1:53410 - "POST /api/start_cycle HTTP/1.1" 200 OK
+[recorder-1] [INFO] [1790635121.612799084] [monitor_recorder]: start_cycle 요청: DEMO_HARVEST_01
+[recorder-1] [INFO] [1790635121.614931571] [monitor_recorder]: cycle opened: TASK-20260928-223841
+[recorder-1] [INFO] [1790635121.617159185] [monitor_recorder]: start_cycle 응답: accepted=True task_id=TASK-20260928-223841 reason=NONE
+[web-2] INFO:     127.0.0.1:53414 - "GET /api/web_command/10 HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53430 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:54916 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38548 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38550 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:39158 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35436 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35448 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38630 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38632 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:46426 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43602 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43606 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49822 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49824 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:39694 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35168 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35180 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:32900 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:32910 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51438 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:33048 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:33054 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58928 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58944 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58984 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:56830 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:56834 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57684 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38178 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38192 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:54196 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:54210 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58216 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43194 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43206 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:46994 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47006 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47492 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35870 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35874 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:48340 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:48354 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:41196 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:59506 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:59510 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57336 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57348 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37590 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:39402 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:39412 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50078 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50094 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37302 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:42924 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:42928 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50352 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34002 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34016 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:52242 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:52246 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:42056 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47482 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47490 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51390 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51404 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:37512 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:59674 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:59688 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:42810 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:42818 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51866 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36644 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36652 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:56790 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:56804 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40858 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40254 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40266 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50618 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50634 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50478 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:48486 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47266 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:47268 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58810 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58812 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40938 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:44602 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:44616 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:48274 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:48284 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38044 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57908 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57918 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:35468 - "GET /api/state HTTP/1.1" 200 OK
+[recorder-1] [INFO] [1790635706.155018186] [monitor_recorder]: dock recorded: run_id=TASK-20260928-223841-CMD-003 status=SUCCEEDED lat_m=-0.037 retry=0
+[web-2] INFO:     127.0.0.1:35482 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:52698 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45586 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45594 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43460 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58648 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58660 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57730 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57732 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:48578 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:54492 - "GET /api/state HTTP/1.1" 200 OK

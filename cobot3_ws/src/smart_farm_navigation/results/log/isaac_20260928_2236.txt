@@ -1,0 +1,1033 @@
+[ROS2] LD_LIBRARY_PATH 맨 앞에 /home/nitrouriah92/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib를 두고 다시 실행합니다.
+Starting kit application with the following args:  ['/home/nitrouriah92/isaacsim/exts/isaacsim.simulation_app/isaacsim/simulation_app/simulation_app.py', '/home/nitrouriah92/isaacsim/apps/isaacsim.exp.base.python.kit', '--/app/tokens/exe-path=/home/nitrouriah92/isaacsim/kit', '--/persistent/app/viewport/displayOptions=3094', '--/rtx/materialDb/syncLoads=True', '--/rtx/hydra/materialSyncLoads=True', '--/omni.kit.plugin/syncUsdLoads=True', '--/app/renderer/resolution/width=1280', '--/app/renderer/resolution/height=720', '--/app/window/width=1440', '--/app/window/height=900', '--/renderer/multiGpu/enabled=True', '--/app/fastShutdown=True', '--/app/installSignalHandlers=0', '--ext-folder', '/home/nitrouriah92/isaacsim/exts', '--ext-folder', '/home/nitrouriah92/isaacsim/apps', '--/app/window/width=1920', '--/app/window/height=1080', '--/physics/cudaDevice=0', '--/plugins/carb.tasking.plugin/threadCount=12', '--/plugins/omni.tbb.globalcontrol/maxThreadCount=12', '--portable']
+Passing the following args to the base kit application:  ['--autoplay', '--/app/window/width=1920', '--/app/window/height=1080']
+[Info] [carb] Logging to file: /home/nitrouriah92/isaacsim/kit/logs/Kit/Isaac-Sim Python/5.1/kit_20260928_223618.log
+[0.081s] [ext: omni.kit.async_engine-0.0.3] startup
+[0.596s] [ext: omni.metrics.core-0.0.3] startup
+[0.596s] [ext: omni.client.lib-1.1.0] startup
+[0.616s] [ext: omni.blobkey-1.1.2] startup
+[0.617s] [ext: omni.stats-1.0.1] startup
+[0.618s] [ext: omni.datastore-0.0.0] startup
+[0.627s] [ext: omni.client-1.3.0] startup
+[0.632s] [ext: omni.ujitso.default-1.0.0] startup
+[0.635s] [ext: omni.hsscclient-1.1.2] startup
+[0.641s] [ext: omni.gpu_foundation.shadercache.vulkan-1.0.0] startup
+[0.644s] [ext: omni.assets.plugins-0.0.0] startup
+[0.646s] [ext: omni.gpu_foundation-0.0.0] startup
+[0.657s] [ext: carb.windowing.plugins-1.0.0] startup
+[0.692s] [ext: omni.kit.renderer.init-0.0.0] startup
+
+|---------------------------------------------------------------------------------------------|
+| Driver Version: 580.178.04    | Graphics API: Vulkan
+|=============================================================================================|
+| GPU | Name                             | Active | LDA | GPU Memory | Vendor-ID | LUID       |
+|     |                                  |        |     |            | Device-ID | UUID       |
+|     |                                  |        |     |            | Bus-ID    |            |
+|---------------------------------------------------------------------------------------------|
+| 0   | NVIDIA L4                        | Yes: 0 |     | 23034   MB | 10de      | 0          |
+|     |                                  |        |     |            | 27b8      | e05bb6aa.. |
+|     |                                  |        |     |            | 0         |            |
+|=============================================================================================|
+| OS: 24.04.5 LTS (Noble Numbat) ubuntu, Version: 24.04.5, Kernel: 7.0.0-1013-gcp
+| XServer Vendor: The X.Org Foundation, XServer Version: 12101011 (1.21.1.11)
+| Processor: Intel(R) Xeon(R) CPU @ 2.20GHz
+| Cores: 6 | Logical Cores: 12
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 48166 | Free Memory: 44845
+| Total Page/Swap (MB): 0 | Free Page/Swap: 0
+|---------------------------------------------------------------------------------------------|
+cat: '/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor': No such file or directory
+2026-09-28T22:36:19Z [1,478ms] [Warning] [gpu.foundation.plugin] ECC is enabled on physical device 0
+[1.738s] [ext: omni.kit.pipapi-0.0.0] startup
+[1.740s] [ext: omni.kit.pip_archive-0.0.0] startup
+[1.741s] [ext: omni.pip.compute-1.6.3] startup
+[1.741s] [ext: omni.materialx.libs-1.0.7] startup
+[1.754s] [ext: omni.pip.cloud-1.4.3] startup
+[1.760s] [ext: omni.isaac.core_archive-3.0.0] startup
+[1.760s] [ext: omni.usd.config-1.0.6] startup
+[1.766s] [ext: omni.gpucompute.plugins-0.0.0] startup
+[1.767s] [ext: omni.usd.libs-1.0.1] startup
+[1.894s] [ext: omni.kit.telemetry-0.5.2] startup
+[1.936s] [ext: omni.mdl-56.0.3] startup
+[2.125s] [ext: omni.iray.libs-0.0.0] startup
+[2.134s] [ext: omni.mdl.neuraylib-0.2.12] startup
+[2.137s] [ext: omni.kit.usd.mdl-1.1.5] startup
+[2.304s] [ext: omni.isaac.ml_archive-3.0.4] startup
+[2.304s] [ext: omni.kit.loop-isaac-1.3.7] startup
+[2.306s] [ext: omni.kit.test-2.0.1] startup
+[2.391s] [ext: omni.appwindow-1.1.10] startup
+[2.396s] [ext: omni.kit.renderer.core-1.1.0] startup
+[2.475s] [ext: omni.kit.renderer.capture-0.0.0] startup
+[2.479s] [ext: omni.kit.renderer.imgui-2.0.5] startup
+[2.592s] [ext: omni.ui-2.27.1] startup
+[2.610s] [ext: omni.kit.mainwindow-1.0.3] startup
+[2.612s] [ext: carb.audio-0.1.0] startup
+[2.617s] [ext: omni.uiaudio-1.0.0] startup
+[2.618s] [ext: omni.kit.uiapp-0.0.0] startup
+[2.618s] [ext: omni.usd.schema.metrics.assembler-107.3.1] startup
+[2.622s] [ext: omni.usd.schema.audio-0.0.0] startup
+[2.627s] [ext: omni.anim.graph.schema-107.3.3] startup
+[2.642s] [ext: omni.usd_resolver-1.0.0] startup
+[2.648s] [ext: omni.usd.core-1.5.3] startup
+[2.651s] [ext: omni.usd.schema.render_settings.rtx-0.0.0] startup
+[2.680s] [ext: omni.usd.schema.semantics-0.0.0] startup
+[2.684s] [ext: isaacsim.robot.schema-3.6.0] startup
+[2.696s] [ext: omni.usd.schema.geospatial-0.0.0] startup
+[2.700s] [ext: omni.usd.schema.anim-0.0.0] startup
+[2.724s] [ext: omni.kit.window.popup_dialog-2.0.24] startup
+[2.730s] [ext: usdrt.scenegraph-7.6.1] startup
+[2.793s] [ext: omni.timeline-1.0.14] startup
+[2.796s] [ext: omni.resourcemonitor-107.0.1] startup
+[2.799s] [ext: omni.activity.core-1.0.3] startup
+[2.801s] [ext: omni.kit.widget.nucleus_connector-2.0.1] startup
+[2.804s] [ext: omni.hydra.usdrt_delegate-7.5.1] startup
+[2.815s] [ext: omni.kit.actions.core-1.0.0] startup
+[2.818s] [ext: omni.graph.exec-0.9.6] startup
+[2.819s] [ext: omni.kit.commands-1.4.10] startup
+[2.824s] [ext: omni.kit.usd_undo-0.1.8] startup
+[2.825s] [ext: omni.kit.exec.core-0.13.4] startup
+[2.828s] [ext: omni.kit.audiodeviceenum-1.0.2] startup
+[2.830s] [ext: omni.hydra.scene_delegate-0.3.4] startup
+[2.836s] [ext: omni.usd-1.13.10] startup
+[2.873s] [ext: omni.kit.asset_converter-5.0.17] startup
+[2.890s] [ext: omni.usd.schema.flow-107.1.1] startup
+[2.892s] [ext: omni.usd.schema.omnigraph-1.0.0] startup
+[2.900s] [ext: omni.usd.schema.omni_sensors-0.0.0] startup
+[2.901s] [ext: omni.anim.navigation.schema-107.3.3] startup
+[2.906s] [ext: omni.inspect-1.0.2] startup
+[2.908s] [ext: omni.kit.notification_manager-1.0.10] startup
+[2.911s] [ext: omni.graph.core-2.184.5] startup
+[2.915s] [ext: isaacsim.core.deprecation_manager-0.2.7] startup
+[2.916s] [ext: omni.usd.schema.physx-107.3.26] startup
+[2.968s] [ext: omni.usd.schema.isaac-3.0.5] startup
+[2.968s] [ext: omni.usd.schema.omniscripting-1.0.0] startup
+[2.975s] [ext: omni.usd.schema.omni_lens_distortion-0.0.0] startup
+[2.976s] [ext: omni.kvdb-107.3.26] startup
+[2.978s] [ext: omni.usdphysics-107.3.26] startup
+[2.981s] [ext: omni.physx.foundation-107.3.26] startup
+[2.984s] [ext: omni.localcache-107.3.26] startup
+[2.986s] [ext: omni.convexdecomposition-107.3.26] startup
+[2.990s] [ext: omni.physx.cooking-107.3.26] startup
+[2.994s] [ext: omni.physx-107.3.26] startup
+[3.009s] [ext: omni.physics-107.3.26] startup
+[3.014s] [ext: omni.kit.usd.layers-2.2.11] startup
+[3.027s] [ext: omni.physics.physx-107.3.26] startup
+2026-09-28T22:36:21Z [3,013ms] [Warning] [carb] Acquiring non optional plugin interface which is not listed as dependency: [omni::physx::IPhysxBenchmarks v1.0] (plugin: <default plugin>), by client: omni.physics.physx.plugin. Add it to CARB_PLUGIN_IMPL_DEPS() macro of a client.
+[3.030s] [ext: omni.physics.stageupdate-107.3.26] startup
+[3.033s] [ext: omni.kit.numpy.common-0.1.3] startup
+[3.035s] [ext: isaacsim.core.version-2.0.6] startup
+[3.036s] [ext: omni.isaac.dynamic_control-2.0.7] startup
+2026-09-28T22:36:21Z [3,028ms] [Warning] [omni.isaac.dynamic_control] omni.isaac.dynamic_control is deprecated as of Isaac Sim 4.5. No action is needed from end-users.
+[3.045s] [ext: isaacsim.storage.native-1.5.1] startup
+[3.047s] [ext: omni.kit.menu.core-1.1.2] startup
+[3.048s] [ext: omni.kit.helper.file_utils-0.1.9] startup
+[3.051s] [ext: omni.usd.metrics.assembler-107.3.1] startup
+[3.058s] [ext: omni.kit.widget.context_menu-1.2.5] startup
+[3.060s] [ext: omni.warp.core-1.8.2] startup
+[3.457s] [ext: omni.usd.metrics.assembler.physics-107.3.26] startup
+[3.460s] [ext: omni.physics.tensors-107.3.26] startup
+[3.468s] [ext: omni.kit.context_menu-1.8.6] startup
+[3.472s] [ext: omni.kit.clipboard-1.0.5] startup
+[3.473s] [ext: isaacsim.core.utils-3.5.1] startup
+[3.477s] [ext: omni.kit.widget.filebrowser-2.12.3] startup
+[3.485s] [ext: omni.kit.widget.options_menu-1.1.6] startup
+[3.490s] [ext: omni.kit.widget.path_field-2.0.11] startup
+[3.491s] [ext: omni.index.libs-380600.8087.0] startup
+[3.491s] [ext: omni.ui.scene-1.11.5] startup
+[3.499s] [ext: omni.kit.widget.options_button-1.0.3] startup
+[3.500s] [ext: omni.kit.widget.browser_bar-2.0.10] startup
+[3.501s] [ext: omni.index-1.0.1] startup
+[3.502s] [ext: omni.hydra.rtx.shadercache.vulkan-1.0.0] startup
+[3.504s] [ext: omni.kit.window.filepicker-2.13.4] startup
+[3.527s] [ext: omni.volume-0.5.2] startup
+[3.532s] [ext: omni.ujitso.client-0.0.0] startup
+[3.532s] [ext: omni.graph.tools-1.79.2] startup
+[3.572s] [ext: omni.graph.image.core-0.6.1] startup
+[3.573s] [ext: omni.hydra.rtx-1.0.0] startup
+2026-09-28T22:36:21Z [3,583ms] [Warning] [omni.log] Source: omni.hydra was already registered.
+[3.625s] [ext: omni.kit.window.file_importer-1.1.18] startup
+[3.629s] [ext: omni.kit.menu.utils-2.0.5] startup
+[3.641s] [ext: omni.graph.image.nodes-1.3.1] startup
+[3.644s] [ext: omni.kit.widget.searchable_combobox-1.0.6] startup
+[3.645s] [ext: omni.kit.hydra_texture-1.4.6] startup
+[3.650s] [ext: omni.kit.material.library-2.0.7] startup
+[3.657s] [ext: omni.hydra.engine.stats-1.0.3] startup
+[3.661s] [ext: omni.kit.viewport.scene_camera_model-1.0.6] startup
+[3.667s] [ext: omni.kit.widget.settings-1.2.6] startup
+[3.671s] [ext: omni.kit.viewport.legacy_gizmos-1.0.19] startup
+[3.674s] [ext: omni.kit.widget.viewport-107.1.3] startup
+[3.680s] [ext: omni.kit.viewport.registry-104.0.6] startup
+[3.681s] [ext: omni.kit.raycast.query-1.1.0] startup
+[3.688s] [ext: omni.physx.tensors-107.3.26] startup
+[3.694s] [ext: omni.kit.window.drop_support-1.0.5] startup
+[3.694s] [ext: omni.kit.primitive.mesh-1.0.17] startup
+[3.700s] [ext: omni.kit.viewport.window-107.2.0] startup
+[3.731s] [ext: omni.kit.window.preferences-1.8.0] startup
+[3.740s] [ext: isaacsim.core.simulation_manager-1.4.4] startup
+[6.116s] [ext: omni.graph.action_core-1.1.7] startup
+[6.119s] [ext: omni.graph-1.141.2] startup
+[6.198s] [ext: omni.kit.viewport.utility-1.1.2] startup
+[6.200s] [ext: omni.kit.viewport.menubar.core-107.2.1] startup
+[6.226s] [ext: isaacsim.core.prims-0.6.1] startup
+[6.278s] [ext: omni.graph.action_nodes-1.50.4] startup
+[6.285s] [ext: omni.kit.stage_template.core-1.1.22] startup
+[6.291s] [ext: omni.syntheticdata-0.6.13] startup
+[6.350s] [ext: omni.graph.nodes-1.170.10] startup
+[6.400s] [ext: omni.graph.action-1.130.0] startup
+[6.411s] [ext: omni.kit.stage_templates-2.0.0] startup
+[6.432s] [ext: omni.kit.widget.filter-1.1.4] startup
+[6.437s] [ext: omni.kit.widget.graph-2.0.0] startup
+[6.454s] [ext: omni.kit.property.adapter.core-1.0.2] startup
+[6.460s] [ext: omni.kit.window.file_exporter-1.0.33] startup
+[6.463s] [ext: omni.kit.widget.searchfield-1.1.8] startup
+[6.466s] [ext: omni.kit.hotkeys.core-1.3.10] startup
+[6.469s] [ext: omni.kit.graph.delegate.default-1.2.3] startup
+[6.471s] [ext: omni.kit.property.adapter.fabric-1.0.3] startup
+[6.474s] [ext: omni.kit.widget.stage-3.1.4] startup
+[6.504s] [ext: omni.kit.property.adapter.usd-1.0.2] startup
+[6.507s] [ext: omni.kit.graph.editor.core-1.5.3] startup
+[6.514s] [ext: omni.kit.widget.material_preview-1.0.16] startup
+[6.518s] [ext: omni.kit.widget.highlight_label-1.0.3] startup
+[6.520s] [ext: omni.kit.window.file-2.0.5] startup
+[6.526s] [ext: omni.kit.window.content_browser_registry-0.0.6] startup
+[6.530s] [ext: omni.kit.window.property-1.12.1] startup
+[6.535s] [ext: omni.kit.window.content_browser-3.1.3] startup
+[6.562s] [ext: omni.kit.graph.usd.commands-1.3.1] startup
+[6.565s] [ext: omni.kit.property.usd-4.5.12] startup
+[6.586s] [ext: omni.graph.ui_nodes-1.50.5] startup
+[6.594s] [ext: omni.videoencoding-0.1.2] startup
+[6.597s] [ext: omni.kit.window.material_graph-1.9.1] startup
+[6.625s] [ext: omni.warp-1.8.2] startup
+[6.641s] [ext: isaacsim.core.api-4.8.0] startup
+[6.726s] [ext: omni.graph.scriptnode-1.50.0] startup
+[6.740s] [ext: isaacsim.test.docstring-1.1.0] startup
+[6.766s] [ext: isaacsim.core.experimental.utils-0.3.0] startup
+[6.842s] [ext: omni.replicator.core-1.12.27] startup
+2026-09-28T22:36:25Z [6,847ms] [Warning] [pxr.Semantics] pxr.Semantics is deprecated - please use Semantics instead
+Warp 1.8.2 initialized:
+   CUDA Toolkit 12.8, Driver 13.0
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA L4" (22 GiB, sm_89, mempool enabled)
+   Kernel cache:
+     /home/nitrouriah92/.cache/warp/1.8.2
+2026-09-28T22:36:25Z [7,032ms] [Warning] [omni.graph.core.plugin] Found duplicate of category 'Replicator' - was 'Annotators', adding 'Fabric Reader'
+2026-09-28T22:36:25Z [7,032ms] [Warning] [omni.graph.core.plugin] Category 'Replicator' not accepted on node type 'omni.replicator.core.FabricReader' in extension 'omni.replicator.core'
+2026-09-28T22:36:25Z [7,033ms] [Warning] [omni.replicator.core.scripts.extension] No material configuration file, adding configuration to material settings directly.
+[7.055s] [ext: isaacsim.core.experimental.prims-0.8.1] startup
+[7.165s] [ext: omni.kit.window.extensions-1.4.27] startup
+[7.187s] [ext: isaacsim.core.experimental.objects-0.4.0] startup
+[7.250s] [ext: omni.ui_query-1.1.8] startup
+[7.260s] [ext: omni.kit.manipulator.viewport-107.0.1] startup
+[7.267s] [ext: isaacsim.robot.surface_gripper-3.3.1] startup
+[7.284s] [ext: omni.kit.ui_test-1.3.7] startup
+[7.297s] [ext: omni.graph.visualization.nodes-2.1.3] startup
+[7.353s] [ext: isaacsim.robot_motion.lula-4.0.8] startup
+[7.371s] [ext: isaacsim.core.nodes-3.4.3] startup
+[7.389s] [ext: isaacsim.gui.components-1.2.1] startup
+[7.416s] [ext: isaacsim.robot_motion.motion_generation-8.0.26] startup
+[7.481s] [ext: isaacsim.robot.manipulators-3.3.6] startup
+[7.501s] [ext: isaacsim.core.experimental.materials-0.4.0] startup
+[7.547s] [ext: isaacsim.robot.manipulators.examples-1.1.2] startup
+[7.561s] [ext: isaacsim.cortex.framework-1.0.12] startup
+[7.570s] [ext: isaacsim.cortex.behaviors-2.0.14] startup
+[7.585s] [ext: omni.isaac.cortex.sample_behaviors-2.0.5] startup
+2026-09-28T22:36:25Z [7,571ms] [Warning] [omni.isaac.cortex] omni.isaac.cortex has been deprecated in favor of isaacsim.cortex.framework. Please update your code accordingly.
+2026-09-28T22:36:25Z [7,572ms] [Warning] [omni.isaac.cortex.sample_behaviors] omni.isaac.cortex.sample_behaviors has been deprecated in favor of isaacsim.cortex.behaviors. Please update your code accordingly.
+[7.588s] [ext: omni.kit.widget.zoombar-1.0.6] startup
+[7.608s] [ext: isaacsim.gui.content_browser-0.1.11] startup
+[7.617s] [ext: omni.kit.browser.core-2.3.13] startup
+[7.636s] [ext: omni.kit.widget.stage_icons-1.0.8] startup
+[7.646s] [ext: omni.kit.widget.prompt-1.0.7] startup
+[7.657s] [ext: omni.kit.usd.collect-2.4.5] startup
+[7.668s] [ext: omni.kit.browser.folder.core-1.10.9] startup
+[7.889s] [ext: omni.kit.window.stage-2.6.1] startup
+[8.207s] [ext: omni.kit.usdz_export-1.0.9] startup
+[8.359s] [ext: omni.kit.tool.collect-2.2.18] startup
+Warp DeprecationWarning: The `warp.sim` module is deprecated and will be removed in v1.10. Please transition to using the forthcoming Newton library instead.
+[8.556s] [ext: omni.kit.menu.stage-1.2.7] startup
+[8.577s] [ext: omni.kit.tool.asset_importer-4.3.2] startup
+[8.593s] [ext: isaacsim.robot.wheeled_robots-4.0.24] startup
+[8.617s] [ext: isaacsim.examples.browser-0.2.1] startup
+[8.644s] [ext: isaacsim.asset.importer.urdf-2.4.30] startup
+[8.771s] [ext: omni.isaac.wheeled_robots-3.0.7] startup
+2026-09-28T22:36:27Z [8,759ms] [Warning] [omni.isaac.wheeled_robots] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,759ms] [Warning] [omni.isaac.wheeled_robots.controllers] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,760ms] [Warning] [omni.isaac.wheeled_robots.controllers.ackermann_controller] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,760ms] [Warning] [omni.isaac.wheeled_robots.controllers.differential_controller] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,764ms] [Warning] [omni.isaac.wheeled_robots.controllers.holonomic_controller] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,766ms] [Warning] [omni.isaac.wheeled_robots.controllers.quintic_path_planner] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,767ms] [Warning] [omni.isaac.wheeled_robots.controllers.stanley_control] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,775ms] [Warning] [omni.isaac.wheeled_robots.controllers.wheel_base_pose_controller] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,778ms] [Warning] [omni.isaac.wheeled_robots.impl] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,778ms] [Warning] [omni.isaac.wheeled_robots.robots] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,778ms] [Warning] [omni.isaac.wheeled_robots.robots.holonomic_robot_usd_setup] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,778ms] [Warning] [omni.isaac.wheeled_robots.robots.wheeled_robot] omni.isaac.wheeled_robots has been deprecated in favor of isaacsim.robot.wheeled_robots. Please update your code accordingly.
+[8.795s] [ext: isaacsim.simulation_app-2.12.2] startup
+[8.799s] [ext: omni.isaac.franka-1.0.7] startup
+2026-09-28T22:36:27Z [8,786ms] [Warning] [omni.isaac.franka] omni.isaac.franka has been deprecated in favor of isaacsim.robot.manipulators.examples.franka. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,786ms] [Warning] [omni.isaac.franka.franka] omni.isaac.franka has been deprecated in favor of isaacsim.robot.manipulators.examples.franka. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,828ms] [Warning] [omni.isaac.franka.kinematics_solver] omni.isaac.franka has been deprecated in favor of isaacsim.robot.manipulators.examples.franka. Please update your code accordingly.
+[8.845s] [ext: omni.isaac.kit-2.0.6] startup
+2026-09-28T22:36:27Z [8,833ms] [Warning] [omni.isaac.kit] omni.isaac.kit has been deprecated in favor of isaacsim.simulation_app. Please update your code accordingly.
+[8.849s] [ext: omni.kit.selection-0.1.6] startup
+[8.853s] [ext: omni.isaac.lula-4.0.6] startup
+2026-09-28T22:36:27Z [8,839ms] [Warning] [omni.isaac.lula] omni.isaac.lula has been deprecated in favor of isaacsim.robot_motion.lula. Please update your code accordingly.
+[8.855s] [ext: isaacsim.robot_motion.lula_test_widget-1.0.12] startup
+[8.861s] [ext: isaacsim.asset.browser-1.3.23] startup
+[8.978s] [ext: omni.kit.viewport.actions-107.0.2] startup
+[8.989s] [ext: isaacsim.gui.menu-2.4.4] startup
+[9.001s] [ext: omni.isaac.manipulators-3.0.7] startup
+2026-09-28T22:36:27Z [8,989ms] [Warning] [omni.isaac.manipulators] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,990ms] [Warning] [omni.isaac.manipulators.controllers] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,990ms] [Warning] [omni.isaac.manipulators.controllers.pick_place_controller] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,995ms] [Warning] [omni.isaac.manipulators.controllers.stacking_controller] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,995ms] [Warning] [omni.isaac.manipulators.grippers] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,995ms] [Warning] [omni.isaac.manipulators.grippers.gripper] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,995ms] [Warning] [omni.isaac.manipulators.grippers.parallel_gripper] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,996ms] [Warning] [omni.isaac.manipulators.grippers.surface_gripper] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,996ms] [Warning] [omni.isaac.manipulators.manipulators] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+2026-09-28T22:36:27Z [8,996ms] [Warning] [omni.isaac.manipulators.manipulators.single_manipulator] omni.isaac.manipulators has been deprecated in favor of isaacsim.robot.manipulators. Please update your code accordingly.
+[9.013s] [ext: omni.isaac.lula_test_widget-1.0.6] startup
+2026-09-28T22:36:27Z [9,001ms] [Warning] [omni.isaac.lula_test_widget] omni.isaac.lula_test_widget has been deprecated in favor of isaacsim.robot_motion.lula_test_widget. Please update your code accordingly.
+[9.018s] [ext: omni.isaac.asset_browser-1.0.6] startup
+2026-09-28T22:36:27Z [9,006ms] [Warning] [omni.isaac.asset_browser] omni.isaac.asset_browser has been deprecated in favor of isaacsim.asset.browser. Please update your code accordingly.
+[9.023s] [ext: omni.kit.viewport.menubar.display-107.0.3] startup
+[9.037s] [ext: omni.isaac.menu-1.0.6] startup
+2026-09-28T22:36:27Z [9,023ms] [Warning] [omni.isaac.menu] omni.isaac.menu has been deprecated in favor of isaacsim.gui.menu. Please update your code accordingly.
+[9.040s] [ext: omni.isaac.motion_generation-8.0.7] startup
+2026-09-28T22:36:27Z [9,028ms] [Warning] [omni.isaac.motion_generation] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,028ms] [Warning] [omni.isaac.motion_generation.articulation_kinematics_solver] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,032ms] [Warning] [omni.isaac.motion_generation.articulation_motion_policy] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,032ms] [Warning] [omni.isaac.motion_generation.articulation_trajectory] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,032ms] [Warning] [omni.isaac.motion_generation.kinematics_interface] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,033ms] [Warning] [omni.isaac.motion_generation.lula] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,033ms] [Warning] [omni.isaac.motion_generation.lula.kinematics] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,033ms] [Warning] [omni.isaac.motion_generation.lula.motion_policies] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,033ms] [Warning] [omni.isaac.motion_generation.lula.path_planners] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,034ms] [Warning] [omni.isaac.motion_generation.lula.trajectory_generator] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,034ms] [Warning] [omni.isaac.motion_generation.motion_policy_controller] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,034ms] [Warning] [omni.isaac.motion_generation.motion_policy_interface] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,034ms] [Warning] [omni.isaac.motion_generation.path_planner_visualizer] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,035ms] [Warning] [omni.isaac.motion_generation.path_planning_interface] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,035ms] [Warning] [omni.isaac.motion_generation.trajectory] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,035ms] [Warning] [omni.isaac.motion_generation.world_interface] omni.isaac.motion_generation has been deprecated in favor of isaacsim.robot_motion.motion_generation. Please update your code accordingly.
+[9.052s] [ext: omni.isaac.assets_check-0.3.13] startup
+2026-09-28T22:36:27Z [9,039ms] [Warning] [omni.isaac.assets_check] omni.isaac.assets_check has been deprecated in favor of isaacsim.asset.browser. Please update your code accordingly.
+[9.056s] [ext: isaacsim.gui.sensors.icon-2.0.3] startup
+[9.082s] [ext: isaacsim.asset.importer.mjcf-2.5.13] startup
+[9.097s] [ext: omni.sensors.nv.common-3.0.0] startup
+[9.112s] [ext: isaacsim.sensors.physics-0.4.3] startup
+[9.121s] [ext: omni.sensors.net-1.0.0] startup
+[9.127s] [ext: omni.isaac.nucleus-1.0.6] startup
+2026-09-28T22:36:27Z [9,113ms] [Warning] [omni.isaac.nucleus] omni.isaac.nucleus has been deprecated in favor of isaacsim.storage.native. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,113ms] [Warning] [omni.isaac.nucleus.nucleus] omni.isaac.nucleus.nucleus has been deprecated in favor of isaacsim.storage.native. Please update your code accordingly.
+[9.130s] [ext: omni.sensors.nv.materials-2.0.0] startup
+[9.139s] [ext: isaacsim.robot.policy.examples-4.1.11] startup
+[9.145s] [ext: omni.sensors.nv.wpm-3.0.0] startup
+[9.158s] [ext: omni.sensors.nv.lidar-3.0.0] startup
+[9.171s] [ext: isaacsim.util.debug_draw-3.1.0] startup
+[9.176s] [ext: omni.sensors.nv.radar-3.0.0] startup
+[9.183s] [ext: omni.sensors.nv.ids-2.0.0] startup
+[9.186s] [ext: isaacsim.core.cloner-1.4.10] startup
+[9.190s] [ext: isaacsim.sensors.physx-2.3.2] startup
+[9.198s] [ext: isaacsim.sensors.rtx-15.8.4] startup
+[9.214s] [ext: isaacsim.sensors.camera-1.3.6] startup
+[9.237s] [ext: omni.isaac.quadruped-3.0.7] startup
+2026-09-28T22:36:27Z [9,226ms] [Warning] [omni.isaac.quadruped] omni.isaac.quadruped has been deprecated in favor of isaacsim.robot.policy.examples. Please update your code accordingly.
+[9.243s] [ext: omni.isaac.cloner-1.0.7] startup
+2026-09-28T22:36:27Z [9,235ms] [Warning] [omni.isaac.cloner] omni.isaac.cloner has been deprecated in favor of isaacsim.core.cloner. Please update your code accordingly.
+[9.252s] [ext: omni.isaac.range_sensor-4.0.6] startup
+2026-09-28T22:36:27Z [9,242ms] [Warning] [omni.isaac.range_sensor] omni.isaac.range_sensor has been deprecated in favor of isaacsim.sensors.physx. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,242ms] [Warning] [omni.isaac.range_sensor.commands] omni.isaac.range_sensor.commands has been deprecated in favor of isaacsim.sensors.physx.commands. Please update your code accordingly.
+[9.259s] [ext: omni.isaac.sensor-13.0.7] startup
+2026-09-28T22:36:27Z [9,247ms] [Warning] [omni.isaac.sensor] omni.isaac.sensor has been deprecated in favor of isaacsim.sensors.camera, isaacsim.sensors.physics, isaacsim.sensors.physx, and isaacsim.sensors.rtx. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,248ms] [Warning] [omni.isaac.sensor.camera] omni.isaac.sensor.camera has been deprecated in favor of isaacsim.sensors.camera.camera. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,251ms] [Warning] [omni.isaac.sensor.camera_view] omni.isaac.sensor.camera_view has been deprecated in favor of isaacsim.sensors.camera.camera_view. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,255ms] [Warning] [omni.isaac.sensor.commands] omni.isaac.sensor.commands has been deprecated in favor of isaacsim.sensors.physics.commands, isaacsim.sensors.physx.commands, and isaacsim.sensors.rtx.commands. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,256ms] [Warning] [omni.isaac.sensor.contact_sensor] omni.isaac.sensor.contact_sensor has been deprecated in favor of isaacsim.sensors.physics.contact_sensor. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,256ms] [Warning] [omni.isaac.sensor.imu_sensor] omni.isaac.sensor.imu_sensor has been deprecated in favor of isaacsim.sensors.physics.imu_sensor. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,257ms] [Warning] [omni.isaac.sensor.lidar_rtx] omni.isaac.sensor.lidar_rtx has been deprecated in favor of isaacsim.sensors.rtx.lidar_rtx. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,257ms] [Warning] [omni.isaac.sensor.rotating_lidar_physX] omni.isaac.sensor.imu_sensor has been deprecated in favor of isaacsim.sensors.physix.rotating_lidar_physX. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,258ms] [Warning] [omni.isaac.sensor.scripts.samples.contact_sensor] omni.isaac.sensor.scripts.samples.contact_sensor has been deprecated in favor of isaacsim.sensors.physics.scripts.samples.contact_sensor. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,259ms] [Warning] [omni.isaac.sensor.scripts.samples.imu_sensor] omni.isaac.sensor.scripts.samples.imu_sensor has been deprecated in favor of isaacsim.sensors.physics.scripts.samples.imu_sensor. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,259ms] [Warning] [omni.isaac.sensor.scripts.samples.lightbeam_sensor] omni.isaac.sensor.scripts.samples.lightbeam_sensor has been deprecated in favor of isaacsim.sensors.physx.scripts.samples.lightbeam_sensor. Please update your code accordingly.
+[9.275s] [ext: omni.kit.menu.create-2.0.1] startup
+[9.283s] [ext: omni.kit.widget.toolbar-2.0.1] startup
+[9.318s] [ext: omni.kit.manipulator.transform-107.0.0] startup
+[9.326s] [ext: omni.isaac.core-4.0.7] startup
+2026-09-28T22:36:27Z [9,313ms] [Warning] [omni.isaac.core.physics_context.physics_context] omni.isaac.core.physics_context.physics_context has been deprecated in favor of isaacsim.core.api.physics_context.physics_context. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,313ms] [Warning] [omni.isaac.core.simulation_context.simulation_context] omni.isaac.core.simulation_context.simulation_context has been deprecated in favor of isaacsim.core.api.simulation_context.simulation_context. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,313ms] [Warning] [omni.isaac.core.world.world] omni.isaac.core.world.world has been deprecated in favor of isaacsim.core.api.world.world. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,313ms] [Warning] [omni.isaac.core] omni.isaac.core has been deprecated in favor of isaacsim.core.api. Please update your code accordingly.
+[9.330s] [ext: omni.kit.scripting-107.3.2] startup
+[9.342s] [ext: omni.kit.manipulator.tool.snap-1.5.13] startup
+[9.355s] [ext: omni.kit.manipulator.selector-1.1.3] startup
+[9.359s] [ext: isaacsim.app.about-2.0.11] startup
+[9.369s] [ext: isaacsim.replicator.behavior-1.1.16] startup
+[9.372s] [ext: omni.kit.viewport.manipulator.transform-107.0.4] startup
+[9.377s] [ext: omni.isaac.window.about-2.0.7] startup
+2026-09-28T22:36:27Z [9,364ms] [Warning] [omni.isaac.window.about] omni.isaac.window.about has been deprecated in favor of isaacsim.app.about. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,365ms] [Warning] [omni.isaac.window.about.about] omni.isaac.window.about.about has been deprecated in favor of isaacsim.app.about.about. Please update your code accordingly.
+[9.381s] [ext: omni.fabric.commands-1.1.6] startup
+[9.387s] [ext: omni.kit.manipulator.prim.core-107.0.8] startup
+[9.399s] [ext: omni.kit.property.audio-1.0.16] startup
+[9.404s] [ext: omni.kit.property.camera-1.0.10] startup
+[9.407s] [ext: omni.kit.property.geometry-2.0.4] startup
+[9.415s] [ext: omni.hydra.scene_api-0.1.2] startup
+[9.426s] [ext: omni.kit.property.light-1.0.12] startup
+[9.449s] [ext: omni.kit.manipulator.prim.fabric-107.0.4] startup
+[9.454s] [ext: omni.kit.manipulator.prim.usd-107.0.3] startup
+[9.458s] [ext: omni.kit.property.material-1.11.9] startup
+[9.469s] [ext: omni.kit.property.render-1.2.1] startup
+[9.473s] [ext: omni.kit.property.transform-1.5.13] startup
+[9.481s] [ext: isaacsim.gui.property-1.1.3] startup
+[9.486s] [ext: omni.kit.manipulator.camera-106.0.4] startup
+[9.494s] [ext: omni.kit.manipulator.prim-107.0.0] startup
+[9.495s] [ext: omni.isaac.surface_gripper-2.0.6] startup
+2026-09-28T22:36:27Z [9,480ms] [Warning] [omni.isaac.surface_gripper] omni.isaac.surface_gripper has been deprecated in favor of isaacsim.robot.surface_gripper. Please update your code accordingly.
+[9.496s] [ext: omni.kit.manipulator.selection-106.0.1] startup
+[9.505s] [ext: omni.kit.property.bundle-1.4.1] startup
+[9.508s] [ext: omni.kit.property.isaac-1.0.6] startup
+2026-09-28T22:36:27Z [9,494ms] [Warning] [omni.kit.property.isaac] omni.kit.property.isaac has been deprecated in favor of isaacsim.gui.property. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,494ms] [Warning] [omni.kit.property.isaac.widgets] omni.kit.property.isaac.widgets has been deprecated in favor of isaacsim.gui.property.widgets. Please update your code accordingly.
+[9.511s] [ext: omni.isaac.universal_robots-1.0.6] startup
+2026-09-28T22:36:27Z [9,497ms] [Warning] [omni.isaac.universal_robots] omni.isaac.universal_robots has been deprecated in favor of isaacsim.robot.manipulators.examples.universal_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,497ms] [Warning] [omni.isaac.universal_robots.kinematics_solver] omni.isaac.franka has been deprecated in favor of isaacsim.robot.manipulators.examples.universal_robots. Please update your code accordingly.
+2026-09-28T22:36:27Z [9,499ms] [Warning] [omni.isaac.universal_robots.ur10] omni.isaac.franka has been deprecated in favor of isaacsim.robot.manipulators.examples.universal_robots. Please update your code accordingly.
+[9.515s] [ext: omni.isaac.core_nodes-2.0.6] startup
+2026-09-28T22:36:27Z [9,505ms] [Warning] [omni.isaac.core_nodes] omni.isaac.core_nodes has been deprecated in favor of isaacsim.core.nodes. Please update your code accordingly.
+[9.521s] [ext: omni.kit.viewport.menubar.camera-107.0.6] startup
+[9.538s] [ext: omni.kit.viewport.menubar.lighting-107.3.1] startup
+[9.543s] [ext: isaacsim.replicator.writers-1.0.17] startup
+[9.573s] [ext: omni.kit.viewport.menubar.render-107.0.10] startup
+[9.584s] [ext: omni.kit.viewport.menubar.settings-107.0.3] startup
+[9.609s] [ext: omni.kit.window.console-1.1.4] startup
+[9.616s] [ext: isaacsim.replicator.domain_randomization-1.0.16] startup
+[9.620s] [ext: isaacsim.replicator.examples-1.3.6] startup
+[9.627s] [ext: omni.ocio-0.1.1] startup
+[9.633s] [ext: omni.rtx.window.settings-0.6.19] startup
+[9.655s] [ext: omni.kit.window.status_bar-0.1.9] startup
+[9.663s] [ext: omni.kit.window.toolbar-2.0.0] startup
+[9.688s] [ext: omni.replicator.isaac-2.0.8] startup
+2026-09-28T22:36:27Z [9,673ms] [Warning] [omni.replicator.isaac] omni.replicator.isaac has been deprecated in favor of isaacsim.replicator.domain_randomization, isaacsim.replicator.examples, isaacsim.replicator.writers. Please update your code accordingly.
+[9.692s] [ext: omni.replicator.replicator_yaml-2.0.11] startup
+[9.737s] [ext: omni.rtx.settings.core-0.6.5] startup
+[9.754s] [ext: omni.usd.metrics.assembler.ui-107.3.1] startup
+[9.779s] [ext: omni.isaac.utils-2.0.6] startup
+[9.782s] [ext: semantics.schema.editor-2.0.2] startup
+[9.794s] [ext: omni.kit.ui.actions-1.0.5] startup
+[9.798s] [ext: semantics.schema.property-2.0.1] startup
+[9.801s] [ext: omni.isaac.version-2.0.7] startup
+2026-09-28T22:36:28Z [9,788ms] [Warning] [omni.isaac.version] omni.isaac.version has been deprecated in favor of isaacsim.core.version. Please update your code accordingly.
+[9.804s] [ext: omni.isaac.cortex-1.0.5] startup
+[9.807s] [ext: omni.anim.curve.core-1.3.1] startup
+[9.826s] [ext: isaacsim.core.throttling-2.2.2] startup
+[9.831s] [ext: omni.kit.menu.common-2.0.1] startup
+[9.836s] [ext: isaacsim.exp.base-5.1.0] startup
+[9.838s] [ext: isaacsim.exp.base.python-5.1.0] startup
+[9.840s] Simulation App Starting
+2026-09-28T22:36:28Z [10,020ms] [Warning] [carb.audio.device] audio device is misconfigured or broken {deviceIndex = 0, name = 'default'} (The device is likely misconfigured, check your $HOME/.asoundrc)
+2026-09-28T22:36:28Z [10,021ms] [Warning] [carb.audio.output] failed to retrieve the capabilities for device 0 {result = eDeviceLost (2)}
+2026-09-28T22:36:28Z [10,021ms] [Warning] [carb.audio.context] failed to set the requested output during context creation.  Using a null streamer instead {result = eDeviceLost (2)}
+2026-09-28T22:36:28Z [10,077ms] [Warning] [omni.fabric.plugin] Warning: attribute viewportHandle not found for bucket id 9
+
+[10.297s] app ready
+[14.540s] Simulation App Startup Complete
+[시작] Scene을 불러옵니다: /home/rokey/ROKEY_p3_a1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd
+[14.659s] [ext: isaacsim.ros2.bridge-4.12.4] startup
+[14.720s] Attempting to load system rclpy
+[14.720s] rclpy loaded
+2026-09-28T22:36:33Z [15,674ms] [Warning] [omni.usd] Warning: in _ReportErrors at line 3172 of /builds/omniverse/usd-ci/USD/pxr/usd/usd/stage.cpp -- Could not load sublayer @/home/rokey/ROKEY_p3_a1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/env_dressing.usd@ of layer @/home/rokey/ROKEY_p3_a1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd@; skipping. (instantiating stage on stage @/home/rokey/ROKEY_p3_a1/cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd@ <0x4875e200>)
+
+2026-09-28T22:36:34Z [16,114ms] [Warning] [omni.timeline.plugin] Deprecated: direct use of ITimeline callbacks is deprecated. Use ITimeline::getTimeline (Python: omni.timeline.get_timeline_interface) instead.
+2026-09-28T22:36:34Z [16,263ms] [Warning] [omni.fabric.plugin] getAttributeCount called on non-existent path /World/SmartFarm/Placed/Rack_9/Asset/rack_5tier_simplified/rack_link/visuals/shelf_5_visual
+2026-09-28T22:36:34Z [16,263ms] [Warning] [omni.fabric.plugin] getTypes called on non-existent path /World/SmartFarm/Placed/Rack_9/Asset/rack_5tier_simplified/rack_link/visuals/shelf_5_visual
+[라이다] 3D 라이다 fullScan=True (1개 helper)
+[시작] USD Scene 로딩이 완료되었습니다.
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/m0609_with_fork/base_link
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/m0609_with_fork/link_6
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/lift_v3_physics/lift_prismatic_joint
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/Conveyor/TurnTable
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/Conveyor/TurnTable/Geometry/SM_ConveyorBelt_A08_Roller35_01
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/Pallet_02/Cube_011_001
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/Pallet_03/Cube_011_001
+[시작] prim 확인 [OK]: /World/SmartFarm/Placed/Pallet_01/Cube_011_001
+[시작] 필수 prim 검증이 완료되었습니다.
+[브레이크] 카터 바퀴 2개 고정
+[시작] World를 생성했습니다.
+[시작] Scene 객체 등록이 완료되었습니다.
+[컨베이어] 통로 확인됨 — 벽 개구부 이상 없음
+[롤러] 줄기 39개 · 교차점롤러 6개 · 교차점휠 30개 · 교차점밴드 12개 · 가로줄기 174개
+[컨베이어] Pallet_01 감시 시작: 리지드바디 7개 · 요 고정은 벨트에 올라오면
+[컨베이어] Pallet_02 감시 시작: 리지드바디 7개 · 요 고정은 벨트에 올라오면
+[컨베이어] Pallet_03 감시 시작: 리지드바디 7개 · 요 고정은 벨트에 올라오면
+[컨베이어] 실측 — 적재면 z 0.769 (상수 0.769) · 가로줄기 y -7.20~-6.30 x -1.67~+10.32 · 줄기 y -6.28~-3.60
+2026-09-28T22:36:41Z [23,105ms] [Warning] [omni.hydra] Mesh '/World/SmartFarm/Placed/Conveyor/Feeder/Geometry/SM_ConveyorBelt_A49_Mechanism_01/SM_ConveyorBelt_A49_Wheel13_01' update topology/point without updating normal, fallback to smooth normal.
+2026-09-28T22:36:42Z [24,065ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] ROS2 CameraInfo support for lens distortion models beyond opencvPinhole and opencvFisheye is deprecated as of Isaac Sim 5.0, and will be removed in a future release.
+2026-09-28T22:36:42Z [24,065ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] Unsupported physical distortion model 'None'. Using plumb_bob with default coefficients.
+2026-09-28T22:36:42Z [24,065ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] Forcing fy to fx (503.5466497573826 != 317.0431199837856) when computing CameraInfo, as renderer assumes square pixels.
+2026-09-28T22:36:42Z [24,244ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] ROS2 CameraInfo support for lens distortion models beyond opencvPinhole and opencvFisheye is deprecated as of Isaac Sim 5.0, and will be removed in a future release.
+2026-09-28T22:36:42Z [24,244ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] Forcing fy to fx (957.8116193827423 != 957.8115559493878) when computing CameraInfo, as renderer assumes square pixels.
+2026-09-28T22:36:42Z [24,245ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] ROS2 CameraInfo support for lens distortion models beyond opencvPinhole and opencvFisheye is deprecated as of Isaac Sim 5.0, and will be removed in a future release.
+2026-09-28T22:36:42Z [24,245ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] Forcing fy to fx (959.3266105473468 != 959.3265470136585) when computing CameraInfo, as renderer assumes square pixels.
+[솎아내기] 비전 M0609 base (-0.672, -7.480, 0.770) · SortBin_1 투하점 (-1.017, -7.700) 수평 0.41 m · SortBin_2 투하점 (-0.327, -7.700) 수평 0.41 m
+[시작] World reset이 완료되었습니다.
+2026-09-28T22:36:46Z [28,554ms] [Warning] [omni.sensors.nv.lidar.lidar_core.plugin] MotionBVH for lidar model not enabled. This will result in an incorrect point cloud without motion effects!
+[리프트] 행정 0.000 ~ 0.610 m (길이 0.610)
+[Drive] 6개 강화
+[시작] 모션 제어기 초기화가 완료되었습니다.
+[시작] Scene과 제어기 구성이 완료되었습니다.
+[시작] ROS 2 노드를 초기화합니다.
+[시작] ROS 2 노드 초기화가 완료되었습니다.
+2026-09-28T22:36:47Z [29,088ms] [Warning] [omni.syntheticdata.plugin] OgnSdPostRenderVarToHost : rendervar copy from texture directly to host buffer is counter-performant. Please use copy from texture to device buffer first.
+[시작] main loop 진입: app_running=True, playing=True
+[화면] 카메라 생성 /World/ProcessCameras/Cam3_FeederEntry
+[화면] 카메라 생성 /World/ProcessCameras/Cam6_Outfeed
+[화면] 카메라 생성 /World/ProcessCameras/Cam7_FeederClose
+[화면] 카메라 생성 /World/ProcessCameras/Cam_Long_Master
+[화면] 시점뷰 카메라 생성 /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/m0609_with_fork/link_6/Cam_Fork
+[화면] 시점뷰 카메라 생성 /World/SmartFarm/Placed/M0609/Asset/link_6/Cam_Wrist
+[화면] 시점뷰 카메라 생성 /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/Cam_Carter_Rear
+[화면] 시점뷰 카메라 생성 /World/SmartFarm/Placed/Pallet_01/Cube_011_001/Cube_011_001/Cam_Pallet
+[29.153s] [ext: omni.kit.widget.text_editor-1.1.1] startup
+[29.167s] [ext: omni.graph.ui-1.101.6] startup
+[29.305s] [ext: omni.kit.graph.delegate.modern-1.10.9] startup
+[29.311s] [ext: omni.kit.graph.widget.variables-2.1.0] startup
+[29.315s] [ext: omni.graph.window.core-2.0.0] startup
+[29.340s] [ext: omni.graph.window.action-1.50.2] startup
+[29.527s] [ext: omni.graph.window.generic-1.50.2] startup
+[화면] 아래 칸에 'OmniGraph Toolkit' 창을 띄웠습니다.
+2026-09-28T22:36:48Z [29,793ms] [Warning] [omni.timeline.plugin] Deprecated: direct use of ITimeline callbacks is deprecated. Use ITimeline::getTimeline (Python: omni.timeline.get_timeline_interface) instead.
+2026-09-28T22:36:49Z [30,825ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] ROS2 CameraInfo support for lens distortion models beyond opencvPinhole and opencvFisheye is deprecated as of Isaac Sim 5.0, and will be removed in a future release.
+2026-09-28T22:36:49Z [30,826ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] Unsupported physical distortion model 'None'. Using plumb_bob with default coefficients.
+2026-09-28T22:36:49Z [30,826ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] Forcing fy to fx (503.5466497573826 != 317.0431199837856) when computing CameraInfo, as renderer assumes square pixels.
+2026-09-28T22:36:49Z [30,849ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] ROS2 CameraInfo support for lens distortion models beyond opencvPinhole and opencvFisheye is deprecated as of Isaac Sim 5.0, and will be removed in a future release.
+2026-09-28T22:36:49Z [30,849ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] Forcing fy to fx (957.8116193827423 != 957.8115559493878) when computing CameraInfo, as renderer assumes square pixels.
+2026-09-28T22:36:49Z [30,850ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] ROS2 CameraInfo support for lens distortion models beyond opencvPinhole and opencvFisheye is deprecated as of Isaac Sim 5.0, and will be removed in a future release.
+2026-09-28T22:36:49Z [30,850ms] [Warning] [isaacsim.ros2.bridge.impl.camera_info_utils] Forcing fy to fx (959.3266105473468 != 959.3265470136585) when computing CameraInfo, as renderer assumes square pixels.
+2026-09-28T22:36:51Z [32,873ms] [Warning] [carb] Client omni.sensors.nv.materials.composite_material has acquired [omni::sensors::materials::IMaterialReaderFactory v0.1] 100 times. Consider accessing this interface with carb::getCachedInterface() (Performance warning)
+[솎아내기] 비전 M0609 base (-0.672, -7.480, 0.770) · SortBin_1 투하점 (-1.017, -7.700) 수평 0.41 m · SortBin_2 투하점 (-0.327, -7.700) 수평 0.41 m
+[브레이크] 카터 바퀴 2개 고정
+[장면] 안정화를 위해 120 physics step을 진행합니다.
+2026-09-28T22:36:53Z [34,807ms] [Warning] [omni.syntheticdata.plugin] SdRenderVarPtr missing valid input renderVar LdrColorSDhost
+2026-09-28T22:36:55Z [37,110ms] [Warning] [carb] Client gpu.foundation.plugin has acquired [gpu::unstable::IMemoryBudgetManagerFactory v0.1] 100 times. Consider accessing this interface with carb::getCachedInterface() (Performance warning)
+[리프트] 기준 잡기: 조인트 0.000 m = 베이스 높이 0.796 m (차이 +0.796)
+[리프트] 만들 수 있는 베이스 높이 0.801 ~ 1.401 m
+[READY] Collected_smartfarm_v014_room_core_cabbage scene ready; TRANSFER/PICK_HARVEST/PLACE_INSPECT/CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL/RELEASE_INSPECT/CONVEYOR_OUT physical profiles loaded
+[대기] /sim_task/command의 String/JSON 명령을 기다립니다. 독립 동작 검증은 --demo를 사용하세요.
+[화면] 공정 (명령없음) -> /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/m0609_with_fork/link_6/Cam_Fork
+[화면] 뷰포트 카메라를 /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/m0609_with_fork/link_6/Cam_Fork 로 바꿨습니다.
+[화면] 뷰포트 사각형 x 48 y 26 w 1279 h 671
+[대기] 팔 베이스 정지를 기다리는 중 (3.0초)
+2026-09-28T22:37:06Z [48,392ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name base_link already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/m0609_with_fork/base_link to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_m0609_with_fork_base_link (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,439ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name left already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/left_hawk/left to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_left_hawk_left (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,440ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name right already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/left_hawk/right to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_left_hawk_right (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,443ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name left already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/right_hawk/left to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_right_hawk_left (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,444ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name right already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/right_hawk/right to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_right_hawk_right (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,446ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name left already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/back_hawk/left to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_back_hawk_left (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,450ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name right already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/back_hawk/right to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_back_hawk_right (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,463ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name mount already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/left_hawk/mount to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_left_hawk_mount (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,464ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name mount already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/right_hawk/mount to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_right_hawk_mount (you can add the attribute isaac:nameOverride to remove this warning)
+2026-09-28T22:37:06Z [48,466ms] [Warning] [isaacsim.ros2.bridge.plugin] Frame with name mount already exists. Overriding frame name for /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/sensors/back_hawk/mount to World_SmartFarm_Placed_LiftRig_Asset_nova_carter_ROS_chassis_link_sensors_back_hawk_mount (you can add the attribute isaac:nameOverride to remove this warning)
+[대기] 팔 베이스 정지를 기다리는 중 (6.0초)
+[대기] 팔 베이스 정지를 기다리는 중 (9.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (12.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (15.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (18.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (21.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (24.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (27.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (30.2초)
+[대기] 팔 베이스 정지를 기다리는 중 (33.2초)
+[INFO] [1790635122.038192973] [sim_task_executor]: Sim command queued: operation=TRANSFER, command_id=TASK-20260928-223841-CMD-001
+[리프트] 0.796 → 1.126 m (공차, 0.05 m/s)
+[대기] 팔 베이스 정지를 기다리는 중 (36.2초)
+[대기] 팔 베이스 정지를 기다리는 중 (39.2초)
+[리프트] 도착. 베이스 높이 1.126 m (목표와의 차이 0.2 mm)
+[대기] 팔 베이스 정지를 기다리는 중 (42.2초)
+[도킹 확인] 팔레트 기준 앞뒤 0.932 m, 좌우 -0.000 m, 높이 -0.213 m, 차체 틀어짐 +0.2° — 범위 안
+[팔 베이스] [-0.42100000381469727, 0.8059999942779541, 1.1260000467300415] (요 -179.8° → HOME joint_1 +359.8°)
+[팔레트] [-1.353, 0.806, 1.339]
+── 계획 ──
+  HOME         목표 고정 자세                        관절 [-0.2, 0.0, 0.0, 0.0, 0.0, 0.0]
+  TUCK         목표 [-0.771, 0.806, 1.476]       관절 [-1.8, -12.5, 132.8, -3.2, -30.3, 92.9]
+  ENTRY_1      목표 [-0.804, 0.806, 1.489]       관절 [-1.7, -8.4, 127.2, -3.2, -28.9, 92.9]
+  ENTRY_2      목표 [-0.838, 0.806, 1.503]       관절 [-1.5, -4.5, 121.4, -3.2, -27.0, 93.0]
+  READY_1      목표 [-0.843, 0.806, 1.453]       관절 [-1.5, 0.6, 125.8, -2.3, -36.4, 91.9]
+  READY_2      목표 [-0.847, 0.806, 1.403]       관절 [-1.4, 7.0, 129.1, -1.8, -46.2, 91.4]
+  READY_3      목표 [-0.852, 0.806, 1.353]       관절 [-1.4, 14.6, 131.3, -1.6, -56.0, 91.1]
+  APPROACH     목표 [-0.875, 0.806, 1.353]       관절 [-1.3, 17.0, 127.7, -1.5, -54.7, 91.0]
+  DOCK_1       목표 [-0.933, 0.806, 1.353]       관절 [-1.2, 22.8, 118.1, -1.4, -51.0, 91.0]
+  DOCK_2       목표 [-0.991, 0.806, 1.353]       관절 [-1.0, 28.7, 108.1, -1.3, -46.8, 91.0]
+  DOCK_3       목표 [-1.05, 0.806, 1.353]        관절 [-0.9, 34.6, 97.2, -1.2, -41.9, 91.0]
+  DOCK_4       목표 [-1.108, 0.806, 1.353]       관절 [-0.8, 40.9, 85.4, -1.2, -36.3, 91.0]
+  DOCK_5       목표 [-1.166, 0.806, 1.353]       관절 [-0.8, 47.9, 72.0, -1.2, -29.8, 91.1]
+  PALLET_UP    목표 [-1.166, 0.806, 1.413]       관절 [-0.8, 43.9, 69.0, -1.2, -22.9, 91.2]
+  RETRACT_1    목표 [-1.111, 0.806, 1.413]       관절 [-0.8, 36.8, 81.8, -1.3, -28.6, 91.3]
+  RETRACT_2    목표 [-1.057, 0.806, 1.413]       관절 [-0.9, 30.3, 93.0, -1.3, -33.3, 91.2]
+  RETRACT_3    목표 [-1.002, 0.806, 1.413]       관절 [-1.0, 24.0, 103.2, -1.4, -37.2, 91.2]
+  RETRACT_4    목표 [-0.947, 0.806, 1.413]       관절 [-1.1, 17.7, 112.7, -1.4, -40.4, 91.2]
+  RETRACT_5    목표 [-0.893, 0.806, 1.413]       관절 [-1.2, 11.3, 121.5, -1.5, -42.8, 91.2]
+  RETRACT_6    목표 [-0.838, 0.806, 1.413]       관절 [-1.5, 4.5, 129.7, -1.8, -44.3, 91.4]
+[WAIT] 관절 [-0. -0. -4. -0.  0. -0.], 팔레트 [-1.353  0.806  1.339]
+[WAIT] 관절 [-0. -0. -4. -0.  0.  0.], 팔레트 [-1.353  0.806  1.339]
+[HOME] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (45.2초)
+[TUCK] 보간 시간 6.6초
+[TUCK] 관절 [-0.2 -0.3  3.3 -0.1 -0.8  2.3], 팔레트 [-1.353  0.806  1.339]
+[TUCK] 관절 [-0.5 -2.2 23.3 -0.6 -5.3 16.3], 팔레트 [-1.353  0.806  1.339]
+[TUCK] 관절 [-0.7 -4.1 43.3 -1.1 -9.9 30.3], 팔레트 [-1.353  0.806  1.339]
+[대기] 팔 베이스 정지를 기다리는 중 (48.3초)
+[TUCK] 관절 [ -1.   -5.9  63.3  -1.5 -14.5  44.3], 팔레트 [-1.353  0.806  1.339]
+[TUCK] 관절 [ -1.2  -7.8  83.3  -2.  -19.   58.3], 팔레트 [-1.353  0.806  1.339]
+[TUCK] 관절 [ -1.5  -9.7 103.3  -2.5 -23.6  72.3], 팔레트 [-1.353  0.806  1.339]
+[대기] 팔 베이스 정지를 기다리는 중 (51.3초)
+[TUCK] 관절 [ -1.7 -11.6 123.3  -3.  -28.2  86.3], 팔레트 [-1.353  0.806  1.339]
+[ENTRY_1] 보간 시간 0.5초
+[ENTRY_1] 관절 [ -1.8 -10.6 130.2  -3.2 -29.7  92.9], 팔레트 [-1.353  0.806  1.339]
+[ENTRY_2] 보간 시간 0.5초
+[ENTRY_2] 관절 [ -1.6  -5.  122.2  -3.2 -27.3  93. ], 팔레트 [-1.353  0.806  1.339]
+[READY_1] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (54.3초)
+[READY_1] 관절 [ -1.5   0.6 125.8  -2.3 -36.4  91.9], 팔레트 [-1.353  0.806  1.339]
+[READY_2] 보간 시간 0.5초
+[READY_3] 보간 시간 0.5초
+[READY_3] 관절 [ -1.4   7.5 129.2  -1.8 -46.8  91.4], 팔레트 [-1.353  0.806  1.339]
+[APPROACH] 보간 시간 0.5초
+[APPROACH] 관절 [ -1.4  15.8 129.6  -1.6 -55.4  91. ], 팔레트 [-1.353  0.806  1.339]
+[DOCK_1] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (57.3초)
+[DOCK_1] 관절 [ -1.2  22.1 119.4  -1.4 -51.5  91. ], 팔레트 [-1.353  0.806  1.339]
+[DOCK_2] 보간 시간 0.5초
+[DOCK_2] 관절 [ -1.   28.7 108.1  -1.3 -46.8  91. ], 팔레트 [-1.353  0.806  1.339]
+[DOCK_3] 보간 시간 0.5초
+[DOCK_4] 보간 시간 0.6초
+[DOCK_4] 관절 [ -0.9  34.6  97.2  -1.2 -41.9  91. ], 팔레트 [-1.353  0.806  1.339]
+[대기] 팔 베이스 정지를 기다리는 중 (60.3초)
+[DOCK_5] 보간 시간 0.7초
+[DOCK_5] 관절 [ -0.8  42.1  83.   -1.2 -35.2  91.1], 팔레트 [-1.353  0.806  1.339]
+[PALLET_UP] 보간 시간 0.5초
+[PALLET_UP] 관절 [ -0.8  46.7  71.1  -1.2 -27.8  91.1], 팔레트 [-1.353  0.806  1.341]
+[인양 확인] 실제 상승량 41.7 mm
+[RETRACT_1] 보간 시간 0.6초
+[RETRACT_1] 관절 [ -0.8  40.   76.   -1.3 -26.   91.2], 팔레트 [-1.322  0.806  1.381]
+[RETRACT_2] 보간 시간 0.6초
+[대기] 팔 베이스 정지를 기다리는 중 (63.3초)
+[RETRACT_2] 관절 [ -0.9  32.   90.1  -1.3 -32.1  91.2], 팔레트 [-1.256  0.806  1.381]
+[RETRACT_3] 보간 시간 0.5초
+[RETRACT_3] 관절 [ -1.   24.  103.2  -1.4 -37.2  91.2], 팔레트 [-1.187  0.806  1.38 ]
+[RETRACT_4] 보간 시간 0.5초
+[RETRACT_4] 관절 [ -1.1  17.7 112.7  -1.4 -40.4  91.2], 팔레트 [-1.132  0.805  1.38 ]
+[RETRACT_5] 보간 시간 0.5초
+[RETRACT_6] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (66.4초)
+[RETRACT_6] 관절 [ -1.3   9.1 124.2  -1.6 -43.3  91.3], 팔레트 [-1.06   0.805  1.381]
+[DONE] 집기·인양·인출까지 확인했습니다.
+── 계획 ──
+  DESCEND_1    목표 [-0.838, 0.806, 1.363]       관절 [-1.6, 11.6, 132.9, -1.7, -54.5, 91.1]
+  DESCEND_2    목표 [-0.838, 0.806, 1.313]       관절 [-1.6, 20.0, 134.9, -1.6, -65.0, 90.8]
+  DESCEND_3    목표 [-0.838, 0.806, 1.263]       관절 [-1.6, 29.3, 135.7, -1.4, -75.0, 90.5]
+  DESCEND_4    목표 [-0.838, 0.806, 1.213]       관절 [-1.5, 39.1, 135.1, -1.3, -84.2, 90.3]
+  DESCEND_5    목표 [-0.838, 0.806, 1.163]       관절 [-1.5, 48.8, 133.2, -1.2, -92.0, 90.1]
+  DESCEND_6    목표 [-0.838, 0.806, 1.113]       관절 [-1.5, 58.1, 130.1, -1.2, -98.1, 90.0]
+  PLACE_IN_1   목표 [-0.893, 0.806, 1.113]       관절 [-1.3, 57.5, 121.8, -1.1, -89.4, 90.1]
+  PLACE_IN_2   목표 [-0.947, 0.806, 1.113]       관절 [-1.2, 58.2, 112.9, -1.0, -81.2, 90.2]
+  PLACE_IN_3   목표 [-1.002, 0.806, 1.113]       관절 [-1.1, 60.0, 103.5, -0.9, -73.5, 90.3]
+  PLACE_IN_4   목표 [-1.057, 0.806, 1.113]       관절 [-1.0, 62.7, 93.3, -0.8, -66.0, 90.4]
+  PLACE_IN_5   목표 [-1.111, 0.806, 1.113]       관절 [-0.9, 66.2, 82.0, -0.8, -58.3, 90.5]
+  PLACE_IN_6   목표 [-1.166, 0.806, 1.113]       관절 [-0.9, 70.8, 69.2, -0.7, -50.0, 90.6]
+  PALLET_DOWN  목표 [-1.166, 0.806, 1.053]       관절 [-0.9, 77.9, 64.8, -0.7, -52.8, 90.6]
+  FORK_OUT_1   목표 [-1.111, 0.806, 1.053]       관절 [-0.9, 73.6, 77.9, -0.7, -61.6, 90.5]
+  FORK_OUT_2   목표 [-1.057, 0.806, 1.053]       관절 [-1.0, 70.4, 89.2, -0.7, -69.6, 90.4]
+  FORK_OUT_3   목표 [-1.002, 0.806, 1.053]       관절 [-1.0, 68.2, 99.4, -0.8, -77.6, 90.3]
+  FORK_OUT_4   목표 [-0.947, 0.806, 1.053]       관절 [-1.1, 67.1, 108.6, -0.8, -85.8, 90.2]
+  FORK_OUT_5   목표 [-0.893, 0.806, 1.053]       관절 [-1.3, 67.1, 117.2, -0.9, -94.3, 90.0]
+  FORK_OUT_6   목표 [-0.838, 0.806, 1.053]       관절 [-1.4, 68.5, 125.0, -1.1, -103.5, 89.9]
+  EXIT_1       목표 [-0.838, 0.806, 1.103]       관절 [-1.5, 59.9, 129.3, -1.2, -99.3, 89.9]
+  EXIT_2       목표 [-0.838, 0.806, 1.153]       관절 [-1.5, 50.8, 132.6, -1.2, -93.5, 90.0]
+  EXIT_3       목표 [-0.838, 0.806, 1.203]       관절 [-1.5, 41.1, 134.8, -1.3, -85.9, 90.2]
+[DESCEND_1] 보간 시간 0.5초
+[DESCEND_2] 보간 시간 0.5초
+[DESCEND_2] 관절 [ -1.6  14.6 133.6  -1.7 -58.2  91. ], 팔레트 [-1.024  0.806  1.313]
+[DESCEND_3] 보간 시간 0.5초
+[DESCEND_3] 관절 [ -1.6  26.8 135.5  -1.4 -72.3  90.6], 팔레트 [-1.024  0.806  1.244]
+[대기] 팔 베이스 정지를 기다리는 중 (69.4초)
+[DESCEND_4] 보간 시간 0.5초
+[DESCEND_4] 관절 [ -1.5  39.1 135.1  -1.3 -84.2  90.3], 팔레트 [-1.023  0.807  1.181]
+[DESCEND_5] 보간 시간 0.5초
+[DESCEND_5] 관절 [ -1.5  48.8 133.2  -1.2 -92.   90.1], 팔레트 [-1.022  0.808  1.131]
+[DESCEND_6] 보간 시간 0.5초
+[PLACE_IN_1] 보간 시간 0.5초
+[PLACE_IN_1] 관절 [ -1.4  57.9 127.3  -1.2 -95.2  90. ], 팔레트 [-1.041  0.807  1.08 ]
+[대기] 팔 베이스 정지를 기다리는 중 (72.4초)
+[PLACE_IN_2] 보간 시간 0.5초
+[PLACE_IN_2] 관절 [ -1.2  58.  115.3  -1.  -83.4  90.2], 팔레트 [-1.118  0.807  1.08 ]
+[PLACE_IN_3] 보간 시간 0.5초
+[PLACE_IN_3] 관절 [ -1.1  60.  103.5  -0.9 -73.5  90.3], 팔레트 [-1.187  0.807  1.081]
+[PLACE_IN_4] 보간 시간 0.5초
+[PLACE_IN_4] 관절 [ -1.   62.7  93.3  -0.8 -66.   90.4], 팔레트 [-1.241  0.807  1.081]
+[PLACE_IN_5] 보간 시간 0.6초
+[대기] 팔 베이스 정지를 기다리는 중 (75.4초)
+[PLACE_IN_6] 보간 시간 0.6초
+[PLACE_IN_6] 관절 [ -0.9  67.1  79.7  -0.8 -56.8  90.5], 팔레트 [-1.307  0.807  1.08 ]
+[PALLET_DOWN] 보간 시간 0.5초
+[PALLET_DOWN] 관절 [ -0.9  73.4  67.6  -0.7 -51.1  90.6], 팔레트 [-1.352  0.807  1.059]
+[안착 확인] 실제 하강량 41.6 mm
+[FORK_OUT_1] 보간 시간 0.7초
+[FORK_OUT_1] 관절 [ -0.9  75.4  72.5  -0.7 -57.9  90.5], 팔레트 [-1.353  0.807  1.039]
+[대기] 팔 베이스 정지를 기다리는 중 (78.4초)
+[FORK_OUT_2] 보간 시간 0.6초
+[FORK_OUT_2] 관절 [ -1.   71.1  86.6  -0.7 -67.7  90.4], 팔레트 [-1.353  0.807  1.039]
+[FORK_OUT_3] 보간 시간 0.5초
+[FORK_OUT_3] 관절 [ -1.   68.2  99.4  -0.8 -77.6  90.3], 팔레트 [-1.353  0.807  1.039]
+[FORK_OUT_4] 보간 시간 0.5초
+[FORK_OUT_4] 관절 [ -1.1  67.1 108.6  -0.8 -85.8  90.2], 팔레트 [-1.353  0.807  1.039]
+[FORK_OUT_5] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (81.4초)
+[FORK_OUT_6] 보간 시간 0.5초
+[FORK_OUT_6] 관절 [ -1.3  67.6 119.8  -1.  -97.4  90. ], 팔레트 [-1.353  0.807  1.039]
+[EXIT_1] 보간 시간 0.5초
+[EXIT_1] 관절 [  -1.5   62.2  128.2   -1.2 -100.4   89.9], 팔레트 [-1.353  0.807  1.039]
+[EXIT_2] 보간 시간 0.5초
+[EXIT_2] 관절 [ -1.5  50.8 132.6  -1.2 -93.5  90. ], 팔레트 [-1.353  0.807  1.039]
+[EXIT_3] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (84.5초)
+[EXIT_3] 관절 [ -1.5  41.1 134.8  -1.3 -85.9  90.2], 팔레트 [-1.353  0.807  1.039]
+[DONE] 놓기·안착·포크 인출까지 확인했습니다.
+[리프트] 요청 1.426 m 는 행정 밖 → 1.401 m 로 맞춤 (가능 0.801 ~ 1.401)
+[리프트] 1.126 → 1.401 m (공차, 0.05 m/s)
+[대기] 팔 베이스 정지를 기다리는 중 (87.5초)
+[대기] 팔 베이스 정지를 기다리는 중 (90.5초)
+[리프트] 도착. 베이스 높이 1.400 m (목표와의 차이 0.4 mm)
+[도킹 확인] 팔레트 기준 앞뒤 0.933 m, 좌우 -0.000 m, 높이 -0.239 m, 차체 틀어짐 +0.3° — 범위 안
+[팔 베이스] [-0.41999998688697815, 0.8059999942779541, 1.399999976158142] (요 -179.7° → HOME joint_1 +359.7°)
+[팔레트] [-1.353, 0.806, 1.639]
+── 계획 ──
+  ENTRY        목표 [-0.838, 0.806, 1.803]       관절 [-1.7, -6.1, 118.5, -3.6, -22.5, 93.4]
+  READY_1      목표 [-0.843, 0.806, 1.753]       관절 [-1.7, -1.7, 123.3, -2.7, -31.6, 92.4]
+  READY_2      목표 [-0.847, 0.806, 1.703]       관절 [-1.7, 4.0, 127.1, -2.2, -41.1, 91.8]
+  READY_3      목표 [-0.852, 0.806, 1.653]       관절 [-1.6, 11.0, 129.9, -1.8, -50.9, 91.3]
+  APPROACH     목표 [-0.875, 0.806, 1.653]       관절 [-1.5, 13.6, 126.3, -1.7, -49.9, 91.2]
+  DOCK_1       목표 [-0.933, 0.806, 1.653]       관절 [-1.4, 19.9, 116.9, -1.6, -46.9, 91.2]
+  DOCK_2       목표 [-0.991, 0.806, 1.653]       관절 [-1.2, 26.1, 106.9, -1.5, -43.1, 91.2]
+  DOCK_3       목표 [-1.05, 0.806, 1.653]        관절 [-1.1, 32.4, 96.1, -1.4, -38.5, 91.2]
+  DOCK_4       목표 [-1.108, 0.806, 1.653]       관절 [-1.0, 39.0, 84.2, -1.3, -33.3, 91.2]
+  DOCK_5       목표 [-1.166, 0.806, 1.653]       관절 [-0.9, 46.1, 70.8, -1.3, -27.0, 91.3]
+  PALLET_UP_1  목표 [-1.166, 0.806, 1.683]       관절 [-0.9, 44.3, 69.2, -1.4, -23.4, 91.4]
+  PALLET_UP_2  목표 [-1.166, 0.806, 1.713]       관절 [-0.9, 42.6, 67.2, -1.5, -19.8, 91.4]
+  RETRACT_1    목표 [-1.111, 0.806, 1.713]       관절 [-1.0, 35.3, 80.1, -1.5, -25.3, 91.5]
+  RETRACT_2    목표 [-1.057, 0.806, 1.713]       관절 [-1.1, 28.5, 91.4, -1.6, -29.8, 91.5]
+  RETRACT_3    목표 [-1.002, 0.806, 1.713]       관절 [-1.2, 21.9, 101.5, -1.6, -33.4, 91.4]
+  RETRACT_4    목표 [-0.947, 0.806, 1.713]       관절 [-1.3, 15.4, 110.9, -1.6, -36.3, 91.4]
+  RETRACT_5    목표 [-0.893, 0.806, 1.713]       관절 [-1.4, 8.7, 119.6, -1.7, -38.3, 91.4]
+  RETRACT_6    목표 [-0.838, 0.806, 1.713]       관절 [-1.7, 1.6, 127.6, -2.1, -39.3, 91.8]
+[WAIT] 관절 [ -1.5  41.1 134.8  -1.3 -85.9  90.2], 팔레트 [-1.353  0.806  1.639]
+[대기] 팔 베이스 정지를 기다리는 중 (93.5초)
+[WAIT] 관절 [ -1.5  41.1 134.8  -1.3 -85.9  90.2], 팔레트 [-1.353  0.806  1.639]
+[ENTRY] 보간 시간 3.2초
+[ENTRY] 관절 [ -1.6  26.7 129.8  -2.  -66.6  91.2], 팔레트 [-1.353  0.806  1.639]
+[ENTRY] 관절 [ -1.6  11.8 124.7  -2.7 -46.6  92.2], 팔레트 [-1.353  0.806  1.639]
+[대기] 팔 베이스 정지를 기다리는 중 (96.5초)
+[ENTRY] 관절 [ -1.7  -3.1 119.6  -3.4 -26.6  93.2], 팔레트 [-1.353  0.806  1.639]
+[READY_1] 보간 시간 0.5초
+[READY_1] 관절 [ -1.7  -1.7 123.3  -2.7 -31.6  92.4], 팔레트 [-1.353  0.806  1.639]
+[READY_2] 보간 시간 0.5초
+[READY_2] 관절 [ -1.7   4.  127.1  -2.2 -41.1  91.8], 팔레트 [-1.353  0.806  1.639]
+[READY_3] 보간 시간 0.5초
+[APPROACH] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (99.5초)
+[APPROACH] 관절 [ -1.6  11.5 129.2  -1.8 -50.7  91.3], 팔레트 [-1.353  0.806  1.639]
+[DOCK_1] 보간 시간 0.5초
+[DOCK_1] 관절 [ -1.4  17.4 120.7  -1.6 -48.1  91.2], 팔레트 [-1.353  0.806  1.639]
+[DOCK_2] 보간 시간 0.5초
+[DOCK_2] 관절 [ -1.2  26.1 106.9  -1.5 -43.1  91.2], 팔레트 [-1.353  0.806  1.639]
+[DOCK_3] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (102.6초)
+[DOCK_3] 관절 [ -1.1  32.4  96.1  -1.4 -38.5  91.2], 팔레트 [-1.353  0.806  1.639]
+[DOCK_4] 보간 시간 0.6초
+[DOCK_5] 보간 시간 0.7초
+[DOCK_5] 관절 [ -1.   39.   84.2  -1.3 -33.3  91.2], 팔레트 [-1.353  0.806  1.639]
+[PALLET_UP_1] 보간 시간 0.5초
+[PALLET_UP_1] 관절 [ -0.9  46.1  70.7  -1.3 -26.8  91.3], 팔레트 [-1.353  0.806  1.639]
+[PALLET_UP_2] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (105.6초)
+[PALLET_UP_2] 관절 [ -0.9  43.5  68.3  -1.4 -21.8  91.4], 팔레트 [-1.352  0.806  1.664]
+[인양 확인] 실제 상승량 41.9 mm
+[RETRACT_1] 보간 시간 0.6초
+[RETRACT_1] 관절 [ -1.   37.9  75.5  -1.5 -23.4  91.5], 팔레트 [-1.317  0.806  1.681]
+[RETRACT_2] 보간 시간 0.6초
+[RETRACT_2] 관절 [ -1.1  29.4  89.7  -1.6 -29.2  91.5], 팔레트 [-1.251  0.805  1.681]
+[RETRACT_3] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (108.6초)
+[RETRACT_3] 관절 [ -1.2  21.9 101.5  -1.6 -33.4  91.4], 팔레트 [-1.188  0.806  1.681]
+[RETRACT_4] 보간 시간 0.5초
+[RETRACT_5] 보간 시간 0.5초
+[RETRACT_5] 관절 [ -1.3  15.  111.5  -1.6 -36.5  91.4], 팔레트 [-1.13   0.806  1.681]
+[RETRACT_6] 보간 시간 0.5초
+[RETRACT_6] 관절 [ -1.5   5.4 123.3  -1.9 -38.8  91.6], 팔레트 [-1.053  0.806  1.682]
+[DONE] 집기·인양·인출까지 확인했습니다.
+── 계획 ──
+  DESCEND_1    목표 [-0.838, 0.806, 1.663]       관절 [-1.8, 7.9, 131.4, -2.1, -49.3, 91.5]
+  DESCEND_2    목표 [-0.838, 0.806, 1.613]       관절 [-1.7, 15.6, 134.1, -1.7, -59.7, 91.1]
+  DESCEND_3    목표 [-0.838, 0.806, 1.563]       관절 [-1.7, 24.5, 135.5, -1.6, -70.0, 90.7]
+  DESCEND_4    목표 [-0.838, 0.806, 1.513]       관절 [-1.7, 34.2, 135.6, -1.5, -79.7, 90.4]
+  DESCEND_5    목표 [-0.838, 0.806, 1.463]       관절 [-1.7, 43.9, 134.3, -1.4, -88.2, 90.2]
+  DESCEND_6    목표 [-0.838, 0.806, 1.413]       관절 [-1.6, 53.5, 131.8, -1.4, -95.2, 90.0]
+  PLACE_IN_1   목표 [-0.893, 0.806, 1.413]       관절 [-1.5, 53.3, 123.3, -1.2, -86.7, 90.2]
+  PLACE_IN_2   목표 [-0.947, 0.806, 1.413]       관절 [-1.3, 54.4, 114.4, -1.1, -78.8, 90.3]
+  PLACE_IN_3   목표 [-1.002, 0.806, 1.413]       관절 [-1.2, 56.5, 104.8, -1.0, -71.4, 90.4]
+  PLACE_IN_4   목표 [-1.057, 0.806, 1.413]       관절 [-1.1, 59.5, 94.6, -0.9, -64.1, 90.5]
+  PLACE_IN_5   목표 [-1.111, 0.806, 1.413]       관절 [-1.0, 63.2, 83.3, -0.9, -56.6, 90.6]
+  PLACE_IN_6   목표 [-1.166, 0.806, 1.413]       관절 [-0.9, 68.0, 70.6, -0.9, -48.6, 90.7]
+  PALLET_DOWN_1 목표 [-1.166, 0.806, 1.383]       관절 [-0.9, 71.4, 68.9, -0.9, -50.3, 90.7]
+  PALLET_DOWN_2 목표 [-1.166, 0.806, 1.353]       관절 [-0.9, 74.9, 66.9, -0.8, -51.8, 90.6]
+  FORK_OUT_1   목표 [-1.111, 0.806, 1.353]       관절 [-1.0, 70.4, 79.8, -0.8, -60.2, 90.5]
+  FORK_OUT_2   목표 [-1.057, 0.806, 1.353]       관절 [-1.1, 67.1, 91.1, -0.8, -68.2, 90.4]
+  FORK_OUT_3   목표 [-1.002, 0.806, 1.353]       관절 [-1.1, 64.7, 101.3, -0.9, -76.0, 90.3]
+  FORK_OUT_4   목표 [-0.947, 0.806, 1.353]       관절 [-1.3, 63.4, 110.6, -0.9, -84.0, 90.2]
+  FORK_OUT_5   목표 [-0.893, 0.806, 1.353]       관절 [-1.4, 63.1, 119.3, -1.1, -92.4, 90.1]
+  FORK_OUT_6   목표 [-0.838, 0.806, 1.353]       관절 [-1.6, 64.2, 127.3, -1.2, -101.6, 89.9]
+  EXIT_1       목표 [-0.838, 0.806, 1.403]       관절 [-1.6, 55.4, 131.1, -1.4, -96.5, 89.9]
+  EXIT_2       목표 [-0.838, 0.806, 1.453]       관절 [-1.7, 45.9, 133.9, -1.4, -89.9, 90.1]
+  EXIT_3       목표 [-0.838, 0.806, 1.503]       관절 [-1.7, 36.1, 135.4, -1.4, -81.6, 90.3]
+[DESCEND_1] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (111.6초)
+[DESCEND_2] 보간 시간 0.5초
+[DESCEND_2] 관절 [ -1.8  10.6 132.3  -2.  -53.   91.4], 팔레트 [-1.025  0.805  1.613]
+[DESCEND_3] 보간 시간 0.5초
+[DESCEND_3] 관절 [ -1.7  22.  135.1  -1.6 -67.1  90.8], 팔레트 [-1.025  0.805  1.545]
+[DESCEND_4] 보간 시간 0.5초
+[DESCEND_4] 관절 [ -1.7  34.2 135.6  -1.5 -79.7  90.4], 팔레트 [-1.024  0.805  1.481]
+[DESCEND_5] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (114.6초)
+[DESCEND_5] 관절 [ -1.7  43.9 134.3  -1.4 -88.2  90.2], 팔레트 [-1.024  0.806  1.43 ]
+[DESCEND_6] 보간 시간 0.5초
+[PLACE_IN_1] 보간 시간 0.5초
+[PLACE_IN_1] 관절 [ -1.6  53.4 129.   -1.3 -92.4  90.1], 팔레트 [-1.042  0.805  1.38 ]
+[PLACE_IN_2] 보간 시간 0.5초
+[PLACE_IN_2] 관절 [ -1.3  54.1 116.7  -1.1 -80.9  90.3], 팔레트 [-1.119  0.805  1.38 ]
+[PLACE_IN_3] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (117.6초)
+[PLACE_IN_3] 관절 [ -1.2  56.5 104.8  -1.  -71.4  90.4], 팔레트 [-1.188  0.805  1.381]
+[PLACE_IN_4] 보간 시간 0.5초
+[PLACE_IN_4] 관절 [ -1.1  59.5  94.6  -0.9 -64.1  90.5], 팔레트 [-1.242  0.805  1.381]
+[PLACE_IN_5] 보간 시간 0.6초
+[PLACE_IN_6] 보간 시간 0.6초
+[PLACE_IN_6] 관절 [ -1.   64.1  81.   -0.9 -55.1  90.6], 팔레트 [-1.308  0.805  1.38 ]
+[대기] 팔 베이스 정지를 기다리는 중 (120.7초)
+[PALLET_DOWN_1] 보간 시간 0.5초
+[PALLET_DOWN_1] 관절 [ -0.9  69.2  70.   -0.9 -49.2  90.7], 팔레트 [-1.352  0.805  1.37 ]
+[PALLET_DOWN_2] 보간 시간 0.5초
+[PALLET_DOWN_2] 관절 [ -0.9  74.1  67.4  -0.8 -51.4  90.6], 팔레트 [-1.353  0.806  1.339]
+[안착 확인] 실제 하강량 41.8 mm
+[FORK_OUT_1] 보간 시간 0.6초
+[FORK_OUT_1] 관절 [ -1.   70.9  78.5  -0.8 -59.4  90.5], 팔레트 [-1.353  0.806  1.339]
+[FORK_OUT_2] 보간 시간 0.6초
+[대기] 팔 베이스 정지를 기다리는 중 (123.7초)
+[FORK_OUT_2] 관절 [ -1.1  67.1  91.1  -0.8 -68.2  90.4], 팔레트 [-1.353  0.806  1.339]
+[FORK_OUT_3] 보간 시간 0.5초
+[FORK_OUT_4] 보간 시간 0.5초
+[FORK_OUT_4] 관절 [ -1.1  64.7 101.3  -0.9 -76.   90.3], 팔레트 [-1.353  0.806  1.339]
+[FORK_OUT_5] 보간 시간 0.5초
+[FORK_OUT_5] 관절 [ -1.3  63.3 114.1  -1.  -87.4  90.2], 팔레트 [-1.353  0.806  1.339]
+[대기] 팔 베이스 정지를 기다리는 중 (126.7초)
+[FORK_OUT_6] 보간 시간 0.5초
+[FORK_OUT_6] 관절 [ -1.5  64.  125.7  -1.2 -99.7  89.9], 팔레트 [-1.353  0.806  1.339]
+[EXIT_1] 보간 시간 0.5초
+[EXIT_1] 관절 [ -1.6  55.4 131.1  -1.4 -96.5  89.9], 팔레트 [-1.353  0.806  1.339]
+[EXIT_2] 보간 시간 0.5초
+[EXIT_3] 보간 시간 0.5초
+[EXIT_3] 관절 [ -1.7  45.9 133.9  -1.4 -89.9  90.1], 팔레트 [-1.353  0.806  1.339]
+[대기] 팔 베이스 정지를 기다리는 중 (129.7초)
+[DONE] 놓기·안착·포크 인출까지 확인했습니다.
+[INFO] [1790635414.562602587] [sim_task_executor]: Sim result published: operation=TRANSFER, status=SUCCEEDED, command_id=TASK-20260928-223841-CMD-001
+[INFO] [1790635414.662056812] [sim_task_executor]: Sim command queued: operation=PICK_HARVEST, command_id=TASK-20260928-223841-CMD-002
+[리프트] 요청 0.526 m 는 행정 밖 → 0.801 m 로 맞춤 (가능 0.801 ~ 1.401)
+[리프트] 1.400 → 0.801 m (공차, 0.05 m/s)
+[대기] 팔 베이스 정지를 기다리는 중 (132.7초)
+[대기] 팔 베이스 정지를 기다리는 중 (135.8초)
+[대기] 팔 베이스 정지를 기다리는 중 (138.8초)
+[대기] 팔 베이스 정지를 기다리는 중 (141.8초)
+[리프트] 도착. 베이스 높이 0.801 m (목표와의 차이 0.2 mm)
+[도킹 확인] 팔레트 기준 앞뒤 0.933 m, 좌우 +0.001 m, 높이 +0.062 m, 차체 틀어짐 +0.3° — 범위 안
+[팔 베이스] [-0.41999998688697815, 0.8069999814033508, 0.8009999990463257] (요 -179.7° → HOME joint_1 +359.7°)
+[팔레트] [-1.353, 0.806, 0.739]
+── 계획 ──
+  ENTRY        목표 [-0.838, 0.806, 0.903]       관절 [-1.4, 36.1, 135.4, -1.1, -81.5, 90.3]
+  READY_1      목표 [-0.843, 0.806, 0.853]       관절 [-1.3, 45.9, 133.1, -1.0, -89.1, 90.1]
+  READY_2      목표 [-0.847, 0.806, 0.803]       관절 [-1.3, 55.2, 129.7, -1.0, -94.9, 90.0]
+  READY_3      목표 [-0.852, 0.806, 0.753]       관절 [-1.3, 63.8, 125.3, -1.0, -99.1, 90.0]
+  APPROACH     목표 [-0.875, 0.806, 0.753]       관절 [-1.2, 63.4, 121.9, -1.0, -95.3, 90.0]
+  DOCK_1       목표 [-0.933, 0.806, 0.753]       관절 [-1.1, 63.2, 112.9, -0.9, -86.2, 90.1]
+  DOCK_2       목표 [-0.991, 0.806, 0.753]       관절 [-1.0, 64.5, 103.1, -0.7, -77.7, 90.3]
+  DOCK_3       목표 [-1.05, 0.806, 0.753]        관절 [-0.9, 66.8, 92.5, -0.7, -69.3, 90.3]
+  DOCK_4       목표 [-1.108, 0.806, 0.753]       관절 [-0.8, 70.2, 80.6, -0.6, -60.9, 90.4]
+  DOCK_5       목표 [-1.166, 0.806, 0.753]       관절 [-0.8, 74.9, 66.9, -0.6, -51.8, 90.5]
+  PALLET_UP_1  목표 [-1.166, 0.806, 0.783]       관절 [-0.8, 71.4, 68.9, -0.6, -50.3, 90.5]
+  PALLET_UP_2  목표 [-1.166, 0.806, 0.813]       관절 [-0.8, 68.0, 70.6, -0.6, -48.6, 90.5]
+  RETRACT_1    목표 [-1.111, 0.806, 0.813]       관절 [-0.8, 63.2, 83.3, -0.6, -56.5, 90.5]
+  RETRACT_2    목표 [-1.057, 0.806, 0.813]       관절 [-0.9, 59.5, 94.6, -0.7, -64.0, 90.4]
+  RETRACT_3    목표 [-1.002, 0.806, 0.813]       관절 [-1.0, 56.5, 104.8, -0.7, -71.3, 90.3]
+  RETRACT_4    목표 [-0.947, 0.806, 0.813]       관절 [-1.0, 54.5, 114.3, -0.7, -78.8, 90.2]
+  RETRACT_5    목표 [-0.893, 0.806, 0.813]       관절 [-1.2, 53.4, 123.3, -0.8, -86.7, 90.2]
+  RETRACT_6    목표 [-0.838, 0.806, 0.813]       관절 [-1.3, 53.5, 131.8, -1.0, -95.3, 90.0]
+[WAIT] 관절 [ -1.7  36.1 135.4  -1.4 -81.6  90.3], 팔레트 [-1.353  0.806  0.739]
+[대기] 팔 베이스 정지를 기다리는 중 (144.8초)
+[WAIT] 관절 [ -1.7  36.1 135.4  -1.4 -81.6  90.3], 팔레트 [-1.353  0.806  0.739]
+[ENTRY] 보간 시간 0.5초
+[READY_1] 보간 시간 0.5초
+[READY_1] 관절 [ -1.4  39.4 134.7  -1.1 -84.1  90.3], 팔레트 [-1.353  0.806  0.739]
+[READY_2] 보간 시간 0.5초
+[READY_2] 관절 [ -1.3  52.7 130.6  -1.  -93.4  90.1], 팔레트 [-1.353  0.806  0.739]
+[READY_3] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (147.8초)
+[READY_3] 관절 [ -1.3  63.8 125.3  -1.  -99.1  90. ], 팔레트 [-1.353  0.806  0.739]
+[APPROACH] 보간 시간 0.5초
+[APPROACH] 관절 [ -1.2  63.4 121.9  -1.  -95.3  90. ], 팔레트 [-1.353  0.806  0.739]
+[DOCK_1] 보간 시간 0.5초
+[DOCK_2] 보간 시간 0.5초
+[DOCK_2] 관절 [ -1.   63.6 109.6  -0.8 -83.3  90.2], 팔레트 [-1.353  0.806  0.739]
+[DOCK_3] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (150.8초)
+[DOCK_3] 관절 [ -0.9  66.1  95.8  -0.7 -71.9  90.3], 팔레트 [-1.353  0.806  0.739]
+[DOCK_4] 보간 시간 0.6초
+[DOCK_4] 관절 [ -0.8  69.9  81.8  -0.6 -61.7  90.4], 팔레트 [-1.353  0.806  0.739]
+[DOCK_5] 보간 시간 0.7초
+[DOCK_5] 관절 [ -0.8  74.7  67.6  -0.6 -52.2  90.5], 팔레트 [-1.353  0.806  0.739]
+[PALLET_UP_1] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (153.9초)
+[PALLET_UP_1] 관절 [ -0.8  71.4  68.9  -0.6 -50.3  90.5], 팔레트 [-1.351  0.806  0.75 ]
+[PALLET_UP_2] 보간 시간 0.5초
+[인양 확인] 실제 상승량 41.8 mm
+[RETRACT_1] 보간 시간 0.6초
+[RETRACT_1] 관절 [ -0.8  67.5  71.9  -0.6 -49.5  90.5], 팔레트 [-1.346  0.806  0.78 ]
+[RETRACT_2] 보간 시간 0.6초
+[RETRACT_2] 관절 [ -0.8  62.3  86.   -0.6 -58.3  90.4], 팔레트 [-1.284  0.806  0.78 ]
+[RETRACT_3] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (156.9초)
+[RETRACT_3] 관절 [ -0.9  57.8 100.2  -0.7 -68.   90.4], 팔레트 [-1.212  0.806  0.78 ]
+[RETRACT_4] 보간 시간 0.5초
+[RETRACT_4] 관절 [ -1.   54.5 114.   -0.7 -78.5  90.2], 팔레트 [-1.135  0.806  0.78 ]
+[RETRACT_5] 보간 시간 0.5초
+[RETRACT_5] 관절 [ -1.2  53.4 123.3  -0.8 -86.7  90.2], 팔레트 [-1.078  0.806  0.781]
+[RETRACT_6] 보간 시간 0.5초
+[DONE] 집기·인양·인출까지 확인했습니다.
+── 계획 ──
+  CARRY_ROTATE 목표 고정 자세                        관절 [88.69999694824219, 53.5, 131.8000030517578, -1.0, -95.30000305175781, 90.0]
+[CARRY_ROTATE] 보간 시간 18.0초
+[대기] 팔 베이스 정지를 기다리는 중 (159.9초)
+[CARRY_ROTATE] 관절 [  3.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-1.021  0.755  0.78 ]
+[CARRY_ROTATE] 관절 [  8.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-1.014  0.703  0.78 ]
+[CARRY_ROTATE] 관절 [ 13.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-1.003  0.651  0.78 ]
+[대기] 팔 베이스 정지를 기다리는 중 (162.9초)
+[CARRY_ROTATE] 관절 [ 18.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.987  0.601  0.78 ]
+[CARRY_ROTATE] 관절 [ 23.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.967  0.553  0.78 ]
+[CARRY_ROTATE] 관절 [ 28.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.942  0.506  0.78 ]
+[대기] 팔 베이스 정지를 기다리는 중 (165.9초)
+[CARRY_ROTATE] 관절 [ 33.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.914  0.462  0.78 ]
+[CARRY_ROTATE] 관절 [ 38.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.882  0.42   0.78 ]
+[CARRY_ROTATE] 관절 [ 43.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.846  0.382  0.78 ]
+[대기] 팔 베이스 정지를 기다리는 중 (168.9초)
+[CARRY_ROTATE] 관절 [ 48.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.808  0.346  0.78 ]
+[CARRY_ROTATE] 관절 [ 53.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.766  0.314  0.78 ]
+[CARRY_ROTATE] 관절 [ 58.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.721  0.286  0.78 ]
+[대기] 팔 베이스 정지를 기다리는 중 (172.0초)
+[CARRY_ROTATE] 관절 [ 63.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.675  0.262  0.78 ]
+[CARRY_ROTATE] 관절 [ 68.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.626  0.242  0.78 ]
+[CARRY_ROTATE] 관절 [ 73.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.576  0.226  0.78 ]
+[대기] 팔 베이스 정지를 기다리는 중 (175.0초)
+[CARRY_ROTATE] 관절 [ 78.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.524  0.215  0.78 ]
+[CARRY_ROTATE] 관절 [ 83.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.472  0.208  0.78 ]
+[CARRY_ROTATE] 관절 [ 88.6  53.5 131.8  -1.  -95.3  90. ], 팔레트 [-0.42   0.206  0.78 ]
+[대기] 팔 베이스 정지를 기다리는 중 (178.0초)
+[DONE] 운반 자세에 도달했습니다.
+[리프트] 0.800 → 1.039 m (적재, 0.02 m/s)
+[대기] 팔 베이스 정지를 기다리는 중 (181.0초)
+[대기] 팔 베이스 정지를 기다리는 중 (184.0초)
+[대기] 팔 베이스 정지를 기다리는 중 (187.0초)
+[대기] 팔 베이스 정지를 기다리는 중 (190.1초)
+[리프트] 도착. 베이스 높이 1.038 m (목표와의 차이 0.6 mm)
+[브레이크] 카터 바퀴 2개 해제
+[INFO] [1790635605.801110301] [sim_task_executor]: Sim result published: operation=PICK_HARVEST, status=SUCCEEDED, command_id=TASK-20260928-223841-CMD-002
+[화면] 공정 (명령없음) -> /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/Cam_Carter_Rear
+[화면] 뷰포트 카메라를 /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/chassis_link/Cam_Carter_Rear 로 바꿨습니다.
+[대기] 팔 베이스 정지를 기다리는 중 (193.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (196.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (199.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (202.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (205.1초)
+[대기] 팔 베이스 정지를 기다리는 중 (208.2초)
+[대기] 팔 베이스 정지를 기다리는 중 (211.2초)
+[대기] 팔 베이스 정지를 기다리는 중 (214.2초)
+[대기] 팔 베이스 정지를 기다리는 중 (217.2초)
+[대기] 팔 베이스 정지를 기다리는 중 (220.2초)
+[INFO] [1790635706.396387413] [sim_task_executor]: Sim command queued: operation=PLACE_INSPECT, command_id=TASK-20260928-223841-CMD-004
+[Place] 차체 정지를 확인합니다 (현재 18.97초 / 필요 0.50초)
+[Place] 차체 정지 확인 (0.0초 대기)
+[브레이크] 현재 휠 각도에서 2개 고정
+[도킹] 카터 본체 world (-2.134, -2.730), place 대상까지 x -0.052 m, y -1.177 m, 직선 1.179 m
+[Place] 목표 팔레트 원점 [-2.1866, -3.7486, 0.7952], 놓는 방향 yaw +90.0°, 팔 베이스까지 0.818 m
+[컨베이어] 줄기 벨트 정지 (로봇 놓기 중)
+── 계획 ──
+  DESCEND_1    목표 [-2.166, -3.32, 1.005]       관절 [85.7, 62.9, 132.5, -6.6, -105.4, 88.3]
+  DESCEND_2    목표 [-2.173, -3.291, 0.96]       관절 [83.3, 72.7, 131.7, -9.7, -114.2, 86.0]
+  DESCEND_3    목표 [-2.18, -3.263, 0.914]       관절 [80.3, 82.4, 129.5, -13.8, -121.2, 82.8]
+  DESCEND_4    목표 [-2.187, -3.234, 0.869]      관절 [76.4, 91.7, 126.0, -19.6, -126.2, 78.2]
+  PLACE_IN_1   목표 [-2.187, -3.288, 0.869]      관절 [80.0, 86.8, 120.8, -13.7, -117.1, 83.7]
+  PLACE_IN_2   목표 [-2.187, -3.343, 0.869]      관절 [82.2, 83.5, 114.7, -10.4, -108.0, 86.7]
+  PLACE_IN_3   목표 [-2.187, -3.398, 0.869]      관절 [83.8, 81.5, 107.7, -8.6, -99.2, 88.6]
+  PLACE_IN_4   목표 [-2.187, -3.452, 0.869]      관절 [84.9, 80.9, 99.7, -7.3, -90.7, 89.9]
+  PLACE_IN_5   목표 [-2.187, -3.507, 0.869]      관절 [85.8, 81.3, 90.8, -6.5, -82.4, 90.9]
+  PLACE_IN_6   목표 [-2.187, -3.562, 0.869]      관절 [86.5, 82.9, 80.9, -5.8, -73.9, 91.6]
+  PALLET_DOWN  목표 [-2.187, -3.562, 0.809]      관절 [86.5, 91.2, 73.1, -5.8, -74.5, 91.6]
+  FORK_OUT_1   목표 [-2.187, -3.507, 0.809]      관절 [85.8, 89.6, 83.3, -6.5, -83.1, 90.9]
+  FORK_OUT_2   목표 [-2.187, -3.452, 0.809]      관절 [84.9, 89.3, 92.1, -7.1, -91.5, 89.8]
+  FORK_OUT_3   목표 [-2.187, -3.398, 0.809]      관절 [83.8, 90.1, 99.8, -8.5, -100.0, 88.5]
+  FORK_OUT_4   목표 [-2.187, -3.343, 0.809]      관절 [82.2, 92.0, 106.6, -10.4, -108.5, 86.8]
+  FORK_OUT_5   목표 [-2.187, -3.288, 0.809]      관절 [80.0, 95.1, 112.4, -13.7, -116.9, 83.8]
+  FORK_OUT_6   목표 [-2.187, -3.234, 0.809]      관절 [76.4, 99.5, 117.1, -19.3, -125.1, 78.7]
+  EXIT_1       목표 [-2.187, -3.234, 0.859]      관절 [76.5, 93.0, 124.6, -19.4, -126.1, 78.3]
+  EXIT_2       목표 [-2.187, -3.234, 0.909]      관절 [76.4, 86.0, 131.5, -19.5, -126.0, 78.3]
+  EXIT_3       목표 [-2.187, -3.234, 0.959]      관절 [76.3, 78.1, 137.9, -19.4, -124.5, 78.7]
+[DESCEND_1] 보간 시간 0.5초
+[화면] 공정 PLACE_INSPECT -> /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/m0609_with_fork/link_6/Cam_Fork
+[화면] 뷰포트 카메라를 /World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS/m0609_with_fork/link_6/Cam_Fork 로 바꿨습니다.
+[DESCEND_2] 보간 시간 0.5초
+[DESCEND_2] 관절 [  84.9   66.5  132.2   -7.8 -108.6   87.5], 팔레트 [-2.168 -3.498  0.955]
+[DESCEND_3] 보간 시간 0.5초
+[DESCEND_3] 관절 [  81.    80.1  130.   -12.8 -119.6   83.5], 팔레트 [-2.178 -3.456  0.892]
+[DESCEND_4] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (223.2초)
+[DESCEND_4] 관절 [  76.4   91.7  126.   -19.6 -126.2   78.2], 팔레트 [-2.187 -3.42   0.837]
+[PLACE_IN_1] 보간 시간 0.5초
+[PLACE_IN_2] 보간 시간 0.5초
+[PLACE_IN_2] 관절 [  80.    86.8  120.8  -13.7 -117.1   83.7], 팔레트 [-2.186 -3.474  0.837]
+[PLACE_IN_3] 보간 시간 0.5초
+[PLACE_IN_3] 관절 [  82.8   82.8  112.1   -9.8 -104.8   87.4], 팔레트 [-2.186 -3.548  0.836]
+[컨베이어] Pallet_01 벨트 감지 — 반송 시작 (-2.186, -3.552)
+[대기] 팔 베이스 정지를 기다리는 중 (226.3초)
+[PLACE_IN_4] 보간 시간 0.5초
+[PLACE_IN_4] 관절 [ 84.6  81.  101.6  -7.6 -92.7  89.6], 팔레트 [-2.186 -3.624  0.836]
+[PLACE_IN_5] 보간 시간 0.5초
+[PLACE_IN_5] 관절 [ 85.8  81.3  90.8  -6.5 -82.4  90.9], 팔레트 [-2.186 -3.692  0.837]
+[PLACE_IN_6] 보간 시간 0.5초
+[PALLET_DOWN] 보간 시간 0.5초
+[PALLET_DOWN] 관절 [ 86.5  82.9  80.9  -5.8 -73.9  91.6], 팔레트 [-2.186 -3.746  0.837]
+[대기] 팔 베이스 정지를 기다리는 중 (229.3초)
+[안착 확인] 실제 하강량 41.9 mm
+[FORK_OUT_1] 보간 시간 0.5초
+[FORK_OUT_1] 관절 [ 86.2  90.6  76.7  -6.1 -77.6  91.3], 팔레트 [-2.186 -3.747  0.795]
+[FORK_OUT_2] 보간 시간 0.5초
+[FORK_OUT_2] 관절 [ 85.1  89.4  90.1  -7.  -89.5  90. ], 팔레트 [-2.186 -3.746  0.795]
+[FORK_OUT_3] 보간 시간 0.5초
+[FORK_OUT_3] 관절 [  83.8   90.1   99.8   -8.5 -100.    88.5], 팔레트 [-2.186 -3.746  0.795]
+[FORK_OUT_4] 보간 시간 0.5초
+[대기] 팔 베이스 정지를 기다리는 중 (232.3초)
+[FORK_OUT_5] 보간 시간 0.5초
+[FORK_OUT_5] 관절 [  82.2   92.   106.6  -10.4 -108.5   86.8], 팔레트 [-2.186 -3.746  0.795]
+[FORK_OUT_6] 보간 시간 0.5초
+[FORK_OUT_6] 관절 [  78.7   96.7  114.1  -15.8 -119.9   81.9], 팔레트 [-2.186 -3.746  0.795]
+[EXIT_1] 보간 시간 0.5초
+[EXIT_1] 관절 [  76.5   94.5  122.8  -19.4 -125.9   78.4], 팔레트 [-2.186 -3.745  0.795]

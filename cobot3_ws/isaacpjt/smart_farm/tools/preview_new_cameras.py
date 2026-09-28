@@ -47,8 +47,10 @@ def main() -> None:
     parser.add_argument("--scene", default=DEFAULT_SCENE)
     parser.add_argument("--focal", type=float, default=16.0)
     parser.add_argument("--settle", type=int, default=60)
-    parser.add_argument("--cam", action="append", required=True,
-                        help="이름,px,py,pz,tx,ty,tz")
+    parser.add_argument("--cam", action="append", default=[],
+                        help="이름,px,py,pz,tx,ty,tz (월드 고정 카메라)")
+    parser.add_argument("--povcam", action="append", default=[],
+                        help="이름,부모prim,ox,oy,oz,rx,ry,rz (움직이는 prim 에 붙이는 시점뷰)")
     args = parser.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
@@ -58,6 +60,30 @@ def main() -> None:
 
     stage = omni.usd.get_context().get_stage()
     viewport = get_active_viewport()
+
+    for spec in args.povcam:
+        parts = spec.split(",")
+        name = parts[0].strip()
+        parent = parts[1].strip()
+        offset = [float(v) for v in parts[2:5]]
+        rotation = [float(v) for v in parts[5:8]]
+        if not stage.GetPrimAtPath(parent).IsValid():
+            print(f"### SKIP {name}: 부모 prim 없음 {parent}", flush=True)
+            continue
+        path = f"{parent}/{name}"
+        camera = UsdGeom.Camera.Define(stage, path)
+        camera.GetFocalLengthAttr().Set(args.focal)
+        xform = UsdGeom.Xformable(camera.GetPrim())
+        xform.ClearXformOpOrder()
+        xform.AddTranslateOp().Set(Gf.Vec3d(*offset))
+        xform.AddRotateXYZOp().Set(Gf.Vec3f(*rotation))
+        viewport.camera_path = path
+        for _ in range(args.settle):
+            app.update()
+        capture_viewport_to_file(viewport, os.path.join(args.out, f"new_{name}.png"))
+        for _ in range(20):
+            app.update()
+        print(f"### SAVED {name} parent={parent} offset={offset} rot={rotation}", flush=True)
 
     for spec in args.cam:
         parts = spec.split(",")

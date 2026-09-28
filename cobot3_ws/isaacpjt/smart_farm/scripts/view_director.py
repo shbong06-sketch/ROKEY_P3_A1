@@ -35,13 +35,41 @@ NEW_CAMS = (
     (PROCESS_CAMS + "/Cam6_Outfeed", (2.50, -3.80, 3.40), (7.00, -6.70, 0.60), 14.0),
     # 피더에서 본선으로 합류하는 지점과 비전룸 입구를 가까이에서.
     (PROCESS_CAMS + "/Cam7_FeederClose", (-4.20, -6.70, 1.90), (-1.80, -6.70, 0.70), 16.0),
+    # 콘티(최종영상_스토리보드_260927.md §1)의 롱샷. 랙·통로·턴테이블·비전룸이 한 화면에.
+    (PROCESS_CAMS + "/Cam_Long_Master", (7.50, -2.00, 6.50), (-1.00, -2.50, 0.60), 14.0),
 )
 
 # 움직이는 prim 에 붙이는 시점뷰. (부모 prim, 카메라 이름, 로컬 위치, 로컬 회전 XYZ, 초점거리)
+# 이름은 콘티(최종영상_스토리보드_260927.md §1)의 prim 이름을 따른다.
+WRIST_LINK = "/World/SmartFarm/Placed/M0609/Asset/link_6"
 POV_CAMS = (
-    (FORK_LINK, "ForkPOV", (0.0, 0.0, 0.12), (90.0, 0.0, 0.0), 12.0),
-    (PALLET, "PalletPOV", (0.0, 0.0, 0.35), (75.0, 0.0, 0.0), 10.0),  # 강체에 붙인다
+    # 오프셋은 2026-09-28 에 후보 8개를 렌더해 비교하고 정했다
+    # (tools/preview_new_cameras.py --povcam, results/log_media/camera_try_pov_20260928_2252/).
+    # 너무 가까우면 구조물에 파묻혀 흰 화면이 된다(Wrist 회전 180도 후보가 그랬다).
+    (FORK_LINK, "Cam_Fork", (0.0, 0.0, 0.40), (90.0, 0.0, 180.0), 14.0),        # 행위자뷰 포크 끝
+    (WRIST_LINK, "Cam_Wrist", (0.0, 0.0, 0.25), (90.0, 0.0, 0.0), 14.0),        # 행위자뷰 그리퍼 손목
+    (CARTER, "Cam_Carter_Rear", (-0.75, 0.0, 0.85), (78.0, 0.0, 90.0), 14.0),   # 행위자뷰 카터 뒤(-x)
+    (PALLET, "Cam_Pallet", (0.0, 0.0, 0.55), (60.0, 0.0, 0.0), 14.0),           # 대상뷰 팔레트(강체)
 )
+
+# 콘티 §1 의 풀샷·롱샷은 기존 카메라를 그대로 쓴다(중복 생성하지 않는다).
+#   Cam_Full_Rack   = Cam1_Harvest
+#   Cam_Full_Dock   = Cam2_Nav2Place
+#   Cam_Full_Vision = Cam4_CullPickPlace
+#   Cam_Long_Master = 위에서 새로 만든다
+
+# 행위자뷰·대상뷰만으로 한 사이클을 담는 모드(SMARTFARM_VIEW_MODE=pov)
+POV_BY_OPERATION = {
+    "TRANSFER": FORK_LINK + "/Cam_Fork",
+    "PICK_HARVEST": FORK_LINK + "/Cam_Fork",
+    "PLACE_INSPECT": FORK_LINK + "/Cam_Fork",
+    "CONVEY_TO_INSPECT": PALLET + "/Cam_Pallet",
+    "PREPARE_INSPECT": WRIST_LINK + "/Cam_Wrist",
+    "MOVE_TO_INSPECT": WRIST_LINK + "/Cam_Wrist",
+    "CULL": WRIST_LINK + "/Cam_Wrist",
+    "RELEASE_INSPECT": PALLET + "/Cam_Pallet",
+    "CONVEYOR_OUT": PALLET + "/Cam_Pallet",
+}
 
 # 공정 단계별 기본 카메라
 BY_OPERATION = {
@@ -71,11 +99,14 @@ _TITLES_LOGGED = False
 
 
 def show_graph_window():
-    """[navigation 2026-09-28] 아래쪽 UI 칸에 그래프 편집기를 띄운다.
+    """[navigation 2026-09-28] 그래프 편집기를 **뷰포트 아래 UI 칸에 도킹**한다.
 
-    Isaac Sim 으로 작업했다는 것이 화면에 드러나도록 Action Graph 창을 Content 자리에
-    도킹한다. SMARTFARM_SHOW_GRAPH=1 일 때만 시도하고, 실패해도 실행을 막지 않는다.
-    창이 만들어지기까지 몇 프레임 걸리므로 여러 번 불러 준다.
+    Isaac Sim 으로 작업했다는 것이 화면에 드러나도록 Content/Console 이 있는
+    아래 칸에 탭으로 붙인다. 떠 있는 팝업으로 두면 뷰포트를 가려 못 쓴다
+    (2026-09-28 사용자 지적).
+
+    SMARTFARM_SHOW_GRAPH=1 일 때만 시도한다. 도킹이 확인될 때까지 True 를
+    돌려주지 않으므로, 실패하면 호출자가 계속 다시 부른다.
     """
 
     if os.environ.get("SMARTFARM_SHOW_GRAPH", "").strip() not in ("1", "true", "True"):
@@ -101,23 +132,33 @@ def show_graph_window():
     except Exception:
         pass
 
+    # 아래 칸의 기준 창. Content 가 그 자리에 있다.
     host = ui.Workspace.get_window("Content") or ui.Workspace.get_window("Console")
+    if host is None:
+        return False
+
     wanted = [t for t in titles if "Graph" in t or "Scripting" in t]
     for title in wanted + ["Action Graph", "Visual Scripting", "Generic Graph"]:
         window = ui.Workspace.get_window(title)
         if window is None:
             continue
         window.visible = True
-        if host is not None:
+        try:
+            window.dock_in(host, ui.DockPosition.SAME, 0.5)
+        except Exception as error:
+            print(f"[화면] '{title}' 도킹 실패: {error}", flush=True)
+            continue
+
+        # 도킹이 실제로 됐는지 확인한다. 안 됐으면 성공이라고 말하지 않는다.
+        if getattr(window, "docked", False):
             try:
-                window.dock_in(host, ui.DockPosition.SAME, 1.0)
                 window.focus()
             except Exception:
                 pass
-        print(f"[화면] 아래 칸에 '{title}' 창을 띄웠습니다.", flush=True)
-        return True
+            print(f"[화면] 아래 칸에 '{title}' 를 도킹했습니다.", flush=True)
+            return True
+        return False
 
-    # 한 번만 목록을 남겨 다음에 정확한 이름을 쓰게 한다.
     global _TITLES_LOGGED
     if not _TITLES_LOGGED and titles:
         _TITLES_LOGGED = True
@@ -230,6 +271,11 @@ class ViewDirector:
         self.graph_tries = 0
         self.rect_reported = False
 
+    def _mode(self) -> str:
+        """auto(기본) · pov(행위자뷰·대상뷰) · fixed:<카메라 경로>"""
+
+        return os.environ.get("SMARTFARM_VIEW_MODE", "auto").strip() or "auto"
+
     def decide(self, stage, operation: str) -> str:
         """지금 보여 줄 카메라를 고른다.
 
@@ -238,6 +284,20 @@ class ViewDirector:
           - CONVEY_TO_INSPECT 는 팔레트가 본선에 합류하고 0.5 초 뒤 가까운 시점으로.
           - CONVEYOR_OUT 은 팔레트가 비전룸을 나간 뒤 반출 카메라로.
         """
+
+        mode = self._mode()
+        if mode.startswith("fixed:"):
+            return mode.split(":", 1)[1].strip()
+
+        if mode == "pov":
+            chosen = POV_BY_OPERATION.get(operation)
+            if chosen:
+                self.last_operation = operation
+                return chosen
+            # NAVIGATION 등 명령이 없는 구간은 카터 뒤 행위자뷰로 본다.
+            if self.last_operation == "PICK_HARVEST":
+                return CARTER + "/Cam_Carter_Rear"
+            return self.current or FORK_LINK + "/Cam_Fork"
 
         if operation == "CONVEY_TO_INSPECT":
             pallet = _world_xyz(stage, PALLET)
@@ -280,10 +340,21 @@ class ViewDirector:
             self.ready = True
 
         # 그래프 창은 확장 기능이 올라온 뒤에야 잡히므로 몇 번 더 시도한다.
-        if self.graph_tries < 40:
+        if self.graph_tries < 200:
             self.graph_tries += 1
             if show_graph_window():
-                self.graph_tries = 40
+                self.graph_tries = 999
+            elif self.graph_tries == 200:
+                # 끝내 도킹이 안 되면 떠 있는 창을 닫는다. 뷰포트를 가리는 것보다 낫다.
+                try:
+                    import omni.ui as ui
+
+                    for w in ui.Workspace.get_windows():
+                        if ("Graph" in w.title or "Scripting" in w.title) and not getattr(w, "docked", False):
+                            w.visible = False
+                            print(f"[화면] 도킹 실패로 '{w.title}' 를 닫았습니다(뷰포트 가림 방지).", flush=True)
+                except Exception:
+                    pass
         if not self.rect_reported and self.ticks > 60:
             self.rect_reported = True
             report_viewport_rect()
