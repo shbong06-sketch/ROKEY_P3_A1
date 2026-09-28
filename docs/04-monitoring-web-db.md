@@ -627,7 +627,9 @@ PR #12 본문의 리뷰 요청 사항 중 다음이 관제에 직접 걸림.
 | 생성 | 2026-09-28 02:06 UTC |
 | 본문의 검증 문구 | "Ubuntu 실환경에서 전체 통합 흐름 실기동 확인" |
 
-**주의**: PR 본문은 실환경 확인을 완료했다고 적었으나, 팀장님 메시지는 "내일 GPU 노트북에서 실제 환경으로 검증한 뒤 merge 예정" 이라고 함. 두 진술이 다름. **merge 전까지는 실측 완료로 간주하지 않음**(ADR_basic §5-5).
+**PR 본문의 검증 문구에 대한 정리 (2026-09-28 사용자 확인)**: 팀장님도 VM 인스턴스에서 작업 중이고 **교육장 고피1·고피2 와 사양을 일부러 비슷하게 맞춘 환경**이므로, 통합 자체는 완료로 간주하신 것임. 따라서 PR 본문의 "실환경 확인" 과 "내일 검증 후 merge" 는 서로 어긋난 진술이 아니라 같은 상태를 뭉뚱그린 것으로 봄. **이 건에 무게를 두지 않음.**
+
+남는 위험은 하나뿐임: 교육장 복귀 후에는 **내피와 원격 통신하는 구성(도메인·`FASTRTPS_DEFAULT_PROFILES_FILE` 화이트리스트·다중 기기)으로 돌아가므로**, VM 한 대에서 확인된 것이 그 구성에서 그대로 재현되는지는 아직 모름. 관제 기록 노드는 이 위험의 영향을 받음(토픽을 여러 기기에서 받아야 함). 복귀 첫 실행 때 `/cycle/status` 수신 여부를 먼저 확인함.
 
 브랜치 `7beec39` 는 2026-09-28 01:50 이후 갱신이 없음. 즉 **내가 앞서 분석한 내용이 곧 최종본임.**
 
@@ -712,3 +714,70 @@ PR #12 본문의 리뷰 요청 사항 중 다음이 관제에 직접 걸림.
 4. 그 방향을 `docs/ADR/ADR_monitor.md` 로 작성함
 
 **즉 ADR_monitor.md 를 미리 만들지 않음.** 그때까지 이 문서(`04-monitoring-web-db.md`)가 관제의 단일 출처임.
+
+---
+
+## 16. `feature/monitor` 브랜치 구성 — 무엇을 가져오고 무엇을 지켜야 하는가 (2026-09-28)
+
+### 16.1 먼저 확인한 위험 — 팀 정리 커밋 `19ca11d` 가 우리 문서 자산 329개를 지웠음
+
+`git merge-tree` 로 시험 병합해 본 결과, 팀 브랜치를 그냥 병합하면 **우리 문서 자산이 조용히 사라짐.**
+
+커밋 `19ca11d` (2026-09-26, shbong) `chore: 통합 브랜치의 과거 실험 파일과 중복 문서 정리` 가 **329개 파일을 삭제**했고, 그 안에 다음이 들어 있음.
+
+| 사라지는 것 | 개수 | 성격 |
+|---|---|---|
+| `docs/ADR/ADR_basic.md`, `ADR_navigation2.md` | 2 | 에이전트 상시 규칙의 원본 |
+| `docs/prompt/*.txt` | 8 | 사용자 지시 기록 |
+| `docs/reference/**` (강의자료·노션 정리) | 약 110 | 우리 정리물 |
+| `cobot3_ws/src/smart_farm_navigation/guidance/past/**` | 다수 | 지난 차수 가이던스 |
+| `cobot3_ws/src/smart_farm_navigation/results/**` | 144+ | **실측 기록** (ADR_basic §5-5 의 실측 판정 근거) |
+| `config/past/`, `smart_farm_navigation/past/` 일부 | 다수 | 미사용 보관분 |
+
+팀 브랜치에 남은 것은 `guidance/guidance2_26차.md`(현행 1개)와 팀 자신의 `docs/*.md` 8개뿐임. `results/` 는 통째로 없음.
+
+**병합 충돌로 드러나는 것은 142개뿐임**(`results/log/*` 141개 rename/delete + `docs/ADR/ADR_basic.md` 1개). 나머지 삭제는 **우리가 base 이후 손대지 않은 파일이라 충돌 없이 조용히 지워짐.** 이것이 ADR_nav2 §2.4("병합 뒤 내 추가분이 사라졌는지 확인") 가 있는 이유임.
+
+반대로 **코드는 충돌이 0임.** `smart_farm_navigation`, `smart_farm_manager`, `smart_farm_interfaces`, `isaacpjt/smart_farm` 전부 무충돌로 팀 최신판이 들어옴. 우리 브랜치가 base 이후 코드를 건드리지 않았기 때문임(문서만 커밋했음).
+
+### 16.2 결론 — `feature/lwh` 에서 파고, 팀 브랜치를 병합한 뒤 우리 문서를 되살림
+
+질문이 "`feature/lwh` 와 `feature/task-managed-integration` 둘 다 pull 해야 하나" 였음. 답은 **둘 다 필요하고, 순서와 충돌 처리 규칙이 있음.**
+
+```
+# 1) 우리 브랜치에서 새 브랜치를 팜 (우리 문서·실측 기록을 기준으로 삼기 위해)
+git checkout -b feature/monitor feature/lwh
+
+# 2) 팀 통합 최종본을 병합함 (코드는 무충돌로 최신이 됨)
+git merge origin/feature/task-managed-integration
+
+# 3) 충돌 142개를 규칙으로 해소함
+#    - results/log/* 141개 → 우리 것 유지 (실측 기록)
+#    - docs/ADR/ADR_basic.md → 우리 것 유지 (2026-09-28 갱신분 포함)
+
+# 4) 조용히 지워진 우리 문서 자산을 되살림
+git checkout feature/lwh -- docs/ADR docs/prompt docs/reference \
+    cobot3_ws/src/smart_farm_navigation/guidance \
+    cobot3_ws/src/smart_farm_navigation/results
+
+# 5) 병합 커밋을 마무리하고 푸시함
+```
+
+**왜 이 방향인가**
+
+- **`feature/lwh` 를 바탕으로 해야** 우리 문서·실측 기록이 기본값이 되고, 되살릴 목록이 짧아짐. 반대로 팀 브랜치를 바탕으로 하면 329개를 하나씩 확인해야 함
+- **병합(merge)으로 해야** 계보가 남아서, 나중에 `development` 를 다시 가져올 때 같은 변경이 두 번 충돌하지 않음. 파일만 복사해 오면 계보가 끊김
+- 관제 개발에 실제로 필요한 팀 코드는 `smart_farm_manager`(12단계·13토픽), `smart_farm_interfaces`, `runtime/sim_task_node.py`, `smart_farm_vision` 이고 **전부 이 병합으로 들어옴**
+
+### 16.3 병합 뒤 점검표
+
+1. `docs/ADR/ADR_basic.md`·`ADR_navigation2.md` 존재 확인
+2. `cobot3_ws/src/smart_farm_navigation/results/log/` 파일 수가 병합 전과 같은지 확인
+3. `smart_farm_navigation` 핵심 7파일(§14.2)이 팀 브랜치와 같은 blob 인지 확인
+4. `smart_farm_manager/smart_farm_manager/scenario.py` 의 `StepDefinition` 이 **12개**인지 확인
+5. `.gitignore` 에서 `/cobot3_ws/src/smart_farm_monitor/*` 를 `…/data/*` 로 좁혔는지 확인
+6. `colcon build --packages-select smart_farm_interfaces smart_farm_manager smart_farm_navigation` 통과 확인
+
+### 16.4 팀장님께 알려야 할 것
+
+PR #12 가 `development` 로 merge 되면 **`development` 에서도 위 문서 자산이 사라짐.** 우리 브랜치에는 남으므로 작업에 지장은 없으나, 공유 저장소 기준에서는 실측 기록과 지난 가이던스가 없어짐. 통보 문안은 답변에 포함함.
