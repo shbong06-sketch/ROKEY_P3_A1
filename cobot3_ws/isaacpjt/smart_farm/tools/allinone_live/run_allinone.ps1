@@ -10,6 +10,7 @@
 #   -Speed   주행 최고속도(m/s) 실험: Nav2 설정 복사본의 RPP desired_linear_vel·velocity_smoother 만 바꾼다
 #   -Accel   직진 가감속(m/s^2) 실험: Nav2 설정 복사본의 velocity_smoother max_accel/max_decel
 #   -DockArgs feeder_dock 파라미터 실험 (팀 코드는 그대로, 실행 인자로만 준다)
+#   -Fast    운반 속도 추천 묶음 = -Speed 0.6 + -DockArgs 후진 0.15 · 미세 접근 0.08 m/s · 대기 1 s (0.8 m/s 이상은 쓰지 않는다)
 #   -NoFlow  Nav2·Isaac 만 띄우고 명령은 보내지 않음 (직접 보내려면 wsl/run_flow.py)
 #   -Scene   씬 USD (기본 DEFAULT = standalone_app 의 기본 씬, scenes/Collected_smartfarm_v014/...cabbage.usd)
 # 팀 파일은 바꾸지 않는다: Nav2 는 팀 nav2_params.yaml 을 읽어 만든 복사본(OUT/nav2_params_test.yaml)을 쓴다.
@@ -21,10 +22,15 @@ param([string]$OutDir = "$HOME\smartfarm_runs\allinone_run",
       [string]$Speed = "",          # 주행 최고속도 실험 (m/s). 비우면 팀 값(0.3)
       [string]$Accel = "",          # 직진 가감속 실험 (m/s^2). 비우면 팀 값(0.3 / 0.35)
       [string]$DockArgs = "",       # feeder_dock 파라미터 실험 "reverse_speed_mps:=0.15,quiet_s:=1.0" (쉼표로 구분)
+      [switch]$Fast,                # 2026-09-27 운반 속도 실험 추천값: -Speed 0.6 + 도킹 d1 (따로 준 -Speed/-DockArgs 가 우선)
       [string]$IsaacDir = "D:\isaacsim",
       [string]$Distro = "Ubuntu-24.04",
       [string]$PyLib = "")          # 중계기(Windows 쪽)용 추가 라이브러리 폴더. 비우면 ~\smartfarm_runs\pylib 에 pyyaml·numpy 를 자동 설치
 $ErrorActionPreference = "Continue"
+if ($Fast) {   # 운반 30.5 s -> 18.5 s, 주행 중 포기 흔들림 1 mm 이하 (docs/cabbage_grasp_speed_experiments_2026-09-27.md)
+    if (-not $Speed) { $Speed = "0.6" }
+    if (-not $DockArgs) { $DockArgs = "reverse_speed_mps:=0.15,creep_speed_mps:=0.08,quiet_s:=1.0" }
+}
 $Here = $PSScriptRoot
 $SmartFarm = (Resolve-Path "$Here\..\..").Path                     # .../isaacpjt/smart_farm
 function To-Wsl([string]$p) { "/mnt/" + $p.Substring(0,1).ToLower() + $p.Substring(2).Replace('\','/') }

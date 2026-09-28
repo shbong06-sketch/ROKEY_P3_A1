@@ -93,7 +93,8 @@ GRIPPER_JOINTS = ("finger_joint", "right_inner_knuckle_joint")
 GRIPPER_OPEN, GRIPPER_CLOSE = 0.0, 1.18
 ARM_DRIVE = (1.0e8, 1.0e4, 1.0e8)                              # cull_standalone 과 같음
 # 팀 기본 1e4 N·m 는 손가락이 포기를 관통한다. 8 N·m 에서 6칸 모두 파지 성공(05_m0609_pick_place_test).
-GRIPPER_DRIVE = (1.0e5, 1.0e3, float(os.environ.get("SMARTFARM_GRIP_FORCE", "8.0")))   # maxForce N·m (실험용 환경변수, 기본 8)
+# 2026-09-27 집기 실험: 8 N·m 는 0.3 kg 경계(5~6 N·m) 바로 위, 0.5 kg 에서 1/6 -> 12 N·m (0.3·0.5·0.7 kg 6/6, 전체 흐름 9/9)
+GRIPPER_DRIVE = (1.0e5, 1.0e3, float(os.environ.get("SMARTFARM_GRIP_FORCE", "12.0")))   # maxForce N·m (환경변수로 바꿈)
 TOOL_Q = (0.0, 1.0 / math.sqrt(2.0), -1.0 / math.sqrt(2.0), 0.0)   # cull_standalone 의 위에서 집기 자세
 TCP_OFFSET = (0.0, 0.0, 0.19671)
 
@@ -104,7 +105,9 @@ FRAMES = 3
 
 # 트레이(원점) 기준 높이 — 양배추 에셋 build_info: 포기 원점 +45 mm, 파지 밴드 +35 mm
 GRIP_ABOVE_TRAY = 0.078        # RG2 패드 중심을 밴드 중심 2 mm 아래
-AIM_ABOVE_TRAY = 0.090         # 비전 픽셀을 바닥면과 만나게 할 높이 (포기 윗부분)
+# 비전 박스 중심을 되돌려 놓을 수평면 높이 = 포기 중심 높이 (포기 원점 +45 mm + 중심 +35 mm = 80 mm).
+# 2026-09-28: 0.090(포기 윗부분)이면 비스듬히 보는 칸일수록 수평 위치가 밀려 y -4.2 mm 치우침 -> 0.080 에서 -0.3 mm
+AIM_ABOVE_TRAY = float(os.environ.get("SMARTFARM_AIM_ABOVE_TRAY", "0.080"))
 HEAD_TOP_ABOVE_TRAY = 0.105
 
 TRAY_REACH = 0.48              # base -> 트레이 중심 수평거리 (dbg_reach: 0.48 이면 6칸 모두 접근·집기 IK 가능)
@@ -143,9 +146,13 @@ SLOT_LAYOUT = {"Cabbage_01": (-0.075, -0.189), "Cabbage_02": (0.075, -0.189), "C
 TRAY_Z_NOMINAL = 0.769 + 0.02593     # 롤러 윗면 + 트레이 원점~바닥 (팔레트 원점 규칙)
 HEAD_ORIGIN_Z = 0.045                # 트레이 원점 -> 포기 원점 높이 (build_info origin_z 0.0445~0.0455)
 VISION_FIX_MAX = 0.025               # 비전 보정 한도 (m)
-# 2026-09-27 실측: 비전 위치는 약 4 mm 치우침이 있어(트레이 실제 위치는 설계와 1 mm 이내) 늘 보정하면 집기 오차가
-# 5~10 mm 로 커져 RG2 여유(한쪽 10.8 mm)를 넘었다 -> 어긋남이 이 값보다 클 때(트레이가 확실히 어긋남)만 보정
-VISION_FIX_DEADBAND = 0.008
+# 2026-09-27: 비전 위치에 약 4 mm 치우침이 있어 문턱 8 mm 를 두었다. 2026-09-28: 치우침 원인(AIM_ABOVE_TRAY)을 고친 뒤
+# 문턱 3 mm + 포기마다 다시 찍기로 뒤쪽 포기 집기 오차 5.8 -> 3.5 mm (스테이션), 전체 흐름 선별 3/3
+VISION_FIX_DEADBAND = float(os.environ.get("SMARTFARM_VISION_DEADBAND", "0.003"))
+# 비전 전용: 두 번째 포기부터 집기 전에 다시 찍어 트레이 위치 보정을 갱신 (앞 포기를 뽑을 때 트레이가 조금씩 움직임)
+VISION_REFRESH = VISION_ONLY and os.environ.get("SMARTFARM_VISION_REFRESH", "1") == "1"
+# 재검사에서 불량이 남으면 다시 집는 횟수 (2026-09-27 DES: 1회 재시도로 놓친 불량 -92 %, 처리량 -1.5 %). 0 = 끔
+CULL_RETRY = int(os.environ.get("SMARTFARM_CULL_RETRY", "1"))
 BAD_FRAME_MEAN = (15.0, 205.0)   # 이 밖의 평균 밝기(0~255) = 렌더 이상 프레임 -> 다시 찍음
 BAD_FRAME_RETRY = 30             # 연속 재시도 한도 (넘으면 그 프레임을 그대로 쓴다)
 
@@ -397,6 +404,7 @@ class VisionCullStation:
         self._bad_frames = 0
         self._record = None
         self._via = None
+        self._round = 0               # 재시도 회차 (0 = 첫 솎아내기)
 
     def attach(self, conveyor):
         """world.reset() 뒤. 팔을 준비 자세로 두고 RMPflow 를 만든다."""
@@ -722,7 +730,7 @@ class VisionCullStation:
             _log(f"[비전] 렌더 이상 프레임 {self._bad_frames}장 버리고 다시 찍음 (지금 평균 밝기 {mean:.0f})")
             self._bad_frames = 0
         index = len(self._frames)
-        name = f"{self._record['pallet']}_{'recheck_' if self.state == 'RECHECK' else ''}{index}"
+        name = f"{self._record['pallet']}_{self._frame_prefix()}{index}"
         npy = self._out / f"{name}.npy"
         np.save(npy, np.asarray(frame))
         detections = self._yolo.detect(npy, annotated=str(self._out / f"{name}_yolo.jpg"),
@@ -732,7 +740,21 @@ class VisionCullStation:
         self._timer = 0
         if len(self._frames) < FRAMES:
             return
+        if self.state == "REFRESH":           # 비전 전용: 트레이 위치 보정만 갱신하고 다음 포기로
+            self._assign()
+            self._record.setdefault("refresh_fix_mm", []).append(
+                [round(float(v) * 1000, 1) for v in self._vfix])
+            self._frames = []
+            self._next_cull()
+            return
         self._judge()
+
+    def _frame_prefix(self):
+        if self.state == "RECHECK":
+            return "recheck_" if self._round == 0 else f"recheck{self._round + 1}_"
+        if self.state == "REFRESH":
+            return f"refresh{len(self._record.get('culls', []))}_"
+        return ""
 
     def _truth(self, head):
         vs = head.GetVariantSets()
@@ -828,9 +850,20 @@ class VisionCullStation:
                 f"{r['slot'][-2:]}={r['label']}{'' if r['label'] in (r['truth'], 'removed') else '(정답 ' + r['truth'] + ')'}"
                 for r in rows))
         self._record.setdefault("images", []).extend(
-            sorted(p.name for p in self._out.glob(f"{self._record['pallet']}_{'recheck_' if tag == '재검사' else ''}?_yolo.jpg")))
+            sorted(p.name for p in self._out.glob(f"{self._record['pallet']}_{self._frame_prefix()}?_yolo.jpg")))
         if self.state == "RECHECK":
-            self._record["recheck"] = rows
+            self._record["recheck" if self._round == 0 else f"recheck_after_retry{self._round}"] = rows
+            retry = [(h, aim, CLASS_SHORT[label]) for h in self._heads
+                     for label, aim in [labels.get(h.GetName(), ("UNKNOWN", None))]
+                     if label in CULL_CLASSES and aim is not None]
+            if retry and self._round < CULL_RETRY:
+                self._round += 1
+                self._queue = retry
+                self._event("CULL_RETRY")
+                _log(f"[솎아내기] 재검사에서 불량 {len(retry)}개 남음 -> 재시도 {self._round}회차: " + ", ".join(
+                    f"SLOT_{h.GetName()[-2:]}({c})" for h, _, c in retry))
+                self._next_cull()
+                return
             self._begin_transfer_out()
             return
         self._record["inspection"] = rows
@@ -868,6 +901,8 @@ class VisionCullStation:
         # 기본 모드: 실제 트레이 자세 + 도착 때 실제 칸 배치 / 비전 전용: 설계 트레이 위치(+비전 보정) + 설계 칸 배치
         if VISION_ONLY:
             aim = self._slot_point(head)
+        elif self._round > 0:
+            aim = truth.copy()        # 재시도: 미끄러진 포기는 칸에서 벗어났을 수 있다 (기본 모드는 실제 위치를 쓰는 모드)
         else:
             aim = tray_m[:3, 3] + self._seat_offsets[head.GetName()]
         aim[2] = vision_aim[2]
@@ -890,7 +925,7 @@ class VisionCullStation:
         motion = self._new_motion(_qmul(self._base_q, np.array(TOOL_Q)), str(head.GetPath()))
         self._run_plan(motion, plan)
         err = np.linalg.norm(vision_aim[:2] - truth[:2]) * 1000
-        self._current = {"slot": "SLOT_" + head.GetName()[-2:], "colour": colour, "box": box_name,
+        self._current = {"slot": "SLOT_" + head.GetName()[-2:], "colour": colour, "box": box_name, "retry": self._round,
                          "vision_xy_error_mm": round(float(err), 1),
                          "pick_xy_error_mm": round(float(np.linalg.norm(aim[:2] - truth[:2]) * 1000), 1),
                          "head": head, "box_top": box_top,
@@ -937,7 +972,21 @@ class VisionCullStation:
     def _state_home(self, dt):
         if not self._motion_step():
             return
+        if VISION_REFRESH and self._queue:
+            self._timer = 0
+            self._frames = []
+            self.state = "REFRESH_SETTLE"
+            return
         self._next_cull()
+
+    def _state_refresh_settle(self, dt):
+        self._timer += 1
+        if self._timer < SETTLE_FRAMES:
+            return
+        self._timer = 0
+        self.state = "REFRESH"
+
+    _state_refresh = _state_capture
 
     def _start_recheck(self):
         self._start_inspect_move(via=getattr(self, "_via", None))

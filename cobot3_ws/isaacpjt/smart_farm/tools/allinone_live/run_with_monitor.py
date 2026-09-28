@@ -10,6 +10,7 @@
                          <기록 폴더>/captures/cap_<이름>_<시뮬레이션 초>.jpg 로 저장 (예: human=/World/Characters/HumanViewCam)
   CABBAGE_CAPTURE_EVERY  캡처 간격(시뮬레이션 초, 기본 3.0)
   CABBAGE_HEAD_MASS      양배추 포기 질량(kg) 실험. 비우면 에셋 값(0.3)
+  CABBAGE_MIN_MOVE_S     팀 robot_motion 의 구간 최소 보간 시간(s, 팀 값 0.5) 실험. 팀 파일은 그대로, 실행 중 값만 바꿈
 Windows 창 녹화(gdigrab)로는 Isaac 3D 뷰포트가 갱신되지 않으므로 영상은 이 캡처로 만든다.
 기록은 standalone_app 이 sim_task_node 를 import 할 때(SimulationApp 이 뜬 뒤) 물리 스텝 콜백으로 설치된다.
 """
@@ -71,6 +72,7 @@ def _install():
                # 1 s 마다 [t_sim, Pallet_01 포기 중 트레이 기준 최대 변위 mm, 최대 기울기 deg (그 1 s 안의 최대),
                #            트레이의 chassis 기준 위치 x y z] - 운반 구간(주행·도킹) 흔들림을 선별 구간과 나눠 보기 위함
                "pallet01_heads_series": S.get("p1_series", [])[-2000:],
+               "pallet01_tray_in_chassis_0p25s": S.get("tray_fine", [])[-4000:],     # [t_sim, x, y, z]
                "tilt_max_deg": S.get("tilt_max", 0.0), "tilt_max_t": S.get("tilt_max_t"),
                "tilt_samples_over_0p5deg": S.get("tilt_samples", [])[-4000:]}
         with open(OUT, "w") as f:
@@ -123,6 +125,10 @@ def _install():
                 S.setdefault("tilt_samples", []).append([round(S["t"], 2), round(tilt, 3)])
             if tilt > S.get("tilt_max", 0.0):
                 S["tilt_max"], S["tilt_max_t"] = round(tilt, 3), round(S["t"], 2)
+            p1 = next((pose(tr) for hh, tr in (S["heads"] or []) if "/Pallet_01/" in hh), None)
+            if p1 is not None:           # 0.25 s: 트레이의 chassis 기준 위치 (내려놓기 중 포크 위 미끄러짐 추적)
+                rel = c[1].T @ (p1[0] - c[0])
+                S.setdefault("tray_fine", []).append([round(S["t"], 2)] + [round(float(v), 4) for v in rel])
         if S["heads"] is None:
             S["heads"] = [(str(p.GetPath()), str(p.GetPath()).split("/root_001/")[0] + "/Cube_011_001")
                           for p in stage.Traverse()
@@ -175,6 +181,11 @@ def _install():
 
 def _hook(name, globals=None, locals=None, fromlist=(), level=0):
     module = _orig_import(name, globals, locals, fromlist, level)
+    if name == "robot_motion" and os.environ.get("CABBAGE_MIN_MOVE_S") and not _state.get("min_move"):
+        # 팀 robot_motion.py 는 고치지 않고 실행 중 값만 바꾼다 (구간 최소 보간 시간, 팀 값 0.5 s)
+        _state["min_move"] = True
+        module.MIN_MOVE_SECONDS = float(os.environ["CABBAGE_MIN_MOVE_S"])
+        print(f"[MONITOR] robot_motion.MIN_MOVE_SECONDS -> {module.MIN_MOVE_SECONDS} s", flush=True)
     if not _state["installed"] and name == "sim_task_node":
         _state["installed"] = True
         try:
