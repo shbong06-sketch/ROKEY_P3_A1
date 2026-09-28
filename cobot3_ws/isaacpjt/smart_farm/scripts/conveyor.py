@@ -390,6 +390,7 @@ class ConveyorController:
         self._vision_x = vision_x
         self._auto_resume_seconds = auto_resume
         self._stem_hold = False    # [올인원 2026-09-25] 로봇이 줄기에 내려놓는 동안 줄기 벨트 정지
+        self._outfeed_hold = False
 
     # ── 읽기 ────────────────────────────────────────
     @property
@@ -413,6 +414,24 @@ class ConveyorController:
 
     def zone_of(self, pallet_path):
         return self._find(pallet_path).zone
+
+    def fault_of(self, pallet_path):
+        """명령 대상 팔레트의 정체 실패만 반환한다."""
+        return self._find(pallet_path).fault
+
+    def is_locked(self, pallet_path):
+        """검사 정지선에서 물리 고정된 대상인지 확인한다."""
+        return self._find(pallet_path).locked
+
+    def lock_at_vision(self, pallet_path):
+        """[navigation 2026-09-26] 지그 준비 완료·실패 시 팔레트를 제자리에 보존한다."""
+        pallet = self._find(pallet_path)
+        if pallet.zone is not Zone.VISION:
+            raise ConveyorError(f"{pallet.name} is not at inspection stop")
+        if pallet.rigid is None:
+            raise ConveyorError(f"{pallet.name} rigid body is unavailable")
+        pallet.rigid.disable_rigid_body_physics()
+        pallet.locked = True
 
     def pallet_position(self, pallet_path=None):
         """팔레트의 월드 좌표 (x, y, z). 로봇에 넘길 좌표는 이걸 쓰세요.
@@ -502,9 +521,14 @@ class ConveyorController:
             self._stem_hold = hold
             print(f"[컨베이어] 줄기 벨트 {'정지 (로봇 놓기 중)' if hold else '재가동'}")
 
+    def hold_outfeed(self, hold):
+        """배출 실패·시간 초과 시 가로줄기 롤러를 정지한다."""
+        self._outfeed_hold = bool(hold)
+
     def reset(self):
         """감시 상태를 초기화합니다. Stop → Play 사이에 부르세요."""
         self._stem_hold = False
+        self._outfeed_hold = False
         for pallet in self._pallets:
             pallet.release()
             pallet.reset_state()
@@ -634,7 +658,7 @@ class ConveyorController:
             self._drive.stem.set_speed(0.0, 0.0)   # [올인원 2026-09-25] 로봇 놓기 중 인터록
 
         # 가로줄기: 검사 중인 팔레트가 있으면 멈춥니다.
-        if vision_busy:
+        if vision_busy or self._outfeed_hold:
             self._drive.line_stop()
         else:
             self._drive.line_run()

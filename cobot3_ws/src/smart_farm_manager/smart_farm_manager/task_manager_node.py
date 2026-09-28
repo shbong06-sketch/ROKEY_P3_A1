@@ -70,6 +70,7 @@ class TaskManagerNode(Node):
         self.declare_parameter("tick_period_sec", 0.1)
         self.declare_parameter("preflight_timeout_sec", 10.0)
         self.declare_parameter("executor_status_timeout_sec", 3.0)
+        self.declare_parameter("cull_data_timeout_sec", 15.0)
 
         # ROS 메시지와 분리된 상태 머신 및 heartbeat 수신 상태
         self.machine = CycleStateMachine()
@@ -82,6 +83,9 @@ class TaskManagerNode(Node):
         self.status_identity_warnings = set()
         self.preflight_started_at: Optional[float] = None
         self.command_deadline: Optional[float] = None
+        self.cull_inspection_command_id = ""
+        self.cull_data_deadline: Optional[float] = None
+        self.inspection_data_status: Optional[dict] = None
 
         # Task Manager가 각 executor로 보내는 공통 작업 명령
         self.command_publishers = {
@@ -101,6 +105,11 @@ class TaskManagerNode(Node):
                 10,
             ),
         }
+        # [navigation 2026-09-27] Isaac Python은 TaskCommand.msg를 직접 import하지 않는다.
+        # 같은 INSPECT 식별자를 String/JSON으로 알려 검출 데이터 재사용을 막는다.
+        self.inspection_context_publisher = self.create_publisher(
+            String, "/sim_task/inspection_context", 10,
+        )
 
         # 각 executor가 반환하는 terminal 작업 결과
         self.create_subscription(
@@ -127,6 +136,12 @@ class TaskManagerNode(Node):
             String,
             "/sim_task/status",
             self._sim_status_callback,
+            10,
+        )
+        self.create_subscription(
+            String,
+            "/sim_task/inspection_data_status",
+            self._inspection_data_status_callback,
             10,
         )
         self.create_subscription(
@@ -214,6 +229,9 @@ class TaskManagerNode(Node):
 
         self.preflight_started_at = time.monotonic()
         self.command_deadline = None
+        self.cull_inspection_command_id = ""
+        self.cull_data_deadline = None
+        self.inspection_data_status = None
 
         response.accepted = True
         response.task_id = task_id
@@ -300,6 +318,23 @@ class TaskManagerNode(Node):
 
         self._status_callback(status, "sim_task")
 
+    def _inspection_data_status_callback(self, message: String) -> None:
+        """현재 검사 식별자의 Sim 검출 저장 상태를 보관한다."""
+        try:
+            payload = json.loads(message.data)
+        except (TypeError, ValueError):
+            return
+        if (not isinstance(payload, dict)
+                or payload.get("state") not in {"EXPECTED", "STORED", "REJECTED"}
+                or payload.get("task_id") != self.machine.task_id
+                or payload.get("pallet_id") != "PALLET_001"
+                or not isinstance(payload.get("inspection_command_id"), str)):
+            return
+        expected = self.cull_inspection_command_id
+        if expected and payload["inspection_command_id"] != expected:
+            return
+        self.inspection_data_status = payload
+
     def _handle_result(
         self,
         result_data: TaskResultData,
@@ -332,6 +367,14 @@ class TaskManagerNode(Node):
             return
 
         self.command_deadline = None
+
+        if (result_data.operation == "INSPECT"
+                and self.machine.state == CycleState.CULL):
+            self.cull_inspection_command_id = result_data.command_id
+            self.cull_data_deadline = (
+                time.monotonic()
+                + float(self.get_parameter("cull_data_timeout_sec").value)
+            )
 
         if self.machine.state == CycleState.COMPLETE:
             self._publish_cycle_status(
@@ -374,10 +417,33 @@ class TaskManagerNode(Node):
             return
 
         if self.machine.active_command is None:
+            if self.machine.state == CycleState.CULL and not self._cull_data_ready():
+                return
             self._dispatch_current_step()
             return
 
         self._check_command_timeout()
+
+    def _cull_data_ready(self) -> bool:
+        """INSPECT 성공과 같은 검사 데이터가 Sim에 저장된 뒤에만 CULL을 허용한다."""
+        status = self.inspection_data_status or {}
+        if (status.get("task_id") == self.machine.task_id
+                and status.get("inspection_command_id") == self.cull_inspection_command_id
+                and status.get("pallet_id") == "PALLET_001"):
+            if status.get("state") == "STORED":
+                return True
+            if status.get("state") == "REJECTED":
+                self._fail_cull_data("INSPECTION_DATA_REJECTED")
+                return False
+        if self.cull_data_deadline is not None and time.monotonic() >= self.cull_data_deadline:
+            self._fail_cull_data("INSPECTION_DATA_TIMEOUT")
+        return False
+
+    def _fail_cull_data(self, reason: str) -> None:
+        self.machine.fail_before_command(reason)
+        self.cull_data_deadline = None
+        self._publish_cycle_status(status=self.machine.terminal_status, reason=reason)
+        self.get_logger().error(f"Cull data unavailable: reason={reason}")
 
     def _tick_preflight(self) -> None:
         """모든 executor의 최신 READY heartbeat를 기다리고 진단한다."""
@@ -507,6 +573,15 @@ class TaskManagerNode(Node):
 
         executor = step.executor.value
         publisher = self.command_publishers[executor]
+        if executor == "inspection" and command_data.operation == "INSPECT":
+            context = String()
+            context.data = json.dumps({
+                "task_id": command_data.task_id,
+                "inspection_command_id": command_data.command_id,
+                "pallet_id": command_data.pallet_id,
+                "operation": command_data.operation,
+            }, separators=(",", ":"))
+            self.inspection_context_publisher.publish(context)
         if executor == "sim_task":
             command_message = self._task_command_to_json(command_data)
         else:
@@ -547,6 +622,7 @@ class TaskManagerNode(Node):
             task_id=command.task_id,
             command_id=command.command_id,
             operation=command.operation,
+            pallet_id=command.pallet_id,
             status="TIMEOUT",
             phase="RESULT_TIMEOUT",
             reason="RESULT_TIMEOUT",
@@ -677,6 +753,7 @@ class TaskManagerNode(Node):
                 required=True,
             ),
             status=cls._json_string(payload, "status", required=True),
+            pallet_id=cls._json_string(payload, "pallet_id"),
             phase=cls._json_string(payload, "phase"),
             reason=cls._json_string(payload, "reason", default="NONE"),
             safe_to_navigate=cls._json_bool(

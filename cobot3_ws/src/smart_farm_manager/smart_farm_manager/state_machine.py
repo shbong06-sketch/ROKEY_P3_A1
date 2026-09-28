@@ -30,7 +30,11 @@ class CycleStateMachine:
         "TRANSFER",
         "PICK_HARVEST",
         "PLACE_INSPECT",
+        "CONVEY_TO_INSPECT",
+        "PREPARE_INSPECT",
+        "MOVE_TO_INSPECT",
         "CULL",
+        "RELEASE_INSPECT",
         "CONVEYOR_OUT",
     }
 
@@ -167,6 +171,8 @@ class CycleStateMachine:
                 raise RuntimeError(
                     "솎아내기 대상 슬롯이 없습니다."
                 )
+        elif self.state == CycleState.RECHECK:
+            target_slots = self.defect_slots
 
         command = TaskCommandData(
             task_id=self.task_id,
@@ -255,6 +261,12 @@ class CycleStateMachine:
             reason="NONE",
         )
 
+    def fail_before_command(self, reason: str) -> None:
+        """후속 물리 명령을 내기 전 데이터 준비 실패로 사이클을 종료한다."""
+        if self.active_command is not None or not self.is_running:
+            raise RuntimeError("cannot fail an active or terminal cycle before command")
+        self._fail(reason=reason, reset_required=False)
+
     def _matches_active_command(
         self,
         result: TaskResultData,
@@ -268,6 +280,11 @@ class CycleStateMachine:
             and result.task_id == command.task_id
             and result.command_id == command.command_id
             and result.operation == command.operation
+            and (
+                command.operation not in self.PHYSICAL_OPERATIONS
+                or not command.pallet_id
+                or result.pallet_id == command.pallet_id
+            )
         )
 
     def _validate_success(
@@ -282,6 +299,12 @@ class CycleStateMachine:
 
             if not self.EXPECTED_TRANSFER_UNITS.issubset(completed):
                 return "TRANSFER_INCOMPLETE"
+
+        elif command.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "RELEASE_INSPECT", "CONVEYOR_OUT"}:
+            if result.pallet_id != command.pallet_id:
+                return "PALLET_MISMATCH"
+            if result.reached_station != command.destination:
+                return "POSITION_NOT_CONFIRMED"
 
         elif command.operation == "PICK_HARVEST":
             if not result.safe_to_navigate:
@@ -302,13 +325,22 @@ class CycleStateMachine:
 
             if result.unknown_slots:
                 return "UNKNOWN_SLOT"
+            if len(result.defect_slots) != len(set(result.defect_slots)):
+                return "INVALID_SLOT_ID"
 
         elif command.operation == "CULL":
-            completed_slots = set(result.completed_units)
-            expected_slots = set(command.target_slots)
-
-            if not expected_slots.issubset(completed_slots):
+            if (len(result.completed_units) != len(command.target_slots)
+                    or set(result.completed_units) != set(command.target_slots)):
                 return "CULL_INCOMPLETE"
+
+        elif command.operation == "RECHECK":
+            if ((set(result.defect_slots) | set(result.unknown_slots))
+                    - self.VALID_PLANT_SLOTS):
+                return "INVALID_SLOT_ID"
+            if result.unknown_slots:
+                return "UNKNOWN_SLOT"
+            if result.defect_slots:
+                return "DEFECT_REMAINS"
 
         return None
 
@@ -333,6 +365,17 @@ class CycleStateMachine:
 
         elif command.operation == "PLACE_INSPECT":
             self.pallet_locations["PALLET_001"] = "INSPECT_STATION"
+            self.state = CycleState.CONVEY_TO_INSPECT
+
+        elif command.operation == "CONVEY_TO_INSPECT":
+            self.pallet_locations["PALLET_001"] = "INSPECT_STOP"
+            self.state = CycleState.PREPARE_INSPECT
+
+        elif command.operation == "PREPARE_INSPECT":
+            self.pallet_locations["PALLET_001"] = "INSPECT_WORK_POS"
+            self.state = CycleState.MOVE_TO_INSPECT
+
+        elif command.operation == "MOVE_TO_INSPECT":
             self.state = CycleState.INSPECT
 
         elif command.operation == "INSPECT":
@@ -342,9 +385,16 @@ class CycleStateMachine:
             if self.defect_slots:
                 self.state = CycleState.CULL
             else:
-                self.state = CycleState.CONVEYOR_OUT
+                self.state = CycleState.RECHECK
 
         elif command.operation == "CULL":
+            self.state = CycleState.RECHECK
+
+        elif command.operation == "RECHECK":
+            self.state = CycleState.RELEASE_INSPECT
+
+        elif command.operation == "RELEASE_INSPECT":
+            self.pallet_locations["PALLET_001"] = "INSPECT_STOP"
             self.state = CycleState.CONVEYOR_OUT
 
         elif command.operation == "CONVEYOR_OUT":

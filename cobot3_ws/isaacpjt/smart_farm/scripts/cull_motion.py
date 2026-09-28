@@ -14,6 +14,10 @@ import numpy as np
 Position = Tuple[float, float, float]
 
 
+class PhysicalPickError(RuntimeError):
+    """리프트 후 포기가 실제로 따라 올라오지 않음."""
+
+
 @dataclass(frozen=True)
 class CullStep:
     """한 단계의 TCP 목표와 그리퍼 명령."""
@@ -316,6 +320,8 @@ class CullMotion:
     def _complete_step(self) -> None:
         print(f"[CULL:{self.current_stage}] 완료")
         completed_name = self.current_stage
+        if completed_name == "LIFT" and self._get_target_world_pose is not None:
+            self._check_physical_pick()
         self._index += 1
         self._entered = False
         self._step = 0
@@ -343,7 +349,7 @@ class CullMotion:
                 f"물리 Pick 실패: 대상 상승량 {self._final_target_rise * 1000.0:.1f} mm, "
                 f"기준 {self.config.min_target_rise * 1000.0:.1f} mm"
             )
-            raise RuntimeError(self._error)
+            raise PhysicalPickError(self._error)
 
     def _tcp_world_position(self) -> np.ndarray:
         position, quaternion = self._get_end_effector_world_pose()

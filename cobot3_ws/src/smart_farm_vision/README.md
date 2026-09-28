@@ -19,6 +19,20 @@
 Task Manager는 `TaskResult`의 검사 결과만 관리한다. 동적 Pick에 필요한 Depth와
 로봇 좌표 계산은 `/inspection/detections_2d`를 받는 Isaac Sim 내부 Executor의 책임이다.
 
+통합 판정은 `lettuce_dark_green=NORMAL`, `lettuce_yellow=DEFECT`,
+`lettuce_brown=DEFECT`로 고정한다. 여섯 슬롯 중 누락·중복·ROI 충돌 또는
+분류 불가 슬롯은 `UNKNOWN`이며 `/inspection/result`는
+`FAILED/UNKNOWN_SLOT`을 반환한다. 추론 예외는 `FAILED/INSPECTION_FAILED`,
+새 프레임 시간 초과는 `FAILED/IMAGE_TIMEOUT`이다.
+
+`/inspection/detections_2d`는 `std_msgs/msg/String` JSON을 유지한다.
+`command_id`와 같은 `inspection_command_id`, `task_id`, `pallet_id`,
+`coordinate_frame=image_pixels`, 카메라 `header.frame_id`, 영상 `header.stamp`,
+`slot_states`, 픽셀 중심·bbox, `valid_for_cull`을 포함한다. Sim Executor는
+Task Manager가 보낸 `/sim_task/inspection_context`의 검사 명령 ID와
+물리 준비 완료 팔레트를 대조해 유효한 데이터만 저장한다. 픽셀 좌표를
+로봇 월드 좌표로 바꾸거나 Cull을 시작하는 동작은 아직 구현하지 않았다.
+
 ## 실행 구조
 
 - 호스트: Isaac Sim 및 ROS 2 카메라 토픽 실행
