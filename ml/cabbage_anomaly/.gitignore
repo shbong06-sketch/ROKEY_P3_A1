@@ -1,0 +1,5 @@
+# 학습용 데이터셋
+data/raw/*
+data/dataset/*
+data/mvtec/*
+data/validation/*
