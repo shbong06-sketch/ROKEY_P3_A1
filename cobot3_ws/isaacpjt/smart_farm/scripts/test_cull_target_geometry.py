@@ -27,9 +27,10 @@ def test_invalid_geometry_fails_before_motion():
         pick_target_world(np.eye(4), (0.0, 0.0, 0.0), float("nan"))
 
 
-def test_only_head_inside_all_three_box_dimensions_counts_as_dropped():
+def test_head_xy_inside_bin_and_below_rim_counts_as_dropped():
     lower = (-1.0, -1.0, 0.0)
     upper = (1.0, 1.0, 0.5)
     assert head_inside_box((0.0, 0.0, 0.2), lower, upper)
-    assert not head_inside_box((0.0, 0.0, -0.1), lower, upper)
+    assert head_inside_box((0.0, 0.0, -0.1), lower, upper)
     assert not head_inside_box((1.1, 0.0, 0.2), lower, upper)
+    assert not head_inside_box((0.0, 0.0, 0.6), lower, upper)
