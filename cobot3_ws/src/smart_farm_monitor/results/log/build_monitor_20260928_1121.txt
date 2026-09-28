@@ -1,0 +1,4 @@
+Starting >>> smart_farm_monitor
+Finished <<< smart_farm_monitor [1.80s]
+
+Summary: 1 package finished [2.19s]

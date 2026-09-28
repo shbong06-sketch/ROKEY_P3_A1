@@ -73,6 +73,12 @@ rosbag2_*
 # 관제 패키지는 코드를 추적하고 DB 파일만 제외함 (2026-09-28)
 /cobot3_ws/src/smart_farm_monitor/data/*
 !/cobot3_ws/src/smart_farm_monitor/data/README.md
+# 관제 패키지의 실행 기록: log 은 추적, 대용량 미디어는 제외(문서만 추적)
+/cobot3_ws/src/smart_farm_monitor/results/log_media/*
+!/cobot3_ws/src/smart_farm_monitor/results/log_media/*.md
+!/cobot3_ws/src/smart_farm_monitor/results/log_media/.gitkeep
+!/cobot3_ws/src/smart_farm_monitor/results/log/
+.pytest_cache/
 # Claude Code 로컬 상태 — 자격증명과 대화 기록이 들어 있으므로 절대 커밋하지 않음
 .claude/
 .claude.json

@@ -9,7 +9,8 @@
 1. `docs/ADR/ADR_basic.md` 를 읽음 (역할·기기·쓰기 권한·답변 규칙).
 2. Nav2·도킹·주행과 조금이라도 관련되면 `docs/ADR/ADR_navigation2.md` 를 이어서 읽음.
    - 브랜치 `feature/navigation2`, `feature/Inspection-Place-nav2` 에서 적용되며, 브랜치 이름과 무관하게 **Nav2 가 얽힌 모든 작업**에 적용함.
-3. 충돌 시 **ADR_basic 이 ADR_navigation2 보다 우선**함.
+2-1. 관제 웹·DB(브랜치 `feature/monitor`, 패키지 `smart_farm_monitor`)와 조금이라도 관련되면 `docs/ADR/ADR_web-monitor.md` 를 이어서 읽음.
+3. 충돌 시 **ADR_basic 이 ADR_navigation2·ADR_web-monitor 보다 우선**함.
 4. **ADR 을 임의로 수정하지 않음.** 사용자가 직접 지시했거나, 수정 없이는 업무가 불가능함을 보고하고 승인받은 경우만 수정함.
 5. **2026-09-25 사용자 지시: 이제 ADR 은 거의 수정하지 않는 방향으로 감.** 낡은 항목이 보이면 고치지 말고 답변의 "미해결" 항에 적어 알리기만 함. 현행값의 출처는 코드와 최신 가이던스임.
 
@@ -100,7 +101,9 @@ Isaac Sim 실측은 사용자의 물리적 작업 시간이고 **영상 녹화 �
 
 ## 4. 가이던스 문서 규칙 (ADR_basic §6.1, ADR_nav2 §2.5)
 
-- 경로 `cobot3_ws/src/smart_farm_navigation/guidance/`, 파일명 `guidance2_<n>차.md` (답변마다 차수 +1, 지난 차수는 `guidance/past/` 로).
+- **가이던스는 그 작업이 속한 패키지의 `guidance/` 에 둠** (ADR_basic §6-1, 2026-09-28 갱신). 주행은 `smart_farm_navigation/guidance/` 의 `guidance2_<n>차.md`, 관제는 `smart_farm_monitor/guidance/` 의 `guidance3_<n>차.md`(27차부터).
+- **가이던스는 사용자의 직접 실측 메뉴얼임. 사용자가 당장 할 일 목록이 아니면 보관 폴더로 보내고 그곳에서 열람함** (주행 `guidance/past/`, 관제 `guidance/past_monitor_guidance/`). 실측을 내가 대행하는 판의 가이던스는 작성 직후 보관함.
+- **실측·녹화는 내가 대행함** (ADR_basic §5-8). 가상 디스플레이로 Isaac 을 띄우고 로그·미디어를 남김. **단 상의해 합의된 범위까지만.** 보고하지 않은 절차를 실측하지 않음.
 - **자립형**: 위에서 아래로 실행만 하면 되게 씀. 이전 차수를 열어볼 필요가 없어야 함.
 - 몇 번째 터미널인지 명시. **터미널 블록마다 환경 5줄을 매번 반복**함. "위와 같은 5줄" 식 참조 금지.
 - 절대경로만 씀. `PROJECT_ROOT` 같은 셸 변수 금지. 어느 cwd 에서도 동작해야 함.

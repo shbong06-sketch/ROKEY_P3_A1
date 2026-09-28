@@ -700,8 +700,9 @@ PR #12 본문의 리뷰 요청 사항 중 다음이 관제에 직접 걸림.
 
 짧은 확인용 실행이라도 **미디어 자료를 반드시 남김.** 최소 스냅샷.
 
-- 저장 경로: `cobot3_ws/src/smart_farm_navigation/results/log_media/<수행한것>_<YYYYMMDD>_<HHMM>/`
-  - 예: `results/log_media/monitor_recorder_check_20260929_1430/`
+- 저장 경로: **`cobot3_ws/src/smart_farm_monitor/results/log_media/<수행한것>_<YYYYMMDD>_<HHMM>/`** (2026-09-28 갱신 — 관제 기록은 관제 패키지에 둠)
+  - 예: `smart_farm_monitor/results/log_media/monitor_recorder_check_20260929_1430/`
+  - Isaac·Nav2·주행 쪽 로그·미디어는 그대로 `smart_farm_navigation/results/` 에 둠
 - 이 경로는 `.gitignore` 로 git 제외임(134 MB 미디어 사고 방지). **파일 목록과 무엇을 찍었는지는 답변과 가이던스에 표로 남김.**
 
 ### 15.2 ADR_monitor.md 작성 절차 (사용자 지시)
@@ -929,3 +930,47 @@ ros2 launch smart_farm_monitor monitor.launch.py
 ### 18.5 남는 사실
 
 관제만 띄운 상태에서 `거절: SERVICE_NOT_AVAILABLE` 은 **결함이 아니라 정상 동작**임. `/start_cycle` 을 제공하는 것은 Task Manager 이므로, 사이클을 시작하려면 Isaac·Nav2·주행 노드·검사 노드·Task Manager 가 함께 떠 있어야 함. 그 순서는 `guidance3_27차.md` 4장에 자립형으로 적었음.
+
+---
+
+## 19. 문서·기록 배치 정리 (2026-09-28 사용자 지시)
+
+### 19.1 가이던스를 잘못 둔 사례
+
+`guidance3_27차.md` 를 `smart_farm_navigation/guidance/` 에 만들었음. ADR_basic §6-1 의 옛 문구(가이던스 경로를 주행 패키지로 고정)만 보고 **브랜치·패키지가 바뀐 상황을 반영하지 않은 잘못**임.
+
+사용자가 직접 `cobot3_ws/src/smart_farm_monitor/guidance/` 와 그 안의 보관 폴더 `past_monitor_guidance/` 를 만들어 파일을 옮겨 두었고, 그 구조를 기준으로 삼았음.
+
+또한 사용자가 규칙을 하나 일러 주었음: **가이던스는 전적으로 사용자의 직접 실측용 메뉴얼이므로, 사용자가 당장 해야 할 일 목록이 아니면 내가 유용하다고 판단해도 보관 폴더로 보내고 그곳에서 열람함.** 이 판부터는 실측을 내가 대행하므로 `guidance3_27차.md` 를 `past_monitor_guidance/` 로 옮겼음.
+
+`guidance2_26차.md` 는 주행 트랙의 현행 문서라 그 자리에 그대로 둠.
+
+### 19.2 실행 기록 배치
+
+관제 패키지가 자기 `results/` 를 가짐. `smart_farm_navigation/results/` 와 같은 구조임.
+
+| 경로 | 무엇 | git |
+|---|---|---|
+| `smart_farm_monitor/results/log/` | 터미널 `tee` 로그, 시험 출력, DB 조회 결과 | **추적함** |
+| `smart_farm_monitor/results/log_media/<수행한것>_<날짜>_<시각>/` | 화면 캡처·녹화 | 제외. 그 안의 `*.md` 만 추적 |
+| `smart_farm_monitor/data/farm.db` | 기록 원본 | 제외 |
+
+`.gitignore` 에 위 규칙과 `.pytest_cache/` 제외를 넣었음. **두 패키지의 로그를 섞지 않음.**
+
+첫 로그 2건을 실제로 남겨 폴더가 비지 않게 했음 — `results/log/build_monitor_20260928_1121.txt`(빌드), `results/log/montest_20260928_1121.txt`(시험 39건 통과).
+
+### 19.3 새 ADR
+
+`docs/ADR/ADR_web-monitor.md` 를 만들었음. ADR_basic 과 겹치는 범용 규칙은 넣지 않았고, 관제 트랙에만 해당하는 것만 담았음.
+
+| 장 | 내용 |
+|---|---|
+| 1 | 담당·쓰기 권한 추가 경로·팀 코드 불간섭 |
+| 2 | 구조 기준선 — 두 프로세스, 우편함 단일 경로, 시간 기준의 관제 쪽 적용, DB 불변 규칙, 웹 스택, SSE, 지도 변환식 |
+| 3 | 문서·기록 배치 (§19 의 내용을 규칙으로) |
+| 4 | 팀과의 계약 — 구독 토픽, `/start_cycle` 현행 유지, 미발행 1건, **공정 단계는 12개**, 두 팀원의 입력 |
+| 5 | 내가 틀리기 쉬운 지점 8개 — latched QoS, `/clock` 없을 때 타이머, 설치본 경로 깊이, 빈 화면은 결함 아님, `SERVICE_NOT_AVAILABLE` 은 정상, `pkill -f` 금지 등 |
+| 6 | 검증 기준선 (39건 통과, **전 구간 실측 미실시**) |
+| 7 | 미해결 7건 |
+
+ADR_basic 에도 세 가지를 반영했음(사용자 지시): **§6-1** 가이던스는 패키지별 `guidance/` 에 두고 보관 폴더로 보내는 규칙, **§5-8** 실측·녹화 대행과 그 범위 제한, **§1** 적용 ADR 목록에 `ADR_web-monitor` 추가. `CLAUDE.md` 에도 같은 내용을 넣었음.

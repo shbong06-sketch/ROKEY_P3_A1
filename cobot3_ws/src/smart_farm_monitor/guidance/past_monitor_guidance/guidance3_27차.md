@@ -1,6 +1,7 @@
 # guidance3_27차 — 관제 웹·DB 띄우기와 전 구간 기록
 
-- 작성 2026-09-28 · 기기 **고피3**(`gc-isaacsim-lwh`, GCP VM) 한 대 기준
+- 작성 2026-09-28 · **2026-09-28 `guidance/past_monitor_guidance/` 로 이동함**(사용자 지시: 사용자가 당장 해야 할 일 목록이 아니면 `past` 로 보내고 그곳에서 열람함. 이 판부터 실측·녹화는 에이전트가 대행함)
+- 기기 **고피3**(`gc-isaacsim-lwh`, GCP VM) 한 대 기준
 - 이 문서만 위에서 아래로 따라가면 됨. 이전 차수를 열어볼 필요 없음
 - `guidance2_26차.md` 는 그대로 살아 있음. 그쪽은 **Isaac·Nav2 주행·도킹 절차**, 이 문서는 **관제 웹·DB** 임. 두 문서는 4장에서 만남
 
@@ -61,7 +62,7 @@ export ROS_DOMAIN_ID=101
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
-cd /home/rokey/ROKEY_P3_A1/cobot3_ws && colcon build --packages-select smart_farm_interfaces smart_farm_manager smart_farm_navigation smart_farm_monitor 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/build_monitor_$(date +%Y%m%d_%H%M).txt
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws && colcon build --packages-select smart_farm_interfaces smart_farm_manager smart_farm_navigation smart_farm_monitor 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/results/log/build_monitor_$(date +%Y%m%d_%H%M).txt
 ```
 
 기대: `4 packages finished`, 실패 0.
@@ -73,7 +74,7 @@ export ROS_DOMAIN_ID=77
 export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
-cd /home/rokey/ROKEY_P3_A1/cobot3_ws && python3 -m pytest src/smart_farm_monitor/test -q 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/montest_$(date +%Y%m%d_%H%M).txt
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws && python3 -m pytest src/smart_farm_monitor/test -q 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/results/log/montest_$(date +%Y%m%d_%H%M).txt
 ```
 
 기대: `39 passed`.
@@ -87,7 +88,7 @@ export ROS_DOMAIN_ID=101
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
-ros2 launch smart_farm_monitor monitor.launch.py 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/monitor_$(date +%Y%m%d_%H%M).txt
+ros2 launch smart_farm_monitor monitor.launch.py 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/results/log/monitor_$(date +%Y%m%d_%H%M).txt
 ```
 
 기대 로그:
@@ -238,7 +239,7 @@ export ROS_DOMAIN_ID=101
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
-ros2 launch smart_farm_monitor monitor.launch.py 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/monitor_$(date +%Y%m%d_%H%M).txt
+ros2 launch smart_farm_monitor monitor.launch.py 2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/results/log/monitor_$(date +%Y%m%d_%H%M).txt
 ```
 
 **Task Manager 보다 먼저 띄움.** 그래야 첫 명령부터 빠짐없이 기록됨.
@@ -333,7 +334,7 @@ sqlite3 /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db \
 Isaac 을 실행한 회차는 **반드시 미디어를 남김.** 폴더 이름에 무엇을 했는지와 시각을 넣음.
 
 ```bash
-mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log_media/monitor_full_cycle_$(date +%Y%m%d_%H%M)
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/results/log_media/monitor_full_cycle_$(date +%Y%m%d_%H%M)
 ```
 
 여기에 웹 화면 캡처와 Isaac·RViz2 영상을 넣음. 이 폴더는 git 제외이므로 **무엇을 찍었는지는 보고로 남김**. 화면 3분할 녹화가 필요하면 같은 폴더의 `트러블슈팅_Isaac_VM_녹화환경_20260926.md` 와 `scripts/record_rig.sh` 를 씀.
@@ -361,7 +362,8 @@ mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
 | `…/launch/monitor.launch.py` | 기록+웹 동시 기동 (`web:=false`, `port:=`) |
 | `…/data/farm.db` | 기록 원본. git 제외 |
 | `…/test/` | 시험 39건. ROS·Isaac 없이 돌아감 |
-| `smart_farm_navigation/results/log/` | 이 문서의 `tee` 로그가 쌓이는 곳 (git 추적) |
-| `smart_farm_navigation/results/log_media/` | 영상·캡처 (git 제외) |
+| `smart_farm_monitor/results/log/` | 관제 쪽 `tee` 로그 (git 추적) |
+| `smart_farm_monitor/results/log_media/` | 관제 화면 캡처·녹화 (git 제외, `*.md` 만 추적) |
+| `smart_farm_navigation/results/log/` | Isaac·Nav2·주행 쪽 `tee` 로그 (git 추적) |
 | `docs/04-monitoring-web-db.md` | 관제 설계의 단일 출처 |
 | `guidance2_26차.md` | Isaac·Nav2 주행·도킹 절차 (이 문서 4장이 참조) |
