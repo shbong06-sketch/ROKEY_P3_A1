@@ -12,6 +12,8 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 ROI_CONFIG = ROOT.parent.parent / "cobot3_ws/src/smart_farm_vision/config/object_detection.yaml"
+
+# 원본 장면 수를 먼저 나눈다. 같은 장면의 배추 6개가 서로 다른 split에 섞이지 않는다.
 SPLITS = {
     "lighting_only": {"train": 100, "val": 30, "test": 30, "reserve": 40},
     "prim_rotation": {"train": 70, "val": 15, "test": 15},
@@ -29,6 +31,7 @@ IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}
 
 
 def load_rois():
+    """검출 노드와 같은 슬롯 영역 설정을 읽고 좌표 범위를 검사한다."""
     parameters = yaml.safe_load(ROI_CONFIG.read_text())["object_detection"]["ros__parameters"]
     rois = {}
     for index in range(1, 7):
@@ -41,6 +44,7 @@ def load_rois():
 
 
 def crop_box(slot, roi, width, height):
+    """슬롯 안의 배추 중심에서 96×96 crop 좌표를 계산한다."""
     if (width, height) != (640, 640):
         raise ValueError(f"{slot}: 640x640 이미지만 지원합니다: {width}x{height}")
     center_x, center_y = CROP_CENTERS[slot]
@@ -53,6 +57,7 @@ def crop_box(slot, roi, width, height):
 
 
 def main() -> None:
+    """원본을 장면 단위로 분할하고 ROI 이미지와 두 manifest를 생성한다."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seed", type=int, default=42, help="원본 이미지 분할용 난수 시드")
     args = parser.parse_args()
@@ -67,6 +72,7 @@ def main() -> None:
     output_dirs = [DATA / "mvtec/cabbage/train/good"]
     output_dirs += [DATA / f"mvtec/cabbage/test/{label}" for label in ("good", "brown", "yellow")]
     output_dirs += [DATA / f"validation/{label}" for label in ("good", "brown", "yellow")]
+    # 기존 데이터와 분할 기록을 덮어쓰면 학습·평가 재현성이 깨진다.
     if split_file.exists() or manifest_file.exists() or any(
         folder.exists() and any(folder.iterdir()) for folder in output_dirs
     ):
@@ -76,9 +82,13 @@ def main() -> None:
     excluded_prim = []
     for category, split_counts in SPLITS.items():
         folder = DATA / "raw" / category
-        images = sorted(path for path in folder.iterdir()
-                        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES) if folder.is_dir() else []
+        images = (
+            sorted(path for path in folder.iterdir()
+                   if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES)
+            if folder.is_dir() else []
+        )
         if category == "prim_rotation":
+            # 0100~0139는 이상이 섞인 원본이므로 정상 분할 후보에서 제외한다.
             expected_names = {f"rgb_{index:04d}.png" for index in range(140)}
             if {image.name for image in images} != expected_names:
                 parser.error(f"{folder}: 정상 0000~0099장과 이상 0100~0139장을 확인하세요")
@@ -92,6 +102,7 @@ def main() -> None:
     rng = random.Random(args.seed)
     scenes = []
     for category, split_counts in SPLITS.items():
+        # ROI를 자르기 전에 원본 파일을 섞고 split을 정한다.
         images = sources[category].copy()
         rng.shuffle(images)
         offset = 0
@@ -117,11 +128,13 @@ def main() -> None:
         for image, category, split in scenes:
             source_path = image.relative_to(DATA).as_posix()
             scene_writer.writerow((source_path, category, split))
+            # 예비·제외 장면도 추적하되 학습/평가 ROI는 만들지 않는다.
             if split in ("reserve", "excluded_defect"):
                 continue
             with Image.open(image) as source:
                 width, height = source.size
                 for slot, roi in rois.items():
+                    # 합성 결함 장면에서는 라벨이 확인된 세 슬롯만 평가에 사용한다.
                     if category == "synthetic_defect" and slot not in SYNTHETIC_LABELS:
                         continue
                     label = SYNTHETIC_LABELS[slot] if category == "synthetic_defect" else "good"
