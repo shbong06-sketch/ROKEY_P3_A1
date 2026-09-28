@@ -10,18 +10,39 @@ import sqlite3
 from typing import Optional
 
 
+def find_share_subdir(subdir: str):
+    """설치본의 share/smart_farm_monitor/<subdir> 를 찾는다. 없으면 None.
+
+    설치 경로는 install/smart_farm_monitor/lib/python3.x/site-packages/... 처럼
+    깊이가 기기마다 다를 수 있으므로 위로 올라가며 찾는다.
+    """
+
+    node = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(7):
+        candidate = os.path.join(node, "share", "smart_farm_monitor", subdir)
+        if os.path.isdir(candidate):
+            return candidate
+        parent = os.path.dirname(node)
+        if parent == node:
+            break
+        node = parent
+    return None
+
+
 def find_schema_path() -> str:
     """schema.sql 의 경로를 찾는다. 소스 트리와 설치본 둘 다에서 동작한다."""
 
     here = os.path.dirname(os.path.abspath(__file__))
-    candidates = [
-        os.path.join(here, "schema.sql"),
-        os.path.join(here, "..", "..", "share", "smart_farm_monitor", "sql", "schema.sql"),
-    ]
-    for path in candidates:
+    tried = [os.path.join(here, "schema.sql")]
+
+    share = find_share_subdir("sql")
+    if share is not None:
+        tried.append(os.path.join(share, "schema.sql"))
+
+    for path in tried:
         if os.path.isfile(path):
             return os.path.abspath(path)
-    raise FileNotFoundError("schema.sql 을 찾지 못했습니다: " + str(candidates))
+    raise FileNotFoundError("schema.sql 을 찾지 못했습니다: " + str(tried))
 
 
 def dump_json(value) -> str:
@@ -483,6 +504,41 @@ class MonitorStore:
             "dock_max_lat_m": dock_row["max_lat"],
             "defect_detections": defect_row["defects"] or 0,
         }
+
+    def version_token(self) -> tuple:
+        """DB 가 바뀌었는지 싸게 확인하는 값. 웹의 실시간 갱신에 쓴다."""
+
+        row = self.conn.execute(
+            "SELECT"
+            " (SELECT MAX(updated_wall) FROM live) AS live_at,"
+            " (SELECT MAX(id) FROM step) AS step_id,"
+            " (SELECT MAX(id) FROM executor_status) AS status_id,"
+            " (SELECT MAX(id) FROM detection) AS detection_id,"
+            " (SELECT MAX(id) FROM dock_attempt) AS dock_id,"
+            " (SELECT MAX(id) FROM pallet_move) AS pallet_id,"
+            " (SELECT MAX(id) FROM web_command) AS web_id,"
+            " (SELECT COUNT(*) FROM cycle) AS cycle_n"
+        ).fetchone()
+        return tuple(row)
+
+    def web_command(self, row_id: int):
+        """우편함 행 하나를 돌려준다. 웹이 버튼 결과를 확인할 때 쓴다."""
+
+        return self.conn.execute(
+            "SELECT * FROM web_command WHERE id = ?", (row_id,)
+        ).fetchone()
+
+    def anomaly_labels(self, task_id: Optional[str] = None) -> list:
+        """사람이 붙인 라벨 목록."""
+
+        if task_id is None:
+            return self.conn.execute(
+                "SELECT * FROM anomaly_label ORDER BY id DESC LIMIT 500"
+            ).fetchall()
+        return self.conn.execute(
+            "SELECT * FROM anomaly_label WHERE task_id = ? ORDER BY id",
+            (task_id,),
+        ).fetchall()
 
     def step_durations(self) -> list:
         """operation 별 시뮬레이션 소요시간 통계. 사이클 타임 분석과 timeout 재설정용."""

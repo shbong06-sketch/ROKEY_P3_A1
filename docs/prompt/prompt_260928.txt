@@ -133,4 +133,19 @@ gv와 pdf 파일은 나도 출처를 모르고 무엇보다 내가 만든 기억
 팀장님께 메시지는 전해놨고 답변 대기중
 
 4.
-슬슬 웹 및 DB 구축 작업을 해도 될까 싶었는데, ADR 생성이 남았음. 일단 당신이 초안을 작성해볼 것.
+슬슬 웹 및 DB 구축 작업을 해도 될만한지?
+
+아, 브랜치 바꾸기 전에 미처 미리 프롬프트 적지 못했는데,
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log_media/run_20260926_0045",
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log_media/run_20260926_0056",
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log_media/run_20260926_0111",
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log_media/run_20260926_0132"
+이 로그의 내용을 가지고 이전에 통합 작업 때의 트러블 슈팅 문서기록을 남길려고 함.
+물론 ai가 vm 인스턴스 상에서 한 작업이라 ai 흔적이 잔뜩 있는 작업들이지만,
+아이작심을 운용하는 vm환경 구축이라는 주제로 트러블슈팅하기에는 나쁘지 않을 것 같음.
+그래서 각 디렉터리 별로 어떤 상황이었고, 어떤 문제를 어떻게 해결했는지를 2-3줄 이내로 요약 정리해서 문서화 바람.
+저장경로는 "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log_media"
+
+---
+
+오케이. fastapi uvicorn 설치하고, 웹 및 DB  구축 작업 착수할 것

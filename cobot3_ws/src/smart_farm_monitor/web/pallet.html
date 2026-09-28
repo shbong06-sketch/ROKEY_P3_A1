@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>스마트팜 관제 — 트레이 추적</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>스마트팜 관제</h1>
+  <nav id="nav"></nav>
+  <span class="spacer"></span>
+  <span id="link-state" class="link-state">연결 준비</span>
+</header>
+
+<main>
+  <div class="panel" style="margin-bottom:14px">
+    <h2>팔레트(트레이) 현재 논리 위치</h2>
+    <div class="grid cols-3" id="pallet-cards"></div>
+    <p class="note">기획서의 검증 지표 <b>"트레이 위치·상태 기록 일치율"</b> 의 측정 근거임.
+    현재는 명령의 <code>destination</code> → <code>reached_station</code> → 공정 단계 이름 순으로 대신 기록함.
+    Task Manager 가 <code>pallet_locations</code> 를 발행하면 그 값으로 바꿈.</p>
+  </div>
+
+  <div class="panel">
+    <h2>이동 이력</h2>
+    <div id="move-table"></div>
+  </div>
+</main>
+
+<script src="/static/app.js"></script>
+<script>
+renderNav('/pallet');
+
+async function refresh() {
+  const data = await getJson('/api/pallets');
+  const moves = data.moves || [];
+
+  const latest = {};
+  for (const move of moves) latest[move.pallet_id] = move;
+  const names = Object.keys(latest).sort();
+
+  document.getElementById('pallet-cards').innerHTML = names.length
+    ? names.map((name) => {
+        const move = latest[name];
+        return `<div class="panel" style="background:var(--panel-2)">
+          <div class="name" style="color:var(--muted);font-size:12px">${name}</div>
+          <div style="font-size:20px;font-weight:700;margin:6px 0">${text(move.location)}</div>
+          <div style="color:var(--muted);font-size:12px">
+            이전 ${text(move.source, '—')} · ${wallTime(move.recv_wall)}</div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">팔레트 이동 기록이 아직 없음</div>';
+
+  document.getElementById('move-table').innerHTML = moves.length
+    ? `<table><thead><tr><th>task_id</th><th>command_id</th><th>팔레트</th>
+       <th>이전</th><th>이후</th><th class="num">sim 시각</th><th>벽시계</th></tr></thead>
+       <tbody>${moves.slice().reverse().map((move) => `<tr>
+         <td class="mono">${text(move.task_id)}</td>
+         <td class="mono">${text(move.command_id)}</td>
+         <td>${text(move.pallet_id)}</td>
+         <td>${text(move.source)}</td>
+         <td><b>${text(move.location)}</b></td>
+         <td class="num">${move.recv_sim === null ? '—' : Number(move.recv_sim).toFixed(1)}</td>
+         <td>${wallTime(move.recv_wall)}</td>
+       </tr>`).join('')}</tbody></table>`
+    : '<div class="empty">팔레트 이동 기록이 아직 없음</div>';
+}
+
+refresh();
+subscribeState(() => refresh());
+</script>
+</body>
+</html>

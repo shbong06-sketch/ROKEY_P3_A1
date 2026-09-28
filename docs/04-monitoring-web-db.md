@@ -802,3 +802,94 @@ PR #12 가 `development` 로 merge 되면 **`development` 에서도 위 문서 �
 | 팀 단위시험 (`test_state_machine.py`, `test_json_protocol.py`) | **34 passed** |
 
 즉 **관제 개발 기준선이 팀 통합 최종본과 동일하고, 우리 문서·실측 기록은 하나도 잃지 않았음.**
+
+---
+
+## 17. 구현 현황 (2026-09-28)
+
+### 17.1 만든 것
+
+패키지 `cobot3_ws/src/smart_farm_monitor/`.
+
+| 파일 | 역할 |
+|---|---|
+| `smart_farm_monitor/schema.sql` | 표 10개. `cycle` / `step` / `executor_status` / `detection` / `inspection_verdict` / `pallet_move` / `dock_attempt` / `web_command` / `live` / `anomaly_label` |
+| `smart_farm_monitor/store.py` | sqlite3 래퍼. **ROS 의존 없음.** WAL, 쓰기는 recorder 한 곳만 |
+| `smart_farm_monitor/recorder_node.py` | 토픽 → DB, `web_command` → `/start_cycle` 호출 |
+| `smart_farm_monitor/web_app.py` | FastAPI. **ROS 의존 없음.** 화면 5개 + API + SSE |
+| `web/style.css`, `web/app.js` | 관제실 어두운 테마, 프레임워크 없는 순수 JS |
+| `web/index.html` | 대시보드 — KPI 6장, 현재 사이클, executor 램프, 12단계 체크리스트, **지도**, 최근 도킹, 이상 배너, 시작 버튼 |
+| `web/history.html` | 사이클 목록, **간트**, operation 별 sim 소요시간 통계, **정상·이상 라벨링** |
+| `web/inspection.html` | 슬롯 6칸 그리드, 검사 판정, 검출 좌표 표 |
+| `web/dock.html` | 도킹 KPI, 시도 표, **횡 오차 산점도**(허용 ±0.06 점선) |
+| `web/pallet.html` | 팔레트별 현재 논리 위치와 이동 이력 |
+| `config/monitor.yaml`, `launch/monitor.launch.py` | `use_sim_time: true`, 기록+웹 동시 기동(`web:=false` 로 기록만) |
+| `test/test_store.py` (17) · `test_recorder_node.py` (6) · `test_web_app.py` (15) | **38건 전부 통과** |
+
+### 17.2 §11 우선순위 대비 진행
+
+| 항목 | 상태 |
+|---|---|
+| P0-1 기록 파이프라인 | **완료** |
+| P0-2 SSE 서버 푸시 | **완료** (`/api/events`, `version_token()` 으로 바뀔 때만 밀어줌) |
+| P1-3 2D 지도 위 로봇 위치 | **완료** (`map` 좌표계 → pixel 변환 두 줄, 작업점·헤딩 표시) |
+| P1-4 공정 타임라인(간트) | **완료** |
+| P1-5 검사 결과 오버레이 | **완료** (슬롯 그리드·차수 구분. 디버그 영상 겹치기는 3단계 선택 항목으로 남김) |
+| P1-6 KPI 카드 | **완료** |
+| P1-7 관제실 레이아웃 | **완료** |
+| 관제 조작(시작 버튼) | **완료** |
+| P2-10 이상 탐지 배너·라벨링 | **라벨링 완료.** 배너는 `late_result`·`ERROR` 기준으로 먼저 동작하며, 팀장 ML 결과 토픽이 정해지면 그 값을 추가함 |
+
+### 17.3 검증 결과 (고피3, Isaac 없이)
+
+```
+colcon build --packages-select smart_farm_monitor smart_farm_navigation  → 실패 0
+pytest src/smart_farm_monitor/test -q                                   → 38 passed
+```
+
+**실기동 확인**(도메인 77 + `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`, 임시 DB):
+
+| 확인 항목 | 결과 |
+|---|---|
+| `recorder` + `web` 동시 기동 | 정상 |
+| `/cycle/status` 수신 → `cycle` 1행 | `cycle opened: TASK-SMOKE-001` |
+| `/sim_task/command` + `/result` → `step` 1행 | `duration_wall` `duration_sim` 모두 2.426 s 로 채워짐 |
+| `/feeder_dock/result` (latched) → `dock_attempt` 1행 | `run_id=SMOKE-RUN lat_m=0.041 retry=1` |
+| 화면 5개 + `/static/style.css` + `/api/map` | 전부 HTTP 200 |
+| SSE `/api/events` | 첫 이벤트로 현재 상태 수신 |
+| 시작 버튼 → 우편함 → `/start_cycle` | `REJECTED / SERVICE_NOT_AVAILABLE` (Task Manager 없음 — 의도한 동작) |
+
+**중간에 잡은 것 3개.**
+
+1. `find_schema_path()` 와 `find_web_dir()` 가 설치본에서 실패했음. 설치 경로가 `install/…/lib/python3.12/site-packages/…` 라 상대 깊이가 소스 트리와 달랐음. → `share/smart_farm_monitor/` 를 위로 올라가며 찾는 방식으로 바꿈.
+2. 웹이 recorder 보다 먼저 뜨면 `no such table: live` 가 났음. → `create_app()` 에서 스키마를 한 번 보장함(`CREATE TABLE IF NOT EXISTS` 라 기존 기록에 영향 없음).
+3. `/feeder_dock/result` 는 **latched(RELIABLE + TRANSIENT_LOCAL)** 라 기본 `ros2 topic pub` 으로는 수신되지 않음. 구독 QoS 는 `feeder_dock.py:369` 와 정확히 같으므로 옳고, **시험 발행 쪽에 `--qos-durability transient_local --qos-reliability reliable` 을 붙여야 함.**
+
+또한 옛 웹 프로세스가 포트 8099 를 잡고 있어 새 판이 뜨지 못한 일이 있었음. **`pkill -f` 를 쓰지 않고 `ps -ef` 로 PID 를 찾아 `kill` 로 정리했음**(ADR_basic §6-6, 2026-09-26 사고 규칙).
+
+### 17.4 실행 방법
+
+의존 설치는 **apt 로 함**(Ubuntu 24.04 는 PEP 668 이라 `pip install` 이 막힘. 세 기기 모두 같은 명령임).
+
+```bash
+sudo apt-get install -y python3-fastapi python3-uvicorn python3-httpx
+```
+
+띄우기 — 터미널 하나. 환경 4줄을 매번 반복함.
+
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+ros2 launch smart_farm_monitor monitor.launch.py
+```
+
+브라우저에서 `http://<그 기기 IP>:8080` 을 엶. 기록만 하려면 `web:=false`, 포트를 바꾸려면 `port:=9090`.
+
+### 17.5 남은 것
+
+- 팀장 ML 결과 토픽이 정해지면 이상 배너에 그 값을 추가함
+- `pallet_locations` 가 발행되면 `pallet_move` 의 위치 판정을 그 값으로 바꿈
+- 검사 디버그 영상(JPEG) 겹치기는 `cv_bridge` 의존이 늘어 선택 항목으로 둠
+- 실제 사이클로 채운 화면은 아직 없음. **Isaac 실행 시 `results/log_media/<수행한것>_<날짜>_<시각>/` 에 스냅샷을 남김**(§15.1)

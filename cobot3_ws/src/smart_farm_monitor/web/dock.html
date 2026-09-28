@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>스마트팜 관제 — 도킹 품질</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>스마트팜 관제</h1>
+  <nav id="nav"></nav>
+  <span class="spacer"></span>
+  <span id="link-state" class="link-state">연결 준비</span>
+</header>
+
+<main>
+  <div class="kpi" id="dock-kpi" style="margin-bottom:14px"></div>
+
+  <div class="grid dash" style="margin-bottom:14px">
+    <div class="panel">
+      <h2>도킹 시도 기록 (거리·각도는 TurnTable 라이다 검출 면 기준 상대좌표계)</h2>
+      <div id="dock-table"></div>
+    </div>
+    <div class="panel">
+      <h2>횡 오차 분포</h2>
+      <div class="map-wrap"><canvas id="lat-canvas" width="680" height="420"></canvas></div>
+      <p class="note">가로축 = 횡 오차 <code>lat_m</code>(면 접선 방향, m), 세로축 = 시도 순서.
+      점선은 현재 허용치 <b>±0.06 m</b>임. 초록 = 성공, 빨강 = 실패.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>해석 기준</h2>
+    <div class="rows">
+      <div class="row-line"><span class="k"><code>face_dist_m</code></span>
+        <span>검출 면 법선 방향 거리 m. 목표는 <code>standoff_m</code> = 0.92</span></div>
+      <div class="row-line"><span class="k"><code>yaw_err_deg</code></span>
+        <span>검출 면 기준 상대 yaw 오차 도. 0 이 면과 직각</span></div>
+      <div class="row-line"><span class="k"><code>lat_m</code></span>
+        <span>검출 면 접선 방향(횡) 오차 m. 허용 ±0.06</span></div>
+      <div class="row-line"><span class="k"><code>retry</code></span>
+        <span><code>feeder_dock</code> 의 BACKOFF 재시도 횟수(0.9 m 물러나 재정렬)</span></div>
+      <div class="row-line"><span class="k"><code>map_x / map_y / map_yaw_deg</code></span>
+        <span><code>/amcl_pose</code>, <b>map 좌표계</b> 로봇 자세</span></div>
+    </div>
+  </div>
+</main>
+
+<script src="/static/app.js"></script>
+<script>
+renderNav('/dock');
+
+const LAT_TOLERANCE = 0.06;
+
+function drawScatter(rows) {
+  const canvas = document.getElementById('lat-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const padding = 44;
+  const width = canvas.width - padding * 2;
+  const height = canvas.height - padding * 2;
+  const limit = Math.max(LAT_TOLERANCE * 1.6,
+    ...rows.map((row) => Math.abs(Number(row.lat_m) || 0)) , 0.08);
+
+  const toX = (value) => padding + ((value + limit) / (2 * limit)) * width;
+
+  ctx.strokeStyle = '#2a323d';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(padding, padding, width, height);
+
+  // 0 선과 허용치
+  ctx.setLineDash([4, 4]);
+  for (const [value, color] of [[0, '#8b97a6'],
+                                [LAT_TOLERANCE, '#d29922'],
+                                [-LAT_TOLERANCE, '#d29922']]) {
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(toX(value), padding);
+    ctx.lineTo(toX(value), padding + height);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#8b97a6';
+  ctx.font = '12px sans-serif';
+  ctx.fillText((-limit).toFixed(2) + ' m', padding - 20, padding + height + 18);
+  ctx.fillText('0', toX(0) - 3, padding + height + 18);
+  ctx.fillText('+' + limit.toFixed(2) + ' m', padding + width - 30, padding + height + 18);
+
+  if (!rows.length) {
+    ctx.fillText('도킹 기록이 아직 없음', padding + 10, padding + 20);
+    return;
+  }
+
+  const ordered = rows.slice().reverse();   // 오래된 것이 위
+  ordered.forEach((row, index) => {
+    const lat = Number(row.lat_m);
+    if (!isFinite(lat)) return;
+    const y = padding + ((index + 0.5) / ordered.length) * height;
+    ctx.fillStyle = row.status === 'SUCCEEDED' ? '#3fb950' : '#f85149';
+    ctx.beginPath();
+    ctx.arc(toX(lat), y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+async function refresh() {
+  const data = await getJson('/api/dock?limit=200');
+  const rows = data.attempts || [];
+
+  const total = rows.length;
+  const ok = rows.filter((row) => row.status === 'SUCCEEDED').length;
+  const retries = rows.map((row) => Number(row.retry) || 0);
+  const lats = rows.map((row) => Math.abs(Number(row.lat_m) || 0));
+  const overs = lats.filter((value) => value > LAT_TOLERANCE).length;
+
+  const cards = [
+    ['시도', String(total), 'feeder_dock 결과 수'],
+    ['성공률', percent(ok, total), `${ok} / ${total}`],
+    ['평균 재시도', total ? (retries.reduce((a, b) => a + b, 0) / total).toFixed(2) : '—', 'BACKOFF'],
+    ['최대 재시도', total ? String(Math.max(...retries)) : '—', ''],
+    ['최대 횡 오차', total ? meters(Math.max(...lats)) : '—', `허용 ±${LAT_TOLERANCE}`],
+    ['허용 초과', String(overs), '횡 오차 기준'],
+  ];
+  document.getElementById('dock-kpi').innerHTML = cards.map(
+    ([label, value, sub]) =>
+      `<div class="card"><div class="label">${label}</div>
+       <div class="value">${value}</div><div class="sub">${sub}</div></div>`
+  ).join('');
+
+  document.getElementById('dock-table').innerHTML = rows.length
+    ? `<table><thead><tr><th>run_id</th><th>결과</th><th>사유</th>
+       <th class="num">면 거리</th><th class="num">yaw</th><th class="num">횡</th>
+       <th class="num">재시도</th><th class="num">map x</th><th class="num">map y</th>
+       <th class="num">map yaw</th><th>수신</th></tr></thead>
+       <tbody>${rows.map((row) => `<tr>
+         <td class="mono">${text(row.run_id)}</td>
+         <td>${tag(row.status)}</td>
+         <td>${text(row.reason === 'NONE' ? '' : row.reason)}</td>
+         <td class="num">${meters(row.face_dist_m)}</td>
+         <td class="num">${degrees(row.yaw_err_deg)}</td>
+         <td class="num">${meters(row.lat_m)}</td>
+         <td class="num">${text(row.retry)}</td>
+         <td class="num">${meters(row.map_x, 2)}</td>
+         <td class="num">${meters(row.map_y, 2)}</td>
+         <td class="num">${degrees(row.map_yaw_deg)}</td>
+         <td>${wallTime(row.recv_wall)}</td>
+       </tr>`).join('')}</tbody></table>`
+    : '<div class="empty">도킹 기록이 아직 없음</div>';
+
+  drawScatter(rows);
+}
+
+refresh();
+subscribeState(() => refresh());
+</script>
+</body>
+</html>

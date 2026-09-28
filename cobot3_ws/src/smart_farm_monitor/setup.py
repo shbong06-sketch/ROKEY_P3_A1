@@ -32,6 +32,10 @@ setup(
             os.path.join("share", package_name, "sql"),
             glob("smart_farm_monitor/*.sql"),
         ),
+        (
+            os.path.join("share", package_name, "web"),
+            glob("web/*"),
+        ),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -43,6 +47,7 @@ setup(
     entry_points={
         "console_scripts": [
             "recorder = smart_farm_monitor.recorder_node:main",
+            "web = smart_farm_monitor.web_app:main",
         ],
     },
 )
