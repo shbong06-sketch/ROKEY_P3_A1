@@ -94,7 +94,8 @@ GRIPPER_OPEN, GRIPPER_CLOSE = 0.0, 1.18
 ARM_DRIVE = (1.0e8, 1.0e4, 1.0e8)                              # cull_standalone 과 같음
 # 팀 기본 1e4 N·m 는 손가락이 포기를 관통한다. 8 N·m 에서 6칸 모두 파지 성공(05_m0609_pick_place_test).
 # 2026-09-27 집기 실험: 8 N·m 는 0.3 kg 경계(5~6 N·m) 바로 위, 0.5 kg 에서 1/6 -> 12 N·m (0.3·0.5·0.7 kg 6/6, 전체 흐름 9/9)
-GRIPPER_DRIVE = (1.0e5, 1.0e3, float(os.environ.get("SMARTFARM_GRIP_FORCE", "12.0")))   # maxForce N·m (환경변수로 바꿈)
+# 2026-09-28: 16 N·m 로 0.3·0.5·0.7 kg x 기본 마찰 0.8 / 실물 쪽 마찰 0.4 전 조건 6/6 -> 기본값 16
+GRIPPER_DRIVE = (1.0e5, 1.0e3, float(os.environ.get("SMARTFARM_GRIP_FORCE", "16.0")))   # maxForce N·m (환경변수로 바꿈)
 TOOL_Q = (0.0, 1.0 / math.sqrt(2.0), -1.0 / math.sqrt(2.0), 0.0)   # cull_standalone 의 위에서 집기 자세
 TCP_OFFSET = (0.0, 0.0, 0.19671)
 
