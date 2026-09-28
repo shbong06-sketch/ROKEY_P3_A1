@@ -781,3 +781,24 @@ git checkout feature/lwh -- docs/ADR docs/prompt docs/reference \
 ### 16.4 팀장님께 알려야 할 것
 
 PR #12 가 `development` 로 merge 되면 **`development` 에서도 위 문서 자산이 사라짐.** 우리 브랜치에는 남으므로 작업에 지장은 없으나, 공유 저장소 기준에서는 실측 기록과 지난 가이던스가 없어짐. 통보 문안은 답변에 포함함.
+
+### 16.5 실행 결과 (2026-09-28 수행 완료)
+
+브랜치 `feature/monitor` 를 만들어 위 순서대로 수행했음. 커밋 `29b32a4`, `origin/feature/monitor` 로 푸시 완료.
+
+| 항목 | 결과 |
+|---|---|
+| 충돌 | **142건** (`results/log/*` 141 rename/delete + `docs/ADR/ADR_basic.md` 1 modify/delete) → 전부 우리 것 유지로 해소 |
+| 조용히 지워질 뻔한 것 | **174건 복원**: `docs/ADR`, `docs/prompt`, `docs/reference`(강의자료 103), `guidance/`(past 27), `results/`, `errored/`(9), `smart_farm_navigation/docs/`(9), `config/past`, `launch/past` |
+| 삭제를 그대로 둔 것 | 저장소 루트의 `frames_2026-09-18_20.02.43.{gv,pdf}` (tf 트리 덤프, 루트 어지럽힘) |
+| 코드 충돌 | **0건** |
+| `docs/ADR/` | `ADR_basic.md`, `ADR_navigation2.md` 둘 다 존재 |
+| `results/log/` | **144개** (병합 전과 같음) |
+| `scenario.py` 의 `StepDefinition` | **12개** |
+| `task_manager_node.py` 토픽 | **13개** |
+| navigation 핵심 7파일 | 팀 브랜치와 blob 동일 |
+| `.gitignore` | `/cobot3_ws/src/smart_farm_monitor/*` → `…/data/*` 로 축소 |
+| `colcon build` (`smart_farm_interfaces`, `smart_farm_manager`, `smart_farm_navigation`) | **3 packages finished, 6.31 s, 실패 0** |
+| 팀 단위시험 (`test_state_machine.py`, `test_json_protocol.py`) | **34 passed** |
+
+즉 **관제 개발 기준선이 팀 통합 최종본과 동일하고, 우리 문서·실측 기록은 하나도 잃지 않았음.**
