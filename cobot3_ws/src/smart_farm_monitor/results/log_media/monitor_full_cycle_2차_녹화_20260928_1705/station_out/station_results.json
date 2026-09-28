@@ -1,0 +1,276 @@
+[
+ {
+  "pallet": "Pallet_01",
+  "stop_xy": [
+   -0.686,
+   -6.731
+  ],
+  "pushed_xy": [
+   -0.685,
+   -7.002
+  ],
+  "seat_error_after_push_mm": 0.6,
+  "culls": [
+   {
+    "slot": "SLOT_03",
+    "cabbage_prim": "Cabbage_02",
+    "colour": "yellow",
+    "box": "SortBin_1",
+    "drop_spread_y_m": 0.0,
+    "vision_xy_error_mm": 4.6,
+    "vision_to_pick_xy_mm": 4.6,
+    "pick_xy_error_mm": 0.0,
+    "trace": [
+     {
+      "stage": "OPEN",
+      "head_to_tcp_mm": 411.8,
+      "finger": 0.0
+     },
+     {
+      "stage": "PICK_APPROACH",
+      "head_to_tcp_mm": 411.9,
+      "finger": 0.0
+     },
+     {
+      "stage": "PICK_DESCEND",
+      "head_to_tcp_mm": 212.0,
+      "finger": 0.0
+     },
+     {
+      "stage": "GRASP",
+      "head_to_tcp_mm": 35.1,
+      "finger": 0.0
+     },
+     {
+      "stage": "LIFT",
+      "head_to_tcp_mm": 35.0,
+      "finger": 0.36
+     },
+     {
+      "stage": "VIA",
+      "head_to_tcp_mm": 38.7,
+      "finger": 0.382
+     },
+     {
+      "stage": "PLACE_APPROACH",
+      "head_to_tcp_mm": 38.7,
+      "finger": 0.382
+     },
+     {
+      "stage": "PLACE_DESCEND",
+      "head_to_tcp_mm": 38.7,
+      "finger": 0.382
+     },
+     {
+      "stage": "RELEASE",
+      "head_to_tcp_mm": 38.7,
+      "finger": 0.382
+     },
+     {
+      "stage": "RETREAT",
+      "head_to_tcp_mm": 400.8,
+      "finger": 0.0
+     },
+     {
+      "stage": "DONE",
+      "head_to_tcp_mm": 989.6,
+      "finger": 0.0
+     }
+    ],
+    "in_box": true,
+    "head_final": [
+     -1.019,
+     -7.7,
+     0.062
+    ],
+    "box_bounds": {
+     "min": [
+      -1.162,
+      -7.983,
+      0.013
+     ],
+     "max": [
+      -0.872,
+      -7.417,
+      0.361
+     ]
+    }
+   },
+   {
+    "slot": "SLOT_04",
+    "cabbage_prim": "Cabbage_05",
+    "colour": "yellow",
+    "box": "SortBin_1",
+    "drop_spread_y_m": -0.15,
+    "vision_xy_error_mm": 9.2,
+    "vision_to_pick_xy_mm": 9.2,
+    "pick_xy_error_mm": 0.0,
+    "trace": [
+     {
+      "stage": "OPEN",
+      "head_to_tcp_mm": 338.0,
+      "finger": 0.0
+     },
+     {
+      "stage": "PICK_APPROACH",
+      "head_to_tcp_mm": 336.7,
+      "finger": 0.0
+     },
+     {
+      "stage": "PICK_DESCEND",
+      "head_to_tcp_mm": 212.7,
+      "finger": 0.0
+     },
+     {
+      "stage": "GRASP",
+      "head_to_tcp_mm": 34.8,
+      "finger": 0.0
+     },
+     {
+      "stage": "LIFT",
+      "head_to_tcp_mm": 34.8,
+      "finger": 0.332
+     },
+     {
+      "stage": "VIA",
+      "head_to_tcp_mm": 43.0,
+      "finger": 0.4
+     },
+     {
+      "stage": "PLACE_APPROACH",
+      "head_to_tcp_mm": 43.0,
+      "finger": 0.402
+     },
+     {
+      "stage": "PLACE_DESCEND",
+      "head_to_tcp_mm": 43.0,
+      "finger": 0.402
+     },
+     {
+      "stage": "RELEASE",
+      "head_to_tcp_mm": 43.0,
+      "finger": 0.402
+     },
+     {
+      "stage": "RETREAT",
+      "head_to_tcp_mm": 401.0,
+      "finger": 0.0
+     },
+     {
+      "stage": "DONE",
+      "head_to_tcp_mm": 989.7,
+      "finger": 0.0
+     }
+    ],
+    "in_box": true,
+    "head_final": [
+     -1.01,
+     -7.845,
+     0.062
+    ],
+    "box_bounds": {
+     "min": [
+      -1.162,
+      -7.983,
+      0.013
+     ],
+     "max": [
+      -0.872,
+      -7.417,
+      0.361
+     ]
+    }
+   },
+   {
+    "slot": "SLOT_05",
+    "cabbage_prim": "Cabbage_03",
+    "colour": "brown",
+    "box": "SortBin_2",
+    "drop_spread_y_m": 0.0,
+    "vision_xy_error_mm": 15.3,
+    "vision_to_pick_xy_mm": 15.3,
+    "pick_xy_error_mm": 0.0,
+    "trace": [
+     {
+      "stage": "OPEN",
+      "head_to_tcp_mm": 288.4,
+      "finger": 0.0
+     },
+     {
+      "stage": "PICK_APPROACH",
+      "head_to_tcp_mm": 287.9,
+      "finger": 0.0
+     },
+     {
+      "stage": "PICK_DESCEND",
+      "head_to_tcp_mm": 213.6,
+      "finger": 0.0
+     },
+     {
+      "stage": "GRASP",
+      "head_to_tcp_mm": 34.9,
+      "finger": 0.0
+     },
+     {
+      "stage": "LIFT",
+      "head_to_tcp_mm": 34.9,
+      "finger": 0.382
+     },
+     {
+      "stage": "VIA",
+      "head_to_tcp_mm": 34.9,
+      "finger": 0.383
+     },
+     {
+      "stage": "PLACE_APPROACH",
+      "head_to_tcp_mm": 34.9,
+      "finger": 0.381
+     },
+     {
+      "stage": "PLACE_DESCEND",
+      "head_to_tcp_mm": 35.0,
+      "finger": 0.383
+     },
+     {
+      "stage": "RELEASE",
+      "head_to_tcp_mm": 34.9,
+      "finger": 0.382
+     },
+     {
+      "stage": "RETREAT",
+      "head_to_tcp_mm": 377.2,
+      "finger": 0.0
+     },
+     {
+      "stage": "DONE",
+      "head_to_tcp_mm": 993.5,
+      "finger": 0.0
+     }
+    ],
+    "in_box": true,
+    "head_final": [
+     -0.327,
+     -7.7,
+     0.058
+    ],
+    "box_bounds": {
+     "min": [
+      -0.462,
+      -8.006,
+      0.009
+     ],
+     "max": [
+      -0.192,
+      -7.394,
+      0.333
+     ]
+    }
+   }
+  ],
+  "returned_xy": [
+   -0.675,
+   -6.73
+  ],
+  "elapsed_wall_s": 490.3
+ }
+]
