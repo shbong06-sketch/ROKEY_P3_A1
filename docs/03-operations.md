@@ -7,7 +7,7 @@
 ## 1. 자산과 환경 준비
 
 - ROS 2 Jazzy, Nav2, `colcon`, Isaac Sim 5.1 Standalone, Docker Compose, NVIDIA GPU·드라이버·Container Toolkit을 준비한다. Inspection Executor는 [GPU 컨테이너](../compose.vision.yaml)에서 실행한다.
-- Git 외부 v015 장면과 참조 자산을 `cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v015/`에 풀어 `Collected_smartfarm_v015.usd`가 존재하도록 한다. [Nav2 지도](../cobot3_ws/src/smart_farm_navigation/maps/Collected_smartfarm_v015.yaml)도 v015를 사용한다. `standalone_app.py`에는 다른 장면으로 대체 실행되지 않도록 `--scene`을 명시한다.
+- Git 외부 v015 장면과 참조 자산을 [장면 자산 문서](04-assets.md)에 따라 `cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v015/`에 풀어 `Collected_smartfarm_v015.usd`가 존재하도록 한다. [Nav2 지도](../cobot3_ws/src/smart_farm_navigation/maps/Collected_smartfarm_v015.yaml)도 v015를 사용한다. `standalone_app.py`에는 다른 장면으로 대체 실행되지 않도록 `--scene`을 명시한다.
 - [YOLO 모델](../cobot3_ws/src/smart_farm_vision/resource/best.pt)과 [Vision 설정](../cobot3_ws/src/smart_farm_vision/config/object_detection.yaml)을 확인한다. PatchCore는 이 통합 공정에서 사용하지 않는다.
 - 호스트 ROS 터미널과 Vision 컨테이너의 `ROS_DOMAIN_ID`를 동일하게 설정한다. Vision Compose는 셸 환경 또는 저장소 루트 `.env`의 값을 읽는다. 다른 PC를 쓰면 `/clock`, `/tf`, `/chassis/odom`, `/scan`, `/rgb`가 해당 노드에 도달해야 한다.
 - Isaac 터미널에는 시스템 ROS 2 환경을 source하지 않는다. 나머지 ROS 터미널에서는 **같은** `cobot3_ws/install` overlay를 사용하고 저장소 루트의 별도 `install`과 혼용하지 않는다.

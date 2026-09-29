@@ -88,7 +88,7 @@ Isaac Sim 합성 장면에서 배추별 96×96 ROI를 만들고 정상 ROI 1,020
 
 ## 디지털 트윈과 프로젝트 구조
 
-v015 USD 장면은 Nova Carter, 리프트, M0609 포크, 랙·팔레트, 검사 로봇·지그, 컨베이어와 센서를 포함한다. 통합 주행 지도는 [`Collected_smartfarm_v015.yaml`](cobot3_ws/src/smart_farm_navigation/maps/Collected_smartfarm_v015.yaml)이다. **v015 USD와 참조 자산은 Git 외부에서 준비해야 한다.** 장면·지도 버전을 맞추고 물리·충돌 상태를 Isaac Sim에서 확인한다.
+v015 USD 장면은 Nova Carter, 리프트, M0609 포크, 랙·팔레트, 검사 로봇·지그, 컨베이어와 센서를 포함한다. 통합 주행 지도는 [`Collected_smartfarm_v015.yaml`](cobot3_ws/src/smart_farm_navigation/maps/Collected_smartfarm_v015.yaml)이다. **v015 USD와 참조 자산은 Git 외부에서 준비해야 한다.** 다운로드·설치 구조·체크섬은 [v015 장면 자산 문서](docs/04-assets.md)에 정리했다.
 
 ```text
 ROKEY_P3_A1/
@@ -150,6 +150,7 @@ PatchCore의 저장된 [이미지 단위 평가 보고서](ml/cabbage_anomaly/re
 | [시스템 아키텍처](docs/01-architecture.md) | 구성 요소, 책임, 전체 공정 |
 | [ROS 2 인터페이스](docs/02-interfaces.md) | 메시지·JSON 계약, 단계별 성공 조건 |
 | [통합 시연 운영 가이드](docs/03-operations.md) | v015 준비, 실행, 결과 확인, 재시작 |
+| [v015 장면 자산](docs/04-assets.md) | 다운로드, 압축 해제 구조, 지도 대응, 체크섬 |
 | [PatchCore README](ml/cabbage_anomaly/README.md) · [데이터셋](ml/cabbage_anomaly/data/DATASET.md) | 학습·평가·영상 시연과 데이터 구성 |
 
 | 버전 | 내용 |
