@@ -42,7 +42,7 @@ data/
 
 ## ROI와 파일명
 
-슬롯 번호는 `SLOT_01`~`SLOT_03`이 위쪽 왼쪽부터 오른쪽, `SLOT_04`~`SLOT_06`이 아래쪽 왼쪽부터 오른쪽 순서다. `scripts/build_dataset.py`는 [object detection 설정](../../cobot3_ws/src/smart_farm_vision/config/object_detection.yaml)의 슬롯 영역을 확인하고, 각 영역 안의 배추 중심을 기준으로 **96×96 픽셀**을 자른다. 중심 좌표는 현재 640×640 Isaac Sim 카메라에 맞춰져 있다.
+슬롯 번호는 `SLOT_01`~`SLOT_03`이 위쪽 왼쪽부터 오른쪽, `SLOT_04`~`SLOT_06`이 아래쪽 왼쪽부터 오른쪽 순서다. `scripts/build_dataset.py`는 [object detection 설정](../../../cobot3_ws/src/smart_farm_vision/config/object_detection.yaml)의 슬롯 영역을 확인하고, 각 영역 안의 배추 중심을 기준으로 **96×96 픽셀**을 자른다. 중심 좌표는 현재 640×640 Isaac Sim 카메라에 맞춰져 있다.
 
 파일명은 `<원본 폴더>_<확장자를 뺀 원본 파일명>_<슬롯>.png` 형식이다. 예: `synthetic_defect_rgb_0000_SLOT_03.png`. `roi_manifest.csv`의 `x_min`, `y_min`, `x_max`, `y_max`는 원본 이미지 기준 crop 좌표이며 오른쪽·아래쪽 경계는 포함하지 않는다. CSV의 파일 경로는 `data/` 기준 상대 경로다.
 
@@ -57,7 +57,7 @@ data/
 
 ## 데이터셋 생성
 
-원본 이미지를 `data/raw/`의 해당 폴더에 준비한 뒤 프로젝트 루트에서 실행한다. Python 패키지 `Pillow`, `PyYAML`이 필요하며 설치 방법은 [README.md](README.md#설치-준비)에 있다.
+원본 데이터셋은 [Google Drive 공유 파일](https://drive.google.com/file/d/1jBT982kUO4JxZLznz7GNfq3eD3qmRSFM/view?usp=drive_link)에서 받는다. 원본 이미지를 `data/raw/`의 해당 폴더에 준비한 뒤 프로젝트 루트에서 실행한다. Python 패키지 `Pillow`, `PyYAML`이 필요하며 설치 방법은 [README.md](../README.md#설치-준비)에 있다. 현재 Git에 분할·ROI CSV가 들어 있으므로 재생성 시에는 새 작업 복사본에서 기존 CSV를 별도로 보관한 뒤 실행한다.
 
 ```bash
 ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/build_dataset.py

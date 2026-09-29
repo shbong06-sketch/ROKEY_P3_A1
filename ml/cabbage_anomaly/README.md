@@ -27,11 +27,11 @@ ml/cabbage_anomaly/.venv/bin/python -c "import torch, faiss, timm, yaml, cv2; pr
 
 원본 저장소의 파일명은 `requirements.txt`이며, `timm`은 원본 코드가 import하지만 해당 파일에 없어서 별도로 설치한다. `PyYAML`은 데이터셋 생성, `opencv-python-headless`는 녹화 영상 시연에 사용한다. Python 3.12는 현재 확인한 환경의 버전이다. 스크립트는 형제 저장소의 `src`를 직접 import하므로 원본 저장소를 프로젝트 안으로 복사하거나 수정하지 않는다.
 
-`data/` 원본 이미지, `models/patchcore/`의 전체 학습 모델, `results/image-level-full/threshold.json`은 Git에 포함되지 않는다. 다른 머신에서는 해당 파일을 별도로 준비하거나 아래 순서대로 데이터셋 생성 → 전체 학습 → 전체 평가를 실행해야 영상 시연까지 가능하다.
+Git에는 `data/metadata/`의 장면 분할·ROI manifest, `models/patchcore/`와 `models/patchcore-smoke/`의 저장 모델, `results/`의 평가 결과·임계값·예시 이미지·GIF가 포함되어 있다. `data/raw/`의 원본 이미지와 생성된 `data/validation/`, `data/mvtec/` ROI 이미지는 제외된다. 저장 모델과 임계값으로 녹화 영상을 시연할 수 있지만, 데이터셋 재생성이나 이미지 재평가에는 원본 이미지가 필요하다. 모델 메타데이터와 임계값 JSON의 절대 경로는 생성 당시 환경을 기록한 값이다.
 
 ## 데이터셋 준비
 
-원본 이미지 배치, 장면 분할, ROI 파일명과 수량은 [DATASET.md](data/DATASET.md)를 참고한다. `data/raw/`에 원본 이미지를 준비한 뒤 프로젝트 루트에서 생성한다. 이미 생성된 데이터셋은 덮어쓰지 않는다.
+원본 데이터셋은 [Google Drive 공유 파일](https://drive.google.com/file/d/1jBT982kUO4JxZLznz7GNfq3eD3qmRSFM/view?usp=drive_link)에서 받는다. 원본 이미지 배치, 장면 분할, ROI 파일명과 수량은 [DATASET.md](data/DATASET.md)를 참고한다. 파일을 받은 뒤 필요한 원본 이미지를 `data/raw/`의 해당 폴더에 준비하고 프로젝트 루트에서 생성한다. 현재 체크아웃에는 `data/metadata/`의 CSV가 이미 있으므로 다음 명령은 그대로 실행하면 중단된다. 새 작업 복사본에서 기존 CSV를 별도로 보관하고 생성해야 하며, 생성기는 기존 데이터셋을 덮어쓰지 않는다.
 
 ```bash
 ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/build_dataset.py
@@ -43,7 +43,7 @@ ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/build_dataset.py
 
 입력 ROI는 이미 96×96이므로 원본 MVTec 학습 Dataset에 `resize=96`, `imagesize=96`을 전달한다. 즉 **96×96 resize → 96×96 center crop → ImageNet 정규화** 순서이며 가장자리 픽셀을 잘라내지 않는다. 사전학습 WideResNet50의 `layer2`, `layer3` 특징을 사용하고, embedding 차원은 1024→384, 패치 크기는 3, approximate greedy coreset 비율은 1%다. CNN 특징 추출과 coreset은 CUDA가 있으면 GPU를 사용하고, 최근접 이웃 검색 인덱스는 CPU FAISS로 만든다. 기본 시드는 42, 배치 크기는 8이다.
 
-프로젝트 루트에서 가상환경 Python으로 실행한다. `--output`은 빈 폴더를 지정해야 하며, 기존 모델을 덮어쓰지 않는다.
+프로젝트 루트에서 가상환경 Python으로 실행한다. `--output`은 빈 폴더를 지정해야 하며, 기존 모델을 덮어쓰지 않는다. 아래 두 기본 출력 경로에는 현재 저장 모델이 있으므로 재학습 시에는 새 경로를 지정한다.
 
 ```bash
 # 정상 ROI 4장 smoke test
@@ -67,7 +67,7 @@ PatchCore의 `fit()`은 CNN 가중치를 새로 학습하지 않는다. 정상 �
 
 학습과 동일하게 RGB 변환, **96×96 resize → 96×96 center crop → ImageNet 정규화**를 적용한다. 실제 ROI가 96×96이 아니거나 저장 모델·메타데이터의 입력 설정이 다르면 평가하지 않는다. 원본 PatchCore 저장소가 다른 곳에 있으면 `--patchcore-repo`로 지정한다.
 
-프로젝트 루트에서 실행한다. `--run-dir`은 새 경로여야 하며 결과를 덮어쓰지 않는다. 생략하면 `results/` 아래에 실행 시각이 포함된 폴더를 만든다.
+프로젝트 루트에서 실행한다. `--run-dir`은 새 경로여야 하며 결과를 덮어쓰지 않는다. 아래 예시의 결과 폴더는 이미 있으므로 재평가 시에는 새 경로를 지정하거나 `--run-dir`을 생략해 실행 시각이 포함된 폴더를 만든다. 이미지 재평가에는 Git에 없는 ROI 이미지도 필요하다.
 
 ```bash
 # 입출력·CSV·히트맵 확인: 분할과 라벨마다 2장
@@ -98,6 +98,6 @@ ml/cabbage_anomaly/.venv/bin/python ml/cabbage_anomaly/scripts/demo_video.py \
   --max-frames 30
 ```
 
-현재 개발 환경의 가상환경에는 OpenCV가 없고 시스템에만 있다. 이 환경에서 바로 실행할 때는 명령 앞에 `PYTHONPATH=/usr/lib/python3/dist-packages`를 붙인다.
+OpenCV import가 실패하면 위 설치 명령의 `opencv-python-headless`가 같은 가상환경에 설치됐는지 확인한다. ROS 2 `/rgb` 영상을 파일로 녹화할 때는 프로젝트의 [`record_rgb_mp4.py`](../../cobot3_ws/src/smart_farm_vision/record_rgb_mp4.py)를 사용할 수 있다.
 
 전체 영상을 처리할 때는 `--max-frames`를 생략한다. 고정 crop은 현재 640×640 Isaac Sim 장면에서만 확인됐으며, 영상 압축이나 카메라 구도 변화는 학습·평가 결과와 점수를 다르게 만들 수 있다. 이 시연은 녹화 영상의 동작 확인용으로, 실시간 처리 속도나 실제 카메라 성능을 증명하지 않는다.
