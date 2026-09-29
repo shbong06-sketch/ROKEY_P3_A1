@@ -1,7 +1,7 @@
 {
   "patchcore_commit": "fcaa92f124fb1ad74a7acf56726decd4b27cbcad",
-  "patchcore_repo": "/home/shbong/patchcore-inspection",
-  "training_data": "/home/shbong/ROKEY_P3_A1/ml/cabbage_anomaly/data/mvtec/cabbage/train/good",
+  "patchcore_repo": "../patchcore-inspection",
+  "training_data": "ml/cabbage_anomaly/data/mvtec/cabbage/train/good",
   "normal_image_count": 1020,
   "seed": 42,
   "device": "cuda",
