@@ -1,47 +1,0 @@
-Reading package lists...
-Building dependency tree...
-Reading state information...
-The following additional packages will be installed:
-  libnvidia-container-tools libnvidia-container1 nvidia-container-toolkit-base
-The following NEW packages will be installed:
-  libnvidia-container-tools libnvidia-container1 nvidia-container-toolkit
-  nvidia-container-toolkit-base
-0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.
-Need to get 8,752 kB of archives.
-After this operation, 37.7 MB of additional disk space will be used.
-Get:1 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  libnvidia-container1 1.20.1-1 [1,236 kB]
-Get:2 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  libnvidia-container-tools 1.20.1-1 [20.8 kB]
-Get:3 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  nvidia-container-toolkit-base 1.20.1-1 [5,993 kB]
-Get:4 https://nvidia.github.io/libnvidia-container/stable/deb/amd64  nvidia-container-toolkit 1.20.1-1 [1,501 kB]
-dpkg-preconfigure: unable to re-open stdin: No such file or directory
-Fetched 8,752 kB in 1s (7,476 kB/s)
-Selecting previously unselected package libnvidia-container1:amd64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 280507 files and directories currently installed.)
-Preparing to unpack .../libnvidia-container1_1.20.1-1_amd64.deb ...
-Unpacking libnvidia-container1:amd64 (1.20.1-1) ...
-Selecting previously unselected package libnvidia-container-tools.
-Preparing to unpack .../libnvidia-container-tools_1.20.1-1_amd64.deb ...
-Unpacking libnvidia-container-tools (1.20.1-1) ...
-Selecting previously unselected package nvidia-container-toolkit-base.
-Preparing to unpack .../nvidia-container-toolkit-base_1.20.1-1_amd64.deb ...
-Unpacking nvidia-container-toolkit-base (1.20.1-1) ...
-Selecting previously unselected package nvidia-container-toolkit.
-Preparing to unpack .../nvidia-container-toolkit_1.20.1-1_amd64.deb ...
-Unpacking nvidia-container-toolkit (1.20.1-1) ...
-Setting up nvidia-container-toolkit-base (1.20.1-1) ...
-Created symlink /etc/systemd/system/multi-user.target.wants/nvidia-cdi-refresh.path → /usr/lib/systemd/system/nvidia-cdi-refresh.path.
-Created symlink /etc/systemd/system/multi-user.target.wants/nvidia-cdi-refresh.service → /usr/lib/systemd/system/nvidia-cdi-refresh.service.
-Setting up libnvidia-container1:amd64 (1.20.1-1) ...
-Setting up libnvidia-container-tools (1.20.1-1) ...
-Setting up nvidia-container-toolkit (1.20.1-1) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
-
-Running kernel seems to be up-to-date.
-
-No services need to be restarted.
-
-No containers need to be restarted.
-
-No user sessions are running outdated binaries.
-
-No VM guests are running outdated hypervisor (qemu) binaries on this host.

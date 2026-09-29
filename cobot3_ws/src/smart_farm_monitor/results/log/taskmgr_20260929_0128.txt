@@ -1,8 +1,0 @@
-[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-29-01-31-59-810064-gc-isaacsim-lwh-327808
-[INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [task_manager-1]: process started with pid [327825]
-[task_manager-1] [INFO] [1790645520.601680600] [task_manager]: Task Manager ready: scenario=DEMO_HARVEST_01
-[task_manager-1] [INFO] [1790645522.988171361] [task_manager]: Executor status changed: executor=navigation, state=READY, detail=waiting for /navigation/command
-[task_manager-1] [INFO] [1790645523.004805718] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=Collected_smartfarm_v014_room_core_cabbage scene ready; TRANSFER/PICK_HARVEST/PLACE_INSPECT/CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL/RELEASE_INSPECT/CONVEYOR_OUT physical profiles loaded
-[task_manager-1] [INFO] [1790645539.474078016] [task_manager]: Cycle accepted: TASK-20260929-013219
-[task_manager-1] [ERROR] [1790645549.486633493] [task_manager]: PREFLIGHT failed: reason=INSPECTION_NOT_READY, not_ready=[inspection], executors=[sim_task:received=True,state=READY,age=0.03s,ready=True,stale=False,detail=Collected_smartfarm_v014_room_core_cabbage scene ready; TRANSFER/PICK_HARVEST/PLACE_INSPECT/CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL/RELEASE_INSPECT/CONVEYOR_OUT physical profiles loaded; navigation:received=True,state=READY,age=2.52s,ready=True,stale=False,detail=waiting for /navigation/command; inspection:received=False,state=<never>,age=never,ready=False,stale=False,detail=-]
