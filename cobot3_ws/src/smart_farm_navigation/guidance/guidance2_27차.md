@@ -178,3 +178,64 @@ bag 은 `nav2.launch.py` 가 `record:=true`(기본값)로 `~/.ros/smart_farm_nav
 | `results/log/navnode_*.txt` | 이번 판 산출물 | `phase` 와 실패까지 걸린 시간 |
 | `results/log/nav2_*.txt` | 이번 판 산출물 | `scan_mode` 선택 결과, AMCL 초기 자세 |
 | `results/log/nodelist_*.txt` | 이번 판 산출물 | PC 별 노드 목록(중복 확인) |
+
+---
+
+## 6. 고피3 실측으로 잡은 기준값 (2026-09-29 02:14~02:42, 에이전트 대행)
+
+팀장님 진단(3D 라이다 생성 ~ 점군 전처리 구간 지연)에 맞춰 그 구간만 따로 계측했음. **팀장님 브랜치(`fix/navigation_fail_error`) 코드 그대로**, 고피3 한 대, `scan_mode auto -> cloud` 조건임.
+
+### 6-1. 정상일 때의 값 (이 값에서 벗어나면 그 구간이 범인임)
+
+| 항목 | 기준값 | 비고 |
+|---|---|---|
+| 실시간 배율 | **0.32** | 벽시계 40초에 시뮬 13초 |
+| `/front_3d_lidar/lidar_points` | **시뮬 3.2~3.4 Hz / 벽시계 1.0 Hz** | 41,270점, 495 kB/장 |
+| `cloud_self_filter` 자체 로그 | **`3.2~3.4 Hz, 41,27x points/scan, merged 2 msgs`** | 5초마다 자동 출력 |
+| `/scan` | 시뮬 3.1 Hz | |
+| 전처리가 더하는 지연 | **평균 0.001초, 최대 0.05초** | stamp 대비 `/clock` |
+| `/scan` 최대 공백 | 벽시계 1.85~2.22초 = **시뮬 0.59~0.71초** | |
+
+**핵심**: 전처리(`cloud_self_filter` → `pointcloud_to_laserscan`)가 더하는 지연은 **1 ms 수준으로 병목이 아님.** 지연의 실체는 **라이다 프레임이 만들어지는 주기 그 자체**임.
+
+### 6-2. 왜 그런가 — 라이다와 `/clock` 은 렌더 루프에 묶여 있음
+
+`--headless` 로 띄우면(`standalone_app.py:1514`, `render=(not args.headless ...)`) 다음이 동시에 일어남을 실측으로 확인했음.
+
+- `/front_3d_lidar/lidar_points` 의 **publisher 가 0개**가 됨 (RTX 라이다는 렌더 결과물임)
+- `/clock` 이 토픽만 있고 **한 건도 발행되지 않음**
+- 그 결과 `navigation_node` 의 상태 타이머(시뮬 시각 기준)가 영영 안 돌아 Task Manager 가 **`PREFLIGHT failed: NAV_NOT_READY`** 를 냄
+
+즉 **렌더가 느려지면 라이다 주기와 `/clock` 이 같이 느려짐.** Nav2 는 전 노드가 `use_sim_time: True` 라 `/clock` 이 끊기면 제어 주기·TF 보간·센서 유효성 판정이 한꺼번에 흔들림. 이것이 `NAV_FAILED` 로 이어지는 경로임.
+
+### 6-3. 가장 의심스러운 파라미터 — `collision_monitor.source_timeout`
+
+`config/nav2_params.yaml:271` 의 `source_timeout: 1.0` (시뮬초)임. **Nav2 기본값은 5.0 이라 우리 설정이 5배 빡빡함.** `collision_monitor` 는 `cmd_vel_smoothed` → `cmd_vel` 사이에 있어 여기서 막히면 카터가 그대로 섬.
+
+고피3 실측의 `/scan` 최대 공백이 시뮬 0.71초이므로 **여유가 0.3초뿐임.** 고피1·고피2 는 Isaac 과 Nav2 가 다른 PC라 495 kB 짜리 점군이 매번 네트워크를 건너오므로(초당 약 0.5 MB) 공백이 더 벌어지기 쉬움.
+
+### 6-4. 고피1·고피2 에서 볼 것 (터미널 추가 없이 지금 로그로 확인됨)
+
+Nav2 를 띄운 터미널에 `cloud_self_filter` 가 5초마다 찍는 줄이 이미 나오고 있음. 그 줄만 보면 됨.
+
+| 보이는 것 | 뜻 |
+|---|---|
+| `3.2~3.4 Hz ... merged 2 msgs` | 고피3 정상값과 같음. 이 구간은 범인이 아님 |
+| `1.x Hz ... merged 1 msgs` | 렌더가 느려진 상태. `source_timeout` 1.0초에 걸리기 시작함 |
+| `0.x Hz` 또는 `no PointCloud2 received in the last 5 s` | **확정적임.** `/scan` 이 끊겨 `collision_monitor` 가 카터를 세우고 Nav2 가 목표를 실패시킴 |
+
+`PREFLIGHT failed: NAV_NOT_READY` 가 뜬다면 그것은 **`/clock` 이 멈췄다는 신호**임(6-2 참조). 스캔모드와 무관함.
+
+### 6-5. 아직 손대지 않은 조치 후보 (승인 필요)
+
+아래는 전부 ADR_nav2 §2.6 의 "keep" 기준선이라 보고만 하고 고치지 않았음.
+
+1. `collision_monitor.source_timeout` **1.0 → 3.0** (`config/nav2_params.yaml:271`). 라이다 주기가 느린 환경에서 카터가 멈춰 서는 것을 막음. 안전 여유는 줄지만 시뮬에서는 타당함. **가장 작은 수정이고 효과가 직접적임.**
+2. `cloud_self_filter.accumulate_s` **0.25 → 0.5** (`launch/nav2.launch.py`). `merged 1 msgs` 가 이어질 때 유효함.
+3. Isaac 창 크기·렌더 해상도를 줄여 프레임 주기를 당김. 고피3 에서 비전 스테이션 on/off 는 라이다 주기에 **영향이 없었음**(3.15 vs 3.28 Hz)이라 카메라를 끄는 것은 효과가 없음.
+
+### 6-6. 이번 실측에서 같이 확인된 것
+
+- **비전 스테이션은 라이다 주기와 무관함.** `--no-vision-station` 켠 판 3.15 Hz, 끈 판 3.28 Hz 로 차이 없음.
+- **이미 죽은 Isaac 이 물려 있던 가상 디스플레이를 재사용하면 Isaac 이 기동 직후 segfault 로 죽음**(3회 연속). 디스플레이를 새로 띄우면 같은 인자로 정상 기동함(2회 연속). 코드 문제가 아님.
+- `ros2 node list` 중복은 **런치 래퍼만 죽였을 때** 생김. 자식 노드는 살아남으므로 실행파일 경로로 지워야 함(1-1 절).
