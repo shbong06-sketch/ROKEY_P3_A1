@@ -140,7 +140,7 @@ PREFLIGHT
 → COMPLETE / SUCCEEDED
 ```
 
-기본 검사 mock은 `SLOT_03`, `SLOT_07`을 불량으로 반환하므로 CULL이 실행된다.
+기본 검사 mock은 `SLOT_03`, `SLOT_06`을 불량으로 반환하므로 CULL이 실행된다.
 Task Manager 로그에서도 `PREFLIGHT complete`, 각 `Command published`, 마지막
 `Cycle completed`를 확인한다.
 
@@ -166,9 +166,9 @@ ros2 topic echo /inspection/result smart_farm_interfaces/msg/TaskResult
 
 | operation | 성공 결과에서 확인할 필드 |
 | --- | --- |
-| `TRANSFER` | `completed_units`에 `PALLET_002:RACK_L2:RACK_L3`, `PALLET_001:RACK_L1:RACK_L2` 포함 |
+| `TRANSFER` | `completed_units`에 `PALLET_002:RACK_L3:RACK_L2`, `PALLET_003:RACK_L4:RACK_L3` 포함 |
 | `PICK_HARVEST` | `safe_to_navigate: true` |
-| `NAVIGATION` | `reached_station: INSPECTION_DOCK` |
+| `NAVIGATION` | `reached_station: FEEDER_DOCK` |
 | `PLACE_INSPECT` | `status: SUCCEEDED` |
 | `INSPECT` | 유효한 `defect_slots`, 비어 있는 `unknown_slots` |
 | `CULL` | 요청한 모든 `target_slots`가 `completed_units`에 포함 |
@@ -248,9 +248,9 @@ ros2 topic info /navigation/result --verbose
 
 ### 6.2 Navigation Executor
 
-- `operation: NAVIGATION`과 `destination: INSPECTION_DOCK`을 처리한다.
+- `operation: NAVIGATION`과 `destination: FEEDER_DOCK`을 처리한다.
 - Nav2 action server가 준비된 뒤 `READY`가 되어야 한다.
-- Nav2 성공과 최종 정지/도킹을 확인한 뒤 `reached_station: INSPECTION_DOCK`을 반환한다.
+- Nav2 성공과 최종 정지/도킹을 확인한 뒤 `reached_station: FEEDER_DOCK`을 반환한다.
 - 실패, cancel, timeout을 `TaskResult.status`와 `reason`으로 변환한다.
 
 ### 6.3 Sim Task Executor
@@ -265,9 +265,9 @@ ros2 topic info /navigation/result --verbose
 
 ### 6.4 Inspection Executor
 
-- `operation: INSPECT`와 `pallet_id: PALLET_004`를 처리한다.
+- `operation: INSPECT`와 `pallet_id: PALLET_001`을 처리한다.
 - 요청과 이미지 frame을 같은 검사 세션에 연결한다.
-- `SLOT_01`부터 `SLOT_08` 범위의 `defect_slots`, `unknown_slots`를 반환한다.
+- `SLOT_01`부터 `SLOT_06` 범위의 `defect_slots`, `unknown_slots`를 반환한다.
 - 미검출이나 신뢰도 부족을 임의로 PASS 처리하지 않는다.
 
 ## 7. 단계별 통합 체크포인트
@@ -338,7 +338,7 @@ ros2 topic pub --once /navigation/result \
   smart_farm_interfaces/msg/TaskResult \
   "{task_id: WRONG_TASK, command_id: WRONG_COMMAND, operation: NAVIGATION,
     status: SUCCEEDED, phase: RESULT, reason: NONE,
-    safe_to_navigate: false, reached_station: INSPECTION_DOCK,
+    safe_to_navigate: false, reached_station: FEEDER_DOCK,
     completed_units: [], defect_slots: [], unknown_slots: []}"
 ```
 

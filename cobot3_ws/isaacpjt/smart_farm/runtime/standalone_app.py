@@ -10,6 +10,7 @@
 
 import argparse
 import json
+import math
 import os
 import sys
 import traceback
@@ -27,8 +28,28 @@ DEFAULT_SCENE_PATH = (
     / "Collected_smartfarm_v011"
     / "Collected_smartfarm_v011.usd"
 )
+# [올인원 2026-09-25] 양배추 씬 v014(공유 zip 을 scenes/Collected_smartfarm_v014 에 푼 것)가 있으면 --scene 없이도 그 씬을 연다.
+CABBAGE_SCENE_PATH = (
+    PROJECT_DIR
+    / "scenes"
+    / "Collected_smartfarm_v014"
+    / "Collected_smartfarm_v014_room_core_cabbage.usd"
+)
+if CABBAGE_SCENE_PATH.exists():
+    DEFAULT_SCENE_PATH = CABBAGE_SCENE_PATH
 
 PHYSICS_DT = 1.0 / 60.0
+BASE_SETTLE_SECONDS = 0.5           # [navigation 2026-09-23] Place 전 차체가 멈춰 있어야 하는 시간
+BASE_SETTLE_TIMEOUT = 15.0          # [navigation 2026-09-23] 이 시간까지 안 멈추면 실패로 본다
+# [navigation 2026-09-26] 명령 내부 제한은 물리 스텝 시간으로 계산한다.
+CONVEY_TO_INSPECT_TIMEOUT = 120.0
+PREPARE_INSPECT_TIMEOUT = 90.0
+MOVE_TO_INSPECT_TIMEOUT = 90.0
+CULL_TIMEOUT = 180.0
+RELEASE_INSPECT_TIMEOUT = 90.0
+CONVEYOR_OUT_TIMEOUT = 120.0
+INSPECT_STOP_STILL_SECONDS = 0.5
+INSPECT_STOP_STEP_TOL = 0.002
 RENDER_EVERY = 3
 SETTLE_STEPS = 120
 CARRY_ROTATE_DEG = 90.0
@@ -41,10 +62,18 @@ ARM_PATH = f"{RIG_PATH}/m0609_with_fork"
 ARM_BASE_PATH = f"{ARM_PATH}/base_link"
 LIFT_JOINT_PATH = f"{RIG_PATH}/lift_v3_physics/lift_prismatic_joint"
 LIFT_JOINT_NAME = "lift_prismatic_joint"
+TURNTABLE_PATH = "/World/SmartFarm/Placed/Conveyor/TurnTable"
+TURNTABLE_SURFACE_PATH = (
+    f"{TURNTABLE_PATH}/Geometry/SM_ConveyorBelt_A08_Roller35_01"
+)
 
 RACK_FRONT_X = -1.205
 BASE_BELOW_SHELF = 0.213
 # v008은 팔레트 원점이 밑면보다 25.9 mm 위에 있다.
+PALLET_ORIGIN_ABOVE_BOTTOM = 0.0259   # [place-fix 2026-09-25] TurnTable 놓기 높이에도 같은 규칙을 쓴다
+# [place-fix 2026-09-25] TurnTable 은 롤러 컨베이어다. 놓은 뒤 포크를 뺄 때 포크판이 롤러 사이에 걸리지 않도록
+# 포크판(DOCK_X)이 TurnTable 가장자리보다 이만큼 바깥에 오게 놓는다. 랙에서는 선반 앞 끝보다 39 mm 바깥이다.
+PLACE_PLATE_EDGE_CLEARANCE = 0.035
 SHELF_TOP = {
     1: 0.7388,
     2: 1.0388,
@@ -56,6 +85,23 @@ SHELF_TOP = {
 PALLET_ASSET_NAME = (
     "Cube_011_001"
 )
+# [올인원 2026-09-25] 컨베이어(scripts/conveyor.py, refactor/lift-robot-motion)가 감시할 팔레트 루트.
+# 벨트에 이미 올라와 있는 검사 트레이도 모두 넣어야 한다(감시 밖 강체도 롤러가 밀어낸다).
+# 랙 팔레트는 로봇이 들고 돌리므로 요 고정을 벨트에 올라온 순간 건다(carried).
+CONVEYOR_CARRIED_PALLETS = tuple(f"/World/SmartFarm/Placed/Pallet_0{i}" for i in (1, 2, 3))
+CONVEYOR_BELT_PALLETS = tuple(
+    f"/World/SmartFarm/Placed/Pallet_Inspect{suffix}" for suffix in ("", "_01", "_02", "_03")
+)
+# 비전 노드가 아직 붙지 않았으므로 카메라 앞에서 이 시간 뒤 스스로 내보낸다. 비전 연동 시 None.
+CONVEYOR_AUTO_RESUME_SECONDS = 10.0
+# [올인원 2026-09-25] 비전룸 검사·솎아내기 스테이션(scripts/inspection_cull_station.py)을 켜면 스테이션이 끝낼 때
+# inspection_done() 을 부르므로 자동 배출은 끈다. 트레이를 비전 M0609 base 와 같은 x 에 세운다(도달거리).
+VISION_STATION_STOP_X = -0.69
+# 장면의 Pallet_Inspect* 는 시험용 배치(y -7.0 / -6.58)라 conveyor.py 가 세우는 옆가이드(y -6.56 / -6.94)에
+# 걸친다. 그대로 두면 가이드가 트레이를 관통한 채 생겨 트레이와 작물이 튕겨 나간다.
+# conveyor_standalone.py 와 같이 줄기 서쪽 빈 바닥에 세워 두고 시작한다(세션 레이어, 장면 파일은 그대로).
+CONVEYOR_PARK = (-3.40, -5.60, 0.03, 0.60)   # x, 첫 y, z, 간격
+
 PALLET_1_PATH = f"/World/SmartFarm/Placed/Pallet_01/{PALLET_ASSET_NAME}"
 PALLET_2_PATH = f"/World/SmartFarm/Placed/Pallet_02/{PALLET_ASSET_NAME}"
 PALLET_3_PATH = f"/World/SmartFarm/Placed/Pallet_03/{PALLET_ASSET_NAME}"
@@ -75,6 +121,11 @@ def parse_args():
     )
     parser.add_argument("--headless", action="store_true")
     parser.add_argument(
+        "--livestream",
+        action="store_true",
+        help="일반 headless Isaac 초기화 후 WebRTC 화면 스트리밍 활성화",
+    )
+    parser.add_argument(
         "--autoplay",
         action="store_true",
         help="timeline을 자동 재생하고 ROS 명령을 기다림",
@@ -83,6 +134,26 @@ def parse_args():
         "--demo",
         action="store_true",
         help="timeline 재생 후 검증용 TRANSFER 명령을 자동 발행",
+    )
+    parser.add_argument(
+        "--verify-stop-play",
+        action="store_true",
+        help="headless에서 팔레트를 이동시킨 뒤 Stop → Play 복원을 한 번 검증하고 종료",
+    )
+    parser.add_argument(
+        "--no-conveyor",
+        action="store_true",
+        help="[올인원 2026-09-25] 컨베이어 반송(scripts/conveyor.py)을 끄고 실행",
+    )
+    parser.add_argument(
+        "--no-vision-station",
+        action="store_true",
+        help="[올인원 2026-09-25] 비전 검사·솎아내기 스테이션을 끄고 실행 (컨베이어가 10초 뒤 스스로 배출)",
+    )
+    parser.add_argument(
+        "--human-crossing",
+        action="store_true",
+        help="[올인원 2026-09-25] 사람 돌발상황: 카터가 통로를 나올 때 작업자가 앞을 막았다가 비킨다 (scripts/human_crossing.py)",
     )
     return parser.parse_known_args()
 
@@ -117,22 +188,42 @@ def configure_ros_environment():
         for item in os.environ.get("LD_LIBRARY_PATH", "").split(":")
         if item
     ]
-    needs_reexec = (
-        str(ros_lib) not in current_paths
-        and os.environ.get("SMARTFARM_ROS_REEXEC") != "1"
-    )
-    if needs_reexec:
-        os.environ["LD_LIBRARY_PATH"] = ":".join(
-            [*current_paths, str(ros_lib)]
-        )
-        os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
-        os.environ["SMARTFARM_ROS_REEXEC"] = "1"
 
-        print(
-            f"[ROS2] LD_LIBRARY_PATH에 {ros_lib}를 추가하고 다시 실행합니다.",
-            flush=True,
-        )
-        os.execv(sys.executable, [sys.executable, *sys.argv])
+    # 시스템 ROS와 Isaac 번들의 같은 이름 라이브러리가 섞이면 rclpy가
+    # import되어도 Node 생성 시 ABI 충돌로 종료될 수 있다.
+    system_ros = [
+        item for item in current_paths if item.startswith("/opt/ros/")
+    ]
+    wanted = [str(ros_lib)] + [
+        item
+        for item in current_paths
+        if item != str(ros_lib) and not item.startswith("/opt/ros/")
+    ]
+
+    if current_paths != wanted:
+        os.environ["LD_LIBRARY_PATH"] = ":".join(wanted)
+        os.environ.setdefault("RMW_IMPLEMENTATION", "rmw_fastrtps_cpp")
+
+        if os.environ.get("SMARTFARM_ROS_REEXEC") == "1":
+            print(
+                "[ROS2] 경고 — LD_LIBRARY_PATH를 바로잡지 못했습니다. "
+                "ROS를 source하지 않은 터미널에서 실행해 보세요.",
+                flush=True,
+            )
+        else:
+            os.environ["SMARTFARM_ROS_REEXEC"] = "1"
+            if system_ros:
+                print(
+                    f"[ROS2] 시스템 ROS 경로 {len(system_ros)}개를 빼고 "
+                    "Isaac 번들을 씁니다.",
+                    flush=True,
+                )
+            print(
+                f"[ROS2] LD_LIBRARY_PATH 맨 앞에 {ros_lib}를 두고 "
+                "다시 실행합니다.",
+                flush=True,
+            )
+            os.execv(sys.executable, [sys.executable, *sys.argv])
 
     # 시스템 Jazzy는 Python 3.12용이므로 Isaac Sim Python 3.11에서는
     # 반드시 Isaac Sim에 포함된 rclpy를 먼저 import해야 한다.
@@ -141,6 +232,10 @@ def configure_ros_environment():
 
 args, kit_args = parse_args()
 if os.environ.get("HEADLESS") == "1":
+    args.headless = True
+if args.livestream:
+    args.headless = True
+if args.verify_stop_play:
     args.headless = True
 args.autoplay = args.autoplay or args.headless or args.demo
 
@@ -152,13 +247,14 @@ from isaacsim import SimulationApp  # noqa: E402
 app = SimulationApp(
     {
         "headless": args.headless,
+        **({"hide_ui": False} if args.livestream else {}),
         "extra_args": kit_args,
     }
 )
 
 import omni.usd  # noqa: E402
 import rclpy  # noqa: E402
-from pxr import UsdPhysics  # noqa: E402
+from pxr import Usd, UsdGeom, UsdPhysics  # noqa: E402
 from std_msgs.msg import String  # noqa: E402
 from isaacsim.core.api import World  # noqa: E402
 from isaacsim.core.prims import (  # noqa: E402
@@ -167,6 +263,12 @@ from isaacsim.core.prims import (  # noqa: E402
     SingleXFormPrim,
 )
 from isaacsim.core.utils.extensions import enable_extension  # noqa: E402
+
+if args.livestream:
+    app.set_setting("/app/window/drawMouse", True)
+    enable_extension("omni.services.livestream.nvcf")
+    app.update()
+
 from isaacsim.robot.manipulators.manipulators import (  # noqa: E402
     SingleManipulator,
 )
@@ -177,20 +279,24 @@ from isaacsim.robot_motion.motion_generation import (  # noqa: E402
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from lift import LiftController, check_fork_clear_of_rack  # noqa: E402
+from conveyor import Zone  # noqa: E402
 from pallet_transfer import (  # noqa: E402
     PalletTransferController,
     TransferState,
 )
 from robot_motion import (  # noqa: E402
+    DOCK_X,
     BaseWatcher,
     EE_FRAME,
     RobotMotion,
     Task,
     brake_wheels,
+    brake_wheels_at_current_position,
     release_wheels,
     tine_tip_position,
 )
 from sim_task_node import SimTaskNode  # noqa: E402
+from inspection_detection_store import CullContractError  # noqa: E402
 
 
 EE_PATH = f"{ARM_PATH}/{EE_FRAME}"
@@ -243,6 +349,24 @@ class SimulationRuntime:
     pallets: dict
     harvest_phase: str = "IDLE"
     wheels_released: bool = False
+    base_watcher: object = None
+    arm_base: object = None
+    place_phase: str = "IDLE"
+    place_wait_seconds: float = 0.0
+    place_completed: bool = False
+    convey_completed: bool = False
+    convey_wait_seconds: float = 0.0
+    convey_still_seconds: float = 0.0
+    convey_last_position: tuple = None
+    prepare_wait_seconds: float = 0.0
+    inspect_move_wait_seconds: float = 0.0
+    cull_wait_seconds: float = 0.0
+    release_wait_seconds: float = 0.0
+    out_wait_seconds: float = 0.0
+    hold_fault_logged: bool = False   # [navigation 2026-09-24] 운반 중 팔레트 감시 예외를 한 번만 기록
+    conveyor: object = None           # [올인원 2026-09-25] scripts/conveyor.ConveyorController (--no-conveyor 면 None)
+    station: object = None            # [올인원 2026-09-25] scripts/inspection_cull_station.VisionCullStation
+    human: object = None              # [올인원 2026-09-25] scripts/human_crossing.HumanCrossing (--human-crossing)
 
 
 class TransferOperation:
@@ -370,6 +494,29 @@ def open_scene(scene_path):
         raise RuntimeError(f"USD Scene을 열지 못했습니다: {scene_path}")
 
     stage.SetEditTarget(stage.GetSessionLayer())
+
+    # 한 프레임의 일부 각도가 아니라 360도 point cloud를 발행하게 한다.
+    # 세션 레이어만 수정하므로 원본 USD 파일은 변경되지 않는다.
+    try:
+        helper_count = 0
+        for prim in stage.Traverse():
+            if (
+                prim.GetTypeName() == "OmniGraphNode"
+                and str(prim.GetAttribute("node:type").Get() or "").endswith(
+                    "ROS2RtxLidarHelper"
+                )
+                and str(prim.GetAttribute("inputs:type").Get() or "")
+                == "point_cloud"
+            ):
+                prim.GetAttribute("inputs:fullScan").Set(True)
+                helper_count += 1
+        print(
+            f"[라이다] 3D 라이다 fullScan=True ({helper_count}개 helper)",
+            flush=True,
+        )
+    except Exception as error:  # noqa: BLE001
+        print(f"[라이다] fullScan 설정 실패 (무시): {error}", flush=True)
+
     return stage
 
 
@@ -400,7 +547,95 @@ def require_prims(stage, paths):
         )
 
 
+def turntable_place_pose(stage, arm_base_position=None):
+    """TurnTable 표면 중심(팔레트 원점 높이)과 놓을 방향을 world pose로 반환합니다.
+
+    arm_base_position 을 주면 놓을 방향을 '놓을 자리 -> 팔 베이스' 쪽으로 맞춘다(place-fix 2026-09-25).
+    """
+    surface_prim = stage.GetPrimAtPath(TURNTABLE_SURFACE_PATH)
+    bbox_cache = UsdGeom.BBoxCache(
+        Usd.TimeCode.Default(),
+        [UsdGeom.Tokens.default_],
+        useExtentsHint=True,
+    )
+    surface_range = bbox_cache.ComputeWorldBound(
+        surface_prim
+    ).ComputeAlignedRange()
+    if surface_range.IsEmpty():
+        raise RuntimeError(
+            f"TurnTable 표면 bound를 계산하지 못했습니다: "
+            f"{TURNTABLE_SURFACE_PATH}"
+        )
+
+    minimum = surface_range.GetMin()
+    maximum = surface_range.GetMax()
+    # [place-fix 2026-09-25] place 단계 좌표의 z 는 팔레트 '원점' 높이다(랙의 SHELF_TOP 과 같은 규칙).
+    # 팔레트 원점은 밑면보다 25.9 mm 위이므로 벨트 윗면에 그만큼 더해야 벨트를 파고들지 않는다.
+    position = (
+        float((minimum[0] + maximum[0]) * 0.5),
+        float((minimum[1] + maximum[1]) * 0.5),
+        float(maximum[2]) + PALLET_ORIGIN_ABOVE_BOTTOM,
+    )
+
+    turntable_prim = stage.GetPrimAtPath(TURNTABLE_PATH)
+    transform = UsdGeom.Xformable(
+        turntable_prim
+    ).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+    # [place-fix 2026-09-25] TurnTable 행렬에는 배율이 섞여 있어 ExtractRotationQuat 가 정규화되지 않은
+    # 값(0.507, 0, 0, 0)을 준다. 그 값이 그대로 IK 목표 자세에 곱해지므로 정규화한다.
+    rotation = transform.ExtractRotationQuat()
+    imaginary = rotation.GetImaginary()
+    w, x, y, z = (
+        float(rotation.GetReal()),
+        float(imaginary[0]),
+        float(imaginary[1]),
+        float(imaginary[2]),
+    )
+    norm = math.sqrt(w * w + x * x + y * y + z * z)
+    quaternion = (w / norm, x / norm, y / norm, z / norm)
+
+    if arm_base_position is not None:
+        # [place-fix 2026-09-25] PLACE_STAGES 는 '+x = 놓을 자리에서 로봇 쪽'을 가정한다(랙 팔레트 좌표와 같다).
+        # TurnTable 의 +x(동쪽)를 그대로 쓰면 북쪽(yaw 90)에서 도킹한 로봇과 90° 어긋나 DESCEND_1 에서
+        # IK 가 뒤집혔다(관절 110° 변화, 로메인 원본 장면에서도 재현). 놓을 자리에서 팔 베이스를 향하는
+        # 방향을 TurnTable 축 기준 90° 단위로 맞춰 쓴다: 팔레트가 벨트와 나란히 놓이고, 도킹 방향이
+        # 바뀌어도 그대로 동작한다.
+        turntable_yaw = 2.0 * math.atan2(quaternion[3], quaternion[0])
+        to_arm = math.atan2(
+            float(arm_base_position[1]) - position[1],
+            float(arm_base_position[0]) - position[0],
+        )
+        quarter = round((to_arm - turntable_yaw) / (math.pi / 2.0))
+        yaw = turntable_yaw + quarter * (math.pi / 2.0)
+        quaternion = (math.cos(yaw / 2.0), 0.0, 0.0, math.sin(yaw / 2.0))
+
+        # 로봇 쪽 TurnTable 가장자리까지의 거리(접근 방향 기준). 롤러 가운데(-3.905)에 놓으면 포크판이
+        # 가장자리(-3.597)보다 12 cm 안쪽에서 롤러 높이까지 내려가, 빼낼 때 롤러 사이에 걸렸다
+        # (fork_tool 고정 조인트가 늘어나며 EXIT 에서 팔레트가 20 mm 따라 올라옴).
+        ux, uy = math.cos(yaw), math.sin(yaw)
+        table_range = bbox_cache.ComputeWorldBound(turntable_prim).ComputeAlignedRange()
+        corners = [
+            (cx, cy)
+            for cx in (table_range.GetMin()[0], table_range.GetMax()[0])
+            for cy in (table_range.GetMin()[1], table_range.GetMax()[1])
+        ]
+        edge = max((cx - position[0]) * ux + (cy - position[1]) * uy for cx, cy in corners)
+        shift = edge - DOCK_X + PLACE_PLATE_EDGE_CLEARANCE
+        position = (position[0] + shift * ux, position[1] + shift * uy, position[2])
+
+    return position, quaternion
+
+
 def create_simulation_runtime(scene_path):
+    human_skel = None
+    if args.human_crossing:
+        # [올인원 2026-09-25] 사람은 장면을 열기 전에 넣어야 걷기 애니메이션이 붙는다 -> 원래 장면을 감싼 .usda 를 연다
+        import tempfile
+        import human_crossing
+
+        scene_path, human_skel = human_crossing.prepare_scene(
+            scene_path, Path(tempfile.gettempdir()) / "smartfarm_human", app.update)
+        print(f"[사람] 작업자를 넣은 장면: {scene_path}", flush=True)
     stage = open_scene(scene_path)
     print("[시작] USD Scene 로딩이 완료되었습니다.", flush=True)
 
@@ -415,6 +650,8 @@ def create_simulation_runtime(scene_path):
             ARM_BASE_PATH,
             EE_PATH,
             LIFT_JOINT_PATH,
+            TURNTABLE_PATH,
+            TURNTABLE_SURFACE_PATH,
             *pallet_paths,
         ),
     )
@@ -453,7 +690,48 @@ def create_simulation_runtime(scene_path):
         )
 
     print("[시작] Scene 객체 등록이 완료되었습니다.", flush=True)
+    conveyor = None
+    if not args.no_conveyor:
+        # [올인원 2026-09-25] conveyor.install() 은 world.reset() 전에, attach() 는 뒤에 (conveyor.py 계약)
+        from conveyor import install as install_conveyor
+
+        park_x, park_y, park_z, park_gap = CONVEYOR_PARK
+        for index, path in enumerate(CONVEYOR_BELT_PALLETS):
+            prim = stage.GetPrimAtPath(path)
+            if not prim.IsValid() or not prim.IsActive():   # 양배추 씬 복사본에서는 시험 트레이를 지웠다
+                continue
+            for op in UsdGeom.Xformable(prim).GetOrderedXformOps():
+                if op.GetOpName() == "xformOp:translate":
+                    op.Set(type(op.Get())(park_x, park_y + index * park_gap, park_z))
+                    print(f"[컨베이어] {prim.GetName()} 시험 배치를 벨트 밖에 세움 "
+                          f"({park_x:+.2f}, {park_y + index * park_gap:+.2f})", flush=True)
+
+        watched = [
+            path
+            for path in CONVEYOR_CARRIED_PALLETS + CONVEYOR_BELT_PALLETS
+            if stage.GetPrimAtPath(path).IsValid() and stage.GetPrimAtPath(path).IsActive()
+        ]
+        use_station = not args.no_vision_station
+        conveyor = install_conveyor(
+            stage,
+            watched,
+            # [navigation 2026-09-26] 통합 명령 전에는 실패 시에도 자동 배출하지 않는다.
+            auto_resume=None,
+            carried_paths=CONVEYOR_CARRIED_PALLETS,
+            **({"vision_x": VISION_STATION_STOP_X} if use_station else {}),
+        )
+    station = None
+    if conveyor is not None and not args.no_vision_station:
+        # [올인원 2026-09-25] 비전 M0609 + 손목 RealSense + YOLO(best.pt) + 팀 CullMotion. world.reset() 전에 등록.
+        enable_extension("omni.replicator.core")
+        import inspection_cull_station
+
+        station = inspection_cull_station.install(stage, world, M0609_DIR, managed=True)
     world.reset()
+    if conveyor is not None:
+        conveyor.attach()
+    if station is not None:
+        station.attach(conveyor)
     print("[시작] World reset이 완료되었습니다.", flush=True)
     world.pause()
 
@@ -479,6 +757,8 @@ def create_simulation_runtime(scene_path):
     print("[시작] 모션 제어기 초기화가 완료되었습니다.", flush=True)
 
     base_watcher = BaseWatcher()
+    # [navigation 2026-09-23] Place 전 검사용 감시기. transfer 가 쓰는 base_watcher 와 섞지 않는다.
+    place_watcher = BaseWatcher()
     transfer = PalletTransferController(
         lift,
         motion,
@@ -491,7 +771,17 @@ def create_simulation_runtime(scene_path):
         ),
     )
 
+    human = None
+    if human_skel is not None:
+        import human_crossing
+
+        human = human_crossing.HumanCrossing(
+            human_skel, lambda: robot.get_world_pose()[0], os.environ.get("SMARTFARM_STATION_OUT"))
+
     return SimulationRuntime(
+        human=human,
+        base_watcher=place_watcher,
+        arm_base=arm_base,
         world=world,
         stage=stage,
         robot=robot,
@@ -499,23 +789,125 @@ def create_simulation_runtime(scene_path):
         motion=motion,
         transfer=transfer,
         pallets=pallets,
+        conveyor=conveyor,
+        station=station,
     )
 
 
 def initialize_scene(runtime, transfer_operation, step_world):
-    """Stop 후 Play를 포함해 Scene과 제어기를 초기 상태로 맞춘다."""
+    """새로 연 Scene과 제어기를 명령 대기 상태로 맞춘다."""
 
     transfer_operation.reset()
     runtime.harvest_phase = "IDLE"
+    runtime.place_phase = "IDLE"
+    runtime.place_wait_seconds = 0.0
+    runtime.place_completed = False
+    runtime.convey_completed = False
+    runtime.convey_wait_seconds = 0.0
+    runtime.convey_still_seconds = 0.0
+    runtime.convey_last_position = None
+    runtime.prepare_wait_seconds = 0.0
+    runtime.inspect_move_wait_seconds = 0.0
+    runtime.cull_wait_seconds = 0.0
+    runtime.release_wait_seconds = 0.0
+    runtime.out_wait_seconds = 0.0
     runtime.wheels_released = False
+    if runtime.conveyor is not None:
+        runtime.conveyor.reset()        # Stop -> Play: reset() -> world.reset() -> attach() (conveyor.py 계약)
+    if runtime.station is not None:
+        runtime.station.reset()
     runtime.world.reset()
+    if runtime.conveyor is not None:
+        runtime.conveyor.attach()
+    if runtime.station is not None:
+        runtime.station.attach(runtime.conveyor)
     brake_wheels(runtime.stage, RIG_PATH)
 
     print(f"[장면] 안정화를 위해 {SETTLE_STEPS} physics step을 진행합니다.")
     for _ in range(SETTLE_STEPS):
         step_world()
 
+    if not runtime.world.is_playing():
+        raise RuntimeError("scene initialization stopped before lift calibration")
+    if (runtime.world.physics_sim_view is None
+            or runtime.robot.get_joint_positions() is None):
+        print("[장면] Physics Simulation View를 다시 초기화합니다.", flush=True)
+        runtime.world.initialize_physics()
+        runtime.world.reset(soft=True)
+        for _ in range(SETTLE_STEPS):
+            step_world()
+    if runtime.robot.get_joint_positions() is None:
+        raise RuntimeError("Physics Simulation View is unavailable after scene reset")
     runtime.lift.calibrate()
+
+
+def reload_scene(runtime, scene_path):
+    """Stop 뒤 원본 USD를 다시 열어 이동한 팔레트와 포기까지 복원한다."""
+
+    runtime.world.stop()
+    if runtime.station is not None:
+        runtime.station.close()
+    World.clear_instance()
+    omni.usd.get_context().close_stage()
+    return create_simulation_runtime(scene_path)
+
+
+def report_dock_pose(runtime):
+    """[navigation 2026-09-23] Place 직전 카터 본체가 실제로 어디에 멈췄는지 기록한다.
+
+    Navigation 이 보고한 값과 Isaac 안의 실제 위치를 대조하기 위한 자료이며,
+    허용 범위 판정은 실측 자료가 쌓인 뒤 도입한다. 지금은 기록만 한다.
+    """
+    chassis_position, _ = runtime.robot.get_world_pose()
+    place_position, _ = turntable_place_pose(runtime.stage)
+    chassis_x = float(chassis_position[0])
+    chassis_y = float(chassis_position[1])
+    offset_x = float(place_position[0]) - chassis_x
+    offset_y = float(place_position[1]) - chassis_y
+    distance = (offset_x * offset_x + offset_y * offset_y) ** 0.5
+    print(
+        f"[도킹] 카터 본체 world ({chassis_x:.3f}, {chassis_y:.3f}), "
+        f"place 대상까지 x {offset_x:+.3f} m, y {offset_y:+.3f} m, "
+        f"직선 {distance:.3f} m",
+        flush=True,
+    )
+
+
+def start_place_motion(runtime, node):
+    """[navigation 2026-09-23] 차체가 멈춘 것을 확인한 뒤 브레이크를 걸고 팔 동작을 시작한다."""
+    brake_wheels_at_current_position(
+        runtime.stage,
+        RIG_PATH,
+        runtime.robot,
+    )
+    runtime.wheels_released = False
+    runtime.lift.hold()
+    report_dock_pose(runtime)
+    arm_base_position, _ = runtime.arm_base.get_world_pose()
+    position, quaternion = turntable_place_pose(runtime.stage, arm_base_position)
+    # 팔 베이스(차체보다 0.20 m 뒤)에서 놓을 팔레트 원점까지의 수평 거리. 기록용(판정 없음).
+    # 2026-09-25 실측: 0.755 m 에서 놓기·포크 인출 성공 (팔 베이스가 대상보다 0.24 m 높아 랙 범위와 다르다).
+    reach = math.hypot(
+        float(arm_base_position[0]) - position[0],
+        float(arm_base_position[1]) - position[1],
+    )
+    print(
+        f"[Place] 목표 팔레트 원점 {[round(value, 4) for value in position]}, "
+        f"놓는 방향 yaw {math.degrees(2.0 * math.atan2(quaternion[3], quaternion[0])):+.1f}°, "
+        f"팔 베이스까지 {reach:.3f} m",
+        flush=True,
+    )
+    if runtime.conveyor is not None:
+        runtime.conveyor.hold_stem(True)   # [올인원 2026-09-25] 놓는 동안 줄기 벨트 인터록
+    runtime.motion.start_place_at_pose(position, quaternion)
+    runtime.place_phase = "ARM_PLACE"
+    node.set_phase(
+        "PLACE_INSPECT/ARM_PLACE",
+        detail=(
+            f"target={TURNTABLE_SURFACE_PATH}, "
+            f"position={[round(value, 4) for value in position]}"
+        ),
+    )
 
 
 def start_operation(command, runtime, transfer_operation, node):
@@ -533,6 +925,178 @@ def start_operation(command, runtime, transfer_operation, node):
             transfer_operation.phase,
             detail="physical transfer started",
         )
+        return
+
+    if command.operation == "PLACE_INSPECT":
+        if (
+            command.recipe_id not in ("", "PLACE_AT_INSPECTION")
+            or command.pallet_id != "PALLET_001"
+            or command.source != "CARRY"
+            or command.destination != "INSPECT_STATION"
+        ):
+            node.fail(
+                reason="INVALID_COMMAND",
+                phase="COMMAND_DISPATCH",
+                reset_required=False,
+            )
+            return
+
+        # [navigation 2026-09-23] 인터페이스 설계 검증 항목 7: 베이스 정지를 확인한 뒤 Place 를 시작한다.
+        # 즉시 실패시키지 않고 BASE_SETTLE_TIMEOUT 까지 기다린다. 대기 중에도 진행 상황을 남긴다.
+        runtime.place_phase = "WAIT_BASE_SETTLED"
+        runtime.place_wait_seconds = 0.0
+        print(
+            f"[Place] 차체 정지를 확인합니다 "
+            f"(현재 {runtime.base_watcher.still_seconds:.2f}초 / 필요 {BASE_SETTLE_SECONDS:.2f}초)",
+            flush=True,
+        )
+        node.set_phase(
+            "PLACE_INSPECT/WAIT_BASE_SETTLED",
+            detail=f"still={runtime.base_watcher.still_seconds:.2f}s",
+        )
+        return
+
+    if command.operation == "CONVEY_TO_INSPECT":
+        if (
+            command.recipe_id != "CONVEY_TO_INSPECT"
+            or command.pallet_id != "PALLET_001"
+            or command.source != "INSPECT_STATION"
+            or command.destination != "INSPECT_STOP"
+        ):
+            node.fail(reason="INVALID_COMMAND", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        if runtime.conveyor is None or runtime.station is None:
+            node.fail(reason="NOT_READY", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        if (not runtime.place_completed or runtime.motion.is_carrying
+                or runtime.station.state != "IDLE"):
+            node.fail(reason="INVALID_STATE", phase="COMMAND_DISPATCH")
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        zone = runtime.conveyor.zone_of(path)
+        if zone is Zone.GONE:
+            node.fail(reason="PALLET_LOST", phase="COMMAND_DISPATCH")
+            return
+        if zone is Zone.OFF:
+            node.fail(reason="INVALID_STATE", phase="COMMAND_DISPATCH")
+            return
+        runtime.convey_wait_seconds = 0.0
+        runtime.convey_still_seconds = 0.0
+        runtime.convey_last_position = None
+        # [navigation 2026-09-26] cabbage-place-fix의 포크 인출 후에만 벨트를 풀어 준다.
+        runtime.conveyor.hold_stem(False)
+        node.set_phase("CONVEY_TO_INSPECT/MOVING", detail="pallet_id=PALLET_001")
+        return
+
+    if command.operation == "PREPARE_INSPECT":
+        if (
+            command.recipe_id != "PREPARE_INSPECT"
+            or command.pallet_id != "PALLET_001"
+            or command.source != "INSPECT_STOP"
+            or command.destination != "INSPECT_WORK_POS"
+        ):
+            node.fail(reason="INVALID_COMMAND", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        if (not runtime.convey_completed
+                or runtime.conveyor is None or runtime.station is None
+                or runtime.conveyor.inspecting != path
+                or not runtime.conveyor.is_locked(path)
+                or runtime.station.state != "IDLE"):
+            node.fail(reason="INVALID_STATE", phase="COMMAND_DISPATCH")
+            return
+        runtime.prepare_wait_seconds = 0.0
+        runtime.station.start_prepare(path)
+        node.set_phase("PREPARE_INSPECT/PUSH_IN", detail="pallet_id=PALLET_001")
+        return
+
+    if command.operation == "MOVE_TO_INSPECT":
+        if (
+            command.recipe_id != "MOVE_TO_INSPECT"
+            or command.pallet_id != "PALLET_001"
+            or command.source != "INSPECT_WORK_POS"
+            or command.destination != "INSPECT_CAMERA_POSE"
+        ):
+            node.fail(reason="INVALID_COMMAND", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        if (runtime.station is None or runtime.conveyor is None
+                or runtime.station.prepared_pallet != path
+                or runtime.conveyor.inspecting != path
+                or not runtime.conveyor.is_locked(path)):
+            node.fail(reason="INVALID_STATE", phase="COMMAND_DISPATCH")
+            return
+        runtime.inspect_move_wait_seconds = 0.0
+        runtime.station.start_inspect_move(path)
+        node.set_phase("MOVE_TO_INSPECT/MOVING", detail="pallet_id=PALLET_001")
+        return
+
+    if command.operation == "CULL":
+        if (
+            command.recipe_id != "CULL_DEFECT_SLOTS"
+            or command.pallet_id != "PALLET_001"
+            or command.source != "INSPECT_STATION"
+            or command.destination != "INSPECT_STATION"
+        ):
+            node.fail(reason="INVALID_COMMAND", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        try:
+            detections = node.inspection_data.require_cull(
+                command.task_id, command.pallet_id, command.target_slots,
+            )
+        except CullContractError as error:
+            node.get_logger().error(f"Cull data validation failed: {error}")
+            node.fail(reason=error.reason, phase="CULL/VALIDATION", reset_required=False)
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        if (runtime.station is None or runtime.conveyor is None
+                or runtime.station.inspection_ready_pallet != path
+                or runtime.conveyor.inspecting != path
+                or not runtime.conveyor.is_locked(path)):
+            node.fail(reason="INVALID_STATE", phase="CULL/VALIDATION")
+            return
+        runtime.cull_wait_seconds = 0.0
+        runtime.station.start_cull(
+            path, command.target_slots, detections["detections"],
+        )
+        node.set_phase("CULL/STARTED", detail=f"target_slots={','.join(command.target_slots)}")
+        return
+
+    if command.operation == "RELEASE_INSPECT":
+        if (command.recipe_id != "RELEASE_INSPECT"
+                or command.pallet_id != "PALLET_001"
+                or command.source != "INSPECT_WORK_POS"
+                or command.destination != "INSPECT_STOP"):
+            node.fail(reason="INVALID_COMMAND", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        if (runtime.station is None or runtime.conveyor is None
+                or runtime.station.state not in {"INSPECT_READY", "CULLED"}
+                or runtime.conveyor.inspecting != path):
+            node.fail(reason="INVALID_STATE", phase="RELEASE_INSPECT/VALIDATION")
+            return
+        runtime.release_wait_seconds = 0.0
+        runtime.station.start_release(path)
+        node.set_phase("RELEASE_INSPECT/PUSH_OUT", detail="pallet_id=PALLET_001")
+        return
+
+    if command.operation == "CONVEYOR_OUT":
+        if (command.recipe_id != "CONVEY_TO_PACK_OUT"
+                or command.pallet_id != "PALLET_001"
+                or command.source != "INSPECT_STOP"
+                or command.destination != "PACK_OUT"):
+            node.fail(reason="INVALID_COMMAND", phase="COMMAND_DISPATCH", reset_required=False)
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        if (runtime.station is None or runtime.conveyor is None
+                or runtime.station.state != "RELEASED"
+                or runtime.conveyor.inspecting != path):
+            node.fail(reason="INVALID_STATE", phase="CONVEYOR_OUT/VALIDATION")
+            return
+        runtime.out_wait_seconds = 0.0
+        runtime.conveyor.hold_outfeed(False)
+        runtime.station.start_conveyor_out(path)
+        node.set_phase("CONVEYOR_OUT/MOVING", detail="pallet_id=PALLET_001")
         return
 
     if command.operation != "PICK_HARVEST":
@@ -601,6 +1165,180 @@ def update_operation(node, runtime, transfer_operation):
     command = node.active_command
     if command is None:
         raise RuntimeError("active command is missing")
+
+    if command.operation == "PLACE_INSPECT":
+        # [navigation 2026-09-23] 차체가 멈출 때까지 기다린 뒤 팔을 움직인다.
+        if runtime.place_phase == "WAIT_BASE_SETTLED":
+            runtime.lift.hold()
+            runtime.place_wait_seconds += PHYSICS_DT
+
+            if runtime.base_watcher.still_seconds >= BASE_SETTLE_SECONDS:
+                print(
+                    f"[Place] 차체 정지 확인 ({runtime.place_wait_seconds:.1f}초 대기)",
+                    flush=True,
+                )
+                start_place_motion(runtime, node)
+                return
+
+            if runtime.place_wait_seconds > BASE_SETTLE_TIMEOUT:
+                raise RuntimeError(
+                    f"차체가 {BASE_SETTLE_TIMEOUT:.0f}초 안에 멈추지 않았습니다 "
+                    f"(정지 누적 {runtime.base_watcher.still_seconds:.2f}초). "
+                    "주행이 완전히 끝난 뒤 다시 지시하십시오."
+                )
+
+            node.set_phase(
+                "PLACE_INSPECT/WAIT_BASE_SETTLED",
+                detail=f"still={runtime.base_watcher.still_seconds:.2f}s",
+            )
+            return
+
+        runtime.lift.hold()
+        runtime.motion.update(PHYSICS_DT)
+        node.set_phase(
+            "PLACE_INSPECT/ARM_PLACE",
+            detail=runtime.motion.current_stage,
+        )
+        if runtime.motion.is_running:
+            return
+        # [navigation 2026-09-26] 포크 인출 완료 뒤에도 벨트는 CONVEY_TO_INSPECT 명령까지 정지한다.
+        if not runtime.motion.is_done or runtime.motion.is_carrying:
+            raise RuntimeError("TurnTable Place 검증이 완료되지 않았습니다.")
+
+        runtime.place_completed = True
+        node.succeed(phase="RESULT")
+        return
+
+    if command.operation == "CONVEY_TO_INSPECT":
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        runtime.convey_wait_seconds += PHYSICS_DT
+        fault = runtime.conveyor.fault_of(path)
+        if fault is not None:
+            node.fail(reason=fault[0], phase="CONVEY_TO_INSPECT/FAULT")
+            return
+        zone = runtime.conveyor.zone_of(path)
+        if zone is Zone.GONE:
+            node.fail(reason="PALLET_LOST", phase="CONVEY_TO_INSPECT/FAULT")
+            return
+        if (zone is Zone.VISION and runtime.conveyor.inspecting == path
+                and runtime.conveyor.is_locked(path)):
+            position = runtime.conveyor.pallet_position(path)
+            previous = runtime.convey_last_position
+            moved = previous is None or math.dist(position, previous) > INSPECT_STOP_STEP_TOL
+            runtime.convey_last_position = position
+            runtime.convey_still_seconds = (
+                0.0 if moved else runtime.convey_still_seconds + PHYSICS_DT
+            )
+            node.set_phase(
+                "CONVEY_TO_INSPECT/PALLET_DETECTED",
+                detail=(f"pallet_id=PALLET_001 zone=VISION "
+                        f"still={runtime.convey_still_seconds:.2f}s"),
+            )
+            if runtime.convey_still_seconds >= INSPECT_STOP_STILL_SECONDS:
+                runtime.convey_completed = True
+                node.succeed(phase="RESULT", reached_station="INSPECT_STOP")
+                return
+        else:
+            runtime.convey_last_position = None
+            runtime.convey_still_seconds = 0.0
+            node.set_phase("CONVEY_TO_INSPECT/MOVING", detail=f"pallet_id=PALLET_001 zone={zone.value}")
+        if runtime.convey_wait_seconds >= CONVEY_TO_INSPECT_TIMEOUT:
+            node.fail(reason="CONVEY_TIMEOUT", phase="CONVEY_TO_INSPECT/TIMEOUT")
+        return
+
+    if command.operation == "PREPARE_INSPECT":
+        runtime.prepare_wait_seconds += PHYSICS_DT
+        if runtime.station.failure_reason:
+            node.fail(reason="JIG_FAILED", phase="PREPARE_INSPECT/FAULT")
+            return
+        if (runtime.station.state == "PREPARED"
+                and runtime.station.prepared_pallet == CONVEYOR_CARRIED_PALLETS[0]
+                and runtime.conveyor.is_locked(CONVEYOR_CARRIED_PALLETS[0])):
+            node.mark_inspection_prepared(command)
+            node.succeed(phase="RESULT", reached_station="INSPECT_WORK_POS")
+            return
+        node.set_phase("PREPARE_INSPECT/PUSH_IN", detail=f"pallet_id=PALLET_001 jig={runtime.station.state}")
+        if runtime.prepare_wait_seconds >= PREPARE_INSPECT_TIMEOUT:
+            runtime.station.stop_prepare("inspection jig preparation timed out")
+            node.fail(reason="PREPARE_TIMEOUT", phase="PREPARE_INSPECT/TIMEOUT")
+        return
+
+    if command.operation == "MOVE_TO_INSPECT":
+        runtime.inspect_move_wait_seconds += PHYSICS_DT
+        if runtime.station.failure_reason:
+            node.fail(reason="INSPECT_POSE_FAILED", phase="MOVE_TO_INSPECT/FAULT")
+            return
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        if (runtime.station.inspection_ready_pallet == path
+                and runtime.conveyor.inspecting == path
+                and runtime.conveyor.is_locked(path)):
+            node.succeed(phase="RESULT", reached_station="INSPECT_CAMERA_POSE")
+            return
+        node.set_phase(
+            "MOVE_TO_INSPECT/MOVING",
+            detail=f"pallet_id=PALLET_001 arm={runtime.station.state}",
+        )
+        if runtime.inspect_move_wait_seconds >= MOVE_TO_INSPECT_TIMEOUT:
+            runtime.station.stop_prepare("inspection arm positioning timed out")
+            node.fail(reason="INSPECT_POSE_TIMEOUT", phase="MOVE_TO_INSPECT/TIMEOUT")
+        return
+
+    if command.operation == "CULL":
+        runtime.cull_wait_seconds += PHYSICS_DT
+        completed = runtime.station.completed_cull_slots
+        if runtime.station.failure_reason:
+            node.fail(
+                reason=runtime.station.failure_code or "CULL_FAILED",
+                phase="CULL/FAULT", completed_units=completed,
+            )
+            return
+        if runtime.station.state == "CULLED":
+            if set(completed) != set(command.target_slots):
+                node.fail(reason="CULL_INCOMPLETE", phase="CULL/VERIFY", completed_units=completed)
+                return
+            node.succeed(phase="RESULT", completed_units=completed)
+            return
+        node.set_phase(
+            f"CULL/{runtime.station.state}",
+            detail=f"completed={','.join(completed)} target={','.join(command.target_slots)}",
+        )
+        if runtime.cull_wait_seconds >= CULL_TIMEOUT:
+            runtime.station.stop_prepare("Cull timed out")
+            node.fail(reason="CULL_TIMEOUT", phase="CULL/TIMEOUT", completed_units=completed)
+        return
+
+    if command.operation == "RELEASE_INSPECT":
+        runtime.release_wait_seconds += PHYSICS_DT
+        if runtime.station.failure_reason:
+            node.fail(reason="RELEASE_FAILED", phase="RELEASE_INSPECT/FAULT")
+            return
+        if runtime.station.state == "RELEASED":
+            node.succeed(phase="RESULT", reached_station="INSPECT_STOP")
+            return
+        node.set_phase("RELEASE_INSPECT/PUSH_OUT", detail=runtime.station.state)
+        if runtime.release_wait_seconds >= RELEASE_INSPECT_TIMEOUT:
+            runtime.station.stop_prepare("inspection release timed out")
+            node.fail(reason="RELEASE_TIMEOUT", phase="RELEASE_INSPECT/TIMEOUT")
+        return
+
+    if command.operation == "CONVEYOR_OUT":
+        runtime.out_wait_seconds += PHYSICS_DT
+        path = CONVEYOR_CARRIED_PALLETS[0]
+        fault = runtime.conveyor.fault_of(path)
+        zone = runtime.conveyor.zone_of(path)
+        if zone is Zone.GONE:
+            runtime.station.finish_conveyor_out(path)
+            node.succeed(phase="RESULT", reached_station="PACK_OUT")
+            return
+        if fault is not None or zone is Zone.OFF:
+            runtime.conveyor.hold_outfeed(True)
+            node.fail(reason=fault[0] if fault else "PALLET_LOST", phase="CONVEYOR_OUT/FAULT")
+            return
+        node.set_phase("CONVEYOR_OUT/MOVING", detail=f"pallet_id=PALLET_001 zone={zone.value}")
+        if runtime.out_wait_seconds >= CONVEYOR_OUT_TIMEOUT:
+            runtime.conveyor.hold_outfeed(True)
+            node.fail(reason="CONVEYOR_TIMEOUT", phase="CONVEYOR_OUT/TIMEOUT")
+        return
 
     if command.operation == "PICK_HARVEST":
         if runtime.harvest_phase == "PICK":
@@ -712,10 +1450,36 @@ def fail_operation(
         )
 
 
+def select_view_camera():
+    """[navigation 2026-09-26] 화면에 보여 줄 카메라를 환경변수로 고른다.
+
+    씬에 저장된 기본 Perspective(/OmniverseKit_Persp)가 비전룸을 비추고 있어
+    녹화할 때 카터가 보이지 않는다. SMARTFARM_VIEW_CAMERA 에 카메라 prim 경로를
+    주면 그 카메라로 바꾼다. 예) /World/ProcessCameras/Cam2_Nav2Place
+    환경변수가 없으면 아무것도 하지 않으므로 기존 실행에는 영향이 없다.
+    headless 로 띄우면 뷰포트가 없어 조용히 넘어간다.
+    """
+    camera = os.environ.get("SMARTFARM_VIEW_CAMERA", "").strip()
+    if not camera:
+        return
+    try:
+        from omni.kit.viewport.utility import get_active_viewport
+
+        viewport = get_active_viewport()
+        if viewport is None:
+            print("[화면] 뷰포트가 없어 카메라를 바꾸지 않았습니다(headless).", flush=True)
+            return
+        viewport.camera_path = camera
+        print(f"[화면] 뷰포트 카메라를 {camera} 로 바꿨습니다.", flush=True)
+    except Exception as error:  # 녹화 편의 기능이므로 실패해도 실행을 막지 않는다
+        print(f"[화면] 카메라 전환 실패 (무시): {error}", flush=True)
+
+
 def run():
     print(f"[시작] Scene을 불러옵니다: {args.scene.resolve()}", flush=True)
     runtime = create_simulation_runtime(args.scene.resolve())
     print("[시작] Scene과 제어기 구성이 완료되었습니다.", flush=True)
+    select_view_camera()   # [navigation 2026-09-26]
     transfer_operation = TransferOperation(
         runtime.transfer,
         runtime.pallets,
@@ -725,7 +1489,7 @@ def run():
     print("[시작] ROS 2 노드를 초기화합니다.", flush=True)
     rclpy.init()
     node = SimTaskNode(
-        supported_operations={"TRANSFER", "PICK_HARVEST"},
+        supported_operations={"TRANSFER", "PICK_HARVEST", "PLACE_INSPECT", "CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT", "CONVEYOR_OUT"},
     )
     demo_publisher = (
         node.create_publisher(String, "/sim_task/command", 10)
@@ -736,19 +1500,29 @@ def run():
 
     step_count = 0
     needs_initialization = True
+    needs_scene_reload = False
     stopped_handled = False
     demo_command_sent = False
+    demo_cycle_index = 0
+    reset_check_position = None
+    reset_check_stopped_updates = 0
 
     def step_world():
         nonlocal step_count
         step_count += 1
         runtime.world.step(
             render=(
-                not args.headless
+                (not args.headless or args.livestream)
                 and RENDER_EVERY > 0
                 and step_count % RENDER_EVERY == 0
             )
         )
+        if runtime.conveyor is not None:
+            runtime.conveyor.update(PHYSICS_DT)   # [올인원 2026-09-25] 벨트는 Play 중 계속 돈다
+        if runtime.station is not None:
+            runtime.station.update(PHYSICS_DT, render=runtime.world.render)   # 카메라 앞 팔레트 검사·솎아내기
+        if runtime.human is not None and runtime.world.is_playing():
+            runtime.human.update(PHYSICS_DT)   # [올인원 2026-09-25] 사람 돌발상황
 
     try:
         if args.autoplay:
@@ -764,7 +1538,9 @@ def run():
             f"playing={runtime.world.is_playing()}",
             flush=True,
         )
-        while app.is_running() and rclpy.ok():
+        # SimulationApp.is_running()은 stage가 잠시 닫혀도 False가 된다.
+        # Stop → Play 재로드 중에는 Kit 프로세스의 실행 상태로 루프를 유지한다.
+        while app.app.is_running() and not app.is_exiting() and rclpy.ok():
             try:
                 rclpy.spin_once(node, timeout_sec=0.0)
             except Exception:  # noqa: BLE001 - 종료 신호와 실행 오류를 구분한다.
@@ -776,12 +1552,11 @@ def run():
                 if not stopped_handled:
                     stopped_handled = True
                     needs_initialization = True
+                    needs_scene_reload = True
 
-                    try:
-                        transfer_operation.cancel()
-                    except RuntimeError as error:
-                        node.get_logger().error(f"stop failed: {error}")
-
+                    # Stop은 Physics Simulation View를 먼저 없앤다. 이 시점에
+                    # transfer.cancel()이 리프트 관절을 읽으면 None을 반환한다.
+                    # 이전 제어기는 다음 Play에서 장면과 함께 폐기한다.
                     if node.has_active_command:
                         node.fail(
                             reason="RESET_REQUIRED",
@@ -790,22 +1565,37 @@ def run():
                                 transfer_operation.completed_units
                             ),
                         )
-                    else:
-                        node.mark_error(
-                            "timeline stopped; press Play to reinitialize"
-                        )
+                    node.begin_scene_reset()
+                    demo_command_sent = False
 
-                runtime.world.render()
+                # World.render()는 Stop으로 무효화된 PhysX view를 다시 참조한다.
+                # Kit UI/livestream만 갱신하며 이전 World 객체를 건드리지 않는다.
+                app.update()
+                if args.verify_stop_play and reset_check_position is not None:
+                    reset_check_stopped_updates += 1
+                    if reset_check_stopped_updates >= 120:
+                        print("[RESET_CHECK] 정지 상태 120 update 후 Play합니다.", flush=True)
+                        runtime.world.play()
                 continue
 
             if not runtime.world.is_playing():
-                runtime.world.render()
+                app.update()
                 continue
 
             stopped_handled = False
 
             if needs_initialization:
                 try:
+                    if needs_scene_reload:
+                        print("[장면] Stop → Play: 원본 USD를 다시 엽니다.", flush=True)
+                        runtime = reload_scene(runtime, args.scene.resolve())
+                        transfer_operation = TransferOperation(
+                            runtime.transfer, runtime.pallets, TRANSFER_UNITS,
+                        )
+                        select_view_camera()
+                        step_count = 0
+                        runtime.world.play()
+                        needs_scene_reload = False
                     initialize_scene(
                         runtime,
                         transfer_operation,
@@ -817,19 +1607,43 @@ def run():
                     continue
 
                 needs_initialization = False
+                node.clear_inspection_data()
                 ready_detail = (
                     f"{args.scene.stem} scene ready; "
-                    "TRANSFER/PICK_HARVEST physical profiles loaded"
+                    "TRANSFER/PICK_HARVEST/PLACE_INSPECT/"
+                    "CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL/RELEASE_INSPECT/CONVEYOR_OUT physical profiles loaded"
                 )
                 node.mark_ready(ready_detail)
                 print(f"[READY] {ready_detail}", flush=True)
 
+                if args.verify_stop_play:
+                    pallet = runtime.pallets[HARVEST_TASK.pallet_path]
+                    position, _ = pallet.get_world_pose()
+                    if reset_check_position is None:
+                        reset_check_position = tuple(float(value) for value in position)
+                        moved = (
+                            reset_check_position[0] + 0.5,
+                            reset_check_position[1],
+                            reset_check_position[2],
+                        )
+                        pallet.set_world_pose(position=moved)
+                        print("[RESET_CHECK] 팔레트를 옮기고 Stop → Play를 시작합니다.", flush=True)
+                        runtime.world.stop()
+                        continue
+                    error = math.dist(position, reset_check_position)
+                    if error > 0.02:
+                        raise RuntimeError(f"Stop → Play 팔레트 위치 복원 실패: {error:.3f} m")
+                    print(f"[RESET_CHECK] PASS: 팔레트 위치 오차 {error:.4f} m, 리프트 보정 완료", flush=True)
+                    return
+
                 if args.demo and not demo_command_sent:
+                    demo_cycle_index += 1
+                    demo_task_id = f"STANDALONE-DEMO-{demo_cycle_index:03d}"
                     message = String()
                     message.data = json.dumps(
                         {
-                            "task_id": "STANDALONE-DEMO",
-                            "command_id": "STANDALONE-DEMO-CMD-001",
+                            "task_id": demo_task_id,
+                            "command_id": f"{demo_task_id}-CMD-001",
                             "operation": "TRANSFER",
                             "recipe_id": "RACK_REARRANGE_01",
                         },
@@ -857,14 +1671,28 @@ def run():
                         transfer_operation,
                         node,
                     )
-                except RuntimeError as error:
+                except Exception as error:  # noqa: BLE001 - 활성 명령에 terminal 실패를 보낸다.
                     node.get_logger().error(str(error))
-                    fail_operation(
-                        node,
-                        transfer_operation,
-                        reason="MOTION_FAILED",
-                        phase="START_OPERATION",
-                    )
+                    if command.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT", "CONVEYOR_OUT"}:
+                        if command.operation in {"PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT"}:
+                            runtime.station.stop_prepare(str(error))
+                        if command.operation == "CONVEYOR_OUT":
+                            runtime.conveyor.hold_outfeed(True)
+                        node.fail(
+                            reason=("CONVEYOR_FAILED" if command.operation == "CONVEY_TO_INSPECT"
+                                    else "INSPECT_POSE_FAILED" if command.operation == "MOVE_TO_INSPECT"
+                                    else "CULL_FAILED" if command.operation == "CULL"
+                                    else "RELEASE_FAILED" if command.operation == "RELEASE_INSPECT"
+                                    else "CONVEYOR_FAILED" if command.operation == "CONVEYOR_OUT"
+                                    else "JIG_FAILED"),
+                            phase="START_OPERATION",
+                            completed_units=(runtime.station.completed_cull_slots
+                                             if command.operation == "CULL" else ()),
+                        )
+                    else:
+                        fail_operation(
+                            node, transfer_operation, reason="MOTION_FAILED", phase="START_OPERATION",
+                        )
 
             if node.has_active_command:
                 try:
@@ -873,18 +1701,45 @@ def run():
                         runtime,
                         transfer_operation,
                     )
-                except RuntimeError as error:
+                except Exception as error:  # noqa: BLE001 - 활성 명령에 terminal 실패를 보낸다.
                     node.get_logger().error(str(error))
-                    fail_operation(
-                        node,
-                        transfer_operation,
-                        reason="MOTION_FAILED",
-                        phase="EXECUTION",
-                    )
+                    # [navigation 2026-09-26] 실패 시 자동 배출 경로를 열지 않는다.
+                    active = node.active_command
+                    if active.operation in {"CONVEY_TO_INSPECT", "PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT", "CONVEYOR_OUT"}:
+                        if active.operation in {"PREPARE_INSPECT", "MOVE_TO_INSPECT", "CULL", "RELEASE_INSPECT"}:
+                            runtime.station.stop_prepare(str(error))
+                        if active.operation == "CONVEYOR_OUT":
+                            runtime.conveyor.hold_outfeed(True)
+                        node.fail(
+                            reason=("CONVEYOR_FAILED" if active.operation == "CONVEY_TO_INSPECT"
+                                    else "INSPECT_POSE_FAILED" if active.operation == "MOVE_TO_INSPECT"
+                                    else "CULL_FAILED" if active.operation == "CULL"
+                                    else "RELEASE_FAILED" if active.operation == "RELEASE_INSPECT"
+                                    else "CONVEYOR_FAILED" if active.operation == "CONVEYOR_OUT"
+                                    else "JIG_FAILED"),
+                            phase="EXECUTION",
+                            completed_units=(runtime.station.completed_cull_slots
+                                             if active.operation == "CULL" else ()),
+                        )
+                    else:
+                        fail_operation(
+                            node, transfer_operation, reason="MOTION_FAILED", phase="EXECUTION",
+                        )
+
+            # [navigation 2026-09-23] 차체 정지 감시를 매 스텝 갱신한다.
+            runtime.base_watcher.update(runtime.arm_base, PHYSICS_DT)
 
             if runtime.motion.is_carrying and not node.has_active_command:
                 runtime.lift.hold()
-                runtime.motion.hold()
+                # [navigation 2026-09-24] 운반 중 팔레트 미끄러짐 검사가 예외를 던지면 앱 전체가 죽고
+                # Isaac 이 종료되었다(24차: 도킹 회전 중 30.1 mm). 관절 목표는 물리 드라이브에 남아 있으므로
+                # 여기서는 한 번만 기록하고 계속 돈다. 다음 PLACE 명령에서 같은 검사가 MOTION_FAILED 로 보고한다.
+                try:
+                    runtime.motion.hold()
+                except RuntimeError as error:
+                    if not runtime.hold_fault_logged:
+                        node.get_logger().error(f"운반 중 팔레트 감시 예외 (계속 진행): {error}")
+                        runtime.hold_fault_logged = True
 
             step_world()
 
@@ -899,6 +1754,8 @@ def run():
                     reset_required=False,
                 )
         finally:
+            if runtime.station is not None:
+                runtime.station.close()     # [올인원 2026-09-25] YOLO 워커 종료
             node.destroy_node()
             if rclpy.ok():
                 rclpy.shutdown()

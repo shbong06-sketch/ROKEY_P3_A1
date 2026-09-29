@@ -33,6 +33,7 @@ class TaskResultData:
 
     operation: str
     status: str
+    pallet_id: str = ""
     phase: str = ""
     reason: str = "NONE"
 

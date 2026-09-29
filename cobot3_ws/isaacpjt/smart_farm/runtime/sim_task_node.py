@@ -8,6 +8,8 @@ from typing import Optional, Tuple
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from inspection_detection_store import DetectionContractError, InspectionDetectionStore
+
 
 class CommandValidationError(ValueError):
     """Sim Task 명령의 JSON 형식이나 필드가 잘못된 경우."""
@@ -51,6 +53,7 @@ class SimTaskNode(Node):
         self._active_command: Optional[SimTaskCommand] = None
 
         self._completed_results: OrderedDict[str, dict] = OrderedDict()
+        self.inspection_data = InspectionDetectionStore()
 
         self._command_subscription = self.create_subscription(
             String,
@@ -67,6 +70,15 @@ class SimTaskNode(Node):
             String,
             "/sim_task/status",
             10,
+        )
+        self._inspection_data_status_publisher = self.create_publisher(
+            String, "/sim_task/inspection_data_status", 10,
+        )
+        self.create_subscription(
+            String, "/sim_task/inspection_context", self._inspection_context_callback, 10,
+        )
+        self.create_subscription(
+            String, "/inspection/detections_2d", self._inspection_detections_callback, 10,
         )
 
         self._heartbeat_timer = self.create_timer(
@@ -104,6 +116,67 @@ class SimTaskNode(Node):
         self._phase = "ERROR"
         self._detail = detail
         self.publish_status()
+
+    def begin_scene_reset(self) -> None:
+        """Stop 뒤 이전 장면의 대기 명령과 검사 데이터를 폐기한다."""
+
+        if self._active_command is not None:
+            raise RuntimeError("finish the active command before resetting the scene")
+        self._ready = False
+        queued = self._queued_command
+        self._queued_command = None
+        if queued is not None:
+            self._publish_immediate_failure(queued, "RESET_REQUIRED")
+        self.clear_inspection_data()
+        self._state = "STARTING"
+        self._phase = "SCENE_RESET"
+        self._detail = "timeline stopped; press Play to reload the scene"
+        self.publish_status()
+
+    def mark_inspection_prepared(self, command: SimTaskCommand) -> None:
+        """[navigation 2026-09-27] 물리 준비 완료 팔레트에만 검출 수신을 허용한다."""
+        self.inspection_data.mark_prepared(command.task_id, command.pallet_id)
+
+    def clear_inspection_data(self) -> None:
+        """장면 초기화 시 이전 검사 식별자와 검출 데이터를 버린다."""
+        self.inspection_data.reset()
+
+    def _inspection_context_callback(self, message: String) -> None:
+        try:
+            payload = json.loads(message.data)
+            stored = self.inspection_data.expect_inspection(payload)
+        except (ValueError, TypeError, DetectionContractError) as error:
+            self._publish_inspection_data_status("REJECTED", str(error))
+            return
+        self._publish_inspection_data_status("STORED" if stored else "EXPECTED", "NONE")
+
+    def _inspection_detections_callback(self, message: String) -> None:
+        try:
+            payload = json.loads(message.data)
+            if isinstance(payload, dict) and payload.get("operation") == "RECHECK":
+                return
+            stored = self.inspection_data.receive(payload)
+        except (ValueError, TypeError, DetectionContractError) as error:
+            self._publish_inspection_data_status("REJECTED", str(error))
+            return
+        self._publish_inspection_data_status("STORED" if stored else "WAITING_CONTEXT", "NONE")
+
+    def _publish_inspection_data_status(self, state: str, reason: str) -> None:
+        store = self.inspection_data
+        payload = {
+            "state": state,
+            "reason": reason,
+            "task_id": store.prepared_task_id,
+            "inspection_command_id": store.inspection_command_id,
+            "pallet_id": store.prepared_pallet_id,
+        }
+        self._publish_json(self._inspection_data_status_publisher, payload)
+        if state == "REJECTED":
+            self.get_logger().warning(f"Inspection detections rejected: {reason}")
+        elif state == "STORED":
+            self.get_logger().info(
+                f"Inspection detections stored: command_id={store.inspection_command_id}"
+            )
 
     def take_command(self) -> Optional[SimTaskCommand]:
         """Standalone 프레임 루프가 대기 명령을 가져간다."""
@@ -197,6 +270,7 @@ class SimTaskNode(Node):
             "state": self._state,
             "task_id": command.task_id if command else "",
             "command_id": command.command_id if command else "",
+            "pallet_id": command.pallet_id if command else "",
             "operation": command.operation if command else "",
             "phase": self._phase,
             "detail": self._detail,
@@ -282,6 +356,7 @@ class SimTaskNode(Node):
         payload = {
             "task_id": command.task_id,
             "command_id": command.command_id,
+            "pallet_id": command.pallet_id,
             "operation": command.operation,
             "status": status,
             "phase": phase,
@@ -313,6 +388,7 @@ class SimTaskNode(Node):
         payload = {
             "task_id": command.task_id,
             "command_id": command.command_id,
+            "pallet_id": command.pallet_id,
             "operation": command.operation,
             "status": "FAILED",
             "phase": "COMMAND_VALIDATION",
