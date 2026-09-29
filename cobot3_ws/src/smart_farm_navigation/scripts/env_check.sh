@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ROS 2 / Isaac Sim 환경 충돌 사전 점검 (고피 전용). 각 터미널에서 ros_set, isaac_ros 후 실행한다.
-#   bash /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
+#   저장소 루트에서: bash cobot3_ws/src/smart_farm_navigation/scripts/env_check.sh
 # 종료 코드: 0 = 충돌 없음, 1 = 경고, 2 = 충돌(진행 금지)
 ISAAC=${ISAAC_ROOT:-$HOME/isaacsim}
 BRIDGE=$ISAAC/exts/isaacsim.ros2.bridge
@@ -14,7 +14,7 @@ note "ROS_DISTRO=${ROS_DISTRO:-<unset>}  ROS_VERSION=${ROS_VERSION:-<unset>}  RO
 note "ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-<unset>}  RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-<unset>}"
 note "FASTRTPS_DEFAULT_PROFILES_FILE=${FASTRTPS_DEFAULT_PROFILES_FILE:-<unset>}"
 [[ -n "${FASTRTPS_DEFAULT_PROFILES_FILE:-}" && ! -f "$FASTRTPS_DEFAULT_PROFILES_FILE" ]] && warn "FastDDS profile 파일이 없음: $FASTRTPS_DEFAULT_PROFILES_FILE"
-[[ "${ROS_DOMAIN_ID:-}" == "101" ]] || warn "ROS_DOMAIN_ID 가 101 이 아님"
+[[ -n "${ROS_DOMAIN_ID:-}" ]] || warn "ROS_DOMAIN_ID 가 설정되지 않음"
 
 echo "== 2. 시스템 ROS 2 =="
 installed=$(ls -d /opt/ros/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null | tr '\n' ' ')
