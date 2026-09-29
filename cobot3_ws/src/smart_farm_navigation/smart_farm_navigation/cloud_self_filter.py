@@ -11,11 +11,13 @@ Real obstacles that close to the rig are still in the static map.
     ros2 run smart_farm_navigation cloud_self_filter
 """
 
+import time
+
 import numpy as np
 import rclpy
 import rclpy.executors
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2 as pc2
 
@@ -42,20 +44,37 @@ class CloudSelfFilter(Node):
         self.by = [float(v) for v in self.get_parameter("self_box_y").value]
         self.bz = [float(v) for v in self.get_parameter("self_box_z").value]
         self.pub = self.create_publisher(PointCloud2, self.get_parameter("output_topic").value, qos_profile_sensor_data)
-        self.create_subscription(PointCloud2, self.get_parameter("input_topic").value, self._on_cloud, qos_profile_sensor_data)
+        raw_qos = QoSProfile(depth=2, reliability=ReliabilityPolicy.RELIABLE)
+        self.create_subscription(PointCloud2, self.get_parameter("input_topic").value, self._on_cloud, raw_qos)
         self.acc_s = float(self.get_parameter("accumulate_s").value)
         self.partial_max = int(self.get_parameter("partial_max_points").value)
         self.slices = []            # (t, xyz) of recent partial clouds
         self.merged_mode = False
-        self.n_msgs = self.n_in = self.n_removed = 0
+        self.n_msgs = self.n_in = self.n_out = self.n_removed = 0
+        self.last_input_stamp_ns = None
+        self.timings = {name: [] for name in ("input_gap_s", "callback_age_ms", "compute_ms", "publish_ms")}
         self.create_timer(5.0, self._report)
         self.get_logger().info(f"box x{self.bx} y{self.by} z{self.bz} (base_link) removed from "
                                f"{self.get_parameter('input_topic').value}")
 
     def _on_cloud(self, msg: PointCloud2) -> None:
+        started = time.perf_counter()
+        stamp_ns = msg.header.stamp.sec * 1_000_000_000 + msg.header.stamp.nanosec
+        if self.last_input_stamp_ns is not None:
+            gap_s = (stamp_ns - self.last_input_stamp_ns) / 1e9
+            if gap_s >= 0.0:
+                self.timings["input_gap_s"].append(gap_s)
+        self.last_input_stamp_ns = stamp_ns
+        now_ns = self.get_clock().now().nanoseconds
+        if now_ns > 0:
+            self.timings["callback_age_ms"].append((now_ns - stamp_ns) / 1e6)
+
         pts = pc2.read_points_numpy(msg, field_names=("x", "y", "z"), skip_nans=True)
         if pts.size == 0:
-            self.pub.publish(msg); return
+            before_publish = time.perf_counter()
+            self.pub.publish(msg)
+            self._record_timing(started, before_publish)
+            return
         x = pts[:, 0] + LIDAR_IN_BASE[0]; y = pts[:, 1] + LIDAR_IN_BASE[1]; z = pts[:, 2] + LIDAR_IN_BASE[2]
         inside = (x > self.bx[0]) & (x < self.bx[1]) & (y > self.by[0]) & (y < self.by[1]) & (z > self.bz[0]) & (z < self.bz[1])
         keep = pts[~inside]
@@ -69,17 +88,33 @@ class CloudSelfFilter(Node):
             self.slices = [(t, keep)]
         keep = np.concatenate([p for _, p in self.slices], axis=0)
         out = pc2.create_cloud_xyz32(msg.header, keep.astype(np.float32))
+        before_publish = time.perf_counter()
         self.pub.publish(out)
-        self.n_msgs += 1; self.n_in += len(pts); self.n_removed += int(inside.sum())
+        self._record_timing(started, before_publish)
+        self.n_msgs += 1; self.n_in += len(pts); self.n_out += len(keep); self.n_removed += int(inside.sum())
+
+    def _record_timing(self, started: float, before_publish: float) -> None:
+        finished = time.perf_counter()
+        self.timings["compute_ms"].append((before_publish - started) * 1000)
+        self.timings["publish_ms"].append((finished - before_publish) * 1000)
 
     def _report(self) -> None:
+        timing = []
+        for name, unit in (("input_gap_s", "sim_s"), ("callback_age_ms", "sim_ms"),
+                           ("compute_ms", "wall_ms"), ("publish_ms", "wall_ms")):
+            values = self.timings[name]
+            if values:
+                timing.append(f"{name} avg/p95/max={np.mean(values):.1f}/{np.percentile(values, 95):.1f}/{max(values):.1f} {unit}")
+            values.clear()
+        detail = "; " + "; ".join(timing) if timing else ""
         if self.n_msgs == 0:
-            self.get_logger().warning("no PointCloud2 received in the last 5 s")
+            self.get_logger().warning("no PointCloud2 received in the last 5 s" + detail)
         else:
             self.get_logger().info(f"{self.n_msgs / 5.0:.1f} Hz, {self.n_in / self.n_msgs:.0f} points/scan"
                                    + (" (partial slices)" if self.merged_mode else "") + f", merged {len(self.slices)} msgs"
-                                   + f", {self.n_removed / self.n_msgs:.0f} self points removed/scan")
-        self.n_msgs = self.n_in = self.n_removed = 0
+                                   + f", {self.n_removed / self.n_msgs:.0f} self points removed/scan"
+                                   + f", {self.n_out / self.n_msgs:.0f} output points/scan" + detail)
+        self.n_msgs = self.n_in = self.n_out = self.n_removed = 0
 
 
 def main() -> None:
