@@ -47,7 +47,7 @@ def main():
     parser.add_argument('--start', type=float, default=0.0, help='start second')
     parser.add_argument('--duration', type=float, help='seconds to process')
     parser.add_argument('--fps', type=float, default=2.0, help='sampled frames per second')
-    parser.add_argument('--vmax', type=float, default=0.6, help='fixed heatmap color scale')
+    parser.add_argument('--vmax', type=float, default=0.3, help='fixed heatmap color scale')
     args = parser.parse_args()
     if not args.video.is_file() or args.start < 0 or args.fps <= 0 or args.vmax <= 0:
         parser.error('check video path, --start, --fps, and --vmax')
