@@ -1,0 +1,42 @@
+{
+  "threshold": 0.3270235061645508,
+  "rule": "predict anomaly when raw_score >= threshold",
+  "selection": "maximize validation balanced accuracy (Youden J)",
+  "tie_break": "choose the highest threshold; scores equal to threshold are anomaly",
+  "selection_split": "val",
+  "validation_counts": {
+    "good": 270,
+    "yellow": 50,
+    "brown": 25
+  },
+  "validation_score_distribution": {
+    "good": {
+      "n": 270,
+      "min": 0.22154831886291504,
+      "median": 0.2763528823852539,
+      "max": 0.39057040214538574
+    },
+    "yellow": {
+      "n": 50,
+      "min": 0.3270235061645508,
+      "median": 0.3549346923828125,
+      "max": 0.4654426574707031
+    },
+    "brown": {
+      "n": 25,
+      "min": 0.46602296829223633,
+      "median": 0.47718095779418945,
+      "max": 0.5530261993408203
+    }
+  },
+  "heatmap_display": {
+    "vmin": 0.0,
+    "vmax": 0.36103811860084534,
+    "vmax_source": "validation predicted heatmap pixel 99th percentile",
+    "colormap": "inferno",
+    "overlay_alpha": 0.45
+  },
+  "model_dir": "/home/shbong/ROKEY_P3_A1/ml/cabbage_anomaly/models/patchcore",
+  "model_training_images": 1020,
+  "patchcore_commit": "fcaa92f124fb1ad74a7acf56726decd4b27cbcad"
+}
