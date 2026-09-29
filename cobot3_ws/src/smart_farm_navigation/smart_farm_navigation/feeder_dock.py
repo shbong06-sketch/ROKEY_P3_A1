@@ -120,38 +120,54 @@ class DockParams:
     #                                   (scenes/Collected_smartfarm_v014/allinone_debug_and_changes_2026-09-25.md 의 P3).
     #                                   0.85 에서는 팔 베이스~놓을 자리가 0.72 m 라 DESCEND_5 가 관절 20.7 도(한계 20)로 실패했다.
     #                                   팀이 turntable_place_pose() 의 놓을 자리 정의를 함께 고쳤으므로 이 값은 그 수정과 한 쌍이다.
-    face_min_len_m: float = 0.6
-    face_max_len_m: float = 1.6
+    # [navigation 2026-09-29] 면으로 인정하는 선 길이 범위를 넓혔다 (0.6~1.6 -> 0.40~2.40).
+    # 09-29 13:50 고피2 실측에서 면 길이가 가까워질수록 0.73 m(2.21 m) -> 0.86 m(2.04 m) 로
+    # 계속 자랐고, 마지막 1 m 에서 면을 놓쳐 FACE_NOT_FOUND 로 끝났다. 0.5 s 합친 점군이라
+    # 가까이서는 옆 구조물까지 한 선으로 붙는 것으로 본다. 넓히면 그 선도 면으로 받는다.
+    face_min_len_m: float = 0.40
+    face_max_len_m: float = 2.40
     reverse_speed_mps: float = 0.10   # 24차까지 0.15. 각속도 응답이 느린 차체가 조향할 시간을 주기 위해 늦춤
     creep_speed_mps: float = 0.05
     turn_speed_radps: float = 0.35    # 관성으로 넘어갈 각도는 settled_err 가 미리 빼므로 속도 자체는 유지
     turn_min_radps: float = 0.08
-    dist_tol_m: float = 0.03
-    lat_tol_m: float = 0.06           # 도착 시 허용 횡 오차. 넘으면 물러나 다시 (max_retry 안에서)
+    dist_tol_m: float = 0.03          # [navigation 2026-09-29] 0.04 로 풀어 봤다가 되돌렸다. 회귀 10/10 의
+    #                                   최종 면 거리가 0.940~0.958 m 로 상단에 몰렸고, 실측으로 place 가
+    #                                   통한 값은 0.938 이다. 거리는 완화 이유가 없으므로 원래대로 둔다.
+    lat_tol_m: float = 0.07           # 도착 시 허용 횡 오차. 넘으면 물러나 다시 (max_retry 안에서)
+    #                                   [navigation 2026-09-29] 0.06 -> 0.07. 0.92 회귀의 최대 횡 오차가
+    #                                   0.057 이라 0.06 은 여유가 거의 없었고, 조금만 틀어져도 BACKOFF 로 되돌아갔다.
+    #                                   0.10 까지 풀어 보니 오프라인 격자의 최대 횡 오차가 0.100 m 로 커져 되돌렸다.
+    #                                   팔 쪽 실제 횡 허용치를 받으면 다시 조정한다.
     k_yaw: float = 1.5
     k_lat: float = 1.2
-    timeout_s: float = 120.0
-    phase_timeout_s: float = 45.0
+    timeout_s: float = 200.0          # [navigation 2026-09-29] 120 -> 200 (굼뜬 차체 + 재시도 여유)
+    phase_timeout_s: float = 70.0     # [navigation 2026-09-29] 45 -> 70
     reverse_w_max: float = 0.12       # 후진 중 조향 상한. 24차: 0.20 을 5 s 유지하다 정렬을 지나쳐 반대쪽 21도
-    square_tol_deg: float = 3.0       # 도착 시 허용 방향 오차
+    square_tol_deg: float = 5.0       # 도착 시 허용 방향 오차
+    #                                   [navigation 2026-09-29] 3.0 -> 5.0. 09-29 실측의 도착 방향 오차가
+    #                                   4.52 도였다. 3.0 이면 그대로 BACKOFF 로 되돌아가 시간만 쓴다
     backoff_extra_m: float = 0.90     # 다시 맞출 때 면에서 얼마나 더 물러나는가. 재시도 후진 거리가 곧
     #                                   횡 오차를 갚을 거리다. 0.6 이면 한 번에 15% 만 줄어 0.07 m 가 남았다(모의·ROS 회귀)
-    max_retry: int = 2
+    max_retry: int = 3                # [navigation 2026-09-29] 2 -> 3
     stall_check_s: float = 3.0        # 명령을 내는데 이만큼 움직임이 없으면 멈춘 것으로 본다
     stall_move_m: float = 0.02
     stall_turn_rad: float = 0.01      # 제자리 회전도 움직인 것으로 센다 (23차: 회전 구간이 멈춤으로 오판). 22차처럼 아주 느려도 살린다
-    align_giveup_deg: float = 15.0    # 제자리 회전이 안 먹혀도 이 안이면 후진하며 맞춘다 (22차: 명령의 12% 만 돎)
+    align_giveup_deg: float = 22.0    # 제자리 회전이 안 먹혀도 이 안이면 후진하며 맞춘다 (22차: 명령의 12% 만 돎)
+    #                                   [navigation 2026-09-29] 15 -> 22. 09-29 실측의 도착 bearing 이 +31~34 도였다
     # 22·24차 bag: 각속도가 초당 0.05~0.1 rad/s 씩만 따라오고 제자리 회전은 명령의 10~75% 만 나온다.
     # /scan 은 0.5 s 합친 점군이라 방향 측정이 그만큼 늦다. 이 셋을 제어에 넣는다.
     ang_decel_radps2: float = 0.08
     meas_lag_s: float = 0.5
     settle_w_radps: float = 0.03      # 이보다 느리게 돌 때만 멈춘 것으로 본다
-    align_tol_deg: float = 4.0        # 제자리 회전은 이만큼만 맞추고 나머지는 후진하며 맞춘다
+    align_tol_deg: float = 6.0        # 제자리 회전은 이만큼만 맞추고 나머지는 후진하며 맞춘다 ([navigation 2026-09-29] 4.0 -> 6.0)
     blend_dist_m: float = 0.4         # 이 거리 안에서는 횡 오차를 포기하고 직각 맞추기만 한다
     lookahead_m: float = 0.6          # 횡 오차를 이 거리에 걸쳐 갚는다 (아래 _reverse_cmd)
     lat_heading_cap_deg: float = 10.0 # 횡 오차를 갚기 위해 법선에서 벗어나도 되는 최대 방향. 굼뜬 차체가 되돌릴 수 있는 만큼만
     quiet_s: float = 2.0              # 시작 전 Nav2 가 이만큼 조용해야 한다 (ADR 2.2)
-    fresh_s: float = 2.5              # 면 측정 신선도
+    fresh_s: float = 4.0              # 면 측정 신선도 ([navigation 2026-09-29] 2.5 -> 4.0)
+    face_grace_s: float = 20.0        # [navigation 2026-09-29] 면을 마지막으로 잡은 뒤 이만큼은 기다린다.
+    #                                   예전에는 '단계 시작 후 8 s' 로 쟀다. 그래서 REVERSE 에 들어간 지 8 s 가
+    #                                   지나면 그 사이 면을 잘 잡고 있었는지와 무관하게 실패로 끝났다.
 
     @property
     def square_tol(self): return math.radians(self.square_tol_deg)
@@ -175,6 +191,7 @@ class DockLogic:
         self.phase = "IDLE"; self.t_phase = 0.0; self.t_start = 0.0
         self.run_id = ""; self.retry = 0; self.result = None
         self.stall_ref = None; self.stall_since = 0.0
+        self.t_face_ok = 0.0          # [navigation 2026-09-29] 마지막으로 면을 잡은 시각 (start 에서 초기화)
         self.events = []              # (phase, detail) — 노드가 로그·상태 토픽으로 내보낸다
         self.last_face = None
 
@@ -189,6 +206,7 @@ class DockLogic:
             return False
         self.result = None; self.t_start = now; self.run_id = run_id; self.retry = 0
         self.stall_ref = None; self.stall_since = now
+        self.t_face_ok = now          # 시작 직후에도 face_grace_s 만큼의 여유를 준다
         self._status("SETTLE", f"started (run_id={run_id}); Nav2 가 {self.p.quiet_s:.0f} s 조용해지고 차체가 멈추면 정렬", now)
         return True
 
@@ -261,8 +279,13 @@ class DockLogic:
         if now - self.t_start > p.timeout_s:
             return self._finish(False, "TIMEOUT", now)
         fresh = face is not None and face_age < p.fresh_s
-        if not fresh:
-            if now - self.t_phase > 8.0:
+        if fresh:
+            self.t_face_ok = now
+        else:
+            # [navigation 2026-09-29] 단계 시작 시각이 아니라 '마지막으로 면을 잡은 뒤 경과'로 센다.
+            # 09-29 13:50 고피2 실측은 2.21 m 부터 1.066 m 까지 면을 계속 잡으며 잘 후진하다가,
+            # REVERSE 로 들어간 지 8 s 가 지났다는 이유만으로 FACE_NOT_FOUND 로 끝났다.
+            if now - self.t_face_ok > p.face_grace_s:
                 return self._finish(False, "FACE_NOT_FOUND", now)
             return 0.0, 0.0
         dist, yaw_err, lat, cx, cy, _n, _len = face
@@ -301,7 +324,9 @@ class DockLogic:
             return 0.0, w
 
         if self.phase == "REVERSE":
-            if g_dist < 0.06 or dist <= p.standoff_m + 0.02:
+            # [navigation 2026-09-29] 고정 0.02 대신 dist_tol_m 을 쓴다. 여기서 멈춰도 CREEP 이
+            # standoff_m 까지 마무리하므로 최종 거리는 느슨해지지 않는다.
+            if g_dist < 0.06 or dist <= p.standoff_m + p.dist_tol_m:
                 self._status("CHECK", f"reached G (|G|={g_dist:.2f}, d={dist:.2f}, yaw={math.degrees(yaw_err):+.1f})", now)
                 return 0.0, 0.0
             if self._stalled(now, odom_pose, True):

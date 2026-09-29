@@ -1,0 +1,12 @@
+task_id: TASK-20260929-134708
+command_id: TASK-20260929-134708-CMD-003
+operation: NAVIGATION
+status: FAILED
+phase: DOCKING
+reason: NAV_FAILED
+safe_to_navigate: false
+reached_station: ''
+completed_units: []
+defect_slots: []
+unknown_slots: []
+---

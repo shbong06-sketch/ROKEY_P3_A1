@@ -1,1 +1,0 @@
-/home/rokey/ROKEY_P3_A1/build/smart_farm_interfaces/rosidl_typesupport_fastrtps_cpp/smart_farm_interfaces/srv/detail/start_cycle__rosidl_typesupport_fastrtps_cpp.hpp

@@ -1,9 +1,0 @@
-source;share/smart_farm_manager/hook/pythonpath.ps1
-source;share/smart_farm_manager/hook/pythonpath.dsv
-source;share/smart_farm_manager/hook/pythonpath.sh
-source;share/smart_farm_manager/hook/ament_prefix_path.ps1
-source;share/smart_farm_manager/hook/ament_prefix_path.dsv
-source;share/smart_farm_manager/hook/ament_prefix_path.sh
-source;../../build/smart_farm_manager/share/smart_farm_manager/hook/pythonpath_develop.ps1
-source;../../build/smart_farm_manager/share/smart_farm_manager/hook/pythonpath_develop.dsv
-source;../../build/smart_farm_manager/share/smart_farm_manager/hook/pythonpath_develop.sh

@@ -1,0 +1,6 @@
+waiting for service to become available...
+requester: making request: smart_farm_interfaces.srv.StartCycle_Request(scenario_id='DEMO_HARVEST_01')
+
+response:
+smart_farm_interfaces.srv.StartCycle_Response(accepted=False, task_id='TASK-20260929-134708', reason='BUSY')
+

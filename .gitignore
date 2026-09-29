@@ -64,10 +64,17 @@ rosbag2_*
 /cobot3_ws/src/smart_farm_navigation/results/media_log/*
 /cobot3_ws/src/smart_farm_navigation/results/log_media/*
 # log_media 안의 트러블슈팅 문서는 추적한다(미디어 파일만 제외)
+
 !/cobot3_ws/src/smart_farm_navigation/results/log_media/*.md
 # results/log 은 실측 기록이라 위의 log/ 패턴에서 되살려 추적한다
+
 !/cobot3_ws/src/smart_farm_navigation/results/log/
-/cobot3_ws/src/smart_farm_navigation/results/bags/*
+!/cobot3_ws/src/smart_farm_navigation/results/bags/*
+# bag 은 실측 판정의 근거이므로 추적한다 (2026-09-29 사용자 지시).
+# 폴더와 그 안쪽을 모두 되살려야 한다. `bags/*` 한 줄만으로는 위 `rosbag2_*` 규칙에
+# 걸린 기본 이름 폴더(`rosbag2_YYYYMMDD_HHMM/`)가 그대로 제외된다.
+
+
 /cobot3_ws/isaacpjt/smart_farm/scripts/lift_stroke.py
 /cobot3_ws/records/*
 # 관제 패키지는 코드를 추적하고 DB 파일만 제외함 (2026-09-28)
@@ -86,6 +93,12 @@ rosbag2_*
 /cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.mov
 /cobot3_ws/src/smart_farm_monitor/results/log_media/**/*.avi
 !/cobot3_ws/src/smart_farm_monitor/results/log/
+# [2026-09-29] 위 두 패키지만 이름으로 되살려 두면 새 패키지의 기록은 3번째 줄 `log/` 에
+# 걸려 조용히 사라진다. 패키지 이름을 몰라도 되살아나게 일반 규칙을 둔다.
+!/cobot3_ws/src/*/results/
+!/cobot3_ws/src/*/results/log/
+!/cobot3_ws/src/*/results/log/**
+!/cobot3_ws/src/*/errored/
 .pytest_cache/
 # Claude Code 로컬 상태 — 자격증명과 대화 기록이 들어 있으므로 절대 커밋하지 않음
 .claude/
@@ -93,20 +106,22 @@ rosbag2_*
 .claude.json.backup
 *.jsonl
 
+# 기록은 정본 경로 한 곳에만 쌓는다. 저장소 루트 `results/` 와 `cobot3_ws/results/` 로
+# 흘러들어간 bag 27MB(같은 녹화의 중복본)를 2026-09-29 에 정리했으므로, 그 두 곳은 막는다.
+# bag 은 `cobot3_ws/src/smart_farm_navigation/results/bags/` 에만 기록할 것.
+/results/
+/cobot3_ws/results/
+
+# 빌드 산출물 폴더를 이름만 바꿔 치워 두면 위의 `install/`·`build/`·`log/` 규칙을
+# 빗나간다. 실제로 2026-09-29 커밋 e2f1d34 에 `install_OLD_20260929/` 251개가 들어갔다.
+# `log_media/` 같은 기록 폴더를 건드리지 않도록 `_OLD` 가 붙은 이름만 막는다.
+*_OLD*/
+
 # 대용량 씬 아카이브 (ADR_nav2 2.4: 대용량 USD 에셋은 git 제외)
 cobot3_ws/isaacpjt/smart_farm/scenes/*.zip
 
-# 개발 과정에 생성되는 로그와 프레임
-/cobot3_ws/src/smart_farm_navigation/results/
-/cobot3_ws/src/smart_farm_navigation/errored/
-# [2026-09-28] 위 두 줄은 팀 정리 커밋 19ca11d 가 넣은 것이다. results/ 와 errored/ 는
-# 실측 판정과 트러블슈팅의 근거이므로(ADR_basic §5-3, §5-5) 폴더를 다시 추적 대상으로 되살린다.
-# 대용량 미디어(log_media, media_log)와 bag 은 위쪽 규칙으로 계속 제외된다.
-!/cobot3_ws/src/smart_farm_navigation/results/
-!/cobot3_ws/src/smart_farm_navigation/errored/
 /frames_*.gv
 /frames_*.pdf
-
 station_out/*
 
 # 호스트별 Docker Compose ROS 도메인

@@ -1,0 +1,6 @@
+기록: /home/nitrouriah92/.ros/smart_farm_navigation/regression
+
+[1/10] normal — 접근 자세에서 정상 도킹 (실측형 차체) ... 통과 (65s)
+[2/10] yaw_pos_20 — 도착 방향이 +20도 틀어짐 ... 통과 (75s)
+[3/10] yaw_neg_30 — 도착 방향이 −30도 틀어짐 (24차 실측 시작각) ... 통과 (82s)
+[4/10] lat_left — 접근 지점이 0.2 m 왼쪽 ... 
