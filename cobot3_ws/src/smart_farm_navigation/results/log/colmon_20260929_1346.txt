@@ -1,0 +1,24 @@
+action_type: 1
+polygon_name: invalid source
+---
+action_type: 0
+polygon_name: ''
+---
+action_type: 1
+polygon_name: invalid source
+---
+action_type: 0
+polygon_name: ''
+---
+action_type: 1
+polygon_name: invalid source
+---
+action_type: 0
+polygon_name: ''
+---
+action_type: 1
+polygon_name: invalid source
+---
+action_type: 0
+polygon_name: ''
+---

@@ -1,0 +1,522 @@
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-29-13-43-26-138993-IsaacSim04-889609
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: [nav2.launch] scan_mode cloud; AMCL initial pose (-0.421, 1.006, 90.0deg) from stations.yaml; map /home/rokey/ROKEY_P3_A1/install/smart_farm_navigation/share/smart_farm_navigation/maps/Collected_smartfarm_v014.yaml
+[INFO] [cloud_self_filter-1]: process started with pid [889615]
+[INFO] [pointcloud_to_laserscan_node-2]: process started with pid [889616]
+[INFO] [feeder_dock-3]: process started with pid [889617]
+[INFO] [station_markers-4]: process started with pid [889618]
+[INFO] [map_server-5]: process started with pid [889619]
+[INFO] [amcl-6]: process started with pid [889620]
+[INFO] [lifecycle_manager-7]: process started with pid [889621]
+[INFO] [controller_server-8]: process started with pid [889622]
+[INFO] [smoother_server-9]: process started with pid [889623]
+[INFO] [planner_server-10]: process started with pid [889624]
+[INFO] [route_server-11]: process started with pid [889625]
+[INFO] [behavior_server-12]: process started with pid [889626]
+[INFO] [bt_navigator-13]: process started with pid [889627]
+[INFO] [waypoint_follower-14]: process started with pid [889628]
+[INFO] [velocity_smoother-15]: process started with pid [889629]
+[INFO] [collision_monitor-16]: process started with pid [889630]
+[INFO] [opennav_docking-17]: process started with pid [889631]
+[INFO] [lifecycle_manager-18]: process started with pid [889632]
+[velocity_smoother-15] [INFO] [1790657006.311987394] [velocity_smoother]: 
+[velocity_smoother-15] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-15] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-15] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[lifecycle_manager-18] [INFO] [1790657006.312445318] [lifecycle_manager_navigation]: Creating
+[lifecycle_manager-7] [INFO] [1790657006.312743288] [lifecycle_manager_localization]: Creating
+[lifecycle_manager-7] [INFO] [1790657006.315219483] [lifecycle_manager_localization]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[lifecycle_manager-18] [INFO] [1790657006.315432950] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[opennav_docking-17] [INFO] [1790657006.316606653] [docking_server]: 
+[opennav_docking-17] 	docking_server lifecycle node launched. 
+[opennav_docking-17] 	Waiting on external lifecycle transitions to activate
+[opennav_docking-17] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[opennav_docking-17] [INFO] [1790657006.316687533] [docking_server]: Creating docking_server
+[waypoint_follower-14] [INFO] [1790657006.317994487] [waypoint_follower]: 
+[waypoint_follower-14] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-14] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-14] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[behavior_server-12] [INFO] [1790657006.318056539] [behavior_server]: 
+[behavior_server-12] 	behavior_server lifecycle node launched. 
+[behavior_server-12] 	Waiting on external lifecycle transitions to activate
+[behavior_server-12] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-14] [INFO] [1790657006.318420797] [waypoint_follower]: Creating
+[bt_navigator-13] [INFO] [1790657006.319117007] [bt_navigator]: 
+[bt_navigator-13] 	bt_navigator lifecycle node launched. 
+[bt_navigator-13] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-13] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-13] [INFO] [1790657006.319778445] [bt_navigator]: Creating
+[smoother_server-9] [INFO] [1790657006.320435780] [smoother_server]: 
+[smoother_server-9] 	smoother_server lifecycle node launched. 
+[smoother_server-9] 	Waiting on external lifecycle transitions to activate
+[smoother_server-9] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-9] [INFO] [1790657006.321230951] [smoother_server]: Creating smoother server
+[amcl-6] [INFO] [1790657006.322013982] [amcl]: 
+[amcl-6] 	amcl lifecycle node launched. 
+[amcl-6] 	Waiting on external lifecycle transitions to activate
+[amcl-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-6] [INFO] [1790657006.322308345] [amcl]: Creating
+[collision_monitor-16] [INFO] [1790657006.322614469] [collision_monitor]: 
+[collision_monitor-16] 	collision_monitor lifecycle node launched. 
+[collision_monitor-16] 	Waiting on external lifecycle transitions to activate
+[collision_monitor-16] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-10] [INFO] [1790657006.322845988] [planner_server]: 
+[planner_server-10] 	planner_server lifecycle node launched. 
+[planner_server-10] 	Waiting on external lifecycle transitions to activate
+[planner_server-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-10] [INFO] [1790657006.323656211] [planner_server]: Creating
+[controller_server-8] [INFO] [1790657006.324973341] [controller_server]: 
+[controller_server-8] 	controller_server lifecycle node launched. 
+[controller_server-8] 	Waiting on external lifecycle transitions to activate
+[controller_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[route_server-11] [INFO] [1790657006.326286363] [route_server]: 
+[route_server-11] 	route_server lifecycle node launched. 
+[route_server-11] 	Waiting on external lifecycle transitions to activate
+[route_server-11] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-8] [INFO] [1790657006.326427288] [controller_server]: Creating controller server
+[map_server-5] [INFO] [1790657006.330567376] [map_server]: 
+[map_server-5] 	map_server lifecycle node launched. 
+[map_server-5] 	Waiting on external lifecycle transitions to activate
+[map_server-5] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-5] [INFO] [1790657006.330625440] [map_server]: Creating
+[planner_server-10] [INFO] [1790657006.332075828] [global_costmap.global_costmap]: 
+[planner_server-10] 	global_costmap lifecycle node launched. 
+[planner_server-10] 	Waiting on external lifecycle transitions to activate
+[planner_server-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-10] [INFO] [1790657006.332379757] [global_costmap.global_costmap]: Creating Costmap
+[controller_server-8] [INFO] [1790657006.332907751] [local_costmap.local_costmap]: 
+[controller_server-8] 	local_costmap lifecycle node launched. 
+[controller_server-8] 	Waiting on external lifecycle transitions to activate
+[controller_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-8] [INFO] [1790657006.333118554] [local_costmap.local_costmap]: Creating Costmap
+[lifecycle_manager-7] [INFO] [1790657006.511357852] [lifecycle_manager_localization]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-7] [INFO] [1790657006.511421990] [lifecycle_manager_localization]: [34m[1mConfiguring map_server[0m[0m
+[cloud_self_filter-1] [INFO] [1790657006.521250510] [cloud_self_filter]: box x[-0.65, 0.6] y[-0.6, 0.6] z[-0.2, 2.6] (base_link) removed from /front_3d_lidar/lidar_points
+[feeder_dock-3] [INFO] [1790657006.557082644] [feeder_dock]: [IDLE] waiting
+[station_markers-4] [INFO] [1790657006.564843819] [station_markers]: 4 stations -> /stations_markers: ['RACK_DOCK', 'CORRIDOR_EXIT', 'FEEDER_APPROACH', 'FEEDER_DOCK']
+[feeder_dock-3] [INFO] [1790657006.611423494] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH None m, nav2 idle True, face NOT FOUND ()
+[cloud_self_filter-1] [WARN] [1790657006.611443378] [cloud_self_filter]: no PointCloud2 received in the last 5 s
+[map_server-5] [INFO] [1790657006.651101500] [map_server]: Configuring
+[map_server-5] [INFO] [1790657006.651173944] [map_io]: Loading yaml file: /home/rokey/ROKEY_P3_A1/install/smart_farm_navigation/share/smart_farm_navigation/maps/Collected_smartfarm_v014.yaml
+[map_server-5] [INFO] [1790657006.651406661] [map_io]: resolution: 0.05
+[map_server-5] [INFO] [1790657006.651411663] [map_io]: origin[0]: -4.525
+[map_server-5] [INFO] [1790657006.651415123] [map_io]: origin[1]: -10.025
+[map_server-5] [INFO] [1790657006.651416414] [map_io]: origin[2]: 0
+[map_server-5] [INFO] [1790657006.651417781] [map_io]: free_thresh: 0.196
+[map_server-5] [INFO] [1790657006.651418944] [map_io]: occupied_thresh: 0.65
+[map_server-5] [INFO] [1790657006.651421569] [map_io]: mode: trinary
+[map_server-5] [INFO] [1790657006.651423383] [map_io]: negate: 0
+[map_server-5] [INFO] [1790657006.651587213] [map_io]: Loading image_file: /home/rokey/ROKEY_P3_A1/install/smart_farm_navigation/share/smart_farm_navigation/maps/Collected_smartfarm_v014.png
+[map_server-5] [INFO] [1790657006.654317561] [map_io]: Read map /home/rokey/ROKEY_P3_A1/install/smart_farm_navigation/share/smart_farm_navigation/maps/Collected_smartfarm_v014.png: 285 X 460 map @ 0.05 m/cell
+[lifecycle_manager-7] [INFO] [1790657006.683041713] [lifecycle_manager_localization]: [34m[1mConfiguring amcl[0m[0m
+[amcl-6] [INFO] [1790657006.683214247] [amcl]: Configuring
+[amcl-6] [INFO] [1790657006.683281145] [amcl]: initTransforms
+[amcl-6] [INFO] [1790657006.689339880] [amcl]: initPubSub
+[amcl-6] [INFO] [1790657006.695473539] [amcl]: Subscribed to map topic.
+[lifecycle_manager-7] [INFO] [1790657006.698371457] [lifecycle_manager_localization]: [34m[1mActivating map_server[0m[0m
+[map_server-5] [INFO] [1790657006.698469379] [map_server]: Activating
+[map_server-5] [INFO] [1790657006.698710737] [map_server]: Creating bond (map_server) to lifecycle manager.
+[amcl-6] [INFO] [1790657006.698885844] [amcl]: Received a 285 X 460 map @ 0.050 m/pix
+[pointcloud_to_laserscan_node-2] [INFO] [1790657006.721805853] [pointcloud_to_laserscan]: Got a subscriber to laserscan, starting pointcloud subscriber
+[lifecycle_manager-18] [INFO] [1790657006.735649069] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-18] [INFO] [1790657006.735679123] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-8] [INFO] [1790657006.735918733] [controller_server]: Configuring controller interface
+[controller_server-8] [INFO] [1790657006.735940240] [controller_server]: getting progress checker plugins..
+[controller_server-8] [INFO] [1790657006.736165403] [controller_server]: getting goal checker plugins..
+[controller_server-8] [INFO] [1790657006.736261979] [controller_server]: Controller frequency set to 20.0000Hz
+[controller_server-8] [INFO] [1790657006.736277263] [local_costmap.local_costmap]: Configuring
+[controller_server-8] [INFO] [1790657006.741175370] [local_costmap.local_costmap]: Using plugin "static_map_layer"
+[controller_server-8] [INFO] [1790657006.743228466] [local_costmap.local_costmap]: Subscribing to the map topic (/map) with transient local durability
+[controller_server-8] [INFO] [1790657006.744193925] [local_costmap.local_costmap]: Initialized plugin "static_map_layer"
+[controller_server-8] [INFO] [1790657006.744201739] [local_costmap.local_costmap]: Using plugin "scan_layer"
+[controller_server-8] [INFO] [1790657006.744620267] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[controller_server-8] [INFO] [1790657006.746895998] [local_costmap.local_costmap]: Initialized plugin "scan_layer"
+[controller_server-8] [INFO] [1790657006.746904889] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-8] [INFO] [1790657006.747272300] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[controller_server-8] [INFO] [1790657006.760566360] [local_costmap.local_costmap]: StaticLayer: Resizing static layer to 285 X 460 at 0.050000 m/pix
+[controller_server-8] [INFO] [1790657006.760688189] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::PoseProgressChecker
+[controller_server-8] [INFO] [1790657006.761007311] [controller_server]: Controller Server has progress_checker  progress checkers available.
+[controller_server-8] [INFO] [1790657006.762072078] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-8] [INFO] [1790657006.762505810] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[controller_server-8] [INFO] [1790657006.762968014] [controller_server]: Created controller : FollowPath of type nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController
+[controller_server-8] [INFO] [1790657006.767322146] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-18] [INFO] [1790657006.772357069] [lifecycle_manager_navigation]: [34m[1mConfiguring smoother_server[0m[0m
+[smoother_server-9] [INFO] [1790657006.772488883] [smoother_server]: Configuring smoother server
+[smoother_server-9] [INFO] [1790657006.780157995] [smoother_server]: Created smoother : simple_smoother of type nav2_smoother::SimpleSmoother
+[smoother_server-9] [INFO] [1790657006.780573526] [smoother_server]: Smoother Server has simple_smoother  smoothers available.
+[lifecycle_manager-18] [INFO] [1790657006.784139902] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-10] [INFO] [1790657006.784297867] [planner_server]: Configuring
+[planner_server-10] [INFO] [1790657006.784329064] [global_costmap.global_costmap]: Configuring
+[planner_server-10] [INFO] [1790657006.790743032] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-10] [INFO] [1790657006.793425693] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-10] [INFO] [1790657006.794697436] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-10] [INFO] [1790657006.794709761] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-10] [INFO] [1790657006.795236988] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-10] [INFO] [1790657006.798156446] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-10] [INFO] [1790657006.798168438] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-10] [INFO] [1790657006.798643560] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[lifecycle_manager-7] [INFO] [1790657006.802342026] [lifecycle_manager_localization]: Server map_server connected with bond.
+[lifecycle_manager-7] [INFO] [1790657006.802362326] [lifecycle_manager_localization]: [34m[1mActivating amcl[0m[0m
+[amcl-6] [INFO] [1790657006.802543012] [amcl]: Activating
+[amcl-6] [INFO] [1790657006.802573190] [amcl]: initialPoseReceived
+[amcl-6] [INFO] [1790657006.802652990] [amcl]: Setting pose (212.916678): -0.421 1.006 1.571
+[amcl-6] [INFO] [1790657006.802905737] [amcl]: Creating bond (amcl) to lifecycle manager.
+[planner_server-10] [INFO] [1790657006.813361380] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 285 X 460 at 0.050000 m/pix
+[planner_server-10] [INFO] [1790657006.816061920] [planner_server]: Created global planner plugin GridBased of type nav2_smac_planner::SmacPlannerHybrid
+[planner_server-10] [INFO] [1790657006.816080402] [planner_server]: Configuring GridBased of type SmacPlannerHybrid
+[planner_server-10] [INFO] [1790657006.817814658] [planner_server]: Even sized heuristic lookup table size set 400.000000, increasing size by 1 to make odd
+[planner_server-10] [ERROR] [1790657006.817824710] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657006.817848383] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[lifecycle_manager-7] [INFO] [1790657006.905894657] [lifecycle_manager_localization]: Server amcl connected with bond.
+[lifecycle_manager-7] [INFO] [1790657006.905929464] [lifecycle_manager_localization]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-7] [INFO] [1790657006.905936517] [lifecycle_manager_localization]: [34m[1mCreating bond timer...[0m[0m
+[amcl-6] [INFO] [1790657007.268850252] [amcl]: createLaserObject
+[cloud_self_filter-1] [INFO] [1790657008.818281158] [cloud_self_filter]: 1.6 Hz, 41519 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657008.818530366] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 12}, nearest (-0.51,0.79))
+[planner_server-10] [INFO] [1790657013.482650280] [planner_server]: Configured plugin GridBased of type SmacPlannerHybrid with maximum iterations 1000000, max on approach iterations 1000, and allowing unknown traversal. Tolerance 0.25.Using motion model: Reeds-Shepp.
+[planner_server-10] [INFO] [1790657013.482700829] [planner_server]: Planner Server has GridBased  planners available.
+[lifecycle_manager-18] [INFO] [1790657013.490687170] [lifecycle_manager_navigation]: [34m[1mConfiguring route_server[0m[0m
+[route_server-11] [INFO] [1790657013.490997621] [route_server]: Configuring
+[route_server-11] [INFO] [1790657013.512417467] [route_server]: Created GraphFileLoader GeoJsonGraphFileLoader of type nav2_route::GeoJsonGraphFileLoader
+[route_server-11] [INFO] [1790657013.512441509] [route_server]: Configuring geojson graph file loader
+[route_server-11] [INFO] [1790657013.512446406] [route_server]: No graph file provided to load yet.
+[route_server-11] [INFO] [1790657013.514071890] [route_server]: Created edge cost function plugin DistanceScorer of type nav2_route::DistanceScorer
+[route_server-11] [INFO] [1790657013.514083210] [route_server]: Configuring distance scorer.
+[route_server-11] [INFO] [1790657013.514275692] [route_server]: Created edge cost function plugin DynamicEdgesScorer of type nav2_route::DynamicEdgesScorer
+[route_server-11] [INFO] [1790657013.514281820] [route_server]: Configuring adjust edges scorer.
+[route_server-11] [INFO] [1790657013.516418135] [route_server]: Created route operation AdjustSpeedLimit of type nav2_route::AdjustSpeedLimit
+[route_server-11] [INFO] [1790657013.516431724] [route_server]: Configuring Adjust speed limit operation.
+[route_server-11] [INFO] [1790657013.517195811] [route_server]: Created route operation ReroutingService of type nav2_route::ReroutingService
+[route_server-11] [INFO] [1790657013.517205988] [route_server]: Configuring Rerouting service operation.
+[lifecycle_manager-18] [INFO] [1790657013.519350281] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[behavior_server-12] [INFO] [1790657013.519479543] [behavior_server]: Configuring
+[behavior_server-12] [INFO] [1790657013.522274518] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors::Spin
+[behavior_server-12] [INFO] [1790657013.522734448] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors::BackUp
+[behavior_server-12] [INFO] [1790657013.523054198] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors::DriveOnHeading
+[behavior_server-12] [INFO] [1790657013.523361798] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors::Wait
+[behavior_server-12] [INFO] [1790657013.527930206] [behavior_server]: Configuring spin
+[behavior_server-12] [INFO] [1790657013.531753564] [behavior_server]: Configuring backup
+[behavior_server-12] [INFO] [1790657013.534664181] [behavior_server]: Configuring drive_on_heading
+[behavior_server-12] [INFO] [1790657013.537496945] [behavior_server]: Configuring wait
+[lifecycle_manager-18] [INFO] [1790657013.540852350] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[velocity_smoother-15] [INFO] [1790657013.541083079] [velocity_smoother]: Configuring velocity smoother
+[lifecycle_manager-18] [INFO] [1790657013.544588716] [lifecycle_manager_navigation]: [34m[1mConfiguring collision_monitor[0m[0m
+[collision_monitor-16] [INFO] [1790657013.544739089] [collision_monitor]: Configuring
+[collision_monitor-16] [INFO] [1790657013.548228027] [collision_monitor]: [scan]: Creating Scan
+[collision_monitor-16] [INFO] [1790657013.549517547] [collision_monitor]: [FootprintApproach]: Creating Polygon
+[collision_monitor-16] [INFO] [1790657013.549642657] [collision_monitor]: [FootprintApproach]: Polygon points are not defined. Using dynamic subscription instead.
+[collision_monitor-16] [INFO] [1790657013.550258257] [collision_monitor]: [FootprintApproach]: Making footprint subscriber on local_costmap/published_footprint topic
+[lifecycle_manager-18] [INFO] [1790657013.556864798] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-13] [INFO] [1790657013.557025650] [bt_navigator]: Configuring
+[bt_navigator-13] [INFO] [1790657013.561923494] [bt_navigator]: Creating navigator id navigate_to_pose of type nav2_bt_navigator::NavigateToPoseNavigator
+[bt_navigator-13] [INFO] [1790657013.606034739] [bt_navigator]: Creating navigator id navigate_through_poses of type nav2_bt_navigator::NavigateThroughPosesNavigator
+[lifecycle_manager-18] [INFO] [1790657013.623770959] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[waypoint_follower-14] [INFO] [1790657013.623963481] [waypoint_follower]: Configuring
+[waypoint_follower-14] [INFO] [1790657013.636845633] [waypoint_follower]: Created waypoint_task_executor : wait_at_waypoint of type nav2_waypoint_follower::WaitAtWaypoint
+[lifecycle_manager-18] [INFO] [1790657013.637297911] [lifecycle_manager_navigation]: [34m[1mConfiguring docking_server[0m[0m
+[opennav_docking-17] [INFO] [1790657013.637419436] [docking_server]: Configuring docking_server
+[opennav_docking-17] [INFO] [1790657013.637444501] [docking_server]: Controller frequency set to 50.0000Hz
+[opennav_docking-17] [INFO] [1790657013.651009525] [docking_server]: Created charging dock plugin simple_charging_dock of type opennav_docking::SimpleChargingDock
+[opennav_docking-17] [WARN] [1790657013.653610517] [docking_server]: Dock database filepath nor dock parameters set. Docking actions can only be executed specifying the dock pose via the action request. Or update the dock database via the reload_database service.
+[opennav_docking-17] [INFO] [1790657013.653620868] [docking_server]: Docking Server has 1 dock types and 0 dock instances available.
+[lifecycle_manager-18] [INFO] [1790657013.654449204] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-8] [INFO] [1790657013.654543311] [controller_server]: Activating
+[controller_server-8] [INFO] [1790657013.654569491] [local_costmap.local_costmap]: Activating
+[controller_server-8] [INFO] [1790657013.654573721] [local_costmap.local_costmap]: Checking transform
+[controller_server-8] [INFO] [1790657013.654658528] [local_costmap.local_costmap]: start
+[cloud_self_filter-1] [INFO] [1790657013.844623274] [cloud_self_filter]: 3.2 Hz, 41643 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657013.844692419] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[controller_server-8] [INFO] [1790657013.855516326] [controller_server]: Activating controller: FollowPath of type regulated_pure_pursuit_controller::RegulatedPurePursuitController
+[controller_server-8] [INFO] [1790657013.855549554] [controller_server]: Creating bond (controller_server) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657013.959707145] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[lifecycle_manager-18] [INFO] [1790657013.959766222] [lifecycle_manager_navigation]: [34m[1mActivating smoother_server[0m[0m
+[smoother_server-9] [INFO] [1790657013.960073331] [smoother_server]: Activating
+[smoother_server-9] [INFO] [1790657013.960106461] [smoother_server]: Creating bond (smoother_server) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657014.063733306] [lifecycle_manager_navigation]: Server smoother_server connected with bond.
+[lifecycle_manager-18] [INFO] [1790657014.063790138] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-10] [INFO] [1790657014.064056603] [planner_server]: Activating
+[planner_server-10] [INFO] [1790657014.064091171] [global_costmap.global_costmap]: Activating
+[planner_server-10] [INFO] [1790657014.064098027] [global_costmap.global_costmap]: Checking transform
+[planner_server-10] [INFO] [1790657014.064220224] [global_costmap.global_costmap]: start
+[planner_server-10] [INFO] [1790657015.115181585] [planner_server]: Activating plugin GridBased of type SmacPlannerHybrid
+[planner_server-10] [INFO] [1790657015.117082070] [planner_server]: Creating bond (planner_server) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657015.220463796] [lifecycle_manager_navigation]: Server planner_server connected with bond.
+[lifecycle_manager-18] [INFO] [1790657015.220493452] [lifecycle_manager_navigation]: [34m[1mActivating route_server[0m[0m
+[route_server-11] [INFO] [1790657015.220768370] [route_server]: Activating
+[route_server-11] [INFO] [1790657015.220890868] [route_server]: Creating bond (route_server) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657015.324914880] [lifecycle_manager_navigation]: Server route_server connected with bond.
+[lifecycle_manager-18] [INFO] [1790657015.324954730] [lifecycle_manager_navigation]: [34m[1mActivating behavior_server[0m[0m
+[behavior_server-12] [INFO] [1790657015.325219021] [behavior_server]: Activating
+[behavior_server-12] [INFO] [1790657015.325241257] [behavior_server]: Activating spin
+[behavior_server-12] [INFO] [1790657015.325249332] [behavior_server]: Activating backup
+[behavior_server-12] [INFO] [1790657015.325255717] [behavior_server]: Activating drive_on_heading
+[behavior_server-12] [INFO] [1790657015.325261285] [behavior_server]: Activating wait
+[behavior_server-12] [INFO] [1790657015.325269298] [behavior_server]: Creating bond (behavior_server) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657015.428899244] [lifecycle_manager_navigation]: Server behavior_server connected with bond.
+[lifecycle_manager-18] [INFO] [1790657015.428923872] [lifecycle_manager_navigation]: [34m[1mActivating velocity_smoother[0m[0m
+[velocity_smoother-15] [INFO] [1790657015.429177892] [velocity_smoother]: Activating
+[velocity_smoother-15] [INFO] [1790657015.429227226] [velocity_smoother]: Creating bond (velocity_smoother) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657015.532936543] [lifecycle_manager_navigation]: Server velocity_smoother connected with bond.
+[lifecycle_manager-18] [INFO] [1790657015.532972830] [lifecycle_manager_navigation]: [34m[1mActivating collision_monitor[0m[0m
+[collision_monitor-16] [INFO] [1790657015.533254513] [collision_monitor]: Activating
+[collision_monitor-16] [INFO] [1790657015.533321911] [collision_monitor]: Creating bond (collision_monitor) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657015.637327380] [lifecycle_manager_navigation]: Server collision_monitor connected with bond.
+[lifecycle_manager-18] [INFO] [1790657015.637366447] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[bt_navigator-13] [INFO] [1790657015.637653320] [bt_navigator]: Activating
+[bt_navigator-13] [INFO] [1790657015.685357646] [bt_navigator]: Creating bond (bt_navigator) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657015.789189369] [lifecycle_manager_navigation]: Server bt_navigator connected with bond.
+[lifecycle_manager-18] [INFO] [1790657015.789256020] [lifecycle_manager_navigation]: [34m[1mActivating waypoint_follower[0m[0m
+[waypoint_follower-14] [INFO] [1790657015.789569635] [waypoint_follower]: Activating
+[waypoint_follower-14] [INFO] [1790657015.789630135] [waypoint_follower]: Creating bond (waypoint_follower) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657015.893907226] [lifecycle_manager_navigation]: Server waypoint_follower connected with bond.
+[lifecycle_manager-18] [INFO] [1790657015.893943374] [lifecycle_manager_navigation]: [34m[1mActivating docking_server[0m[0m
+[opennav_docking-17] [INFO] [1790657015.894190895] [docking_server]: Activating docking_server
+[opennav_docking-17] [INFO] [1790657015.899542536] [docking_server]: Creating bond (docking_server) to lifecycle manager.
+[lifecycle_manager-18] [INFO] [1790657016.003067599] [lifecycle_manager_navigation]: Server docking_server connected with bond.
+[lifecycle_manager-18] [INFO] [1790657016.003093985] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-18] [INFO] [1790657016.003099490] [lifecycle_manager_navigation]: [34m[1mCreating bond timer...[0m[0m
+[cloud_self_filter-1] [INFO] [1790657018.863334418] [cloud_self_filter]: 3.4 Hz, 41606 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657018.863411088] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657023.850428673] [cloud_self_filter]: 3.4 Hz, 41438 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657023.850464261] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657028.785657437] [cloud_self_filter]: 3.2 Hz, 41537 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657028.785689448] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657033.788982982] [cloud_self_filter]: 3.4 Hz, 41574 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657033.789034409] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657038.853335601] [cloud_self_filter]: 3.4 Hz, 41636 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657038.853378278] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657043.854497865] [cloud_self_filter]: 3.2 Hz, 41598 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657043.854528115] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657048.865824908] [cloud_self_filter]: 3.4 Hz, 41526 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657048.865964851] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 10}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657053.865795830] [cloud_self_filter]: 3.4 Hz, 41520 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657053.866057137] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 18}, nearest (-0.51,0.79))
+[feeder_dock-3] [INFO] [1790657058.821964339] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657058.821975238] [cloud_self_filter]: 3.2 Hz, 41541 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657063.857959254] [cloud_self_filter]: 3.4 Hz, 41472 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657063.858177406] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 16}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657068.875844738] [cloud_self_filter]: 3.4 Hz, 41393 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657068.875916336] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[feeder_dock-3] [INFO] [1790657073.940048343] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657073.940167839] [cloud_self_filter]: 3.2 Hz, 41424 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657078.961876130] [cloud_self_filter]: 3.4 Hz, 41601 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657078.961902161] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657083.970667470] [cloud_self_filter]: 3.4 Hz, 41461 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657083.970874385] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657088.961173291] [cloud_self_filter]: 3.2 Hz, 41338 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657088.961255579] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657093.975487007] [cloud_self_filter]: 3.4 Hz, 41471 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657093.975803853] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 17}, nearest (-0.51,0.79))
+[feeder_dock-3] [INFO] [1790657098.988429966] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657098.988434973] [cloud_self_filter]: 3.4 Hz, 41380 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657103.929198567] [cloud_self_filter]: 3.2 Hz, 41350 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657103.929311440] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657108.936858686] [cloud_self_filter]: 3.4 Hz, 41506 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657108.936922790] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 13}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657114.000835565] [cloud_self_filter]: 3.4 Hz, 41418 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657114.000933164] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[feeder_dock-3] [INFO] [1790657119.047245297] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657119.047276594] [cloud_self_filter]: 3.2 Hz, 41500 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657124.066900672] [cloud_self_filter]: 3.4 Hz, 41458 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657124.066950190] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657129.178458044] [cloud_self_filter]: 3.4 Hz, 41518 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657129.178515911] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[feeder_dock-3] [INFO] [1790657134.217340509] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657134.217374506] [cloud_self_filter]: 3.2 Hz, 41310 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657139.170194301] [cloud_self_filter]: 3.4 Hz, 41430 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657139.170333395] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657144.194153140] [cloud_self_filter]: 3.4 Hz, 41438 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657144.194273398] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 14}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657149.255938602] [cloud_self_filter]: 3.2 Hz, 41410 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657149.256127564] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657154.292998545] [cloud_self_filter]: 3.4 Hz, 41425 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657154.293027346] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657159.293146845] [cloud_self_filter]: 3.4 Hz, 41173 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657159.293216660] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657164.323814322] [cloud_self_filter]: 3.2 Hz, 41487 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657164.323975781] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[feeder_dock-3] [INFO] [1790657169.456974139] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657169.456973334] [cloud_self_filter]: 3.4 Hz, 41647 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657174.548797412] [cloud_self_filter]: 3.4 Hz, 41528 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657174.548800315] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657179.638781243] [cloud_self_filter]: 3.2 Hz, 41472 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657179.638804366] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657184.715140961] [cloud_self_filter]: 3.4 Hz, 41514 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657184.715214722] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657189.864487548] [cloud_self_filter]: 3.4 Hz, 41484 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657189.864605608] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 27 pts, rejected {'short': 0, 'normal': 16}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657194.929205516] [cloud_self_filter]: 3.2 Hz, 41361 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657194.929296808] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657199.966287400] [cloud_self_filter]: 3.4 Hz, 41511 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657199.966294017] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657205.077102901] [cloud_self_filter]: 3.4 Hz, 41399 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657205.077365120] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657210.069773264] [cloud_self_filter]: 3.2 Hz, 41444 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657210.069925611] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657215.170870017] [cloud_self_filter]: 3.4 Hz, 41676 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657215.170966989] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657220.178502603] [cloud_self_filter]: 3.4 Hz, 41382 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657220.178570362] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657225.263398787] [cloud_self_filter]: 3.2 Hz, 41495 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657225.263570819] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657230.369753260] [cloud_self_filter]: 3.4 Hz, 41469 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657230.369760766] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657235.388676106] [cloud_self_filter]: 3.4 Hz, 41311 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657235.388692819] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657240.404507298] [cloud_self_filter]: 3.2 Hz, 41335 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657240.404555193] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[feeder_dock-3] [INFO] [1790657245.543602686] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657245.543685788] [cloud_self_filter]: 3.4 Hz, 41557 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657250.672800145] [cloud_self_filter]: 3.2 Hz, 41495 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657250.672871097] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657255.850650360] [cloud_self_filter]: 3.4 Hz, 41339 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657255.850719149] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657261.143839889] [cloud_self_filter]: 3.4 Hz, 41570 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657261.143856651] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 26 pts, rejected {'short': 0, 'normal': 13}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657266.530464364] [cloud_self_filter]: 3.4 Hz, 41616 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657266.531898231] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657271.778854605] [cloud_self_filter]: 3.2 Hz, 41480 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657271.778902474] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657276.982167623] [cloud_self_filter]: 3.4 Hz, 41287 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657276.982382810] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657282.220142933] [cloud_self_filter]: 3.4 Hz, 41333 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657282.220260519] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 26 pts, rejected {'short': 0, 'normal': 12}, nearest (-0.51,0.79))
+[feeder_dock-3] [INFO] [1790657287.436526191] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 26 pts, rejected {'short': 0, 'normal': 15}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657287.436572055] [cloud_self_filter]: 3.2 Hz, 41397 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657292.686530018] [cloud_self_filter]: 3.4 Hz, 41422 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657292.686684043] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[feeder_dock-3] [INFO] [1790657297.865907119] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 26 pts, rejected {'short': 0, 'normal': 17}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657297.866304085] [cloud_self_filter]: 3.4 Hz, 41579 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657303.089700576] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657303.089886007] [cloud_self_filter]: 3.2 Hz, 41555 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657308.402952151] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657308.403203329] [cloud_self_filter]: 3.4 Hz, 41639 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657313.729536179] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 12 pts))
+[cloud_self_filter-1] [INFO] [1790657313.730065755] [cloud_self_filter]: 3.4 Hz, 41415 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657319.019600780] [cloud_self_filter]: 3.2 Hz, 41646 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657319.019683652] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.21 outside (0.6, 1.6) (centre -0.59,0.83, 12 pts))
+[cloud_self_filter-1] [INFO] [1790657324.336425834] [cloud_self_filter]: 3.4 Hz, 41339 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657324.336720664] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657329.569608088] [cloud_self_filter]: 3.4 Hz, 41421 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657329.569670206] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 26 pts, rejected {'short': 0, 'normal': 8}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657334.829942802] [cloud_self_filter]: 3.2 Hz, 41570 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657334.829943938] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 26 pts, rejected {'short': 0, 'normal': 12}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657340.163871007] [cloud_self_filter]: 3.4 Hz, 41531 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657340.163973835] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657345.495242031] [cloud_self_filter]: 3.4 Hz, 41594 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657345.495378101] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 26 pts, rejected {'short': 0, 'normal': 16}, nearest (-0.51,0.79))
+[feeder_dock-3] [INFO] [1790657350.794825588] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657350.794887525] [cloud_self_filter]: 3.2 Hz, 41426 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657356.104577728] [cloud_self_filter]: 3.4 Hz, 41122 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657356.104604422] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (no line: 26 pts, rejected {'short': 0, 'normal': 16}, nearest (-0.51,0.79))
+[cloud_self_filter-1] [INFO] [1790657361.468961777] [cloud_self_filter]: 3.4 Hz, 41446 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657361.469098923] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[feeder_dock-3] [INFO] [1790657366.927244407] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657366.927262593] [cloud_self_filter]: 3.2 Hz, 41241 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657372.409845814] [cloud_self_filter]: 3.4 Hz, 41564 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657372.410217891] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 13 pts))
+[cloud_self_filter-1] [INFO] [1790657377.835739160] [cloud_self_filter]: 3.4 Hz, 41437 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657377.835764909] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[feeder_dock-3] [INFO] [1790657383.450532860] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.22 outside (0.6, 1.6) (centre -0.60,0.83, 14 pts))
+[cloud_self_filter-1] [INFO] [1790657383.450545424] [cloud_self_filter]: 3.2 Hz, 41379 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657389.146571941] [cloud_self_filter]: 3.4 Hz, 41471 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657389.146591321] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.11 m, nav2 idle True, face NOT FOUND (line length 0.21 outside (0.6, 1.6) (centre -0.59,0.83, 12 pts))
+[bt_navigator-13] [INFO] [1790657393.090735428] [bt_navigator]: Begin navigating from current location (-0.42, 1.01) to (-2.19, -1.55)
+[planner_server-10] [ERROR] [1790657393.091363713] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657393.093667667] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657393.111469590] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-8] [WARN] [1790657393.111500984] [controller_server]: No goal checker was specified in parameter 'current_goal_checker'. Server will use only plugin loaded general_goal_checker . This warning will appear once.
+[controller_server-8] [WARN] [1790657393.111508602] [controller_server]: No progress checker was specified in parameter 'current_progress_checker'. Server will use only plugin loaded progress_checker . This warning will appear once.
+[planner_server-10] [ERROR] [1790657394.121200202] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657394.161608018] [controller_server]: Passing new path to controller.
+[cloud_self_filter-1] [INFO] [1790657394.646114746] [cloud_self_filter]: 3.4 Hz, 41587 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657394.646173002] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 3.01 m, nav2 idle False, face NOT FOUND (line length 0.19 outside (0.6, 1.6) (centre -0.58,0.82, 11 pts))
+[planner_server-10] [ERROR] [1790657395.141298066] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657395.141360841] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657395.161608576] [controller_server]: Passing new path to controller.
+[collision_monitor-16] [WARN] [1790657395.940140998] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.000000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657395.940176161] [collision_monitor]: Robot to stop due to invalid source. Either due to data not published yet, or to lack of new data received within the sensor timeout, or if impossible to transform data to base frame
+[collision_monitor-16] [INFO] [1790657395.999586723] [collision_monitor]: Robot to continue normal operation
+[planner_server-10] [ERROR] [1790657396.171188806] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657396.211591343] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657397.201186874] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657397.201227169] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657397.261603620] [controller_server]: Passing new path to controller.
+[collision_monitor-16] [WARN] [1790657397.281568214] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.000000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657397.281622430] [collision_monitor]: Robot to stop due to invalid source. Either due to data not published yet, or to lack of new data received within the sensor timeout, or if impossible to transform data to base frame
+[collision_monitor-16] [INFO] [1790657397.339516503] [collision_monitor]: Robot to continue normal operation
+[planner_server-10] [ERROR] [1790657398.221303890] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657398.261589297] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657399.251183235] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657399.251228527] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657399.311589452] [controller_server]: Passing new path to controller.
+[feeder_dock-3] [INFO] [1790657400.201370635] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 1.66 m, nav2 idle False, face NOT FOUND (only 7 points in search window)
+[cloud_self_filter-1] [INFO] [1790657400.201437547] [cloud_self_filter]: 3.2 Hz, 41110 points/scan, merged 2 msgs, 422 self points removed/scan
+[planner_server-10] [ERROR] [1790657400.271337763] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657400.311590856] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657401.301272750] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657401.301313954] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657401.361591365] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657402.321365942] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657402.361610088] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657403.351203319] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657403.351249124] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657403.411615018] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657404.371357144] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657404.411592343] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657405.401212035] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657405.401254334] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657405.461589594] [controller_server]: Passing new path to controller.
+[cloud_self_filter-1] [INFO] [1790657405.813534588] [cloud_self_filter]: 3.4 Hz, 41122 points/scan, merged 2 msgs, 17 self points removed/scan
+[feeder_dock-3] [WARN] [1790657405.813643631] [feeder_dock]: FEEDER_APPROACH 부근에 서 있으나 자동 시작이 꺼져 있습니다. navigation_node 명령으로 시작하거나 'ros2 topic pub --once /feeder_dock/start std_msgs/msg/String "{data: manual}"' 로 직접 시작하십시오.
+[feeder_dock-3] [INFO] [1790657405.813879082] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 0.22 m, nav2 idle False, face d=2.21 yaw=+33.9 len=0.73
+[collision_monitor-16] [WARN] [1790657406.040429876] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.000000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657406.040458588] [collision_monitor]: Robot to stop due to invalid source. Either due to data not published yet, or to lack of new data received within the sensor timeout, or if impossible to transform data to base frame
+[collision_monitor-16] [INFO] [1790657406.089566658] [collision_monitor]: Robot to continue normal operation
+[planner_server-10] [ERROR] [1790657406.421281736] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657406.461591798] [controller_server]: Passing new path to controller.
+[collision_monitor-16] [WARN] [1790657407.351968754] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.000000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657407.351995295] [collision_monitor]: Robot to stop due to invalid source. Either due to data not published yet, or to lack of new data received within the sensor timeout, or if impossible to transform data to base frame
+[collision_monitor-16] [WARN] [1790657407.379324078] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.000000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657407.429352659] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.050000 seconds. Ignoring the source.
+[planner_server-10] [ERROR] [1790657407.451213891] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657407.451274351] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[collision_monitor-16] [WARN] [1790657407.479357286] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.100000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657407.529353837] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.150000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657407.579390491] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.200000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657407.629380352] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.250000 seconds. Ignoring the source.
+[collision_monitor-16] [WARN] [1790657407.679457598] [collision_monitor]: [scan]: Latest source and current collision monitor node timestamps differ on 1.250000 seconds. Ignoring the source.
+[controller_server-8] [WARN] [1790657407.683873434] [controller_server]: Control loop missed its desired rate of 20.0000 Hz. Current loop rate is 4.0000 Hz.
+[controller_server-8] [INFO] [1790657407.683901599] [controller_server]: Passing new path to controller.
+[collision_monitor-16] [INFO] [1790657407.739568483] [collision_monitor]: Robot to continue normal operation
+[planner_server-10] [ERROR] [1790657408.481271849] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657408.533962908] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657409.491416792] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657409.491457891] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657409.533979629] [controller_server]: Passing new path to controller.
+[planner_server-10] [ERROR] [1790657410.521159092] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[controller_server-8] [INFO] [1790657410.583978341] [controller_server]: Passing new path to controller.
+[cloud_self_filter-1] [INFO] [1790657411.390582333] [cloud_self_filter]: 3.4 Hz, 40732 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [WARN] [1790657411.390598929] [feeder_dock]: FEEDER_APPROACH 부근에 서 있으나 자동 시작이 꺼져 있습니다. navigation_node 명령으로 시작하거나 'ros2 topic pub --once /feeder_dock/start std_msgs/msg/String "{data: manual}"' 로 직접 시작하십시오.
+[feeder_dock-3] [INFO] [1790657411.390843890] [feeder_dock]: idle: amcl dist to FEEDER_APPROACH 0.02 m, nav2 idle False, face d=2.04 yaw=+31.1 len=0.86
+[planner_server-10] [ERROR] [1790657411.541359310] [computeCircumscribedCost]: The inflation radius (0.450000) is smaller than the circumscribed radius (0.695823) If this is an SE2-collision checking plugin, it cannot use costmap potential field to speed up collision checking by only checking the full footprint when robot is within possibly-inscribed radius of an obstacle. This may significantly slow down planning times!
+[planner_server-10] [ERROR] [1790657411.541399359] [planner_server]: Inflation layer either not found or inflation is not set sufficiently for optimized non-circular collision checking capabilities. It is HIGHLY recommended to set the inflation radius to be at MINIMUM half of the robot's largest cross-section. See github.com/ros-planning/navigation2/tree/main/nav2_smac_planner#potential-fields for full instructions. This will substantially impact run-time performance.
+[controller_server-8] [INFO] [1790657411.583961781] [controller_server]: Passing new path to controller.
+[controller_server-8] [INFO] [1790657412.283969430] [controller_server]: Reached the goal!
+[bt_navigator-13] [INFO] [1790657412.311096161] [bt_navigator]: Goal succeeded
+[feeder_dock-3] [INFO] [1790657412.502488970] [feeder_dock]: [SETTLE] started (run_id=TASK-20260929-134708-CMD-003); Nav2 가 2 s 조용해지고 차체가 멈추면 정렬
+[feeder_dock-3] [INFO] [1790657414.736978747] [feeder_dock]: [ALIGN_TO_GOAL] face d=1.92 yaw=+18.9 bearing=+17.9
+[cloud_self_filter-1] [INFO] [1790657416.922708883] [cloud_self_filter]: 3.2 Hz, 41080 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657418.809423442] [feeder_dock]: [REVERSE] G behind at 0.96 m; face d=1.88 yaw=+5.0 lat=-0.16
+[cloud_self_filter-1] [INFO] [1790657422.430391888] [cloud_self_filter]: 3.2 Hz, 40909 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657427.990355501] [cloud_self_filter]: 3.4 Hz, 41237 points/scan, merged 2 msgs, 0 self points removed/scan
+[feeder_dock-3] [INFO] [1790657430.363933622] [feeder_dock]: [FAILED] {"run_id": "TASK-20260929-134708-CMD-003", "status": "FAILED", "reason": "FACE_NOT_FOUND", "face_dist_m": 1.066, "yaw_err_deg": 4.52, "lat_m": -0.026, "retry": 0}
+[cloud_self_filter-1] [INFO] [1790657433.645064098] [cloud_self_filter]: 3.2 Hz, 41301 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657439.179738736] [cloud_self_filter]: 3.4 Hz, 41091 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657444.735297921] [cloud_self_filter]: 3.4 Hz, 40956 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657450.305184768] [cloud_self_filter]: 3.2 Hz, 40925 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657455.859349653] [cloud_self_filter]: 3.4 Hz, 40853 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657461.722301295] [cloud_self_filter]: 3.4 Hz, 40930 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657467.781391929] [cloud_self_filter]: 3.2 Hz, 40792 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657473.894195726] [cloud_self_filter]: 3.4 Hz, 40779 points/scan, merged 2 msgs, 0 self points removed/scan
+[cloud_self_filter-1] [INFO] [1790657479.955193921] [cloud_self_filter]: 3.4 Hz, 41173 points/scan, merged 2 msgs, 0 self points removed/scan
