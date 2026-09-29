@@ -1,0 +1,32 @@
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ source install/setup.bash 
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ ros2 launch smart_farm_navigation navigation_node.launch.py 
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-29-15-55-58-325844-IsaacSim04-917204
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [navigation_node-1]: process started with pid [917207]
+[navigation_node-1] [INFO] [1790664958.698125508] [navigation_node]: navigation_node ready; destinations: ['FEEDER_DOCK', 'RACK_DOCK', 'CORRIDOR_EXIT']
+^C[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [navigation_node-1]: process has finished cleanly [pid 917207]
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ export ROS_DOMAIN_ID=101
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ ros2 launch smart_farm_navigation navigation_node.launch.py 
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-29-16-06-07-086933-IsaacSim04-922304
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [navigation_node-1]: process started with pid [922307]
+[navigation_node-1] [INFO] [1790665567.454158943] [navigation_node]: navigation_node ready; destinations: ['FEEDER_DOCK', 'RACK_DOCK', 'CORRIDOR_EXIT']
+[navigation_node-1] [INFO] [1790665917.449050450] [navigation_node]: goToPose FEEDER_APPROACH: -2.19, -1.55
+[navigation_node-1] [INFO] [1790665917.558906853] [navigation_node]: result FAILED/NAV_FAILED for TASK-20260929-160850-CMD-003 (phase DRIVING)
+^C[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [navigation_node-1]: process has finished cleanly [pid 922307]
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ source install/setup.bash 
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ ros2 launch smart_farm_navigation navigation_node.launch.py 
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-29-16-21-13-359035-IsaacSim04-926207
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [navigation_node-1]: process started with pid [926210]
+[navigation_node-1] [INFO] [1790666473.735825747] [navigation_node]: navigation_node ready; destinations: ['FEEDER_DOCK', 'RACK_DOCK', 'CORRIDOR_EXIT']
+[navigation_node-1] [INFO] [1790666685.097314578] [navigation_node]: goToPose FEEDER_APPROACH: -2.19, -1.55
+[navigation_node-1] [INFO] [1790666685.331472475] [navigation_node]: result FAILED/NAV_FAILED for TASK-20260929-162143-CMD-003 (phase DRIVING)
+^C[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [navigation_node-1]: process has finished cleanly [pid 926210]
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ ros2 launch smart_farm_navigation navigation_node.launch.py ^C
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ echo "$ROS_DOMAIN_ID"
+101
+rokey@IsaacSim04:~/ROKEY_P3_A1/cobot3_ws$ 
