@@ -1,0 +1,680 @@
+.............................EEEEEEEEEE                                  [100%]
+==================================== ERRORS ====================================
+______________________ ERROR at setup of test_pages_load _______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_pages_load0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91ea453d70>
+app = <fastapi.applications.FastAPI object at 0x7a91e8226630>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+_______________________ ERROR at setup of test_api_state _______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_api_state0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91ea440d10>
+app = <fastapi.applications.FastAPI object at 0x7a91e8266e40>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+___________________ ERROR at setup of test_api_cycle_detail ____________________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_api_cycle_detail0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91e8226240>
+app = <fastapi.applications.FastAPI object at 0x7a91e822efc0>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+___________________ ERROR at setup of test_api_cycle_missing ___________________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_api_cycle_missing0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91e8226600>
+app = <fastapi.applications.FastAPI object at 0x7a91e82c9730>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+___________ ERROR at setup of test_api_detections_defaults_to_latest ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_api_detections_defaults_t0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91e82b5d60>
+app = <fastapi.applications.FastAPI object at 0x7a91e82b4230>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+________________ ERROR at setup of test_api_dock_and_durations _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_api_dock_and_durations0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91e82a6330>
+app = <fastapi.applications.FastAPI object at 0x7a91e82a78c0>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+______________________ ERROR at setup of test_api_pallets ______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_api_pallets0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91e82b6b40>
+app = <fastapi.applications.FastAPI object at 0x7a91e82b4140>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+_____________ ERROR at setup of test_start_cycle_goes_into_mailbox _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_start_cycle_goes_into_mai0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91e82661b0>
+app = <fastapi.applications.FastAPI object at 0x7a91e82d35c0>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+____________________ ERROR at setup of test_label_is_saved _____________________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_label_is_saved0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91e822eb10>
+app = <fastapi.applications.FastAPI object at 0x7a91e82c9550>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+____________________ ERROR at setup of test_map_png_served _____________________
+
+tmp_path = PosixPath('/tmp/pytest-of-rokey/pytest-0/test_map_png_served0')
+
+    @pytest.fixture()
+    def client(tmp_path):
+        """앱과 채워 둔 DB 를 함께 준다."""
+    
+        db_path = str(tmp_path / "farm.db")
+        seed(db_path)
+        app = create_app(db_path, MAP_YAML, STATIONS_YAML)
+>       with TestClient(app) as test_client:
+
+src/smart_farm_monitor/test/test_web_app.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient.TestClient object at 0x7a91e82aea50>
+app = <fastapi.applications.FastAPI object at 0x7a91e8bc63f0>
+base_url = 'http://testserver', raise_server_exceptions = True, root_path = ''
+backend = 'asyncio', backend_options = None, cookies = None
+headers = {'user-agent': 'testclient'}, follow_redirects = True
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        base_url: str = "http://testserver",
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        backend: str = "asyncio",
+        backend_options: typing.Optional[typing.Dict[str, typing.Any]] = None,
+        cookies: httpx._types.CookieTypes = None,
+        headers: typing.Dict[str, str] = None,
+        follow_redirects: bool = True,
+    ) -> None:
+        self.async_backend = _AsyncBackend(
+            backend=backend, backend_options=backend_options or {}
+        )
+        if _is_asgi3(app):
+            app = typing.cast(ASGI3App, app)
+            asgi_app = app
+        else:
+            app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
+            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+        self.app = asgi_app
+        self.app_state: typing.Dict[str, typing.Any] = {}
+        transport = _TestClientTransport(
+            self.app,
+            portal_factory=self._portal_factory,
+            raise_server_exceptions=raise_server_exceptions,
+            root_path=root_path,
+            app_state=self.app_state,
+        )
+        if headers is None:
+            headers = {}
+        headers.setdefault("user-agent", "testclient")
+>       super().__init__(
+            app=self.app,
+            base_url=base_url,
+            headers=headers,
+            transport=transport,
+            follow_redirects=follow_redirects,
+            cookies=cookies,
+        )
+E       TypeError: Client.__init__() got an unexpected keyword argument 'app'
+
+/usr/lib/python3/dist-packages/starlette/testclient.py:402: TypeError
+=============================== warnings summary ===============================
+../../../../usr/lib/python3/dist-packages/fastapi/openapi/models.py:55
+../../../../usr/local/lib/python3.12/dist-packages/pydantic_core/core_schema.py:4434
+  Warning: `general_plain_validator_function` is deprecated, use `with_info_plain_validator_function` instead.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_pages_load - TypeErro...
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_api_state - TypeError...
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_api_cycle_detail - Ty...
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_api_cycle_missing - T...
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_api_detections_defaults_to_latest
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_api_dock_and_durations
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_api_pallets - TypeErr...
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_start_cycle_goes_into_mailbox
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_label_is_saved - Type...
+ERROR src/smart_farm_monitor/test/test_web_app.py::test_map_png_served - Type...
+29 passed, 2 warnings, 10 errors in 22.29s
