@@ -59,8 +59,6 @@ venv/
 __pycache__/
 .DS_Store
 
-rosbag2_*
-
 /cobot3_ws/src/smart_farm_navigation/results/media_log/*
 /cobot3_ws/src/smart_farm_navigation/results/log_media/*
 # log_media 안의 트러블슈팅 문서는 추적한다(미디어 파일만 제외)
