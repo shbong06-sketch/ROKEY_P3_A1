@@ -28,12 +28,14 @@ DEFAULT_SCENE_PATH = (
     / "Collected_smartfarm_v011"
     / "Collected_smartfarm_v011.usd"
 )
-# [올인원 2026-09-25] 양배추 씬 v014(공유 zip 을 scenes/Collected_smartfarm_v014 에 푼 것)가 있으면 --scene 없이도 그 씬을 연다.
+# [올인원 2026-09-25] 양배추 씬 v015(공유 zip 을 scenes/Collected_smartfarm_v015 에 푼 것)가 있으면 --scene 없이도 그 씬을 연다.
+# [navigation 2026-09-29] v015 zip 안의 실제 파일명은 Collected_smartfarm_v015.usd 다(v014 의 _room_core_cabbage 접미사가 없다).
+# 옛 이름을 그대로 두면 이 경로가 없어서 조용히 v011 로 되돌아갔고, v011 에만 있는 Lettuce_1~3 이 장면에 나타났다.
 CABBAGE_SCENE_PATH = (
     PROJECT_DIR
     / "scenes"
-    / "Collected_smartfarm_v014"
-    / "Collected_smartfarm_v014_room_core_cabbage.usd"
+    / "Collected_smartfarm_v015"
+    / "Collected_smartfarm_v015.usd"
 )
 if CABBAGE_SCENE_PATH.exists():
     DEFAULT_SCENE_PATH = CABBAGE_SCENE_PATH
@@ -478,6 +480,8 @@ def validate_paths(scene_path):
 
 def open_scene(scene_path):
     validate_paths(scene_path)
+    # [navigation 2026-09-29] 어느 장면 파일이 열렸는지 로그로 남긴다(기본 경로가 조용히 바뀌는 것을 막는다).
+    print(f"[시작] USD Scene: {scene_path}", flush=True)
 
     enable_extension("isaacsim.ros2.bridge")
     app.update()
