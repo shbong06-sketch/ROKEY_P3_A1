@@ -88,4 +88,3 @@ station_out/*
 
 # VM instance 스트리밍 실행 산출물
 NvStreamer-*.etli
-results/*
