@@ -1,0 +1,885 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-28-23-43-22-203894-gc-isaacsim-lwh-289075
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [task_manager-1]: process started with pid [289079]
+[task_manager-1] [INFO] [1790639003.190996473] [task_manager]: Task Manager ready: scenario=DEMO_HARVEST_01
+[task_manager-1] [INFO] [1790639003.702401387] [task_manager]: Executor status changed: executor=inspection, state=READY, detail=model and image ready
+[task_manager-1] [INFO] [1790639004.165682048] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=Collected_smartfarm_v014_room_core_cabbage scene ready; TRANSFER/PICK_HARVEST/PLACE_INSPECT/CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL/RELEASE_INSPECT/CONVEYOR_OUT physical profiles loaded
+[task_manager-1] [INFO] [1790639004.172981551] [task_manager]: Executor status changed: executor=navigation, state=READY, detail=waiting for /navigation/command
+[task_manager-1] [INFO] [1790639022.036389385] [task_manager]: Cycle accepted: TASK-20260928-234342
+[task_manager-1] [INFO] [1790639022.139146908] [task_manager]: PREFLIGHT complete: all executors READY
+[task_manager-1] [INFO] [1790639022.238270117] [task_manager]: Command published: executor=sim_task, operation=TRANSFER, command_id=TASK-20260928-234342-CMD-001
+[task_manager-1] [INFO] [1790639022.631084994] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing TRANSFER
+[task_manager-1] [INFO] [1790639022.638502974] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=physical transfer started
+[task_manager-1] [INFO] [1790639022.640275757] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=LIFT_ALIGN
+[task_manager-1] [INFO] [1790639048.310349261] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=WAIT_BASE_SETTLE
+[task_manager-1] [INFO] [1790639050.316619626] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PICKING
+[task_manager-1] [INFO] [1790639140.928274083] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACING
+[task_manager-1] [INFO] [1790639207.220067853] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=LIFT_ALIGN
+[task_manager-1] [INFO] [1790639227.666597810] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=WAIT_BASE_SETTLE
+[task_manager-1] [INFO] [1790639229.592624820] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PICKING
+[task_manager-1] [INFO] [1790639297.496373327] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACING
+[task_manager-1] [INFO] [1790639363.063510265] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready
+[task_manager-1] [INFO] [1790639363.134233557] [task_manager]: Command published: executor=sim_task, operation=PICK_HARVEST, command_id=TASK-20260928-234342-CMD-002
+[task_manager-1] [INFO] [1790639363.164143267] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing PICK_HARVEST
+[task_manager-1] [INFO] [1790639363.170220151] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=harvest pick started
+[task_manager-1] [INFO] [1790639363.171523179] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=IDLE
+[task_manager-1] [INFO] [1790639407.345682388] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=WAIT
+[task_manager-1] [INFO] [1790639414.179074634] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=ENTRY
+[task_manager-1] [INFO] [1790639416.968659294] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=READY_1
+[task_manager-1] [INFO] [1790639419.718435429] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=READY_2
+[task_manager-1] [INFO] [1790639422.509495799] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=READY_3
+[task_manager-1] [INFO] [1790639425.280974437] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=APPROACH
+[task_manager-1] [INFO] [1790639428.040523891] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DOCK_1
+[task_manager-1] [INFO] [1790639430.793040914] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DOCK_2
+[task_manager-1] [INFO] [1790639433.537132842] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DOCK_3
+[task_manager-1] [INFO] [1790639436.316790267] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DOCK_4
+[task_manager-1] [INFO] [1790639439.427828368] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DOCK_5
+[task_manager-1] [INFO] [1790639442.852593973] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PALLET_UP_1
+[task_manager-1] [INFO] [1790639445.645612915] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PALLET_UP_2
+[task_manager-1] [INFO] [1790639448.492753267] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=RETRACT_1
+[task_manager-1] [INFO] [1790639451.810498325] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=RETRACT_2
+[task_manager-1] [INFO] [1790639454.813044393] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=RETRACT_3
+[task_manager-1] [INFO] [1790639457.626438339] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=RETRACT_4
+[task_manager-1] [INFO] [1790639460.464385442] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=RETRACT_5
+[task_manager-1] [INFO] [1790639463.294091271] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=RETRACT_6
+[task_manager-1] [INFO] [1790639466.118205156] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DONE
+[task_manager-1] [INFO] [1790639466.119458300] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=joint_1 +90.0 deg
+[task_manager-1] [INFO] [1790639466.234446165] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=CARRY_ROTATE
+[task_manager-1] [INFO] [1790639530.906368703] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DONE
+[task_manager-1] [INFO] [1790639530.914349961] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=target=1.0388m
+[task_manager-1] [INFO] [1790639530.959012263] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8004m
+[task_manager-1] [INFO] [1790639531.153169608] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8005m
+[task_manager-1] [INFO] [1790639531.259069588] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8006m
+[task_manager-1] [INFO] [1790639531.292981726] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8008m
+[task_manager-1] [INFO] [1790639531.338011027] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8009m
+[task_manager-1] [INFO] [1790639531.452122333] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8011m
+[task_manager-1] [INFO] [1790639531.486050692] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8014m
+[task_manager-1] [INFO] [1790639531.524929777] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8016m
+[task_manager-1] [INFO] [1790639531.662488752] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8019m
+[task_manager-1] [INFO] [1790639531.697249994] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8021m
+[task_manager-1] [INFO] [1790639531.739080240] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8024m
+[task_manager-1] [INFO] [1790639531.853116990] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8027m
+[task_manager-1] [INFO] [1790639531.885783040] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8030m
+[task_manager-1] [INFO] [1790639531.920746540] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8033m
+[task_manager-1] [INFO] [1790639532.024336363] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8036m
+[task_manager-1] [INFO] [1790639532.069317016] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8039m
+[task_manager-1] [INFO] [1790639532.106370997] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8042m
+[task_manager-1] [INFO] [1790639532.216864890] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8045m
+[task_manager-1] [INFO] [1790639532.259031085] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8048m
+[task_manager-1] [INFO] [1790639532.294162561] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8052m
+[task_manager-1] [INFO] [1790639532.396318717] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8055m
+[task_manager-1] [INFO] [1790639532.444745548] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8058m
+[task_manager-1] [INFO] [1790639532.481973354] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8061m
+[task_manager-1] [INFO] [1790639532.598322520] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8065m
+[task_manager-1] [INFO] [1790639532.644047490] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8068m
+[task_manager-1] [INFO] [1790639532.678602082] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8071m
+[task_manager-1] [INFO] [1790639532.789102146] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8075m
+[task_manager-1] [INFO] [1790639532.827068064] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8078m
+[task_manager-1] [INFO] [1790639532.869014708] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8081m
+[task_manager-1] [INFO] [1790639532.975400732] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8084m
+[task_manager-1] [INFO] [1790639533.010391511] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8088m
+[task_manager-1] [INFO] [1790639533.051484805] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8091m
+[task_manager-1] [INFO] [1790639533.156327099] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8094m
+[task_manager-1] [INFO] [1790639533.193131385] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8098m
+[task_manager-1] [INFO] [1790639533.227151533] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8101m
+[task_manager-1] [INFO] [1790639533.333883666] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8104m
+[task_manager-1] [INFO] [1790639533.375885912] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8108m
+[task_manager-1] [INFO] [1790639533.412735975] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8111m
+[task_manager-1] [INFO] [1790639533.522132153] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8114m
+[task_manager-1] [INFO] [1790639533.562517026] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8118m
+[task_manager-1] [INFO] [1790639533.596668223] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8121m
+[task_manager-1] [INFO] [1790639533.706202941] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8124m
+[task_manager-1] [INFO] [1790639533.745027518] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8128m
+[task_manager-1] [INFO] [1790639533.778163249] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8131m
+[task_manager-1] [INFO] [1790639533.880699233] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8134m
+[task_manager-1] [INFO] [1790639533.917460583] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8138m
+[task_manager-1] [INFO] [1790639533.959438238] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8141m
+[task_manager-1] [INFO] [1790639534.064579626] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8144m
+[task_manager-1] [INFO] [1790639534.101597096] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8148m
+[task_manager-1] [INFO] [1790639534.145157656] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8151m
+[task_manager-1] [INFO] [1790639534.255856321] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8154m
+[task_manager-1] [INFO] [1790639534.289803883] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8158m
+[task_manager-1] [INFO] [1790639534.335580122] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8161m
+[task_manager-1] [INFO] [1790639534.444043781] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8164m
+[task_manager-1] [INFO] [1790639534.478231901] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8168m
+[task_manager-1] [INFO] [1790639534.513621590] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8171m
+[task_manager-1] [INFO] [1790639534.622732088] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8174m
+[task_manager-1] [INFO] [1790639534.668902453] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8178m
+[task_manager-1] [INFO] [1790639534.705561352] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8181m
+[task_manager-1] [INFO] [1790639534.804367551] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8184m
+[task_manager-1] [INFO] [1790639534.846361006] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8188m
+[task_manager-1] [INFO] [1790639534.881074526] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8191m
+[task_manager-1] [INFO] [1790639534.985537644] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8194m
+[task_manager-1] [INFO] [1790639535.024716704] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8198m
+[task_manager-1] [INFO] [1790639535.064533220] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8201m
+[task_manager-1] [INFO] [1790639535.184089750] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8204m
+[task_manager-1] [INFO] [1790639535.220919225] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8208m
+[task_manager-1] [INFO] [1790639535.264528238] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8211m
+[task_manager-1] [INFO] [1790639535.373653418] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8214m
+[task_manager-1] [INFO] [1790639535.411252297] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8218m
+[task_manager-1] [INFO] [1790639535.451908471] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8221m
+[task_manager-1] [INFO] [1790639535.560294049] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8224m
+[task_manager-1] [INFO] [1790639535.593376578] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8228m
+[task_manager-1] [INFO] [1790639535.633321740] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8231m
+[task_manager-1] [INFO] [1790639535.747581343] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8234m
+[task_manager-1] [INFO] [1790639535.778901042] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8238m
+[task_manager-1] [INFO] [1790639535.820473844] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8241m
+[task_manager-1] [INFO] [1790639535.927953623] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8244m
+[task_manager-1] [INFO] [1790639535.970522152] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8248m
+[task_manager-1] [INFO] [1790639536.005537152] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8251m
+[task_manager-1] [INFO] [1790639536.110477480] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8254m
+[task_manager-1] [INFO] [1790639536.154715298] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8258m
+[task_manager-1] [INFO] [1790639536.189258147] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8261m
+[task_manager-1] [INFO] [1790639536.297286344] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8264m
+[task_manager-1] [INFO] [1790639536.340475911] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8268m
+[task_manager-1] [INFO] [1790639536.371709257] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8271m
+[task_manager-1] [INFO] [1790639536.474603112] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8274m
+[task_manager-1] [INFO] [1790639536.511090478] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8278m
+[task_manager-1] [INFO] [1790639536.552846776] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8281m
+[task_manager-1] [INFO] [1790639536.664949393] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8284m
+[task_manager-1] [INFO] [1790639536.699572742] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8288m
+[task_manager-1] [INFO] [1790639536.743214824] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8291m
+[task_manager-1] [INFO] [1790639536.837476492] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8294m
+[task_manager-1] [INFO] [1790639536.876289950] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8298m
+[task_manager-1] [INFO] [1790639536.912757046] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8301m
+[task_manager-1] [INFO] [1790639537.020528260] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8304m
+[task_manager-1] [INFO] [1790639537.064033025] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8308m
+[task_manager-1] [INFO] [1790639537.096832579] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8311m
+[task_manager-1] [INFO] [1790639537.207559928] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8314m
+[task_manager-1] [INFO] [1790639537.247163931] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8318m
+[task_manager-1] [INFO] [1790639537.278003943] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8321m
+[task_manager-1] [INFO] [1790639537.388269700] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8324m
+[task_manager-1] [INFO] [1790639537.426181323] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8328m
+[task_manager-1] [INFO] [1790639537.469872169] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8331m
+[task_manager-1] [INFO] [1790639537.579448992] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8334m
+[task_manager-1] [INFO] [1790639537.617674147] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8338m
+[task_manager-1] [INFO] [1790639537.661930549] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8341m
+[task_manager-1] [INFO] [1790639537.776678025] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8344m
+[task_manager-1] [INFO] [1790639537.813733631] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8348m
+[task_manager-1] [INFO] [1790639537.855006935] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8351m
+[task_manager-1] [INFO] [1790639537.960012794] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8354m
+[task_manager-1] [INFO] [1790639537.990991518] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8358m
+[task_manager-1] [INFO] [1790639538.033091606] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8361m
+[task_manager-1] [INFO] [1790639538.138494533] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8364m
+[task_manager-1] [INFO] [1790639538.175248908] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8368m
+[task_manager-1] [INFO] [1790639538.213300624] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8371m
+[task_manager-1] [INFO] [1790639538.320943971] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8374m
+[task_manager-1] [INFO] [1790639538.363788980] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8378m
+[task_manager-1] [INFO] [1790639538.396874909] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8381m
+[task_manager-1] [INFO] [1790639538.504659202] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8384m
+[task_manager-1] [INFO] [1790639538.548599120] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8388m
+[task_manager-1] [INFO] [1790639538.579982029] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8391m
+[task_manager-1] [INFO] [1790639538.696331978] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8394m
+[task_manager-1] [INFO] [1790639538.739018801] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8398m
+[task_manager-1] [INFO] [1790639538.773223246] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8401m
+[task_manager-1] [INFO] [1790639538.883003728] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8404m
+[task_manager-1] [INFO] [1790639538.920674521] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8408m
+[task_manager-1] [INFO] [1790639538.961168155] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8411m
+[task_manager-1] [INFO] [1790639539.067868339] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8414m
+[task_manager-1] [INFO] [1790639539.104289353] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8418m
+[task_manager-1] [INFO] [1790639539.144406693] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8421m
+[task_manager-1] [INFO] [1790639539.251000784] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8424m
+[task_manager-1] [INFO] [1790639539.285890464] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8428m
+[task_manager-1] [INFO] [1790639539.321788332] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8431m
+[task_manager-1] [INFO] [1790639539.440139372] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8434m
+[task_manager-1] [INFO] [1790639539.474869313] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8438m
+[task_manager-1] [INFO] [1790639539.511071573] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8441m
+[task_manager-1] [INFO] [1790639539.621198805] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8444m
+[task_manager-1] [INFO] [1790639539.662582878] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8448m
+[task_manager-1] [INFO] [1790639539.697737942] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8451m
+[task_manager-1] [INFO] [1790639539.808397150] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8454m
+[task_manager-1] [INFO] [1790639539.847908759] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8458m
+[task_manager-1] [INFO] [1790639539.880718877] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8461m
+[task_manager-1] [INFO] [1790639539.995848367] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8464m
+[task_manager-1] [INFO] [1790639540.040585435] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8468m
+[task_manager-1] [INFO] [1790639540.076381695] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8471m
+[task_manager-1] [INFO] [1790639540.182511349] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8474m
+[task_manager-1] [INFO] [1790639540.227438551] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8478m
+[task_manager-1] [INFO] [1790639540.268101711] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8481m
+[task_manager-1] [INFO] [1790639540.377015470] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8484m
+[task_manager-1] [INFO] [1790639540.415418067] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8488m
+[task_manager-1] [INFO] [1790639540.455566899] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8491m
+[task_manager-1] [INFO] [1790639540.563959470] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8494m
+[task_manager-1] [INFO] [1790639540.596873328] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8498m
+[task_manager-1] [INFO] [1790639540.635789247] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8501m
+[task_manager-1] [INFO] [1790639540.748157203] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8504m
+[task_manager-1] [INFO] [1790639540.784158370] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8508m
+[task_manager-1] [INFO] [1790639540.825053566] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8511m
+[task_manager-1] [INFO] [1790639540.939140862] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8514m
+[task_manager-1] [INFO] [1790639540.975859193] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8518m
+[task_manager-1] [INFO] [1790639541.010632693] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8521m
+[task_manager-1] [INFO] [1790639541.113097558] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8524m
+[task_manager-1] [INFO] [1790639541.155059400] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8528m
+[task_manager-1] [INFO] [1790639541.187585333] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8531m
+[task_manager-1] [INFO] [1790639541.297553524] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8534m
+[task_manager-1] [INFO] [1790639541.341028974] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8538m
+[task_manager-1] [INFO] [1790639541.373464991] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8541m
+[task_manager-1] [INFO] [1790639541.481244471] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8544m
+[task_manager-1] [INFO] [1790639541.516485708] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8548m
+[task_manager-1] [INFO] [1790639541.559717434] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8551m
+[task_manager-1] [INFO] [1790639541.665844203] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8554m
+[task_manager-1] [INFO] [1790639541.697930149] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8558m
+[task_manager-1] [INFO] [1790639541.740295559] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8561m
+[task_manager-1] [INFO] [1790639541.857358182] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8564m
+[task_manager-1] [INFO] [1790639541.889733824] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8568m
+[task_manager-1] [INFO] [1790639541.928325145] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8571m
+[task_manager-1] [INFO] [1790639542.028028753] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8574m
+[task_manager-1] [INFO] [1790639542.068569814] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8578m
+[task_manager-1] [INFO] [1790639542.104755613] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8581m
+[task_manager-1] [INFO] [1790639542.225489415] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8584m
+[task_manager-1] [INFO] [1790639542.265875570] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8588m
+[task_manager-1] [INFO] [1790639542.299311161] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8591m
+[task_manager-1] [INFO] [1790639542.407110387] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8594m
+[task_manager-1] [INFO] [1790639542.450056112] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8598m
+[task_manager-1] [INFO] [1790639542.483688596] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8601m
+[task_manager-1] [INFO] [1790639542.589557473] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8604m
+[task_manager-1] [INFO] [1790639542.632743212] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8608m
+[task_manager-1] [INFO] [1790639542.669128800] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8611m
+[task_manager-1] [INFO] [1790639542.776301293] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8614m
+[task_manager-1] [INFO] [1790639542.813134250] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8618m
+[task_manager-1] [INFO] [1790639542.854328662] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8621m
+[task_manager-1] [INFO] [1790639542.953463956] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8624m
+[task_manager-1] [INFO] [1790639542.986066264] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8628m
+[task_manager-1] [INFO] [1790639543.025266066] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8631m
+[task_manager-1] [INFO] [1790639543.127563245] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8634m
+[task_manager-1] [INFO] [1790639543.166814894] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8638m
+[task_manager-1] [INFO] [1790639543.199410171] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8641m
+[task_manager-1] [INFO] [1790639543.311952757] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8644m
+[task_manager-1] [INFO] [1790639543.350442176] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8648m
+[task_manager-1] [INFO] [1790639543.383128349] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8651m
+[task_manager-1] [INFO] [1790639543.492301264] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8654m
+[task_manager-1] [INFO] [1790639543.529927641] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8658m
+[task_manager-1] [INFO] [1790639543.571951258] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8661m
+[task_manager-1] [INFO] [1790639543.685187002] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8664m
+[task_manager-1] [INFO] [1790639543.725577730] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8668m
+[task_manager-1] [INFO] [1790639543.767986062] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8671m
+[task_manager-1] [INFO] [1790639543.874590429] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8674m
+[task_manager-1] [INFO] [1790639543.910000958] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8678m
+[task_manager-1] [INFO] [1790639543.953369726] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8681m
+[task_manager-1] [INFO] [1790639544.056140050] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8684m
+[task_manager-1] [INFO] [1790639544.089154865] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8688m
+[task_manager-1] [INFO] [1790639544.133143438] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8691m
+[task_manager-1] [INFO] [1790639544.248555158] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8694m
+[task_manager-1] [INFO] [1790639544.281078725] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8698m
+[task_manager-1] [INFO] [1790639544.321722367] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8701m
+[task_manager-1] [INFO] [1790639544.425981507] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8704m
+[task_manager-1] [INFO] [1790639544.466447054] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8708m
+[task_manager-1] [INFO] [1790639544.498102415] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8711m
+[task_manager-1] [INFO] [1790639544.597856054] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8714m
+[task_manager-1] [INFO] [1790639544.638859855] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8718m
+[task_manager-1] [INFO] [1790639544.675604191] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8721m
+[task_manager-1] [INFO] [1790639544.795883081] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8724m
+[task_manager-1] [INFO] [1790639544.843562874] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8728m
+[task_manager-1] [INFO] [1790639544.871544196] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8731m
+[task_manager-1] [INFO] [1790639544.975635164] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8734m
+[task_manager-1] [INFO] [1790639545.011229253] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8738m
+[task_manager-1] [INFO] [1790639545.051990146] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8741m
+[task_manager-1] [INFO] [1790639545.152864039] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8744m
+[task_manager-1] [INFO] [1790639545.185400804] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8748m
+[task_manager-1] [INFO] [1790639545.219936621] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8751m
+[task_manager-1] [INFO] [1790639545.340602212] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8754m
+[task_manager-1] [INFO] [1790639545.375753429] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8758m
+[task_manager-1] [INFO] [1790639545.414436536] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8761m
+[task_manager-1] [INFO] [1790639545.525434687] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8764m
+[task_manager-1] [INFO] [1790639545.565043827] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8768m
+[task_manager-1] [INFO] [1790639545.602175464] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8771m
+[task_manager-1] [INFO] [1790639545.707363996] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8774m
+[task_manager-1] [INFO] [1790639545.749440805] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8778m
+[task_manager-1] [INFO] [1790639545.784051481] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8781m
+[task_manager-1] [INFO] [1790639545.895605903] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8784m
+[task_manager-1] [INFO] [1790639545.938144303] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8788m
+[task_manager-1] [INFO] [1790639545.971387519] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8791m
+[task_manager-1] [INFO] [1790639546.081575048] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8794m
+[task_manager-1] [INFO] [1790639546.115550127] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8798m
+[task_manager-1] [INFO] [1790639546.154657489] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8801m
+[task_manager-1] [INFO] [1790639546.261030368] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8804m
+[task_manager-1] [INFO] [1790639546.294977219] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8808m
+[task_manager-1] [INFO] [1790639546.337249562] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8811m
+[task_manager-1] [INFO] [1790639546.433582497] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8814m
+[task_manager-1] [INFO] [1790639546.470282648] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8818m
+[task_manager-1] [INFO] [1790639546.505449441] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8821m
+[task_manager-1] [INFO] [1790639546.617185140] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8824m
+[task_manager-1] [INFO] [1790639546.657972527] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8828m
+[task_manager-1] [INFO] [1790639546.689143596] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8831m
+[task_manager-1] [INFO] [1790639546.798908679] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8834m
+[task_manager-1] [INFO] [1790639546.838089656] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8838m
+[task_manager-1] [INFO] [1790639546.874279115] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8841m
+[task_manager-1] [INFO] [1790639546.989365740] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8844m
+[task_manager-1] [INFO] [1790639547.032327801] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8848m
+[task_manager-1] [INFO] [1790639547.071062656] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8851m
+[task_manager-1] [INFO] [1790639547.178220826] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8854m
+[task_manager-1] [INFO] [1790639547.213720504] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8858m
+[task_manager-1] [INFO] [1790639547.253367666] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8861m
+[task_manager-1] [INFO] [1790639547.366273063] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8864m
+[task_manager-1] [INFO] [1790639547.399628454] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8868m
+[task_manager-1] [INFO] [1790639547.439421987] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8871m
+[task_manager-1] [INFO] [1790639547.555954496] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8874m
+[task_manager-1] [INFO] [1790639547.592881978] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8878m
+[task_manager-1] [INFO] [1790639547.634425476] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8881m
+[task_manager-1] [INFO] [1790639547.747865364] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8884m
+[task_manager-1] [INFO] [1790639547.782524873] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8888m
+[task_manager-1] [INFO] [1790639547.823439278] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8891m
+[task_manager-1] [INFO] [1790639547.928024110] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8894m
+[task_manager-1] [INFO] [1790639547.969562949] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8898m
+[task_manager-1] [INFO] [1790639548.008522297] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8901m
+[task_manager-1] [INFO] [1790639548.110849936] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8904m
+[task_manager-1] [INFO] [1790639548.154685461] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8908m
+[task_manager-1] [INFO] [1790639548.187717630] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8911m
+[task_manager-1] [INFO] [1790639548.315360968] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8914m
+[task_manager-1] [INFO] [1790639548.359463333] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8918m
+[task_manager-1] [INFO] [1790639548.392122680] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8921m
+[task_manager-1] [INFO] [1790639548.495866312] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8924m
+[task_manager-1] [INFO] [1790639548.537594340] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8928m
+[task_manager-1] [INFO] [1790639548.571558588] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8931m
+[task_manager-1] [INFO] [1790639548.680135222] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8934m
+[task_manager-1] [INFO] [1790639548.717958193] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8938m
+[task_manager-1] [INFO] [1790639548.759267410] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8941m
+[task_manager-1] [INFO] [1790639548.865719829] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8944m
+[task_manager-1] [INFO] [1790639548.897684438] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8948m
+[task_manager-1] [INFO] [1790639548.939987792] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8951m
+[task_manager-1] [INFO] [1790639549.048302895] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8954m
+[task_manager-1] [INFO] [1790639549.081479211] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8958m
+[task_manager-1] [INFO] [1790639549.122580636] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8961m
+[task_manager-1] [INFO] [1790639549.242027145] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8964m
+[task_manager-1] [INFO] [1790639549.283785816] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8968m
+[task_manager-1] [INFO] [1790639549.321916960] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8971m
+[task_manager-1] [INFO] [1790639549.425206949] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8974m
+[task_manager-1] [INFO] [1790639549.474306974] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8978m
+[task_manager-1] [INFO] [1790639549.507179149] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8981m
+[task_manager-1] [INFO] [1790639549.620260037] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8984m
+[task_manager-1] [INFO] [1790639549.666027338] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8988m
+[task_manager-1] [INFO] [1790639549.698492226] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8991m
+[task_manager-1] [INFO] [1790639549.805908618] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8994m
+[task_manager-1] [INFO] [1790639549.850195356] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.8998m
+[task_manager-1] [INFO] [1790639549.882869707] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9001m
+[task_manager-1] [INFO] [1790639549.993694128] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9004m
+[task_manager-1] [INFO] [1790639550.034629614] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9008m
+[task_manager-1] [INFO] [1790639550.074266982] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9011m
+[task_manager-1] [INFO] [1790639550.180296868] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9014m
+[task_manager-1] [INFO] [1790639550.217364461] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9018m
+[task_manager-1] [INFO] [1790639550.256118846] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9021m
+[task_manager-1] [INFO] [1790639550.365547317] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9024m
+[task_manager-1] [INFO] [1790639550.400531767] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9028m
+[task_manager-1] [INFO] [1790639550.443235777] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9031m
+[task_manager-1] [INFO] [1790639550.551861457] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9034m
+[task_manager-1] [INFO] [1790639550.585084746] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9038m
+[task_manager-1] [INFO] [1790639550.620805948] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9041m
+[task_manager-1] [INFO] [1790639550.738833665] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9044m
+[task_manager-1] [INFO] [1790639550.772035451] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9048m
+[task_manager-1] [INFO] [1790639550.812647238] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9051m
+[task_manager-1] [INFO] [1790639550.927324969] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9054m
+[task_manager-1] [INFO] [1790639550.968727841] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9058m
+[task_manager-1] [INFO] [1790639551.003012449] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9061m
+[task_manager-1] [INFO] [1790639551.105380572] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9064m
+[task_manager-1] [INFO] [1790639551.148282848] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9068m
+[task_manager-1] [INFO] [1790639551.180386336] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9071m
+[task_manager-1] [INFO] [1790639551.285385521] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9074m
+[task_manager-1] [INFO] [1790639551.322443798] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9078m
+[task_manager-1] [INFO] [1790639551.368204369] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9081m
+[task_manager-1] [INFO] [1790639551.481456405] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9084m
+[task_manager-1] [INFO] [1790639551.521247716] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9088m
+[task_manager-1] [INFO] [1790639551.557360643] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9091m
+[task_manager-1] [INFO] [1790639551.670362956] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9094m
+[task_manager-1] [INFO] [1790639551.706181966] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9098m
+[task_manager-1] [INFO] [1790639551.743542851] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9101m
+[task_manager-1] [INFO] [1790639551.855947847] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9104m
+[task_manager-1] [INFO] [1790639551.889543268] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9108m
+[task_manager-1] [INFO] [1790639551.931905713] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9111m
+[task_manager-1] [INFO] [1790639552.054050739] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9114m
+[task_manager-1] [INFO] [1790639552.086308260] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9118m
+[task_manager-1] [INFO] [1790639552.124558725] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9121m
+[task_manager-1] [INFO] [1790639552.240118931] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9124m
+[task_manager-1] [INFO] [1790639552.278335176] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9128m
+[task_manager-1] [INFO] [1790639552.313895449] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9131m
+[task_manager-1] [INFO] [1790639552.435143642] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9134m
+[task_manager-1] [INFO] [1790639552.467965577] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9138m
+[task_manager-1] [INFO] [1790639552.503011555] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9141m
+[task_manager-1] [INFO] [1790639552.613280135] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9144m
+[task_manager-1] [INFO] [1790639552.654094415] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9148m
+[task_manager-1] [INFO] [1790639552.686414379] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9151m
+[task_manager-1] [INFO] [1790639552.793123511] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9154m
+[task_manager-1] [INFO] [1790639552.839609886] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9158m
+[task_manager-1] [INFO] [1790639552.875736354] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9161m
+[task_manager-1] [INFO] [1790639552.985983281] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9164m
+[task_manager-1] [INFO] [1790639553.025175381] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9168m
+[task_manager-1] [INFO] [1790639553.063955944] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9171m
+[task_manager-1] [INFO] [1790639553.168807608] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9174m
+[task_manager-1] [INFO] [1790639553.201400324] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9178m
+[task_manager-1] [INFO] [1790639553.240877367] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9181m
+[task_manager-1] [INFO] [1790639553.354760889] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9184m
+[task_manager-1] [INFO] [1790639553.390559027] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9188m
+[task_manager-1] [INFO] [1790639553.435329473] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9191m
+[task_manager-1] [INFO] [1790639553.540461478] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9194m
+[task_manager-1] [INFO] [1790639553.571348738] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9198m
+[task_manager-1] [INFO] [1790639553.607697529] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9201m
+[task_manager-1] [INFO] [1790639553.706117481] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9204m
+[task_manager-1] [INFO] [1790639553.750085130] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9208m
+[task_manager-1] [INFO] [1790639553.782114420] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9211m
+[task_manager-1] [INFO] [1790639553.893202816] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9214m
+[task_manager-1] [INFO] [1790639553.936793851] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9218m
+[task_manager-1] [INFO] [1790639553.972456997] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9221m
+[task_manager-1] [INFO] [1790639554.086628987] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9224m
+[task_manager-1] [INFO] [1790639554.127909588] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9228m
+[task_manager-1] [INFO] [1790639554.170759864] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9231m
+[task_manager-1] [INFO] [1790639554.289621521] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9234m
+[task_manager-1] [INFO] [1790639554.327282293] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9238m
+[task_manager-1] [INFO] [1790639554.368988279] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9241m
+[task_manager-1] [INFO] [1790639554.482215760] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9244m
+[task_manager-1] [INFO] [1790639554.520337898] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9248m
+[task_manager-1] [INFO] [1790639554.562482964] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9251m
+[task_manager-1] [INFO] [1790639554.673006874] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9254m
+[task_manager-1] [INFO] [1790639554.713523955] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9258m
+[task_manager-1] [INFO] [1790639554.760129130] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9261m
+[task_manager-1] [INFO] [1790639554.868541491] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9264m
+[task_manager-1] [INFO] [1790639554.905489428] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9268m
+[task_manager-1] [INFO] [1790639554.947229257] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9271m
+[task_manager-1] [INFO] [1790639555.055047937] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9274m
+[task_manager-1] [INFO] [1790639555.087276064] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9278m
+[task_manager-1] [INFO] [1790639555.125321918] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9281m
+[task_manager-1] [INFO] [1790639555.231218057] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9284m
+[task_manager-1] [INFO] [1790639555.269141510] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9288m
+[task_manager-1] [INFO] [1790639555.304098248] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9291m
+[task_manager-1] [INFO] [1790639555.413434794] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9294m
+[task_manager-1] [INFO] [1790639555.458606747] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9298m
+[task_manager-1] [INFO] [1790639555.490096460] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9301m
+[task_manager-1] [INFO] [1790639555.605432324] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9304m
+[task_manager-1] [INFO] [1790639555.644928853] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9308m
+[task_manager-1] [INFO] [1790639555.681460453] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9311m
+[task_manager-1] [INFO] [1790639555.792827953] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9314m
+[task_manager-1] [INFO] [1790639555.831414039] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9318m
+[task_manager-1] [INFO] [1790639555.869528600] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9321m
+[task_manager-1] [INFO] [1790639555.979021533] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9324m
+[task_manager-1] [INFO] [1790639556.017977631] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9328m
+[task_manager-1] [INFO] [1790639556.059925422] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9331m
+[task_manager-1] [INFO] [1790639556.181785087] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9334m
+[task_manager-1] [INFO] [1790639556.217031518] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9338m
+[task_manager-1] [INFO] [1790639556.256991902] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9341m
+[task_manager-1] [INFO] [1790639556.374261913] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9344m
+[task_manager-1] [INFO] [1790639556.415744433] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9348m
+[task_manager-1] [INFO] [1790639556.457470661] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9351m
+[task_manager-1] [INFO] [1790639556.569320852] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9354m
+[task_manager-1] [INFO] [1790639556.605504598] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9358m
+[task_manager-1] [INFO] [1790639556.642817245] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9361m
+[task_manager-1] [INFO] [1790639556.757969722] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9364m
+[task_manager-1] [INFO] [1790639556.791671748] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9368m
+[task_manager-1] [INFO] [1790639556.832440715] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9371m
+[task_manager-1] [INFO] [1790639556.949002176] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9374m
+[task_manager-1] [INFO] [1790639556.982212412] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9378m
+[task_manager-1] [INFO] [1790639557.017225722] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9381m
+[task_manager-1] [INFO] [1790639557.119346494] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9384m
+[task_manager-1] [INFO] [1790639557.160518365] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9388m
+[task_manager-1] [INFO] [1790639557.194354484] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9391m
+[task_manager-1] [INFO] [1790639557.296007984] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9394m
+[task_manager-1] [INFO] [1790639557.336939863] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9398m
+[task_manager-1] [INFO] [1790639557.373536986] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9401m
+[task_manager-1] [INFO] [1790639557.498485582] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9404m
+[task_manager-1] [INFO] [1790639557.542306604] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9408m
+[task_manager-1] [INFO] [1790639557.576282606] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9411m
+[task_manager-1] [INFO] [1790639557.687615368] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9414m
+[task_manager-1] [INFO] [1790639557.727431613] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9418m
+[task_manager-1] [INFO] [1790639557.772320059] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9421m
+[task_manager-1] [INFO] [1790639557.885832428] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9424m
+[task_manager-1] [INFO] [1790639557.924640707] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9428m
+[task_manager-1] [INFO] [1790639557.967429295] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9431m
+[task_manager-1] [INFO] [1790639558.072086952] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9434m
+[task_manager-1] [INFO] [1790639558.107547806] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9438m
+[task_manager-1] [INFO] [1790639558.150288358] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9441m
+[task_manager-1] [INFO] [1790639558.261609028] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9444m
+[task_manager-1] [INFO] [1790639558.296244931] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9448m
+[task_manager-1] [INFO] [1790639558.337857864] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9451m
+[task_manager-1] [INFO] [1790639558.461351202] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9454m
+[task_manager-1] [INFO] [1790639558.498100482] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9458m
+[task_manager-1] [INFO] [1790639558.535747158] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9461m
+[task_manager-1] [INFO] [1790639558.645929234] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9464m
+[task_manager-1] [INFO] [1790639558.685337688] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9468m
+[task_manager-1] [INFO] [1790639558.721449955] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9471m
+[task_manager-1] [INFO] [1790639558.835996102] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9474m
+[task_manager-1] [INFO] [1790639558.870906729] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9478m
+[task_manager-1] [INFO] [1790639558.910371192] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9481m
+[task_manager-1] [INFO] [1790639559.026738376] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9484m
+[task_manager-1] [INFO] [1790639559.068077944] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9488m
+[task_manager-1] [INFO] [1790639559.102063149] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9491m
+[task_manager-1] [INFO] [1790639559.208296445] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9494m
+[task_manager-1] [INFO] [1790639559.248835080] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9498m
+[task_manager-1] [INFO] [1790639559.283945577] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9501m
+[task_manager-1] [INFO] [1790639559.385465699] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9504m
+[task_manager-1] [INFO] [1790639559.426171465] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9508m
+[task_manager-1] [INFO] [1790639559.466683200] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9511m
+[task_manager-1] [INFO] [1790639559.577119837] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9514m
+[task_manager-1] [INFO] [1790639559.613533199] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9518m
+[task_manager-1] [INFO] [1790639559.654619161] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9521m
+[task_manager-1] [INFO] [1790639559.758667143] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9524m
+[task_manager-1] [INFO] [1790639559.793331343] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9528m
+[task_manager-1] [INFO] [1790639559.832563602] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9531m
+[task_manager-1] [INFO] [1790639559.944338921] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9534m
+[task_manager-1] [INFO] [1790639559.978436304] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9538m
+[task_manager-1] [INFO] [1790639560.013643981] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9541m
+[task_manager-1] [INFO] [1790639560.116806981] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9544m
+[task_manager-1] [INFO] [1790639560.161189134] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9548m
+[task_manager-1] [INFO] [1790639560.192458678] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9551m
+[task_manager-1] [INFO] [1790639560.299253707] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9554m
+[task_manager-1] [INFO] [1790639560.343688623] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9558m
+[task_manager-1] [INFO] [1790639560.376923657] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9561m
+[task_manager-1] [INFO] [1790639560.490173032] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9564m
+[task_manager-1] [INFO] [1790639560.526639552] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9568m
+[task_manager-1] [INFO] [1790639560.566529126] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9571m
+[task_manager-1] [INFO] [1790639560.669331201] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9574m
+[task_manager-1] [INFO] [1790639560.703731590] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9578m
+[task_manager-1] [INFO] [1790639560.747002897] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9581m
+[task_manager-1] [INFO] [1790639560.861816740] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9584m
+[task_manager-1] [INFO] [1790639560.897851860] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9588m
+[task_manager-1] [INFO] [1790639560.943274531] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9591m
+[task_manager-1] [INFO] [1790639561.045845243] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9594m
+[task_manager-1] [INFO] [1790639561.077059729] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9598m
+[task_manager-1] [INFO] [1790639561.115309584] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9601m
+[task_manager-1] [INFO] [1790639561.220686567] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9604m
+[task_manager-1] [INFO] [1790639561.260244269] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9608m
+[task_manager-1] [INFO] [1790639561.292015593] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9611m
+[task_manager-1] [INFO] [1790639561.399180134] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9614m
+[task_manager-1] [INFO] [1790639561.446261965] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9618m
+[task_manager-1] [INFO] [1790639561.478216899] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9621m
+[task_manager-1] [INFO] [1790639561.583683293] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9624m
+[task_manager-1] [INFO] [1790639561.621060579] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9628m
+[task_manager-1] [INFO] [1790639561.661296966] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9631m
+[task_manager-1] [INFO] [1790639561.770171512] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9634m
+[task_manager-1] [INFO] [1790639561.804420847] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9638m
+[task_manager-1] [INFO] [1790639561.841407470] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9641m
+[task_manager-1] [INFO] [1790639561.951647955] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9644m
+[task_manager-1] [INFO] [1790639561.985722459] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9648m
+[task_manager-1] [INFO] [1790639562.021515425] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9651m
+[task_manager-1] [INFO] [1790639562.119935721] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9654m
+[task_manager-1] [INFO] [1790639562.162608819] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9658m
+[task_manager-1] [INFO] [1790639562.196326986] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9661m
+[task_manager-1] [INFO] [1790639562.299910602] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9664m
+[task_manager-1] [INFO] [1790639562.345648165] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9668m
+[task_manager-1] [INFO] [1790639562.381678001] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9671m
+[task_manager-1] [INFO] [1790639562.497734088] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9674m
+[task_manager-1] [INFO] [1790639562.534380144] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9678m
+[task_manager-1] [INFO] [1790639562.569996096] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9681m
+[task_manager-1] [INFO] [1790639562.675023652] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9684m
+[task_manager-1] [INFO] [1790639562.712046380] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9688m
+[task_manager-1] [INFO] [1790639562.752981028] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9691m
+[task_manager-1] [INFO] [1790639562.865477932] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9694m
+[task_manager-1] [INFO] [1790639562.899265223] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9698m
+[task_manager-1] [INFO] [1790639562.945293556] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9701m
+[task_manager-1] [INFO] [1790639563.050591715] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9704m
+[task_manager-1] [INFO] [1790639563.081560709] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9708m
+[task_manager-1] [INFO] [1790639563.117399403] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9711m
+[task_manager-1] [INFO] [1790639563.226986442] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9714m
+[task_manager-1] [INFO] [1790639563.264997207] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9718m
+[task_manager-1] [INFO] [1790639563.297534074] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9721m
+[task_manager-1] [INFO] [1790639563.406704004] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9724m
+[task_manager-1] [INFO] [1790639563.451787833] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9728m
+[task_manager-1] [INFO] [1790639563.483884392] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9731m
+[task_manager-1] [INFO] [1790639563.587069169] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9734m
+[task_manager-1] [INFO] [1790639563.623568775] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9738m
+[task_manager-1] [INFO] [1790639563.662972737] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9741m
+[task_manager-1] [INFO] [1790639563.778013525] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9744m
+[task_manager-1] [INFO] [1790639563.817104611] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9748m
+[task_manager-1] [INFO] [1790639563.861906970] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9751m
+[task_manager-1] [INFO] [1790639563.970101498] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9754m
+[task_manager-1] [INFO] [1790639564.008082240] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9758m
+[task_manager-1] [INFO] [1790639564.048879655] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9761m
+[task_manager-1] [INFO] [1790639564.162449915] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9764m
+[task_manager-1] [INFO] [1790639564.196688088] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9768m
+[task_manager-1] [INFO] [1790639564.239156650] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9771m
+[task_manager-1] [INFO] [1790639564.350246676] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9774m
+[task_manager-1] [INFO] [1790639564.383672259] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9778m
+[task_manager-1] [INFO] [1790639564.419738839] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9781m
+[task_manager-1] [INFO] [1790639564.535346309] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9784m
+[task_manager-1] [INFO] [1790639564.568643360] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9788m
+[task_manager-1] [INFO] [1790639564.602878846] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9791m
+[task_manager-1] [INFO] [1790639564.696512088] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9794m
+[task_manager-1] [INFO] [1790639564.740244128] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9798m
+[task_manager-1] [INFO] [1790639564.773280206] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9801m
+[task_manager-1] [INFO] [1790639564.877978008] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9804m
+[task_manager-1] [INFO] [1790639564.914798219] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9808m
+[task_manager-1] [INFO] [1790639564.957172562] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9811m
+[task_manager-1] [INFO] [1790639565.064501337] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9814m
+[task_manager-1] [INFO] [1790639565.097880482] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9818m
+[task_manager-1] [INFO] [1790639565.139621865] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9821m
+[task_manager-1] [INFO] [1790639565.249377764] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9824m
+[task_manager-1] [INFO] [1790639565.279282809] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9828m
+[task_manager-1] [INFO] [1790639565.314923529] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9831m
+[task_manager-1] [INFO] [1790639565.419784950] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9834m
+[task_manager-1] [INFO] [1790639565.464424232] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9838m
+[task_manager-1] [INFO] [1790639565.500015707] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9841m
+[task_manager-1] [INFO] [1790639565.610068312] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9844m
+[task_manager-1] [INFO] [1790639565.649270269] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9848m
+[task_manager-1] [INFO] [1790639565.681006210] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9851m
+[task_manager-1] [INFO] [1790639565.796040820] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9854m
+[task_manager-1] [INFO] [1790639565.839154824] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9858m
+[task_manager-1] [INFO] [1790639565.872316285] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9861m
+[task_manager-1] [INFO] [1790639565.982656629] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9864m
+[task_manager-1] [INFO] [1790639566.022384082] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9868m
+[task_manager-1] [INFO] [1790639566.063948956] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9871m
+[task_manager-1] [INFO] [1790639566.169732385] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9874m
+[task_manager-1] [INFO] [1790639566.205705570] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9878m
+[task_manager-1] [INFO] [1790639566.250680202] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9881m
+[task_manager-1] [INFO] [1790639566.353690313] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9884m
+[task_manager-1] [INFO] [1790639566.387469526] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9888m
+[task_manager-1] [INFO] [1790639566.425681495] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9891m
+[task_manager-1] [INFO] [1790639566.544905527] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9894m
+[task_manager-1] [INFO] [1790639566.580278540] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9898m
+[task_manager-1] [INFO] [1790639566.616121980] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9901m
+[task_manager-1] [INFO] [1790639566.717088834] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9904m
+[task_manager-1] [INFO] [1790639566.761106106] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9908m
+[task_manager-1] [INFO] [1790639566.795220308] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9911m
+[task_manager-1] [INFO] [1790639566.902748872] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9914m
+[task_manager-1] [INFO] [1790639566.941621391] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9918m
+[task_manager-1] [INFO] [1790639566.979077600] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9921m
+[task_manager-1] [INFO] [1790639567.098318983] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9924m
+[task_manager-1] [INFO] [1790639567.142623706] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9928m
+[task_manager-1] [INFO] [1790639567.173244699] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9931m
+[task_manager-1] [INFO] [1790639567.288218277] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9934m
+[task_manager-1] [INFO] [1790639567.329379471] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9938m
+[task_manager-1] [INFO] [1790639567.366177192] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9941m
+[task_manager-1] [INFO] [1790639567.485170578] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9944m
+[task_manager-1] [INFO] [1790639567.526995385] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9948m
+[task_manager-1] [INFO] [1790639567.568702952] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9951m
+[task_manager-1] [INFO] [1790639567.673421461] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9954m
+[task_manager-1] [INFO] [1790639567.709985307] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9958m
+[task_manager-1] [INFO] [1790639567.755234649] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9961m
+[task_manager-1] [INFO] [1790639567.873604634] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9964m
+[task_manager-1] [INFO] [1790639567.911265645] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9968m
+[task_manager-1] [INFO] [1790639567.952001365] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9971m
+[task_manager-1] [INFO] [1790639568.053308154] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9974m
+[task_manager-1] [INFO] [1790639568.086621434] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9978m
+[task_manager-1] [INFO] [1790639568.122038202] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9981m
+[task_manager-1] [INFO] [1790639568.220460917] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9984m
+[task_manager-1] [INFO] [1790639568.262854199] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9988m
+[task_manager-1] [INFO] [1790639568.296006460] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9991m
+[task_manager-1] [INFO] [1790639568.399455507] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9994m
+[task_manager-1] [INFO] [1790639568.445327001] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=0.9998m
+[task_manager-1] [INFO] [1790639568.478929304] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0001m
+[task_manager-1] [INFO] [1790639568.594587520] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0004m
+[task_manager-1] [INFO] [1790639568.635213718] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0008m
+[task_manager-1] [INFO] [1790639568.673860555] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0011m
+[task_manager-1] [INFO] [1790639568.783882125] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0014m
+[task_manager-1] [INFO] [1790639568.823761231] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0018m
+[task_manager-1] [INFO] [1790639568.865257083] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0021m
+[task_manager-1] [INFO] [1790639568.977144779] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0024m
+[task_manager-1] [INFO] [1790639569.020326977] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0028m
+[task_manager-1] [INFO] [1790639569.069068818] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0031m
+[task_manager-1] [INFO] [1790639569.172591914] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0034m
+[task_manager-1] [INFO] [1790639569.209387679] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0038m
+[task_manager-1] [INFO] [1790639569.251118522] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0041m
+[task_manager-1] [INFO] [1790639569.363912349] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0044m
+[task_manager-1] [INFO] [1790639569.399004562] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0048m
+[task_manager-1] [INFO] [1790639569.440708608] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0051m
+[task_manager-1] [INFO] [1790639569.553673632] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0054m
+[task_manager-1] [INFO] [1790639569.587059266] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0058m
+[task_manager-1] [INFO] [1790639569.624072544] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0061m
+[task_manager-1] [INFO] [1790639569.737804613] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0064m
+[task_manager-1] [INFO] [1790639569.770078466] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0068m
+[task_manager-1] [INFO] [1790639569.806399306] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0071m
+[task_manager-1] [INFO] [1790639569.912669253] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0074m
+[task_manager-1] [INFO] [1790639569.953659933] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0078m
+[task_manager-1] [INFO] [1790639569.984915421] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0081m
+[task_manager-1] [INFO] [1790639570.094915813] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0084m
+[task_manager-1] [INFO] [1790639570.139161802] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0088m
+[task_manager-1] [INFO] [1790639570.173603218] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0091m
+[task_manager-1] [INFO] [1790639570.276685656] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0094m
+[task_manager-1] [INFO] [1790639570.316338516] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0098m
+[task_manager-1] [INFO] [1790639570.358392190] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0101m
+[task_manager-1] [INFO] [1790639570.473282630] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0104m
+[task_manager-1] [INFO] [1790639570.508928492] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0108m
+[task_manager-1] [INFO] [1790639570.553568879] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0111m
+[task_manager-1] [INFO] [1790639570.659858309] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0114m
+[task_manager-1] [INFO] [1790639570.693064286] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0118m
+[task_manager-1] [INFO] [1790639570.736385935] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0121m
+[task_manager-1] [INFO] [1790639570.847470116] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0124m
+[task_manager-1] [INFO] [1790639570.880142896] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0128m
+[task_manager-1] [INFO] [1790639570.918403885] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0131m
+[task_manager-1] [INFO] [1790639571.023581904] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0134m
+[task_manager-1] [INFO] [1790639571.066745460] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0138m
+[task_manager-1] [INFO] [1790639571.100288752] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0141m
+[task_manager-1] [INFO] [1790639571.204926095] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0144m
+[task_manager-1] [INFO] [1790639571.243174529] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0148m
+[task_manager-1] [INFO] [1790639571.277890545] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0151m
+[task_manager-1] [INFO] [1790639571.391490921] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0154m
+[task_manager-1] [INFO] [1790639571.437323112] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0158m
+[task_manager-1] [INFO] [1790639571.477651256] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0161m
+[task_manager-1] [INFO] [1790639571.582233477] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0164m
+[task_manager-1] [INFO] [1790639571.622605093] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0168m
+[task_manager-1] [INFO] [1790639571.661940182] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0171m
+[task_manager-1] [INFO] [1790639571.777551216] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0174m
+[task_manager-1] [INFO] [1790639571.817009258] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0178m
+[task_manager-1] [INFO] [1790639571.856074537] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0181m
+[task_manager-1] [INFO] [1790639571.965732276] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0184m
+[task_manager-1] [INFO] [1790639571.998886964] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0188m
+[task_manager-1] [INFO] [1790639572.048337310] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0191m
+[task_manager-1] [INFO] [1790639572.152536993] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0194m
+[task_manager-1] [INFO] [1790639572.185982709] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0198m
+[task_manager-1] [INFO] [1790639572.222532447] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0201m
+[task_manager-1] [INFO] [1790639572.325412983] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0204m
+[task_manager-1] [INFO] [1790639572.366173198] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0208m
+[task_manager-1] [INFO] [1790639572.403805264] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0211m
+[task_manager-1] [INFO] [1790639572.509229101] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0214m
+[task_manager-1] [INFO] [1790639572.552299230] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0218m
+[task_manager-1] [INFO] [1790639572.590351929] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0221m
+[task_manager-1] [INFO] [1790639572.696093593] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0224m
+[task_manager-1] [INFO] [1790639572.742313486] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0228m
+[task_manager-1] [INFO] [1790639572.778286142] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0231m
+[task_manager-1] [INFO] [1790639572.884614138] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0234m
+[task_manager-1] [INFO] [1790639572.920222594] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0238m
+[task_manager-1] [INFO] [1790639572.962269038] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0241m
+[task_manager-1] [INFO] [1790639573.066730258] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0244m
+[task_manager-1] [INFO] [1790639573.102069039] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0248m
+[task_manager-1] [INFO] [1790639573.141171929] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0251m
+[task_manager-1] [INFO] [1790639573.246245288] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0254m
+[task_manager-1] [INFO] [1790639573.278733017] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0258m
+[task_manager-1] [INFO] [1790639573.314993403] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0261m
+[task_manager-1] [INFO] [1790639573.427079254] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0264m
+[task_manager-1] [INFO] [1790639573.468469568] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0268m
+[task_manager-1] [INFO] [1790639573.503741275] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0271m
+[task_manager-1] [INFO] [1790639573.612814295] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0274m
+[task_manager-1] [INFO] [1790639573.656010469] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0278m
+[task_manager-1] [INFO] [1790639573.687674483] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0281m
+[task_manager-1] [INFO] [1790639573.799184981] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0284m
+[task_manager-1] [INFO] [1790639573.841051652] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0288m
+[task_manager-1] [INFO] [1790639573.873971841] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0291m
+[task_manager-1] [INFO] [1790639573.979872640] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0294m
+[task_manager-1] [INFO] [1790639574.018345153] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0298m
+[task_manager-1] [INFO] [1790639574.058040779] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0301m
+[task_manager-1] [INFO] [1790639574.170519646] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0304m
+[task_manager-1] [INFO] [1790639574.207055236] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0308m
+[task_manager-1] [INFO] [1790639574.246975078] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0311m
+[task_manager-1] [INFO] [1790639574.350754191] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0314m
+[task_manager-1] [INFO] [1790639574.386027215] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0318m
+[task_manager-1] [INFO] [1790639574.423937099] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0321m
+[task_manager-1] [INFO] [1790639574.537584246] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0324m
+[task_manager-1] [INFO] [1790639574.573964709] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0328m
+[task_manager-1] [INFO] [1790639574.612340276] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0331m
+[task_manager-1] [INFO] [1790639574.721045693] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0334m
+[task_manager-1] [INFO] [1790639574.761540134] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0338m
+[task_manager-1] [INFO] [1790639574.793292065] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0341m
+[task_manager-1] [INFO] [1790639574.905033696] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0344m
+[task_manager-1] [INFO] [1790639574.945055295] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0348m
+[task_manager-1] [INFO] [1790639574.980113173] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0351m
+[task_manager-1] [INFO] [1790639575.099003633] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0354m
+[task_manager-1] [INFO] [1790639575.140130590] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0358m
+[task_manager-1] [INFO] [1790639575.175880416] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0361m
+[task_manager-1] [INFO] [1790639575.284973929] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0364m
+[task_manager-1] [INFO] [1790639575.321282250] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0367m
+[task_manager-1] [INFO] [1790639575.365041048] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0370m
+[task_manager-1] [INFO] [1790639575.477413033] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0372m
+[task_manager-1] [INFO] [1790639575.515673359] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0374m
+[task_manager-1] [INFO] [1790639575.559084047] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0375m
+[task_manager-1] [INFO] [1790639575.676293714] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0377m
+[task_manager-1] [INFO] [1790639575.714829164] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0378m
+[task_manager-1] [INFO] [1790639575.756619824] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0379m
+[task_manager-1] [INFO] [1790639575.897387691] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0380m
+[task_manager-1] [INFO] [1790639575.950553651] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0381m
+[task_manager-1] [INFO] [1790639576.145366627] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=height=1.0382m
+[task_manager-1] [INFO] [1790639576.147234159] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=checking carry pose and travel height
+[task_manager-1] [INFO] [1790639576.152024698] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready
+[task_manager-1] [INFO] [1790639576.239384045] [task_manager]: Command published: executor=navigation, operation=NAVIGATION, command_id=TASK-20260928-234342-CMD-003
+[task_manager-1] [INFO] [1790639576.246934668] [task_manager]: Executor status changed: executor=navigation, state=BUSY, detail=FEEDER_DOCK -> FEEDER_APPROACH
+[task_manager-1] [INFO] [1790639620.410798892] [task_manager]: Executor status changed: executor=navigation, state=BUSY, detail=FEEDER_DOCK
+[task_manager-1] [INFO] [1790639697.262899118] [task_manager]: Executor status changed: executor=navigation, state=READY, detail=last SUCCEEDED
+[task_manager-1] [INFO] [1790639697.336576065] [task_manager]: Command published: executor=sim_task, operation=PLACE_INSPECT, command_id=TASK-20260928-234342-CMD-004
+[task_manager-1] [INFO] [1790639697.372280426] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing PLACE_INSPECT
+[task_manager-1] [INFO] [1790639697.374020157] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=still=20.88s
+[task_manager-1] [INFO] [1790639697.393408253] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=target=/World/SmartFarm/Placed/Conveyor/TurnTable/Geometry/SM_ConveyorBelt_A08_Roller35_01, position=[-2.1866, -3.7486, 0.7952]
+[task_manager-1] [INFO] [1790639697.448855457] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DESCEND_1
+[task_manager-1] [INFO] [1790639701.957385771] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DESCEND_2
+[task_manager-1] [INFO] [1790639706.117209409] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DESCEND_3
+[task_manager-1] [INFO] [1790639710.236137521] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DESCEND_4
+[task_manager-1] [INFO] [1790639714.327875712] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACE_IN_1
+[task_manager-1] [INFO] [1790639718.369342218] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACE_IN_2
+[task_manager-1] [INFO] [1790639722.399277684] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACE_IN_3
+[task_manager-1] [INFO] [1790639726.442761860] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACE_IN_4
+[task_manager-1] [INFO] [1790639730.520314621] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACE_IN_5
+[task_manager-1] [INFO] [1790639734.549193834] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACE_IN_6
+[task_manager-1] [INFO] [1790639738.620730091] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PALLET_DOWN
+[task_manager-1] [INFO] [1790639742.579676628] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=FORK_OUT_1
+[task_manager-1] [INFO] [1790639746.595973865] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=FORK_OUT_2
+[task_manager-1] [INFO] [1790639750.640700809] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=FORK_OUT_3
+[task_manager-1] [INFO] [1790639754.673069475] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=FORK_OUT_4
+[task_manager-1] [INFO] [1790639758.651842809] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=FORK_OUT_5
+[task_manager-1] [INFO] [1790639762.716823242] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=FORK_OUT_6
+[task_manager-1] [INFO] [1790639766.713380799] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=EXIT_1
+[task_manager-1] [INFO] [1790639770.689841536] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=EXIT_2
+[task_manager-1] [INFO] [1790639774.722908870] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=EXIT_3
+[task_manager-1] [INFO] [1790639778.770984415] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=DONE
+[task_manager-1] [INFO] [1790639778.772988806] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready
+[task_manager-1] [INFO] [1790639778.839476643] [task_manager]: Command published: executor=sim_task, operation=CONVEY_TO_INSPECT, command_id=TASK-20260928-234342-CMD-005
+[task_manager-1] [INFO] [1790639778.905421352] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing CONVEY_TO_INSPECT
+[task_manager-1] [INFO] [1790639778.907541298] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001
+[task_manager-1] [INFO] [1790639778.909021143] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=STEM
+[task_manager-1] [INFO] [1790639814.073946827] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=JUNCTION
+[task_manager-1] [INFO] [1790639823.345065075] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=LINE
+[task_manager-1] [INFO] [1790639831.612379287] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.00s
+[task_manager-1] [INFO] [1790639831.645180547] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.02s
+[task_manager-1] [INFO] [1790639831.751986335] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.03s
+[task_manager-1] [INFO] [1790639831.778486005] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.05s
+[task_manager-1] [INFO] [1790639831.806428105] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.07s
+[task_manager-1] [INFO] [1790639831.934305696] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.08s
+[task_manager-1] [INFO] [1790639831.963743446] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.10s
+[task_manager-1] [INFO] [1790639831.987426836] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.12s
+[task_manager-1] [INFO] [1790639832.092632675] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.13s
+[task_manager-1] [INFO] [1790639832.125297036] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.15s
+[task_manager-1] [INFO] [1790639832.161963014] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.17s
+[task_manager-1] [INFO] [1790639832.258553485] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.18s
+[task_manager-1] [INFO] [1790639832.283243785] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.20s
+[task_manager-1] [INFO] [1790639832.310549099] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.22s
+[task_manager-1] [INFO] [1790639832.415753195] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.23s
+[task_manager-1] [INFO] [1790639832.451456138] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.25s
+[task_manager-1] [INFO] [1790639832.474601943] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.27s
+[task_manager-1] [INFO] [1790639832.570421584] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.28s
+[task_manager-1] [INFO] [1790639832.598379605] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.30s
+[task_manager-1] [INFO] [1790639832.626065577] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.32s
+[task_manager-1] [INFO] [1790639832.727858458] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.33s
+[task_manager-1] [INFO] [1790639832.762585837] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.35s
+[task_manager-1] [INFO] [1790639832.788355322] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.37s
+[task_manager-1] [INFO] [1790639832.893434482] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.38s
+[task_manager-1] [INFO] [1790639832.929935765] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.40s
+[task_manager-1] [INFO] [1790639832.962452826] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.42s
+[task_manager-1] [INFO] [1790639833.067049331] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.43s
+[task_manager-1] [INFO] [1790639833.095400054] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.45s
+[task_manager-1] [INFO] [1790639833.136572941] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.47s
+[task_manager-1] [INFO] [1790639833.239121355] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.48s
+[task_manager-1] [INFO] [1790639833.266901926] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.50s
+[task_manager-1] [INFO] [1790639833.291974850] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION still=0.52s
+[task_manager-1] [INFO] [1790639833.294029109] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready
+[task_manager-1] [INFO] [1790639833.336722825] [task_manager]: Command published: executor=sim_task, operation=PREPARE_INSPECT, command_id=TASK-20260928-234342-CMD-006
+[task_manager-1] [INFO] [1790639833.396691104] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing PREPARE_INSPECT
+[task_manager-1] [INFO] [1790639833.407025930] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001
+[task_manager-1] [INFO] [1790639833.409363641] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 jig=PUSH_IN
+[task_manager-1] [INFO] [1790639854.487425133] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready
+[task_manager-1] [INFO] [1790639854.534344681] [task_manager]: Command published: executor=sim_task, operation=MOVE_TO_INSPECT, command_id=TASK-20260928-234342-CMD-007
+[task_manager-1] [INFO] [1790639854.564604182] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing MOVE_TO_INSPECT
+[task_manager-1] [INFO] [1790639854.575060920] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001
+[task_manager-1] [INFO] [1790639854.576092380] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 arm=MOVE_INSPECT
+[task_manager-1] [INFO] [1790639873.753024266] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready
+[task_manager-1] [INFO] [1790639873.834303437] [task_manager]: Command published: executor=inspection, operation=INSPECT, command_id=TASK-20260928-234342-CMD-008
+[task_manager-1] [INFO] [1790639873.839312553] [task_manager]: Executor status changed: executor=inspection, state=BUSY, detail=waiting for an image newer than the command
+[task_manager-1] [INFO] [1790639875.070422893] [task_manager]: Executor status changed: executor=inspection, state=BUSY, detail=processing frame 3342
+[task_manager-1] [INFO] [1790639876.274560745] [task_manager]: Executor status changed: executor=inspection, state=READY, detail=last result SUCCEEDED/NONE
+[task_manager-1] [INFO] [1790639876.334112615] [task_manager]: Command published: executor=sim_task, operation=CULL, command_id=TASK-20260928-234342-CMD-009
+[task_manager-1] [INFO] [1790639876.374462938] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing CULL
+[task_manager-1] [INFO] [1790639876.381630559] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=target_slots=SLOT_03,SLOT_04,SLOT_05
+[task_manager-1] [INFO] [1790639876.382719895] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=completed= target=SLOT_03,SLOT_04,SLOT_05
+[task_manager-1] [INFO] [1790639876.591523130] [task_manager]: Executor status changed: executor=inspection, state=READY, detail=model and image ready
+[task_manager-1] [INFO] [1790639983.211547095] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=completed=SLOT_03 target=SLOT_03,SLOT_04,SLOT_05
+[task_manager-1] [INFO] [1790640103.182807327] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=completed=SLOT_03,SLOT_04 target=SLOT_03,SLOT_04,SLOT_05
+[task_manager-1] [INFO] [1790640223.636173558] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=completed=SLOT_03,SLOT_04,SLOT_05 target=SLOT_03,SLOT_04,SLOT_05
+[task_manager-1] [INFO] [1790640250.008206148] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready
+[task_manager-1] [INFO] [1790640250.036607577] [task_manager]: Command published: executor=inspection, operation=RECHECK, command_id=TASK-20260928-234342-CMD-010
+[task_manager-1] [INFO] [1790640250.040371860] [task_manager]: Executor status changed: executor=inspection, state=BUSY, detail=waiting for an image newer than the command
+[task_manager-1] [INFO] [1790640250.469055600] [task_manager]: Executor status changed: executor=inspection, state=BUSY, detail=processing frame 4592
+[task_manager-1] [INFO] [1790640250.575756822] [task_manager]: Executor status changed: executor=inspection, state=READY, detail=last result SUCCEEDED/NONE
+[task_manager-1] [INFO] [1790640250.577313779] [task_manager]: Executor status changed: executor=inspection, state=READY, detail=model and image ready
+[task_manager-1] [INFO] [1790640250.639041187] [task_manager]: Command published: executor=sim_task, operation=RELEASE_INSPECT, command_id=TASK-20260928-234342-CMD-011
+[task_manager-1] [INFO] [1790640250.680513738] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing RELEASE_INSPECT
+[task_manager-1] [INFO] [1790640250.681682503] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001
+[task_manager-1] [INFO] [1790640250.682598845] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PUSH_OUT
+[task_manager-1] [INFO] [1790640272.332732527] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready
+[task_manager-1] [INFO] [1790640272.337582338] [task_manager]: Command published: executor=sim_task, operation=CONVEYOR_OUT, command_id=TASK-20260928-234342-CMD-012
+[task_manager-1] [INFO] [1790640272.365655512] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing CONVEYOR_OUT
+[task_manager-1] [INFO] [1790640272.366752537] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001
+[task_manager-1] [INFO] [1790640272.367655860] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=VISION
+[task_manager-1] [INFO] [1790640272.516746396] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=pallet_id=PALLET_001 zone=LINE
+[task_manager-1] [INFO] [1790640394.529849798] [task_manager]: Cycle completed: TASK-20260928-234342
+[task_manager-1] [INFO] [1790640394.531422093] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=sim task executor ready

@@ -1,0 +1,83 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-29-01-35-57-060149-gc-isaacsim-lwh-330158
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [recorder-1]: process started with pid [330238]
+[INFO] [web-2]: process started with pid [330239]
+[web-2] 관제 웹: http://0.0.0.0:8080  (DB: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db)
+[web-2] INFO:     Started server process [330239]
+[web-2] INFO:     Waiting for application startup.
+[web-2] INFO:     Application startup complete.
+[web-2] INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+[recorder-1] [INFO] [1790645758.005030251] [monitor_recorder]: monitor_recorder ready: db=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db
+[web-2] INFO:     127.0.0.1:34786 - "POST /api/start_cycle HTTP/1.1" 200 OK
+[recorder-1] [INFO] [1790645847.485788761] [monitor_recorder]: start_cycle 요청: DEMO_HARVEST_01
+[recorder-1] [INFO] [1790645847.488619090] [monitor_recorder]: cycle opened: TASK-20260929-013727
+[recorder-1] [INFO] [1790645847.490331604] [monitor_recorder]: start_cycle 응답: accepted=True task_id=TASK-20260929-013727 reason=NONE
+[web-2] INFO:     127.0.0.1:34798 - "GET /api/web_command/20 HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34810 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43074 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:43076 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45482 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45028 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45038 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58712 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:58718 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57384 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60464 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60478 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38336 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38352 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:52112 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:59232 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:59244 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57602 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:57612 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34192 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51566 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51574 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36710 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53736 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53744 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55128 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55138 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45094 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60288 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:60298 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55938 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55946 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50462 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34850 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34858 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53202 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:53212 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51604 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:44552 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:44556 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:33622 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:33634 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45530 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:48992 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:48996 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51072 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:51084 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:49580 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36550 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36558 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34558 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34574 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:59402 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:42776 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:42778 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:55072 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38812 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:38820 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45666 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:45674 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:46798 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40278 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:40288 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36920 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:36926 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:34750 - "GET /api/state HTTP/1.1" 200 OK
+[web-2] INFO:     127.0.0.1:50428 - "GET /api/state HTTP/1.1" 200 OK
+[recorder-1] [INFO] [1790646247.638515101] [monitor_recorder]: cycle closed: TASK-20260929-013727 state=ERROR status=RESET_REQUIRED reason=RESULT_TIMEOUT
+[web-2] INFO:     127.0.0.1:50436 - "GET /api/state HTTP/1.1" 200 OK

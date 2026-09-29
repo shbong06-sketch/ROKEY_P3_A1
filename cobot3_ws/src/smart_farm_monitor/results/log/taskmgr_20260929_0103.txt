@@ -1,0 +1,20 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-29-01-06-47-815913-gc-isaacsim-lwh-315354
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [task_manager-1]: process started with pid [315358]
+[task_manager-1] [INFO] [1790644008.851200631] [task_manager]: Task Manager ready: scenario=DEMO_HARVEST_01
+[task_manager-1] [INFO] [1790644008.857404296] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=Collected_smartfarm_v014_room_core_cabbage scene ready; TRANSFER/PICK_HARVEST/PLACE_INSPECT/CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL/RELEASE_INSPECT/CONVEYOR_OUT physical profiles loaded
+[task_manager-1] [INFO] [1790644011.149113243] [task_manager]: Executor status changed: executor=inspection, state=READY, detail=model and image ready
+[task_manager-1] [INFO] [1790644011.743141741] [task_manager]: Executor status changed: executor=navigation, state=READY, detail=waiting for /navigation/command
+[task_manager-1] [INFO] [1790644027.356786601] [task_manager]: Cycle accepted: TASK-20260929-010707
+[task_manager-1] [INFO] [1790644027.408208720] [task_manager]: PREFLIGHT complete: all executors READY
+[task_manager-1] [INFO] [1790644027.508146402] [task_manager]: Command published: executor=sim_task, operation=TRANSFER, command_id=TASK-20260929-010707-CMD-001
+[task_manager-1] [INFO] [1790644028.024588777] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=executing TRANSFER
+[task_manager-1] [INFO] [1790644028.033302346] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=physical transfer started
+[task_manager-1] [INFO] [1790644028.034836132] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=LIFT_ALIGN
+[task_manager-1] [INFO] [1790644071.378167823] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=WAIT_BASE_SETTLE
+[task_manager-1] [INFO] [1790644074.816874584] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PICKING
+[task_manager-1] [INFO] [1790644224.314458160] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PLACING
+[task_manager-1] [INFO] [1790644333.309996994] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=LIFT_ALIGN
+[task_manager-1] [INFO] [1790644369.682747576] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=WAIT_BASE_SETTLE
+[task_manager-1] [INFO] [1790644372.784146861] [task_manager]: Executor status changed: executor=sim_task, state=BUSY, detail=PICKING
+[task_manager-1] [ERROR] [1790644427.607833301] [task_manager]: Command timeout: operation=TRANSFER, command_id=TASK-20260929-010707-CMD-001
