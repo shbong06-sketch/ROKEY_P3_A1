@@ -36,7 +36,7 @@
     "colormap": "inferno",
     "overlay_alpha": 0.45
   },
-  "model_dir": "/home/shbong/ROKEY_P3_A1/ml/cabbage_anomaly/models/patchcore",
+  "model_dir": "ml/cabbage_anomaly/models/patchcore",
   "model_training_images": 1020,
   "patchcore_commit": "fcaa92f124fb1ad74a7acf56726decd4b27cbcad"
 }
