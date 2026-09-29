@@ -1,0 +1,26 @@
+{
+  "patchcore_commit": "fcaa92f124fb1ad74a7acf56726decd4b27cbcad",
+  "patchcore_repo": "/home/shbong/patchcore-inspection",
+  "training_data": "/home/shbong/ROKEY_P3_A1/ml/cabbage_anomaly/data/mvtec/cabbage/train/good",
+  "normal_image_count": 4,
+  "seed": 42,
+  "device": "cuda",
+  "backbone": "wideresnet50",
+  "layers": [
+    "layer2",
+    "layer3"
+  ],
+  "input_image_size": 96,
+  "resize": 96,
+  "center_crop": 96,
+  "pretrain_embed_dimension": 1024,
+  "target_embed_dimension": 384,
+  "patchsize": 3,
+  "coreset_method": "approximate_greedy",
+  "coreset_ratio": 0.01,
+  "faiss_device": "cpu",
+  "indexed_patches": 5,
+  "batch_size": 8,
+  "pretrained": true,
+  "anomaly_score_num_nn": 1
+}
