@@ -1,0 +1,7 @@
+split,filename,roi_image,source_scene,slot,label,binary_label,raw_score,predicted_anomaly
+val,lighting_only_rgb_0004_SLOT_01.png,validation/good/lighting_only_rgb_0004_SLOT_01.png,raw/lighting_only/rgb_0004.png,SLOT_01,good,0,0.23383712768554688,0
+val,synthetic_defect_rgb_0000_SLOT_03.png,validation/yellow/synthetic_defect_rgb_0000_SLOT_03.png,raw/synthetic_defect/rgb_0000.png,SLOT_03,yellow,1,0.4063262939453125,1
+val,synthetic_defect_rgb_0000_SLOT_05.png,validation/brown/synthetic_defect_rgb_0000_SLOT_05.png,raw/synthetic_defect/rgb_0000.png,SLOT_05,brown,1,0.5530309677124023,1
+test,lighting_only_rgb_0011_SLOT_01.png,mvtec/cabbage/test/good/lighting_only_rgb_0011_SLOT_01.png,raw/lighting_only/rgb_0011.png,SLOT_01,good,0,0.25848960876464844,0
+test,synthetic_defect_rgb_0003_SLOT_03.png,mvtec/cabbage/test/yellow/synthetic_defect_rgb_0003_SLOT_03.png,raw/synthetic_defect/rgb_0003.png,SLOT_03,yellow,1,0.35062694549560547,0
+test,synthetic_defect_rgb_0003_SLOT_05.png,mvtec/cabbage/test/brown/synthetic_defect_rgb_0003_SLOT_05.png,raw/synthetic_defect/rgb_0003.png,SLOT_05,brown,1,0.4938807487487793,1

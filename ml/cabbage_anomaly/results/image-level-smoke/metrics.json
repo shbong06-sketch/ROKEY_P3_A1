@@ -1,0 +1,178 @@
+{
+  "splits": {
+    "val": {
+      "n": 6,
+      "good": 2,
+      "anomaly": 4,
+      "auroc": 1.0,
+      "tp": 4,
+      "fp": 0,
+      "tn": 2,
+      "fn": 0,
+      "false_positive_rate": 0.0,
+      "anomaly_recall": 1.0
+    },
+    "test": {
+      "n": 6,
+      "good": 2,
+      "anomaly": 4,
+      "auroc": 1.0,
+      "tp": 2,
+      "fp": 0,
+      "tn": 2,
+      "fn": 2,
+      "false_positive_rate": 0.0,
+      "anomaly_recall": 0.5
+    }
+  },
+  "slots": {
+    "val": {
+      "SLOT_01": {
+        "good_scores": {
+          "n": 1,
+          "min": 0.23384571075439453,
+          "median": 0.23384571075439453,
+          "max": 0.23384571075439453
+        },
+        "anomaly_scores": null,
+        "false_positives": 0,
+        "misses": 0
+      },
+      "SLOT_02": {
+        "good_scores": {
+          "n": 1,
+          "min": 0.2540125846862793,
+          "median": 0.2540125846862793,
+          "max": 0.2540125846862793
+        },
+        "anomaly_scores": null,
+        "false_positives": 0,
+        "misses": 0
+      },
+      "SLOT_03": {
+        "good_scores": null,
+        "anomaly_scores": {
+          "n": 1,
+          "min": 0.40631866455078125,
+          "median": 0.40631866455078125,
+          "max": 0.40631866455078125
+        },
+        "false_positives": 0,
+        "misses": 0
+      },
+      "SLOT_04": {
+        "good_scores": null,
+        "anomaly_scores": {
+          "n": 1,
+          "min": 0.46544456481933594,
+          "median": 0.46544456481933594,
+          "max": 0.46544456481933594
+        },
+        "false_positives": 0,
+        "misses": 0
+      },
+      "SLOT_05": {
+        "good_scores": null,
+        "anomaly_scores": {
+          "n": 2,
+          "min": 0.49377894401550293,
+          "median": 0.5234023332595825,
+          "max": 0.5530257225036621
+        },
+        "false_positives": 0,
+        "misses": 0
+      },
+      "SLOT_06": {
+        "good_scores": null,
+        "anomaly_scores": null,
+        "false_positives": 0,
+        "misses": 0
+      }
+    },
+    "test": {
+      "SLOT_01": {
+        "good_scores": {
+          "n": 1,
+          "min": 0.25849342346191406,
+          "median": 0.25849342346191406,
+          "max": 0.25849342346191406
+        },
+        "anomaly_scores": null,
+        "false_positives": 0,
+        "misses": 0
+      },
+      "SLOT_02": {
+        "good_scores": {
+          "n": 1,
+          "min": 0.2403545379638672,
+          "median": 0.2403545379638672,
+          "max": 0.2403545379638672
+        },
+        "anomaly_scores": null,
+        "false_positives": 0,
+        "misses": 0
+      },
+      "SLOT_03": {
+        "good_scores": null,
+        "anomaly_scores": {
+          "n": 1,
+          "min": 0.35062074661254883,
+          "median": 0.35062074661254883,
+          "max": 0.35062074661254883
+        },
+        "false_positives": 0,
+        "misses": 1
+      },
+      "SLOT_04": {
+        "good_scores": null,
+        "anomaly_scores": {
+          "n": 1,
+          "min": 0.3521761894226074,
+          "median": 0.3521761894226074,
+          "max": 0.3521761894226074
+        },
+        "false_positives": 0,
+        "misses": 1
+      },
+      "SLOT_05": {
+        "good_scores": null,
+        "anomaly_scores": {
+          "n": 2,
+          "min": 0.4804563522338867,
+          "median": 0.48717033863067627,
+          "max": 0.4938843250274658
+        },
+        "false_positives": 0,
+        "misses": 0
+      },
+      "SLOT_06": {
+        "good_scores": null,
+        "anomaly_scores": null,
+        "false_positives": 0,
+        "misses": 0
+      }
+    }
+  },
+  "defects": {
+    "val": {
+      "yellow": {
+        "n": 2,
+        "misses": 0
+      },
+      "brown": {
+        "n": 2,
+        "misses": 0
+      }
+    },
+    "test": {
+      "yellow": {
+        "n": 2,
+        "misses": 2
+      },
+      "brown": {
+        "n": 2,
+        "misses": 0
+      }
+    }
+  }
+}
