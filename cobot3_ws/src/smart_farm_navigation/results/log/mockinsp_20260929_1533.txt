@@ -1,0 +1,2 @@
+[INFO] [1790663608.068943367] [mock_inspection_executor]: Mock executor ready: executor=inspection
+[INFO] [1790663881.471750349] [mock_inspection_executor]: Mock result published: operation=INSPECT, command_id=TASK-20260929-153356-CMD-008
