@@ -1,0 +1,8 @@
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-29-15-33-18-518373-IsaacSim04-910490
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [navigation_node-1]: process started with pid [910495]
+[navigation_node-1] [0m[INFO] [1790663598.895919464] [navigation_node]: navigation_node ready; destinations: ['FEEDER_DOCK', 'RACK_DOCK', 'CORRIDOR_EXIT'][0m
+[navigation_node-1] [0m[INFO] [1790663789.371664806] [navigation_node]: goToPose FEEDER_APPROACH: -2.19, -1.55[0m
+[navigation_node-1] [0m[INFO] [1790663802.487457353] [navigation_node]: 정밀 도킹 시작 요청: run_id=TASK-20260929-153356-CMD-003[0m
+[navigation_node-1] [0m[INFO] [1790663825.111137550] [navigation_node]: 도킹 결과 SUCCEEDED: face_dist=0.917 yaw_err=2.61 lat=0.007[0m
+[navigation_node-1] [0m[INFO] [1790663825.111436418] [navigation_node]: result SUCCEEDED/NONE for TASK-20260929-153356-CMD-003 (phase ARRIVED)[0m
