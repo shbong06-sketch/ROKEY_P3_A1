@@ -162,6 +162,8 @@ source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
 
 ros2 launch smart_farm_navigation nav2.launch.py scan_mode:=cloud use_rviz:=false \
+  record:=true \
+  bag_dir:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags \
   2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/nav2_$(date +%Y%m%d_%H%M).txt
 ```
 
@@ -402,7 +404,11 @@ git commit -m "test(navigation): 27차 고피1+고피2 2대 실측"
 git push
 ```
 
-bag 은 고피2 의 `nav2.launch.py` 가 `record:=true`(기본값)로 `/home/rokey/.ros/smart_farm_navigation/bags/nav2_<날짜>/` 에 자동으로 남기므로 따로 할 것이 없음.
+**[2026-09-29 정정] 이 문장이 틀렸었음.** `nav2.launch.py:192` 의 `record` 기본값은 `false` 임.
+그래서 09-29 13:43 실측에서 bag 이 **한 개도 남지 않았고**, 도킹이 왜 실패했는지 가를 근거가 없어졌음.
+위 런치 줄에 `record:=true` 와 `bag_dir:=…/results/bags` 를 넣어 두었으므로, 이제 bag 이
+저장소 안 `cobot3_ws/src/smart_farm_navigation/results/bags/nav2_<날짜>/` 에 남고 `git push` 로 그대로 넘어옴.
+이 bag 에 `/scan` 이 들어 있어야 `detect_face` 를 재생해 FACE_NOT_FOUND 의 원인을 확정할 수 있음.
 
 ---
 
