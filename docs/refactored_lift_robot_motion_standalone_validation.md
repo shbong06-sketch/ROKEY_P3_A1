@@ -355,11 +355,11 @@ DESCEND
 
 단일 작업 성공 후 실제 시나리오 순서로 두 작업을 등록한다.
 
-빈 슬롯이 3번이라면 작업 순서는 다음이어야 한다.
+초기 공석이 RACK_L2라면 작업 순서는 다음이어야 한다.
 
 ```text
-PALLET_002: RACK_L2 → RACK_L3
-PALLET_001: RACK_L1 → RACK_L2
+PALLET_002: RACK_L3 → RACK_L2
+PALLET_003: RACK_L4 → RACK_L3
 ```
 
 즉, 목적 슬롯을 먼저 비우는 순서로 진행한다.
@@ -370,8 +370,8 @@ PALLET_001: RACK_L1 → RACK_L2
 
 ```python
 TASKS = [
-    Task(PALLET_002_PRIM_PATH, SHELF_TOP[3]),
-    Task(PALLET_001_PRIM_PATH, SHELF_TOP[2]),
+    Task(PALLET_002_PRIM_PATH, SHELF_TOP[2]),
+    Task(PALLET_003_PRIM_PATH, SHELF_TOP[3]),
 ]
 ```
 

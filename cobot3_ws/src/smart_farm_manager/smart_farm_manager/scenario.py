@@ -15,8 +15,13 @@ class CycleState(str, Enum):
     PICK_HARVEST = "PICK_HARVEST"
     NAVIGATION = "NAVIGATION"
     PLACE_INSPECT = "PLACE_INSPECT"
+    CONVEY_TO_INSPECT = "CONVEY_TO_INSPECT"
+    PREPARE_INSPECT = "PREPARE_INSPECT"
+    MOVE_TO_INSPECT = "MOVE_TO_INSPECT"
     INSPECT = "INSPECT"
     CULL = "CULL"
+    RECHECK = "RECHECK"
+    RELEASE_INSPECT = "RELEASE_INSPECT"
     CONVEYOR_OUT = "CONVEYOR_OUT"
 
     COMPLETE = "COMPLETE"
@@ -76,7 +81,7 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 executor=ExecutorName.SIM_TASK,
                 operation="TRANSFER",
                 recipe_id="RACK_REARRANGE_01",
-                timeout_sec=180.0,
+                timeout_sec=400.0,
             ),
             StepDefinition(
                 state=CycleState.PICK_HARVEST,
@@ -86,14 +91,18 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="RACK_L1",
                 destination="CARRY",
-                timeout_sec=90.0,
+                # [navigation 2026-09-27] Isaac 물리 실행 중 리프트 상승이
+                # 벽시계 200초 제한 직후 끝난 실측을 반영한다.
+                timeout_sec=400.0,
             ),
             StepDefinition(
                 state=CycleState.NAVIGATION,
                 executor=ExecutorName.NAVIGATION,
                 operation="NAVIGATION",
-                destination="INSPECTION_DOCK",
-                timeout_sec=120.0,
+                destination="FEEDER_DOCK",
+                # [navigation 2026-09-23] 속도 0.3 m/s 와 Isaac 실시간 배율 0.3 이 겹쳐
+                # 접근 주행과 정밀 도킹을 합치면 벽시계로 3 분을 넘길 수 있다.
+                timeout_sec=400.0,
             ),
             StepDefinition(
                 state=CycleState.PLACE_INSPECT,
@@ -103,15 +112,47 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="CARRY",
                 destination="INSPECT_STATION",
-                timeout_sec=90.0,
+                timeout_sec=300.0,
+            ),
+            StepDefinition(
+                state=CycleState.CONVEY_TO_INSPECT,
+                executor=ExecutorName.SIM_TASK,
+                operation="CONVEY_TO_INSPECT",
+                recipe_id="CONVEY_TO_INSPECT",
+                pallet_id="PALLET_001",
+                source="INSPECT_STATION",
+                destination="INSPECT_STOP",
+                # Isaac 물리 시간 120초 제한보다 넉넉한 벽시계 제한.
+                timeout_sec=600.0,
+            ),
+            StepDefinition(
+                state=CycleState.PREPARE_INSPECT,
+                executor=ExecutorName.SIM_TASK,
+                operation="PREPARE_INSPECT",
+                recipe_id="PREPARE_INSPECT",
+                pallet_id="PALLET_001",
+                source="INSPECT_STOP",
+                destination="INSPECT_WORK_POS",
+                # Isaac 물리 시간 90초 제한보다 넉넉한 벽시계 제한.
+                timeout_sec=450.0,
+            ),
+            StepDefinition(
+                state=CycleState.MOVE_TO_INSPECT,
+                executor=ExecutorName.SIM_TASK,
+                operation="MOVE_TO_INSPECT",
+                recipe_id="MOVE_TO_INSPECT",
+                pallet_id="PALLET_001",
+                source="INSPECT_WORK_POS",
+                destination="INSPECT_CAMERA_POSE",
+                timeout_sec=300.0,
             ),
             StepDefinition(
                 state=CycleState.INSPECT,
                 executor=ExecutorName.INSPECTION,
                 operation="INSPECT",
                 pallet_id="PALLET_001",
-                source="INSPECT_STATION",
-                timeout_sec=30.0,
+                source="INSPECT_WORK_POS",
+                timeout_sec=300.0,
             ),
             StepDefinition(
                 state=CycleState.CULL,
@@ -121,8 +162,26 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 pallet_id="PALLET_001",
                 source="INSPECT_STATION",
                 destination="INSPECT_STATION",
-                timeout_sec=120.0,
+                timeout_sec=900.0,
                 optional=True,
+            ),
+            StepDefinition(
+                state=CycleState.RECHECK,
+                executor=ExecutorName.INSPECTION,
+                operation="RECHECK",
+                pallet_id="PALLET_001",
+                source="INSPECT_WORK_POS",
+                timeout_sec=300.0,
+            ),
+            StepDefinition(
+                state=CycleState.RELEASE_INSPECT,
+                executor=ExecutorName.SIM_TASK,
+                operation="RELEASE_INSPECT",
+                recipe_id="RELEASE_INSPECT",
+                pallet_id="PALLET_001",
+                source="INSPECT_WORK_POS",
+                destination="INSPECT_STOP",
+                timeout_sec=450.0,
             ),
             StepDefinition(
                 state=CycleState.CONVEYOR_OUT,
@@ -130,9 +189,9 @@ def create_demo_harvest_scenario() -> ScenarioDefinition:
                 operation="CONVEYOR_OUT",
                 recipe_id="CONVEY_TO_PACK_OUT",
                 pallet_id="PALLET_001",
-                source="INSPECT_STATION",
+                source="INSPECT_STOP",
                 destination="PACK_OUT",
-                timeout_sec=60.0,
+                timeout_sec=600.0,
             ),
         ),
     )
