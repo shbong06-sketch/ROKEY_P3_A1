@@ -201,7 +201,9 @@ class DockLogic:
                        "status": "SUCCEEDED" if ok else "FAILED", "reason": reason,
                        "face_dist_m": round(f[0], 3) if f else None,
                        "yaw_err_deg": round(math.degrees(f[1]), 2) if f else None,
-                       "lat_m": round(f[2], 3) if f else None}
+                       "lat_m": round(f[2], 3) if f else None,
+                       # [navigation 2026-09-28] 관제 DB 의 도킹 재시도 통계용.
+                       "retry": self.retry}
         self._status("DONE" if ok else "FAILED", json.dumps(self.result), now)
         return 0.0, 0.0
 

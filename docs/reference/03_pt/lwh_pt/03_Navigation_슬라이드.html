@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Navigation &amp; Precise Docking — 스마트팜 디지털 트윈</title>
+<style>
+  :root{
+    --ink:#16202b; --sub:#54657a; --line:#d8e0e8; --bg:#ffffff;
+    --accent:#0b6fb8; --accent2:#0f9d6b; --warn:#c0392b; --soft:#f2f6fa; --soft2:#eaf3fb;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#59616b;font-family:"Noto Sans KR","Noto Sans CJK KR","Malgun Gothic","AppleGothic",system-ui,sans-serif;color:var(--ink);}
+  #bar{position:fixed;left:0;right:0;bottom:0;height:38px;background:#2d3540;color:#e8eef4;display:flex;align-items:center;gap:14px;padding:0 16px;font-size:13px;z-index:50;}
+  #bar button{background:#414c5a;color:#e8eef4;border:0;border-radius:4px;padding:5px 11px;font-size:13px;cursor:pointer;font-family:inherit;}
+  #bar button:hover{background:#55626f;}
+  #bar .sp{flex:1;}
+  .deck{padding:26px 0 60px;}
+  .slide{
+    width:1280px;height:720px;margin:0 auto 26px;background:var(--bg);position:relative;
+    box-shadow:0 6px 22px rgba(0,0,0,.35);overflow:hidden;padding:44px 56px 56px;
+  }
+  .slide h1{font-size:34px;margin:0 0 4px;letter-spacing:-.5px;}
+  .slide h2{font-size:15px;margin:0 0 20px;color:var(--sub);font-weight:500;letter-spacing:-.2px;}
+  .slide::after{content:attr(data-no);position:absolute;right:26px;bottom:16px;font-size:12px;color:#9aa8b5;}
+  .slide::before{content:attr(data-tag);position:absolute;left:56px;bottom:16px;font-size:12px;color:#9aa8b5;letter-spacing:.4px;}
+  .rule{position:absolute;left:56px;right:56px;top:96px;height:3px;background:var(--accent);}
+  .body{margin-top:26px;height:530px;}
+  .cols{display:flex;gap:26px;height:100%;}
+  .col{flex:1;min-width:0;}
+  .c40{flex:0 0 40%;} .c45{flex:0 0 45%;} .c55{flex:0 0 55%;} .c60{flex:0 0 60%;} .c35{flex:0 0 35%;} .c65{flex:0 0 65%;}
+  ul{margin:0 0 14px;padding-left:19px;}
+  li{font-size:16px;line-height:1.62;margin-bottom:7px;}
+  li small,p small{font-size:13.5px;color:var(--sub);}
+  b{color:var(--accent);} .r{color:var(--warn);font-weight:700;} .g{color:var(--accent2);font-weight:700;}
+  .kicker{display:inline-block;background:var(--accent);color:#fff;font-size:12.5px;padding:4px 10px;border-radius:3px;margin-bottom:12px;letter-spacing:.3px;}
+  .kicker.alt{background:var(--accent2);} .kicker.warn{background:var(--warn);} .kicker.gray{background:#64748b;}
+  table{border-collapse:collapse;width:100%;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;line-height:1.45;}
+  th{background:var(--soft);font-weight:700;font-size:13.5px;color:#2b3a49;}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  table.tight td,table.tight th{padding:5px 8px;font-size:13px;}
+  figure{margin:0;}
+  figure img{width:100%;display:block;border:1px solid var(--line);border-radius:3px;}
+  figure.port{display:flex;flex-direction:column;align-items:center;}
+  figure.port img{width:auto;max-height:326px;}
+  table.mini td,table.mini th{padding:4px 7px;font-size:12px;line-height:1.4;}
+  figcaption{font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.45;}
+  .box{background:var(--soft);border-left:4px solid var(--accent);padding:12px 14px;font-size:14.5px;line-height:1.6;border-radius:0 3px 3px 0;}
+  .box.warn{background:#fdf1ef;border-left-color:var(--warn);}
+  .box.ok{background:#eefaf4;border-left-color:var(--accent2);}
+  .mono{font-family:"DejaVu Sans Mono","Consolas",monospace;font-size:12.5px;background:#1f2933;color:#d7e3ee;padding:10px 12px;border-radius:3px;line-height:1.6;overflow:hidden;white-space:pre;}
+  .mono .hi{color:#7ddc9b;} .mono .dim{color:#8b9bab;} .mono .rd{color:#ff9d8a;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
+  .kpi{border:1px solid var(--line);border-radius:4px;padding:11px 13px;background:#fff;}
+  .kpi .v{font-size:27px;font-weight:800;letter-spacing:-1px;line-height:1.1;}
+  .kpi .l{font-size:12.5px;color:var(--sub);margin-top:3px;line-height:1.4;}
+  .cover{background:linear-gradient(135deg,#0b3c63 0%,#0b6fb8 58%,#12a0a0 100%);color:#fff;padding:0;}
+  .cover .in{position:absolute;left:72px;bottom:96px;right:72px;}
+  .cover h1{font-size:52px;margin:0 0 10px;letter-spacing:-1.5px;}
+  .cover .sub{font-size:20px;opacity:.93;margin-bottom:26px;}
+  .cover .meta{font-size:14.5px;opacity:.86;line-height:1.8;}
+  .cover::after{color:rgba(255,255,255,.65);} .cover::before{color:rgba(255,255,255,.65);left:72px;}
+  svg{display:block;} svg text{font-family:inherit;}
+  @media print{
+    html,body{background:#fff;}
+    #bar{display:none;}
+    .deck{padding:0;}
+    .slide{margin:0;box-shadow:none;page-break-after:always;break-after:page;}
+    @page{size:1280px 720px;margin:0;}
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- 1 -->
+<section class="slide cover" data-no="1 / 25" data-tag="ROKEY P3 · A1">
+  <svg width="1280" height="720" style="position:absolute;inset:0;opacity:.17">
+    <g fill="none" stroke="#fff" stroke-width="1.4">
+      <path d="M820 150 L1180 150 L1180 560 L820 560 Z"/>
+      <path d="M860 200 L1140 200 M860 260 L1140 260 M860 320 L1140 320 M860 380 L1140 380 M860 440 L1140 440 M860 500 L1140 500"/>
+      <path d="M700 620 Q900 620 900 480 Q900 380 1000 380" stroke-width="3" stroke-dasharray="10 8"/>
+    </g>
+    <circle cx="700" cy="620" r="13" fill="#fff"/>
+    <rect x="975" y="355" width="52" height="52" fill="#fff"/>
+  </svg>
+  <div class="in">
+    <h1>Navigation &amp; Precise Docking</h1>
+    <div class="sub">랙 팔레트 파지 → 자율주행 → 턴테이블 정밀 도킹 → Place 인계</div>
+    <div class="meta">
+      디지털 트윈 기반 로봇 자동화 시뮬레이션 · Isaac Sim 5.1 + ROS 2 Jazzy + Nav2<br>
+      담당 이원호 · 2026-09-27 · 브랜치 <code>feature/Inspection-Place-nav2</code><br>
+      장면 <code>Collected_smartfarm_v014</code> · 전 구간 통과 2026-09-26
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-no="2 / 25" data-tag="담당 범위">
+  <h1>담당 구간과 책임 경계</h1>
+  <h2>차가 &ldquo;어디에, 어느 방향으로, 얼마나 정확히&rdquo; 서는가 — 그 하나를 책임지는 구간</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <svg width="1168" height="150" viewBox="0 0 1168 150">
+      <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#54657a"/></marker></defs>
+      <g font-size="14">
+        <rect x="0" y="26" width="168" height="62" rx="4" fill="#eef2f6" stroke="#d8e0e8"/>
+        <text x="84" y="52" text-anchor="middle" font-weight="700" fill="#54657a">PICK_HARVEST</text>
+        <text x="84" y="72" text-anchor="middle" font-size="12.5" fill="#8496a8">랙에서 팔레트 파지</text>
+
+        <rect x="188" y="14" width="300" height="86" rx="4" fill="#0b6fb8"/>
+        <text x="338" y="44" text-anchor="middle" font-weight="800" fill="#fff" font-size="16">NAVIGATION</text>
+        <text x="338" y="66" text-anchor="middle" font-size="13" fill="#d6eaf8">주행 + 정밀 도킹</text>
+        <text x="338" y="85" text-anchor="middle" font-size="12.5" fill="#a9d4f0">본 파트 · 약 94초</text>
+
+        <rect x="508" y="26" width="188" height="62" rx="4" fill="#fff" stroke="#0b6fb8" stroke-width="2.5"/>
+        <text x="602" y="52" text-anchor="middle" font-weight="700" fill="#0b6fb8">PLACE_INSPECT</text>
+        <text x="602" y="72" text-anchor="middle" font-size="12.5" fill="#54657a">도킹 정확도가 성공 조건</text>
+
+        <rect x="716" y="34" width="132" height="46" rx="4" fill="#f4f6f8" stroke="#e2e8ee"/>
+        <text x="782" y="62" text-anchor="middle" fill="#9aa8b5">INSPECT</text>
+        <rect x="868" y="34" width="132" height="46" rx="4" fill="#f4f6f8" stroke="#e2e8ee"/>
+        <text x="934" y="62" text-anchor="middle" fill="#9aa8b5">CULL</text>
+        <rect x="1020" y="34" width="148" height="46" rx="4" fill="#f4f6f8" stroke="#e2e8ee"/>
+        <text x="1094" y="62" text-anchor="middle" fill="#9aa8b5">CONVEYOR_OUT</text>
+
+        <line x1="170" y1="57" x2="184" y2="57" stroke="#54657a" marker-end="url(#ar)"/>
+        <line x1="490" y1="57" x2="504" y2="57" stroke="#54657a" marker-end="url(#ar)"/>
+        <line x1="698" y1="57" x2="712" y2="57" stroke="#54657a" marker-end="url(#ar)"/>
+        <text x="338" y="126" text-anchor="middle" font-size="13" fill="#0b6fb8" font-weight="700">내 책임: 위치와 자세</text>
+        <text x="602" y="126" text-anchor="middle" font-size="13" fill="#54657a">시뮬 실행기 책임: 집고 놓는 모션</text>
+      </g>
+    </svg>
+    <div class="cols" style="height:350px;margin-top:10px">
+      <div class="col c55">
+        <ul>
+          <li><b>시작</b> — <code>PICK_HARVEST</code> 성공(<code>safe_to_navigate=true</code>) 직후</li>
+          <li><b>종료</b> — 정밀 도킹 <code>SUCCEEDED</code>. Place 가 성립하는 위치·자세를 만들어 넘김</li>
+          <li><b>산출물</b> — 독립 ROS 2 패키지 <code>smart_farm_navigation</code>.<br>
+            팀 <code>standalone_app.py</code> 에는 <b>76줄 추가 · 기존 줄 삭제 0</b></li>
+          <li><b>판정 원칙</b> — 성공은 <code>/feeder_dock/result</code> 와 최종 world 좌표로만 판정.
+            <small>눈으로 본 &ldquo;잘 됐다&rdquo; 는 판정에 쓰지 않음</small></li>
+        </ul>
+        <div class="box">도킹 거리 <b>0.92 m</b> 는 팀의 Place 수정과 <b>한 쌍</b>임. 한쪽만 바꾸지 않는 것을 규칙으로 둠.</div>
+      </div>
+      <div class="col c45">
+        <figure>
+          <img src="img/isaac_05_docked.jpg" alt="도킹 완료 시점의 Isaac Sim 화면">
+          <figcaption>2026-09-26 실행 · 도킹 완료 시점(영상 405초). 카터가 턴테이블 벨트 앞에 뒤(팔 쪽)를 대고 정지함</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-no="3 / 25" data-tag="비즈니스 요구사항">
+  <h1>왜 자율주행만으로는 부족한가</h1>
+  <h2>반송의 목적은 이동이 아니라 &ldquo;다음 장비에 짐을 정확히 넘기는 것&rdquo;</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c45">
+        <span class="kicker">현장 이슈 3</span>
+        <ul>
+          <li><b>좁은 통로</b> — 리그가 제자리 회전 시 <span class="r">0.66 m</span> 를 휩쓸어 랙에 접촉. 통로에서 회전 불가</li>
+          <li><b>적재물 보호</b> — 운반물이 엽채류 팔레트. <span class="r">30 mm</span> 이상 밀리면 후속 Place 실패(팀 안전 검사 기준)</li>
+          <li><b>끝단 정밀도</b> — 팔 역기구학이 성립하는 위치에 차체가 서야 함. 허용 오차가 cm · 도 단위</li>
+        </ul>
+        <div class="box warn" style="margin-top:14px">
+          <b>확인된 사실</b> — Nav2 도착 시 최종 방향이 <span class="r">7~33°</span> 남음.<br>
+          <small>추종기(RPP)는 후진 허용 상태에서 제자리 회전을 못 하고, 팔레트를 얹으면 AMCL 방향 추정이 흔들림</small>
+        </div>
+      </div>
+      <div class="col c55">
+        <svg width="620" height="300" viewBox="0 0 620 300">
+          <rect x="0" y="0" width="620" height="300" fill="#f7fafc" rx="4"/>
+          <text x="20" y="28" font-size="14.5" font-weight="700" fill="#16202b">지도 좌표 도착 ≠ 장비 면에 직각 정렬</text>
+          <rect x="60" y="196" width="500" height="26" fill="#264b63"/>
+          <text x="310" y="242" text-anchor="middle" font-size="13" fill="#54657a">턴테이블 앞면 (도킹 대상, 길이 1.15 m)</text>
+          <g>
+            <polygon points="300,190 190,60 410,60" fill="#f3c6bf" opacity=".55"/>
+            <text x="300" y="86" text-anchor="middle" font-size="13" fill="#c0392b" font-weight="700">Nav2 도착 방향 오차 7~33°</text>
+          </g>
+          <g transform="translate(150,120) rotate(-22)">
+            <rect x="-36" y="-22" width="72" height="44" fill="#fff" stroke="#c0392b" stroke-width="2.4"/>
+            <text x="0" y="5" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="700">비뚤어짐</text>
+          </g>
+          <g transform="translate(455,120)">
+            <rect x="-36" y="-22" width="72" height="44" fill="#fff" stroke="#0f9d6b" stroke-width="2.4"/>
+            <text x="0" y="5" text-anchor="middle" font-size="12" fill="#0f9d6b" font-weight="700">직각</text>
+            <line x1="0" y1="24" x2="0" y2="68" stroke="#0f9d6b" stroke-width="2" stroke-dasharray="5 4"/>
+            <text x="14" y="58" font-size="12" fill="#0f9d6b">0.92 m</text>
+          </g>
+          <text x="150" y="176" text-anchor="middle" font-size="12.5" fill="#c0392b">Nav2 만</text>
+          <text x="455" y="176" text-anchor="middle" font-size="12.5" fill="#0f9d6b">정밀 도킹 추가</text>
+        </svg>
+        <div class="box ok" style="margin-top:12px">
+          <b>설계 결론</b> — 구간을 둘로 나눔.<br>
+          ① <b>지도를 보고 가는 Nav2 주행</b> → ② <b>지도를 버리고 센서로 대상 면에 맞추는 정밀 도킹</b>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-no="4 / 25" data-tag="정량 목표">
+  <h1>정량 설계 목표와 달성 결과</h1>
+  <h2>합격선을 먼저 숫자로 정하고, 같은 숫자로 판정함</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="grid4" style="margin-bottom:18px">
+      <div class="kpi"><div class="v g">0.937 m</div><div class="l">도킹 거리 <small>(목표 0.92 ± 0.03)</small></div></div>
+      <div class="kpi"><div class="v g">+1.08°</div><div class="l">도착 방향 오차 <small>(허용 ±3°)</small></div></div>
+      <div class="kpi"><div class="v g">0.000 m</div><div class="l">좌우 오차 <small>(허용 ±0.06)</small></div></div>
+      <div class="kpi"><div class="v g">10 / 10</div><div class="l">ROS 회귀 시험 통과</div></div>
+    </div>
+    <div class="cols" style="height:400px">
+      <div class="col c65">
+        <table class="tight">
+          <tr><th style="width:27%">요구사항</th><th style="width:25%">정량 목표</th><th style="width:26%">근거</th><th>결과</th></tr>
+          <tr><td>통로를 접촉 없이 탈출</td><td>통로 내 제자리 회전 0회</td><td>회전 휩쓸림 0.66 m</td><td class="g">달성 · 경로에 후진 포함</td></tr>
+          <tr><td>적재물 유지</td><td class="num">속도 ≤ 0.30 m/s</td><td>팔레트 밀림 30 mm</td><td class="g">달성</td></tr>
+          <tr><td>도킹 거리</td><td class="num">0.92 ± 0.03 m</td><td>팔 관절 한계 20°</td><td class="g">0.937 m</td></tr>
+          <tr><td>도킹 방향</td><td class="num">±3°</td><td>역기구학 성립 조건</td><td class="g">+1.08°</td></tr>
+          <tr><td>도킹 좌우</td><td class="num">±0.06 m</td><td>동일</td><td class="g">0.000 m</td></tr>
+          <tr><td>실패 복구</td><td>재시도 2회 · 걸림 3초 내 중단</td><td>22·23차 실측 사례</td><td class="g">달성</td></tr>
+          <tr><td>반복 성공률</td><td>회귀 10 · 격자 225</td><td>실측 기회 제한</td><td>10/10 · <span class="r">224/225</span></td></tr>
+        </table>
+      </div>
+      <div class="col c35">
+        <svg width="380" height="250" viewBox="0 0 380 250">
+          <circle cx="190" cy="120" r="104" fill="#f2f6fa" stroke="#d8e0e8"/>
+          <circle cx="190" cy="120" r="70" fill="#e3eef7" stroke="#bcd4e8"/>
+          <circle cx="190" cy="120" r="36" fill="#cfe6f6" stroke="#8fc0e3"/>
+          <circle cx="188" cy="116" r="7" fill="#0f9d6b"/>
+          <text x="190" y="20" text-anchor="middle" font-size="13" font-weight="700" fill="#16202b">도착 판정 3항목</text>
+          <text x="190" y="242" text-anchor="middle" font-size="12.5" fill="#54657a">방향 3° · 좌우 0.06 m · 거리 0.03 m</text>
+          <text x="300" y="120" font-size="12" fill="#54657a">허용</text>
+          <text x="196" y="106" font-size="12" fill="#0f9d6b" font-weight="700">실측</text>
+        </svg>
+        <div class="box" style="margin-top:6px;font-size:13.5px">
+          <b>판정 규칙</b> — 모의 결과는 항상 &ldquo;모의&rdquo; 로 표기. 실측 여부는 <code>results/</code> · bag 으로만 판단함
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-no="5 / 25" data-tag="로봇 모델링">
+  <h1>로봇 모델링 ① — LiftRig 구성과 앞뒤 정의</h1>
+  <h2>세 장비를 조립한 리그. 팔이 뒤에 있어서 도킹이 후진이 됨</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <svg width="620" height="290" viewBox="0 0 620 290">
+          <rect x="0" y="0" width="620" height="290" fill="#f7fafc" rx="4"/>
+          <line x1="40" y1="232" x2="580" y2="232" stroke="#c3ced8" stroke-width="2"/>
+          <!-- carter body -->
+          <rect x="200" y="186" width="230" height="40" rx="5" fill="#d9e3ec" stroke="#8ea2b4" stroke-width="2"/>
+          <circle cx="395" cy="232" r="19" fill="#4a5966"/><circle cx="395" cy="232" r="7" fill="#9fb0bf"/>
+          <circle cx="240" cy="234" r="13" fill="#7c8b99"/>
+          <!-- lift column -->
+          <rect x="215" y="96" width="26" height="92" fill="#b9c8d6" stroke="#8ea2b4"/>
+          <!-- arm -->
+          <rect x="228" y="88" width="86" height="16" rx="8" fill="#e8edf2" stroke="#8ea2b4"/>
+          <rect x="300" y="60" width="16" height="44" rx="8" fill="#e8edf2" stroke="#8ea2b4"/>
+          <rect x="286" y="48" width="78" height="16" rx="8" fill="#e8edf2" stroke="#8ea2b4"/>
+          <!-- pallet -->
+          <rect x="330" y="30" width="96" height="18" fill="#e0c46a" stroke="#b39430"/>
+          <text x="378" y="24" text-anchor="middle" font-size="12" fill="#8a7223">팔레트</text>
+          <!-- axis -->
+          <line x1="315" y1="258" x2="520" y2="258" stroke="#0b6fb8" stroke-width="2.5" marker-end="url(#axa)"/>
+          <defs><marker id="axa" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b6fb8"/></marker>
+          <marker id="axb" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/></marker></defs>
+          <line x1="315" y1="258" x2="120" y2="258" stroke="#c0392b" stroke-width="2.5" marker-end="url(#axb)"/>
+          <circle cx="315" cy="258" r="4" fill="#16202b"/>
+          <text x="470" y="278" text-anchor="middle" font-size="13" fill="#0b6fb8" font-weight="700">+x · 앞 · 구동륜</text>
+          <text x="165" y="278" text-anchor="middle" font-size="13" fill="#c0392b" font-weight="700">−x · 뒤 · 리프트 · M0609</text>
+          <text x="315" y="278" text-anchor="middle" font-size="11.5" fill="#54657a">base_link</text>
+          <!-- lidar -->
+          <circle cx="285" cy="176" r="8" fill="#0f9d6b"/>
+          <text x="285" y="160" text-anchor="middle" font-size="11.5" fill="#0f9d6b" font-weight="700">XT-32</text>
+          <text x="40" y="26" font-size="14" font-weight="700" fill="#16202b">LiftRig 측면 구성</text>
+          <text x="40" y="48" font-size="12.5" fill="#54657a">Nova Carter + 리프트 + M0609 + 팔레트 포크</text>
+        </svg>
+        <div class="box warn" style="margin-top:12px">
+          <b>가장 많이 혼동한 지점</b> — 카터의 <b>앞은 구동륜 쪽(+x)</b>, <b>뒤는 리프트·팔 쪽(−x)</b>.
+          팔이 뒤에 있으므로 대상에 <b>뒤를 보이며 후진 진입</b>함. 초기 배치 yaw +90°. 이 배치는 팀의 랙 파지 조건이라 바꾸지 않음
+        </div>
+      </div>
+      <div class="col c45">
+        <table class="tight">
+          <tr><th style="width:34%">좌표계</th><th>정의 · 쓰이는 곳</th></tr>
+          <tr><td>map = Isaac world</td><td>지도 origin 이 world 기준이라 동일. 작업점 좌표와 결과 보고</td></tr>
+          <tr><td>base_link</td><td>카터 섀시, +x 가 앞. <code>/cmd_vel</code> 부호와 센서 변환</td></tr>
+          <tr><td>odom</td><td>시작 시 base_link 위치가 원점. 멈춤 판정(상대 이동량)</td></tr>
+          <tr><td>도킹 기준계</td><td><b>지도를 쓰지 않음.</b> 라이다가 검출한 면의 직선이 기준</td></tr>
+        </table>
+        <figure style="margin-top:14px">
+          <img src="img/isaac_04_reverse.jpg" alt="후진으로 도킹에 진입하는 장면">
+          <figcaption>후진 진입 중(영상 387초). 팔·팔레트가 있는 뒤쪽이 벨트를 향함</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-no="6 / 25" data-tag="로봇 모델링">
+  <h1>로봇 모델링 ② — 치수 · 센서 · 차체 응답</h1>
+  <h2>&ldquo;명령하면 바로 도는 로봇&rdquo; 이 아니라는 것이 제어 설계의 전제</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <table class="tight">
+          <tr><th style="width:30%">항목</th><th style="width:26%">값</th><th>이 값이어야 하는 이유</th></tr>
+          <tr><td>충돌 외형(footprint)</td><td class="num">x 0.14 ~ −0.607<br>y ±0.25 (패딩 0.03)</td><td>리프트·팔까지 덮은 실측 외형. 뒤끝 −0.607 이 도킹 거리 하한을 정함</td></tr>
+          <tr><td>최소 회전 반경</td><td class="num">0.35 m</td><td>통로에서 곡선 후진이 가능한 한계</td></tr>
+          <tr><td>3D 라이다 XT-32</td><td class="num">base_link<br>(−0.232, 0, 0.526)</td><td>도킹 · 점군 필터 · 연결 점검 <b>세 노드가 공유</b>. 한 곳만 바꾸면 어긋남</td></tr>
+          <tr><td>라이다 발행</td><td><code>fullScan=True</code><br>10 Hz · 약 41,000점</td><td>끄면 프레임마다 60° 조각(약 6,900점)만 와서 AMCL · 면 검출이 붕괴</td></tr>
+          <tr><td>2D 라이다</td><td>미사용</td><td>채널은 있으나 메시지가 발행되지 않음(실측 4회). 3D 변환만 사용</td></tr>
+          <tr><td>리프트 / 팔</td><td class="num">0 m = 높이 0.796 m<br>운반 자세 0.243 m</td><td>HOME 관절 [180,0,0,0,0,0], 파지 후 joint_1 +90°</td></tr>
+          <tr><td>팔 드라이브</td><td class="num">강성 1e8 · 감쇠 1e4</td><td><b>잡지 않으면 팔이 처져 라이다에 장애물로 잡힘</b> → 출발 즉시 충돌 경고, 위치 0.5 m 오차</td></tr>
+        </table>
+      </div>
+      <div class="col c45">
+        <span class="kicker warn">계측된 차체 특성</span>
+        <svg width="500" height="230" viewBox="0 0 500 230">
+          <rect x="0" y="0" width="500" height="230" fill="#f7fafc" rx="4"/>
+          <line x1="52" y1="188" x2="470" y2="188" stroke="#aab7c4"/>
+          <line x1="52" y1="30" x2="52" y2="188" stroke="#aab7c4"/>
+          <text x="52" y="210" font-size="11.5" fill="#54657a">명령 시작</text>
+          <text x="250" y="210" font-size="11.5" fill="#54657a">3초</text>
+          <text x="404" y="210" font-size="11.5" fill="#54657a">명령 중단</text>
+          <text x="10" y="40" font-size="11.5" fill="#54657a">각속도</text>
+          <polyline points="52,188 52,62 404,62 404,188" fill="none" stroke="#0b6fb8" stroke-width="2.4" stroke-dasharray="6 4"/>
+          <path d="M52 188 C 150 188, 200 96, 250 92 L404 92 C 430 92, 452 150, 468 188" fill="none" stroke="#c0392b" stroke-width="3"/>
+          <text x="120" y="52" font-size="12" fill="#0b6fb8" font-weight="700">명령 0.35 rad/s</text>
+          <text x="262" y="84" font-size="12" fill="#c0392b" font-weight="700">실제 0.26 까지만</text>
+          <path d="M404 92 L468 188" fill="none" stroke="#c0392b" stroke-width="3"/>
+          <rect x="404" y="92" width="64" height="96" fill="#f3c6bf" opacity=".5"/>
+          <text x="436" y="140" text-anchor="middle" font-size="11.5" fill="#c0392b" font-weight="700">관성으로</text>
+          <text x="436" y="156" text-anchor="middle" font-size="11.5" fill="#c0392b" font-weight="700">더 돎</text>
+        </svg>
+        <ul style="margin-top:12px">
+          <li>명령을 <b>시정수 1~3초</b>로 따라옴</li>
+          <li>끊어도 <b>초당 0.08 rad/s</b> 씩만 감속</li>
+          <li>제자리 회전은 명령의 <b>12~75%</b> 만 발생(실측 편차 큼)</li>
+          <li><small>출처: 2026-09-23 실측 bag 계측. Isaac <code>DifferentialController</code> 가속 제한</small></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-no="7 / 25" data-tag="시스템 아키텍처">
+  <h1>시스템 아키텍처 — 하드웨어와 통신</h1>
+  <h2>고피는 Isaac Sim 만, 내피는 Nav2 · 도킹. 매개는 ROS 2 DDS</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <svg width="1168" height="300" viewBox="0 0 1168 300">
+      <rect x="10" y="20" width="470" height="250" rx="6" fill="#eef4fa" stroke="#b9d3e8" stroke-width="2"/>
+      <text x="30" y="48" font-size="16" font-weight="800" fill="#0b3c63">고피 · Isaac Sim 5.1</text>
+      <text x="30" y="70" font-size="12.5" fill="#54657a">고피1 10.10.0.2 (도메인 101) / 고피2 10.10.0.1 (도메인 102)</text>
+      <g font-size="13">
+        <rect x="30" y="86" width="430" height="40" rx="4" fill="#fff" stroke="#c9dced"/>
+        <text x="44" y="111" fill="#16202b">runtime/standalone_app.py (팀) — 장면 실행 · 팔 · 리프트 물리 동작</text>
+        <rect x="30" y="134" width="430" height="40" rx="4" fill="#fff" stroke="#c9dced"/>
+        <text x="44" y="159" fill="#16202b">Collected_smartfarm_v014 · Nova Carter Action Graph</text>
+        <rect x="30" y="182" width="430" height="40" rx="4" fill="#fff" stroke="#c9dced"/>
+        <text x="44" y="207" fill="#16202b">3D 라이다 fullScan · /clock 발행</text>
+        <text x="30" y="248" font-size="12.5" fill="#c0392b">실시간 배율 약 0.3 → 모든 시간 판단은 시뮬 시계 기준</text>
+      </g>
+
+      <rect x="688" y="20" width="470" height="250" rx="6" fill="#eefaf4" stroke="#aedcc7" stroke-width="2"/>
+      <text x="708" y="48" font-size="16" font-weight="800" fill="#0b6b4a">내피 · ROS 2 Jazzy + Nav2</text>
+      <text x="708" y="70" font-size="12.5" fill="#54657a">10.10.0.3 · Isaac 실행 불가 사양</text>
+      <g font-size="13">
+        <rect x="708" y="86" width="430" height="40" rx="4" fill="#fff" stroke="#c6e6d7"/>
+        <text x="722" y="111" fill="#16202b">Nav2 (AMCL · Hybrid-A* · RPP) · RViz2</text>
+        <rect x="708" y="134" width="430" height="40" rx="4" fill="#fff" stroke="#c6e6d7"/>
+        <text x="722" y="159" fill="#16202b">cloud_self_filter → pointcloud_to_laserscan → /scan</text>
+        <rect x="708" y="182" width="430" height="40" rx="4" fill="#fff" stroke="#c6e6d7"/>
+        <text x="722" y="207" fill="#16202b">feeder_dock (정밀 도킹) · navigation_node · bag 기록</text>
+        <text x="708" y="248" font-size="12.5" fill="#0b6b4a">회귀 시험도 이 기기에서 수행(Isaac 없이)</text>
+      </g>
+
+      <defs><marker id="a2" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b6fb8"/></marker>
+      <marker id="a3" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/></marker></defs>
+      <line x1="484" y1="112" x2="682" y2="112" stroke="#0b6fb8" stroke-width="3" marker-end="url(#a2)"/>
+      <text x="583" y="104" text-anchor="middle" font-size="12.5" fill="#0b6fb8" font-weight="700">/clock · /chassis/odom · /tf · 3D 점군</text>
+      <line x1="682" y1="196" x2="484" y2="196" stroke="#c0392b" stroke-width="3" marker-end="url(#a3)"/>
+      <text x="583" y="188" text-anchor="middle" font-size="12.5" fill="#c0392b" font-weight="700">/cmd_vel</text>
+      <text x="583" y="216" text-anchor="middle" font-size="11.5" fill="#54657a">발행자는 Nav2 와 feeder_dock 둘뿐</text>
+      <text x="583" y="60" text-anchor="middle" font-size="13" font-weight="700" fill="#16202b">ROS 2 DDS (FastDDS)</text>
+    </svg>
+    <div class="cols" style="height:220px;margin-top:8px">
+      <div class="col c55">
+        <span class="kicker">두 PC 가 서로 보이기 위한 조건 3</span>
+        <ul>
+          <li>모든 터미널이 같은 <code>ROS_DOMAIN_ID</code></li>
+          <li>양쪽 <code>RMW_IMPLEMENTATION=rmw_fastrtps_cpp</code> 일치</li>
+          <li>FastDDS 화이트리스트에 <b>상대 PC 실제 NIC IP</b> 포함 (127.0.0.1 + 10.10.0.1~4)</li>
+        </ul>
+        <div class="box" style="font-size:13.5px">터미널마다 환경 5줄을 <b>매번 반복</b>해 적는 것을 문서 규칙으로 둠. &ldquo;위와 같은 5줄&rdquo; 식 참조 금지</div>
+      </div>
+      <div class="col c45">
+        <span class="kicker gray">역할을 나눈 이유</span>
+        <ul>
+          <li>한 PC 에서 다 돌리면 <b>실시간 배율이 떨어지고</b>, 그러면 라이다가 조각으로 발행됨</li>
+          <li>그 조건을 전제로 <b>모든 타임아웃을 시뮬 시계 기준</b>으로 바꿈<br><small>벽시계로 재면 제한 시간이 3배 빨리 걸림</small></li>
+          <li>임시 기기(GCP VM) 단독 운용 기간에도 같은 코드가 그대로 동작함</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-no="8 / 25" data-tag="노드 아키텍처">
+  <h1>노드 아키텍처</h1>
+  <h2>한 노드가 한 가지 일만 — 실패 지점을 분리해 판정하기 위한 구성</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c60">
+        <svg width="680" height="470" viewBox="0 0 680 470">
+          <defs><marker id="n1" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7d8ea0"/></marker></defs>
+          <rect x="0" y="0" width="680" height="470" fill="#f7fafc" rx="4"/>
+          <g font-size="12.5">
+            <rect x="222" y="14" width="236" height="38" rx="4" fill="#264b63"/>
+            <text x="340" y="38" text-anchor="middle" fill="#fff" font-weight="700">Task Manager</text>
+
+            <rect x="16" y="86" width="196" height="38" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="114" y="110" text-anchor="middle" fill="#16202b">standalone_app.py (팀)</text>
+
+            <rect x="16" y="150" width="196" height="34" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="114" y="172" text-anchor="middle" fill="#16202b">cloud_self_filter</text>
+            <rect x="16" y="196" width="196" height="34" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="114" y="218" text-anchor="middle" fill="#16202b">pointcloud_to_laserscan</text>
+            <rect x="52" y="244" width="124" height="30" rx="15" fill="#0f9d6b"/>
+            <text x="114" y="264" text-anchor="middle" fill="#fff" font-weight="700">/scan</text>
+
+            <rect x="252" y="150" width="176" height="34" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="340" y="172" text-anchor="middle" fill="#16202b">map_server · amcl</text>
+            <rect x="252" y="196" width="176" height="34" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="340" y="218" text-anchor="middle" fill="#16202b">planner (Hybrid-A*)</text>
+            <rect x="252" y="242" width="176" height="34" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="340" y="264" text-anchor="middle" fill="#16202b">controller (RPP)</text>
+            <rect x="252" y="288" width="176" height="34" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="340" y="310" text-anchor="middle" fill="#16202b">collision_monitor</text>
+
+            <rect x="466" y="86" width="196" height="38" rx="4" fill="#0b6fb8"/>
+            <text x="564" y="110" text-anchor="middle" fill="#fff" font-weight="700">navigation_node</text>
+            <rect x="466" y="196" width="196" height="46" rx="4" fill="#0b6fb8"/>
+            <text x="564" y="215" text-anchor="middle" fill="#fff" font-weight="700">feeder_dock</text>
+            <text x="564" y="233" text-anchor="middle" fill="#cfe6f6" font-size="11.5">DockLogic + ROS 배선</text>
+            <rect x="466" y="262" width="196" height="34" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="564" y="284" text-anchor="middle" fill="#16202b">station_markers</text>
+            <rect x="466" y="308" width="196" height="34" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="564" y="330" text-anchor="middle" fill="#16202b">nav2_link_check</text>
+
+            <rect x="222" y="386" width="236" height="38" rx="4" fill="#fff" stroke="#b9c8d6"/>
+            <text x="340" y="410" text-anchor="middle" fill="#16202b">Isaac Sim (Nova Carter)</text>
+
+            <line x1="280" y1="56" x2="150" y2="82" stroke="#7d8ea0" marker-end="url(#n1)"/>
+            <text x="150" y="72" font-size="11" fill="#54657a">/sim_task/command</text>
+            <line x1="420" y1="56" x2="540" y2="82" stroke="#7d8ea0" marker-end="url(#n1)"/>
+            <text x="556" y="72" font-size="11" fill="#54657a">/navigation/command</text>
+            <line x1="114" y1="128" x2="114" y2="146" stroke="#7d8ea0" marker-end="url(#n1)"/>
+            <line x1="114" y1="188" x2="114" y2="192" stroke="#7d8ea0" marker-end="url(#n1)"/>
+            <line x1="114" y1="234" x2="114" y2="240" stroke="#7d8ea0" marker-end="url(#n1)"/>
+            <line x1="178" y1="258" x2="246" y2="216" stroke="#0f9d6b" stroke-width="2" marker-end="url(#n1)"/>
+            <line x1="178" y1="260" x2="460" y2="222" stroke="#0f9d6b" stroke-width="2" marker-end="url(#n1)"/>
+            <line x1="564" y1="128" x2="564" y2="192" stroke="#0b6fb8" stroke-width="2" marker-end="url(#n1)"/>
+            <text x="574" y="162" font-size="11" fill="#0b6fb8">/feeder_dock/start · result</text>
+            <line x1="500" y1="124" x2="434" y2="204" stroke="#7d8ea0" marker-end="url(#n1)"/>
+            <text x="424" y="140" font-size="11" fill="#54657a">NavigateToPose</text>
+            <line x1="340" y1="326" x2="340" y2="382" stroke="#c0392b" stroke-width="2.4" marker-end="url(#n1)"/>
+            <line x1="540" y1="246" x2="420" y2="390" stroke="#c0392b" stroke-width="2.4" marker-end="url(#n1)"/>
+            <text x="352" y="358" font-size="11.5" fill="#c0392b" font-weight="700">/cmd_vel</text>
+            <line x1="240" y1="400" x2="120" y2="150" stroke="#7d8ea0" stroke-dasharray="4 4" marker-end="url(#n1)"/>
+            <text x="120" y="360" font-size="11" fill="#54657a">3D 점군 · odom · tf · clock</text>
+          </g>
+        </svg>
+      </div>
+      <div class="col c40">
+        <table class="tight">
+          <tr><th style="width:40%">노드</th><th>역할</th></tr>
+          <tr><td><code>cloud_self_filter</code></td><td>자기 반사 제거 + 0.25초 점군 합침</td></tr>
+          <tr><td><code>amcl</code></td><td>지도 기준 위치 추정</td></tr>
+          <tr><td><code>planner_server</code></td><td>Smac Hybrid-A* 후진 포함 경로</td></tr>
+          <tr><td><code>controller_server</code></td><td>RPP 추종, <code>/cmd_vel</code> 생성</td></tr>
+          <tr><td><code>feeder_dock</code></td><td><b>정밀 도킹.</b> 상태기계와 ROS 배선 분리</td></tr>
+          <tr><td><code>navigation_node</code></td><td>주행 지휘 · 도킹 시작 · 결과 변환 <small>(팀 파일)</small></td></tr>
+          <tr><td><code>station_markers</code></td><td>RViz2 작업점 표시</td></tr>
+          <tr><td><code>nav2_link_check</code></td><td>기동 전 시계 · 좌표 · 센서 수신 점검</td></tr>
+        </table>
+        <div class="box ok" style="margin-top:14px;font-size:13.5px">
+          <b>분리의 이득</b> — 도킹이 실패했을 때 &ldquo;센서가 잘못 봤나 / 제어가 잘못 판단했나&rdquo; 를 기록된 bag 재생으로 가를 수 있음
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-no="9 / 25" data-tag="기능 흐름">
+  <h1>기능 흐름 — 명령 하나가 끝까지 흐르는 순서</h1>
+  <h2>2026-09-26 실행 기록 기준. 괄호 안은 해당 단계 소요(벽시계)</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <svg width="1168" height="196" viewBox="0 0 1168 196">
+      <defs><marker id="f1" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#54657a"/></marker></defs>
+      <line x1="30" y1="96" x2="1140" y2="96" stroke="#d8e0e8" stroke-width="3"/>
+      <g font-size="12.5" text-anchor="middle">
+        <circle cx="96" cy="96" r="13" fill="#64748b"/><text x="96" y="101" fill="#fff" font-size="12">1</text>
+        <text x="96" y="66" font-weight="700" fill="#16202b">PICK_HARVEST</text>
+        <text x="96" y="132" fill="#54657a">파지 · 주행 허가</text>
+
+        <circle cx="300" cy="96" r="13" fill="#0b6fb8"/><text x="300" y="101" fill="#fff" font-size="12">2</text>
+        <text x="300" y="66" font-weight="700" fill="#0b6fb8">Nav2 주행</text>
+        <text x="300" y="132" fill="#54657a">접근 지점 (−2.19, −1.55)</text>
+        <text x="300" y="150" fill="#0b6fb8" font-weight="700">약 36초</text>
+
+        <circle cx="520" cy="96" r="13" fill="#0b6fb8"/><text x="520" y="101" fill="#fff" font-size="12">3</text>
+        <text x="520" y="66" font-weight="700" fill="#0b6fb8">정밀 도킹</text>
+        <text x="520" y="132" fill="#54657a">SETTLE → 정렬 → 후진 → 확인 → 접근</text>
+        <text x="520" y="150" fill="#0b6fb8" font-weight="700">약 58초</text>
+
+        <circle cx="760" cy="96" r="13" fill="#64748b"/><text x="760" y="101" fill="#fff" font-size="12">4</text>
+        <text x="760" y="66" font-weight="700" fill="#16202b">PLACE_INSPECT</text>
+        <text x="760" y="132" fill="#54657a">차체 정지 확인 후 팔 동작</text>
+        <text x="760" y="150" fill="#54657a" font-weight="700">약 73초</text>
+
+        <circle cx="1000" cy="96" r="13" fill="#0f9d6b"/><text x="1000" y="101" fill="#fff" font-size="12">5</text>
+        <text x="1000" y="66" font-weight="700" fill="#0f9d6b">컨베이어 반송</text>
+        <text x="1000" y="132" fill="#54657a">비전룸 카메라 앞 정지</text>
+        <text x="1000" y="150" fill="#0f9d6b" font-weight="700">구간 종료</text>
+      </g>
+      <rect x="196" y="24" width="440" height="152" fill="none" stroke="#0b6fb8" stroke-width="2" stroke-dasharray="6 5" rx="6"/>
+      <text x="416" y="18" text-anchor="middle" font-size="12.5" fill="#0b6fb8" font-weight="700">본 파트 담당</text>
+    </svg>
+    <div class="cols" style="height:322px;margin-top:6px">
+      <div class="col c60">
+        <div class="grid4" style="grid-template-columns:repeat(4,1fr);gap:9px">
+          <figure><img src="img/isaac_01_pick.jpg" alt="파지 완료"><figcaption>① 파지 완료 (영상 266초)</figcaption></figure>
+          <figure><img src="img/isaac_02_drive.jpg" alt="주행 중"><figcaption>② 주행 (영상 332초)</figcaption></figure>
+          <figure><img src="img/isaac_05_docked.jpg" alt="도킹 완료"><figcaption>③ 도킹 완료 (영상 405초)</figcaption></figure>
+          <figure><img src="img/isaac_07_placed.jpg" alt="안착 완료"><figcaption>④ 안착 (영상 504초)</figcaption></figure>
+        </div>
+        <div class="box" style="margin-top:14px;font-size:14px">
+          <b>결과 오인 방지</b> — 결과 토픽은 래치 방식이라 늦게 구독하면 <b>예전 결과</b>가 그대로 들어옴.
+          시작 요청에 실행 식별자를 실어 보내고 <b>같은 식별자로 돌아온 결과만</b> 인정함
+        </div>
+      </div>
+      <div class="col c40">
+        <span class="kicker warn">실패 분기 3</span>
+        <table class="tight">
+          <tr><th style="width:42%">지점</th><th>반환</th></tr>
+          <tr><td>주행 실패 · 시간 초과</td><td><code>NAV_FAILED</code></td></tr>
+          <tr><td rowspan="2">도킹 실패</td><td><code>FACE_NOT_FOUND</code> · <code>STALLED_*</code></td></tr>
+          <tr><td><code>YAW_OFF_±N도</code> · <code>TIMEOUT</code></td></tr>
+          <tr><td>차체 정지 확인 실패</td><td><code>BASE_NOT_SETTLED</code><br><small>팔을 움직이지 않고 끝냄</small></td></tr>
+        </table>
+        <div class="box ok" style="margin-top:12px;font-size:13.5px">
+          실패 사유를 <b>분리해서</b> 반환하는 것이 핵심임. &ldquo;그냥 실패&rdquo; 는 다음 조치를 못 정함
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-no="10 / 25" data-tag="세부 기능 ①">
+  <h1>세부 기능 ① — <code>/scan</code> 생성 파이프라인</h1>
+  <h2>3D 점군을 그대로 쓸 수 없었던 두 가지 이유와 그 처리</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <svg width="1168" height="188" viewBox="0 0 1168 188">
+      <defs><marker id="p1" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0b6fb8"/></marker></defs>
+      <rect x="10" y="30" width="250" height="96" rx="5" fill="#fff" stroke="#b9c8d6" stroke-width="1.6"/>
+      <text x="135" y="60" text-anchor="middle" font-size="14" font-weight="700">3D 라이다 점군</text>
+      <text x="135" y="82" text-anchor="middle" font-size="12.5" fill="#54657a">XT-32 · fullScan 10 Hz</text>
+      <text x="135" y="102" text-anchor="middle" font-size="12.5" fill="#54657a">약 41,000점</text>
+
+      <rect x="310" y="20" width="330" height="116" rx="5" fill="#eef4fa" stroke="#8fc0e3" stroke-width="1.8"/>
+      <text x="475" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#0b3c63">cloud_self_filter</text>
+      <text x="475" y="72" text-anchor="middle" font-size="12.5" fill="#16202b">① 자기 부피 안의 점 제거</text>
+      <text x="475" y="92" text-anchor="middle" font-size="12" fill="#54657a">x −0.65~0.60 · y ±0.60 · z −0.20~2.60</text>
+      <text x="475" y="116" text-anchor="middle" font-size="12.5" fill="#16202b">② 최근 0.25초 점군을 합쳐 한 바퀴로</text>
+
+      <rect x="690" y="30" width="270" height="96" rx="5" fill="#fff" stroke="#b9c8d6" stroke-width="1.6"/>
+      <text x="825" y="58" text-anchor="middle" font-size="14" font-weight="700">pointcloud_to_laserscan</text>
+      <text x="825" y="80" text-anchor="middle" font-size="12.5" fill="#54657a">높이 −0.35 ~ 1.5 m</text>
+      <text x="825" y="100" text-anchor="middle" font-size="12.5" fill="#54657a">range_min 0.3 · 0.5°</text>
+
+      <rect x="1010" y="46" width="148" height="64" rx="32" fill="#0f9d6b"/>
+      <text x="1084" y="76" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">/scan</text>
+      <text x="1084" y="96" text-anchor="middle" font-size="12" fill="#d3f2e3">723방향</text>
+
+      <line x1="264" y1="78" x2="304" y2="78" stroke="#0b6fb8" stroke-width="2.6" marker-end="url(#p1)"/>
+      <line x1="644" y1="78" x2="684" y2="78" stroke="#0b6fb8" stroke-width="2.6" marker-end="url(#p1)"/>
+      <line x1="964" y1="78" x2="1004" y2="78" stroke="#0b6fb8" stroke-width="2.6" marker-end="url(#p1)"/>
+      <text x="583" y="168" text-anchor="middle" font-size="12.5" fill="#54657a">AMCL · costmap · 정밀 도킹이 모두 이 하나의 <tspan font-weight="700">/scan</tspan> 을 씀</text>
+    </svg>
+    <div class="cols" style="height:330px;margin-top:4px">
+      <div class="col c45">
+        <span class="kicker warn">처리하지 않으면 생기는 일</span>
+        <ul>
+          <li><b>자기 반사</b> — 리프트 기둥 · 팔 · 적재 팔레트가 &ldquo;발밑 장애물&rdquo; 로 찍힘 → 출발 즉시 충돌 경고</li>
+          <li><b>조각 발행</b> — 렌더가 느리면 30~60° 섹터가 통째로 비어 옴 → 한 방향만 유효, AMCL 흔들림, 면 미검출</li>
+        </ul>
+        <div class="box" style="font-size:13.5px">
+          <b>합침 시간의 상충</b> — 길면 섹터 누락에 강하지만 이동 중 점이 번짐.<br>
+          0.3 m/s × 0.25초 = <b>7.5 cm</b> 가 타협점
+        </div>
+      </div>
+      <div class="col c55">
+        <span class="kicker">가장 중요한 짝 조건</span>
+        <svg width="620" height="150" viewBox="0 0 620 150">
+          <rect x="0" y="0" width="620" height="150" fill="#f7fafc" rx="4"/>
+          <line x1="40" y1="92" x2="580" y2="92" stroke="#54657a" stroke-width="2"/>
+          <g font-size="12.5" text-anchor="middle">
+            <line x1="430" y1="84" x2="430" y2="100" stroke="#16202b" stroke-width="2"/>
+            <text x="430" y="120" fill="#16202b" font-weight="700">base_link 0</text>
+            <line x1="330" y1="80" x2="330" y2="104" stroke="#c0392b" stroke-width="2.4"/>
+            <text x="330" y="70" fill="#c0392b" font-weight="700">차체 뒤끝 −0.607</text>
+            <line x1="296" y1="76" x2="296" y2="108" stroke="#0b6fb8" stroke-width="2.6"/>
+            <text x="286" y="138" fill="#0b6fb8" font-weight="700">상자 뒤 경계 −0.65</text>
+            <line x1="182" y1="72" x2="182" y2="112" stroke="#0f9d6b" stroke-width="3"/>
+            <text x="164" y="64" fill="#0f9d6b" font-weight="700">도킹 대상 면 −0.92</text>
+          </g>
+          <rect x="296" y="82" width="200" height="20" fill="#cfe0ee" opacity=".7"/>
+          <text x="396" y="97" text-anchor="middle" font-size="11.5" fill="#0b3c63">제거 구간</text>
+          <path d="M182 118 L296 118" stroke="#0f9d6b" stroke-width="1.6" stroke-dasharray="4 3"/>
+          <text x="239" y="134" text-anchor="middle" font-size="11.5" fill="#0f9d6b">면은 살아 있어야 함</text>
+        </svg>
+        <div class="box warn" style="margin-top:8px;font-size:13.5px">
+          상자 뒤 경계 <b>−0.65</b> 는 도킹 거리 <b>0.92</b> 보다 앞이어야 함. 뒤로 넘기면 <b>도킹해야 할 면 자체가 지워짐</b>.
+          그래서 도킹 거리는 0.75 m 아래로 두지 않음
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" data-no="11 / 25" data-tag="세부 기능 ②">
+  <h1>세부 기능 ② — Nav2 주행 설계</h1>
+  <h2>기본값에서 바꾼 것과 그 근거. 모든 값에 실측 로그가 있음</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c60">
+        <table class="tight">
+          <tr><th style="width:26%">구성 요소</th><th style="width:28%">선택</th><th>왜 이것인가</th></tr>
+          <tr><td>전역 경로 계획기</td><td><b>Smac Hybrid-A*</b><br>Reeds-Shepp · 후진 확장</td><td>기본 계획기는 자세를 무시해 <b>통로 안 제자리 회전 경로</b>를 냄 → 랙 접촉</td></tr>
+          <tr><td>지역 추종기</td><td><b>RPP</b> · 후진 허용<br>0.30 m/s</td><td>후진 구간을 그대로 추종. 대신 <b>제자리 회전 불가 → 최종 방향은 도킹이 담당</b></td></tr>
+          <tr><td>진행 판정</td><td>PoseProgressChecker</td><td>기본 판정기는 회전을 진행으로 인정하지 않아 주기적으로 경로를 중단시킴</td></tr>
+          <tr><td>도착 허용</td><td class="num">0.25 m / 0.5 rad</td><td>0.15 m 로는 도착 직전 진동. 방향은 도킹이 보정</td></tr>
+          <tr><td>회전 가속 한계</td><td class="num">20.0</td><td>2.0 이면 0.1 rad/s 로 기어감 → <b>2~3분 멈춘 듯 보이던 현상</b>의 원인</td></tr>
+          <tr><td>속도 제한</td><td class="num">선속 0.3 m/s · 각속 0.4 rad/s<br>가속 0.3 / 0.6</td><td>적재물 밀림 방지. 기준은 &ldquo;팔레트 위치가 유지되는 선&rdquo;</td></tr>
+          <tr><td>위치 추정</td><td>AMCL 주행 잡음 ↓<br>레이저 신뢰 ↑</td><td>Isaac odom 이 정확하므로</td></tr>
+          <tr><td>시간 기준</td><td><code>use_sim_time: true</code></td><td>전 노드 공통. Isaac 재실행 시 Nav2 도 재실행</td></tr>
+        </table>
+      </div>
+      <div class="col c40">
+        <figure class="port">
+          <img src="img/rviz_01_drive.jpg" alt="주행 중 RViz2 화면">
+          <figcaption>주행 시작 시점의 RViz2(영상 312초). 지도 · 팽창 영역(분홍) · <code>/scan</code>(청록) · 작업점 마커 <code>FEEDER_APPROACH</code> / <code>FEEDER_DOCK</code> 가 함께 보임</figcaption>
+        </figure>
+        <div class="box" style="margin-top:12px;font-size:13.5px">
+          <b>역할 분담이 설계의 핵심</b><br>
+          Nav2 는 <b>좌표까지</b>, 도킹은 <b>자세까지</b>. 추종기가 못 하는 일을 억지로 시키지 않음
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="slide" data-no="12 / 25" data-tag="세부 기능 ③">
+  <h1>세부 기능 ③ — 정밀 도킹 상태기계</h1>
+  <h2>SETTLE → 정렬 → 후진 → 확인 → 접근. 틀어지면 회전 대신 물러나 다시</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <svg width="620" height="470" viewBox="0 0 620 470">
+          <defs><marker id="s1" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#54657a"/></marker>
+          <marker id="s2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#c0392b"/></marker></defs>
+          <rect x="0" y="0" width="620" height="470" fill="#f7fafc" rx="4"/>
+          <g font-size="13" text-anchor="middle">
+            <rect x="196" y="14" width="150" height="38" rx="19" fill="#64748b"/><text x="271" y="38" fill="#fff" font-weight="700">IDLE</text>
+            <rect x="196" y="82" width="150" height="38" rx="5" fill="#fff" stroke="#8fc0e3" stroke-width="2"/><text x="271" y="106" fill="#0b3c63" font-weight="700">SETTLE</text>
+            <rect x="196" y="158" width="150" height="38" rx="5" fill="#fff" stroke="#8fc0e3" stroke-width="2"/><text x="271" y="182" fill="#0b3c63" font-weight="700">ALIGN_TO_GOAL</text>
+            <rect x="196" y="234" width="150" height="38" rx="5" fill="#fff" stroke="#8fc0e3" stroke-width="2"/><text x="271" y="258" fill="#0b3c63" font-weight="700">REVERSE</text>
+            <rect x="196" y="310" width="150" height="38" rx="5" fill="#fff" stroke="#8fc0e3" stroke-width="2"/><text x="271" y="334" fill="#0b3c63" font-weight="700">CHECK</text>
+            <rect x="196" y="386" width="150" height="38" rx="5" fill="#fff" stroke="#8fc0e3" stroke-width="2"/><text x="271" y="410" fill="#0b3c63" font-weight="700">CREEP</text>
+            <rect x="430" y="310" width="150" height="38" rx="5" fill="#fdf1ef" stroke="#e0a79c" stroke-width="2"/><text x="505" y="334" fill="#c0392b" font-weight="700">BACKOFF</text>
+            <rect x="30" y="386" width="120" height="38" rx="5" fill="#fdf1ef" stroke="#e0a79c" stroke-width="2"/><text x="90" y="410" fill="#c0392b" font-weight="700">FAILED</text>
+            <rect x="196" y="440" width="150" height="26" rx="13" fill="#0f9d6b"/><text x="271" y="458" fill="#fff" font-weight="700" font-size="12.5">DONE</text>
+
+            <line x1="271" y1="56" x2="271" y2="78" stroke="#54657a" marker-end="url(#s1)"/>
+            <line x1="271" y1="124" x2="271" y2="154" stroke="#54657a" marker-end="url(#s1)"/>
+            <line x1="271" y1="200" x2="271" y2="230" stroke="#54657a" marker-end="url(#s1)"/>
+            <line x1="271" y1="276" x2="271" y2="306" stroke="#54657a" marker-end="url(#s1)"/>
+            <line x1="271" y1="352" x2="271" y2="382" stroke="#54657a" marker-end="url(#s1)"/>
+            <line x1="271" y1="428" x2="271" y2="436" stroke="#0f9d6b" stroke-width="2" marker-end="url(#s1)"/>
+            <line x1="350" y1="329" x2="426" y2="329" stroke="#c0392b" stroke-width="2.2" marker-end="url(#s2)"/>
+            <path d="M505 306 L505 177 L350 177" fill="none" stroke="#c0392b" stroke-width="2.2" marker-end="url(#s2)"/>
+            <line x1="192" y1="329" x2="120" y2="382" stroke="#c0392b" stroke-width="1.6" marker-end="url(#s2)"/>
+          </g>
+          <g font-size="11.5" fill="#54657a" text-anchor="start">
+            <text x="284" y="72">시작 명령 수신</text>
+            <text x="284" y="146">Nav2 2초 조용 + 차체 정지</text>
+            <text x="284" y="222">남을 오차 4° 이내</text>
+            <text x="284" y="298">목표점 0.06 m 이내</text>
+            <text x="284" y="374">직각 3° + 좌우 0.06 m</text>
+            <text x="362" y="322" fill="#c0392b">기준 초과</text>
+            <text x="368" y="168" fill="#c0392b">0.90 m 물러남 · 최대 2회</text>
+            <text x="14" y="368" fill="#c0392b">재시도 소진 · 끼임 · 미검출</text>
+            <text x="352" y="404" fill="#0f9d6b">거리 0.92 ± 0.03</text>
+          </g>
+        </svg>
+      </div>
+      <div class="col c45">
+        <span class="kicker">설계 원칙 3</span>
+        <ul>
+          <li><b>지도를 쓰지 않음</b> — 라이다가 검출한 면의 직선만 기준. 위치 추정 오차와 무관해짐</li>
+          <li><b>상태기계와 ROS 배선을 분리</b> — 상태기계는 ROS 없이도 돌아감.
+            <small>모의와 실제 노드가 같은 제어 논리를 쓸 수밖에 없는 구조</small></li>
+          <li><b>파라미터 단일 출처</b> — 한 곳에 선언하고 그대로 ROS 파라미터로 노출</li>
+        </ul>
+        <div class="mono" style="margin-top:6px">[ALIGN_TO_GOAL] face d=1.89 yaw=+18.3 bearing=+18.0
+[REVERSE] G behind at 0.90 m; d=1.82 yaw=+5.2 lat=-0.15
+[CREEP] <span class="hi">square</span> (yaw +1.3, lat +0.000); d=0.952
+[DONE] {"status":"<span class="hi">SUCCEEDED</span>", "face_dist_m":0.937,
+        "yaw_err_deg":1.08, "lat_m":0.0}</div>
+        <figcaption style="font-size:12.5px;color:#54657a;margin-top:6px">2026-09-26 실행의 실제 단계 전이 로그. 처음 검출 시 방향 오차 18.3° 가 도착 시 1.08° 로 수렴함</figcaption>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="slide" data-no="13 / 25" data-tag="인터페이스">
+  <h1>인터페이스 정의</h1>
+  <h2>다른 파트와 맞춰야 하는 계약. 형식을 섞으면 노드가 아무 반응도 하지 않음</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c60">
+        <table class="tight">
+          <tr><th style="width:32%">이름</th><th style="width:26%">타입</th><th>내용</th></tr>
+          <tr><td><code>/navigation/command</code></td><td>TaskCommand</td><td><code>NAVIGATION</code> · <code>destination=FEEDER_DOCK</code></td></tr>
+          <tr><td><code>/navigation/result</code></td><td>TaskResult</td><td>status · phase · <code>reached_station</code></td></tr>
+          <tr><td><code>/navigation/status</code></td><td>ExecutorStatus</td><td>READY / BUSY / ERROR</td></tr>
+          <tr><td><code>/feeder_dock/start</code></td><td>String</td><td>실행 식별자 = <code>command_id</code></td></tr>
+          <tr><td><code>/feeder_dock/result</code></td><td>String JSON (래치)</td><td>run_id · status · face_dist_m · yaw_err_deg · lat_m</td></tr>
+          <tr><td><code>NavigateToPose</code></td><td>Nav2 Action</td><td>map 기준 목표 자세</td></tr>
+          <tr><td><code>/cmd_vel</code></td><td>Twist</td><td>발행자는 Nav2 와 feeder_dock <b>둘뿐</b></td></tr>
+          <tr><td><code>/scan</code> · <code>/tf</code> · <code>/clock</code></td><td>표준 메시지</td><td>센서 · 변환 · 시뮬 시계</td></tr>
+        </table>
+        <div class="box warn" style="margin-top:12px;font-size:13.5px">
+          <b>혼동 주의(실제로 틀렸던 것)</b> — <code>/sim_task/command</code> 는 <b>String JSON</b>,
+          <code>/navigation/command</code> 는 <b>TaskCommand 메시지</b>임
+        </div>
+      </div>
+      <div class="col c40">
+        <figure>
+          <img src="img/term_02_three_cmds.jpg" alt="세 개의 명령을 발행한 터미널">
+          <figcaption>실제 명령 발행 화면. 파지 → 주행+도킹 → 놓기 세 명령이 모두 <code>--once --max-wait-time-secs 15</code> 로 나감</figcaption>
+        </figure>
+        <span class="kicker alt" style="margin-top:14px">명령 전달 확인 규칙</span>
+        <ul>
+          <li>구독자를 15초 안에 못 찾으면 <b>무한 대기 대신 오류</b>로 끝나게 함</li>
+          <li>명령이 닿았는지는 <b>노드 로그의 <code>command …</code> 줄</b>로 판단</li>
+          <li>결과를 놓치지 않도록 <b>결과 구독 터미널을 명령보다 먼저</b> 띄움</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 -->
+<section class="slide" data-no="14 / 25" data-tag="알고리즘 ①">
+  <h1>알고리즘 ① — 라이다 면 검출 (RANSAC)</h1>
+  <h2>지도 없이 대상에 맞출 수 있게 하는 인식 부분</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c45">
+        <svg width="500" height="300" viewBox="0 0 500 300">
+          <rect x="0" y="0" width="500" height="300" fill="#f7fafc" rx="4"/>
+          <!-- search window -->
+          <rect x="60" y="60" width="250" height="180" fill="#e6eef5" stroke="#8fc0e3" stroke-dasharray="6 4"/>
+          <text x="185" y="52" text-anchor="middle" font-size="12" fill="#0b3c63">검색 창 (뒤쪽 x −3.4~−0.5, y ±1.3)</text>
+          <!-- robot -->
+          <g transform="translate(400,150)">
+            <rect x="-34" y="-26" width="68" height="52" fill="#fff" stroke="#16202b" stroke-width="2"/>
+            <text x="0" y="5" text-anchor="middle" font-size="11.5" font-weight="700">로봇</text>
+            <circle cx="-10" cy="0" r="5" fill="#0f9d6b"/>
+          </g>
+          <text x="400" y="200" text-anchor="middle" font-size="11.5" fill="#54657a">뒤 ←   → 앞</text>
+          <!-- face line -->
+          <line x1="96" y1="96" x2="96" y2="204" stroke="#264b63" stroke-width="6"/>
+          <g fill="#264b63">
+            <circle cx="96" cy="100" r="3"/><circle cx="97" cy="118" r="3"/><circle cx="95" cy="136" r="3"/>
+            <circle cx="96" cy="154" r="3"/><circle cx="97" cy="172" r="3"/><circle cx="95" cy="190" r="3"/>
+          </g>
+          <text x="66" y="150" text-anchor="middle" font-size="12" fill="#264b63" font-weight="700" transform="rotate(-90 66 150)">대상 면 1.15 m</text>
+          <!-- outlier points -->
+          <g fill="#aab7c4"><circle cx="150" cy="78" r="3"/><circle cx="180" cy="70" r="3"/><circle cx="240" cy="230" r="3"/><circle cx="270" cy="222" r="3"/></g>
+          <text x="210" y="68" font-size="11" fill="#8496a8">다른 구조물 → 배제</text>
+          <!-- normal + goal -->
+          <line x1="96" y1="150" x2="366" y2="150" stroke="#0f9d6b" stroke-width="2.4" stroke-dasharray="7 5"/>
+          <circle cx="366" cy="150" r="7" fill="#0f9d6b"/>
+          <text x="250" y="140" text-anchor="middle" font-size="12" fill="#0f9d6b" font-weight="700">법선 위 standoff 0.92 m = 목표점 G</text>
+          <!-- normal tolerance -->
+          <path d="M96 150 L180 96 A100 100 0 0 1 180 204 Z" fill="#cfe6f6" opacity=".45"/>
+          <text x="150" y="252" font-size="11.5" fill="#0b3c63">법선 허용 ±60°</text>
+        </svg>
+        <div class="box" style="margin-top:10px;font-size:13.5px">
+          <b>검출 면 ≠ USD 면</b> — 대상 북단은 USD 기준 world y −3.60 이지만
+          라이다가 실제 검출하는 면은 <b>y −3.645</b> 임(실측 2건). 도킹 거리는 <b>검출 면 기준</b>.
+          이 4.5 cm 를 섞어 쓴 것이 과거 도킹 거리 오산의 원인이었음
+        </div>
+      </div>
+      <div class="col c55">
+        <span class="kicker">의사코드 · 언어에 의존하지 않음</span>
+        <div class="mono" style="font-size:12px;line-height:1.55">1. 스캔의 측정값을 로봇 기준 좌표의 점으로 바꾼다
+   <span class="dim">(라이다가 x −0.232 에 있으므로 그만큼 옮긴다)</span>
+2. 로봇 <span class="hi">뒤쪽 창</span> 안의 점만 남긴다
+3. 점이 8개 미만이면 "미검출" 로 끝낸다
+4. 가장 가까운 점에서 1.5 m 안의 점만 후보로 둔다
+5. 두 점을 무작위로 골라 직선을 세우기를 <span class="hi">120번</span> 반복한다
+   5-1. 그 직선에서 3 cm 안의 점을 내점으로 센다
+   5-2. 내점이 8개 미만이면 버린다
+   5-3. 법선이 <span class="hi">로봇 뒤쪽 ±60°</span> 밖을 향하면 버린다
+   5-4. 내점이 가장 많은 직선을 최선으로 남긴다
+6. 최선 직선의 내점으로 중심과 방향을 다시 계산한다
+7. 면 길이가 <span class="hi">0.6 ~ 1.6 m</span> 밖이면 "미검출" 로 끝낸다
+8. <span class="hi">거리 · 방향 오차 · 좌우 오차</span> 를 돌려준다</div>
+        <div class="box ok" style="margin-top:12px;font-size:13.5px">
+          <b>미검출이면 이유를 문장으로 남김</b> — 덕분에 &ldquo;센서가 안 보이는 것&rdquo; 과 &ldquo;조건이 안 맞는 것&rdquo; 을 구분할 수 있음
+        </div>
+        <div class="mono" style="margin-top:8px;font-size:11.5px">idle: face NOT FOUND (<span class="rd">line length 0.22 outside (0.6, 1.6)</span>)
+idle: face NOT FOUND (<span class="rd">no line: 27 pts, rejected {normal: 18}</span>)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 -->
+<section class="slide" data-no="15 / 25" data-tag="알고리즘 ②">
+  <h1>알고리즘 ② — 굼뜬 차체 보상</h1>
+  <h2>제어에 쓰는 오차를 &ldquo;지금 값&rdquo; 이 아니라 &ldquo;멈췄을 때 남을 값&rdquo; 으로 바꿈</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <svg width="620" height="270" viewBox="0 0 620 270">
+          <rect x="0" y="0" width="620" height="270" fill="#f7fafc" rx="4"/>
+          <line x1="60" y1="210" x2="580" y2="210" stroke="#aab7c4"/>
+          <line x1="60" y1="30" x2="60" y2="210" stroke="#aab7c4"/>
+          <text x="20" y="44" font-size="11.5" fill="#54657a">방향</text><text x="20" y="58" font-size="11.5" fill="#54657a">오차</text>
+          <text x="572" y="230" font-size="11.5" fill="#54657a" text-anchor="end">시간</text>
+          <!-- measured error curve -->
+          <path d="M60 60 C 160 60, 230 150, 300 186 C 340 206, 380 210, 420 210" fill="none" stroke="#0b6fb8" stroke-width="3"/>
+          <text x="140" y="52" font-size="12.5" fill="#0b6fb8" font-weight="700">측정한 오차</text>
+          <!-- declared zero -->
+          <line x1="300" y1="30" x2="300" y2="222" stroke="#54657a" stroke-dasharray="5 4"/>
+          <text x="300" y="248" text-anchor="middle" font-size="12" fill="#54657a">&ldquo;정렬 끝&rdquo; 선언</text>
+          <!-- overshoot -->
+          <path d="M300 186 C 350 200, 420 236, 470 244" fill="none" stroke="#c0392b" stroke-width="3"/>
+          <rect x="300" y="186" width="170" height="60" fill="#f3c6bf" opacity=".45"/>
+          <text x="470" y="200" font-size="12.5" fill="#c0392b" font-weight="700">관성으로 15° 더 돎</text>
+          <text x="470" y="218" font-size="11.5" fill="#c0392b">→ 후진하며 증폭 → 도착 +20.7°</text>
+          <!-- corrected -->
+          <line x1="222" y1="30" x2="222" y2="222" stroke="#0f9d6b" stroke-width="2.4" stroke-dasharray="5 4"/>
+          <text x="222" y="24" text-anchor="middle" font-size="12" fill="#0f9d6b" font-weight="700">보정 후 멈춤 명령 시점</text>
+        </svg>
+        <div class="box warn" style="margin-top:10px;font-size:13.5px">
+          <b>2026-09-23 실패의 절반</b> — 정렬 완료를 선언한 순간 차체가 아직 <b>0.24 rad/s</b> 로 돌고 있었음.
+          그래서 15° 를 더 돌았고 후진 중 오차가 커짐
+        </div>
+      </div>
+      <div class="col c45">
+        <span class="kicker">보정식 — 한 줄로 설명되는 형태</span>
+        <div class="mono" style="font-size:12.5px">남을 오차 = 측정한 오차
+          <span class="rd">− (각속도 × 측정 지연)</span>
+          <span class="rd">− (각속도² ÷ (2 × 감속률))</span>
+
+<span class="dim">측정 지연 0.5 s · 감속률 0.08 rad/s²</span>
+<span class="dim">둘 다 실측 bag 에서 읽은 값</span></div>
+        <ul style="margin-top:14px">
+          <li>첫째 항 — 측정이 늦은 만큼 <b>이미 줄어든 분</b></li>
+          <li>둘째 항 — 명령을 끊어도 <b>관성으로 더 돌 각도</b></li>
+          <li>정렬 종료 조건에 <b>실제 각속도 &lt; 0.03 rad/s</b> 추가. 아직 돌고 있으면 끝났다고 하지 않음</li>
+          <li>도킹 시작 전 <code>SETTLE</code> 단계에서 Nav2 감속이 끝나고 차체가 실제로 멈출 때까지 기다림</li>
+        </ul>
+        <div class="box ok" style="font-size:13.5px">
+          차체가 바뀌면 이 두 값을 <b>다시 측정</b>해야 함. 코드에 상수로 박지 않고 파라미터로 노출해 둠
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 -->
+<section class="slide" data-no="16 / 25" data-tag="알고리즘 ③">
+  <h1>알고리즘 ③ — 점 추종에서 선 추종으로</h1>
+  <h2>목표점을 겨누지 않고, 면 가운데를 지나는 법선(도킹 선)을 따라감</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="grid2" style="height:300px">
+      <div>
+        <span class="kicker warn">이전 — 목표점 G 를 겨눔</span>
+        <svg width="560" height="250" viewBox="0 0 560 250">
+          <rect x="0" y="0" width="560" height="250" fill="#fdf5f4" rx="4"/>
+          <rect x="30" y="40" width="22" height="170" fill="#264b63"/>
+          <line x1="52" y1="125" x2="520" y2="125" stroke="#c3ced8" stroke-width="2" stroke-dasharray="6 5"/>
+          <circle cx="150" cy="125" r="7" fill="#c0392b"/>
+          <text x="150" y="112" text-anchor="middle" font-size="11.5" fill="#c0392b">G</text>
+          <path d="M500 78 C 400 82, 330 150, 270 168 C 230 180, 180 150, 150 125" fill="none" stroke="#c0392b" stroke-width="3"/>
+          <g transform="translate(160,132) rotate(21)"><rect x="-26" y="-18" width="52" height="36" fill="#fff" stroke="#c0392b" stroke-width="2.2"/></g>
+          <text x="330" y="212" text-anchor="middle" font-size="12.5" fill="#c0392b" font-weight="700">남은 거리가 짧을수록 각도 민감도가 커져 발산</text>
+          <text x="330" y="232" text-anchor="middle" font-size="12.5" fill="#c0392b">도착 방향 오차 +20.7° · 굼뜬 차체는 되돌리지 못함</text>
+        </svg>
+      </div>
+      <div>
+        <span class="kicker alt">현재 — 도킹 선을 따라감</span>
+        <svg width="560" height="250" viewBox="0 0 560 250">
+          <rect x="0" y="0" width="560" height="250" fill="#f0faf5" rx="4"/>
+          <rect x="30" y="40" width="22" height="170" fill="#264b63"/>
+          <line x1="52" y1="125" x2="520" y2="125" stroke="#0f9d6b" stroke-width="2.4"/>
+          <text x="430" y="114" font-size="12" fill="#0f9d6b" font-weight="700">도킹 선 (면 중심 법선)</text>
+          <circle cx="150" cy="125" r="7" fill="#0f9d6b"/>
+          <path d="M500 82 C 420 84, 340 112, 260 122 C 220 126, 180 125, 150 125" fill="none" stroke="#0f9d6b" stroke-width="3"/>
+          <g transform="translate(160,125)"><rect x="-26" y="-18" width="52" height="36" fill="#fff" stroke="#0f9d6b" stroke-width="2.2"/></g>
+          <rect x="52" y="86" width="98" height="78" fill="#cdeedd" opacity=".6"/>
+          <text x="101" y="180" text-anchor="middle" font-size="11.5" fill="#0b6b4a">마지막 0.4 m</text>
+          <text x="101" y="196" text-anchor="middle" font-size="11.5" fill="#0b6b4a">직각만 맞춤</text>
+          <text x="330" y="212" text-anchor="middle" font-size="12.5" fill="#0f9d6b" font-weight="700">방향 기울임은 최대 10° 로 묶음</text>
+          <text x="330" y="232" text-anchor="middle" font-size="12.5" fill="#0b6b4a">도착 방향 오차 +1.08° · 좌우 0.000 m</text>
+        </svg>
+      </div>
+    </div>
+    <div class="cols" style="height:200px;margin-top:12px">
+      <div class="col c55">
+        <div class="mono" style="font-size:12px;line-height:1.55">1. 검출한 면에서 <span class="hi">도킹 선</span>(면 중심을 지나는 법선)을 세운다
+2. 로봇이 그 선에서 옆으로 벗어난 거리를 구한다
+3. 원하는 진행 방향 = 도킹 선 방향 + (좌우 오차를 0.6 m 앞에서 갚는 기울임)
+   단, 기울임은 <span class="hi">최대 10°</span> 로 묶는다
+4. 남은 거리가 0.4 m 안이면 좌우 보정을 버리고 <span class="hi">직각만</span> 맞춘다
+5. 조향 명령 = 1.5 × (알고리즘 ② 의 '남을 오차'),  상한 <span class="hi">0.12 rad/s</span>
+6. 후진 0.10 m/s · 목표까지 0.3 m 안에서는 비례해 줄인다</div>
+      </div>
+      <div class="col c45">
+        <ul>
+          <li>제자리 정렬은 목표점이 아니라 <b>더 먼 면 중심</b>을 겨눔. 같은 좌우 오차라도 각도가 작아 후진 중 자연히 줄어듦</li>
+          <li>조향 상한 0.20 → <b>0.12 rad/s</b>. 0.20 을 5초 유지하다 정렬을 지나쳐 반대쪽으로 넘어간 사례가 있었음</li>
+          <li><b>끼임 감지</b> — 명령을 내는데 3초간 이동 0.02 m · 회전 0.01 rad 미만이면 즉시 중단.
+            <small>회전도 이동으로 인정하고 단계가 바뀌면 기준점을 새로 잡음</small></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 -->
+<section class="slide" data-no="17 / 25" data-tag="알고리즘 ④">
+  <h1>알고리즘 ④ — 도착 판정과 재시도</h1>
+  <h2>도킹 지점에서는 회전하지 않음. 틀어지면 물러나 다시 들어감</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <svg width="620" height="280" viewBox="0 0 620 280">
+          <defs><marker id="t1" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#0b6fb8"/></marker>
+          <marker id="t2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#c0392b"/></marker></defs>
+          <rect x="0" y="0" width="620" height="280" fill="#f7fafc" rx="4"/>
+          <rect x="24" y="40" width="20" height="200" fill="#264b63"/>
+          <text x="34" y="264" text-anchor="middle" font-size="11.5" fill="#54657a">면</text>
+          <!-- dock spot -->
+          <g transform="translate(190,140)">
+            <rect x="-30" y="-22" width="60" height="44" fill="#fff" stroke="#0b6fb8" stroke-width="2.4"/>
+            <text x="0" y="5" text-anchor="middle" font-size="11" fill="#0b6fb8">도착</text>
+          </g>
+          <line x1="44" y1="140" x2="160" y2="140" stroke="#0f9d6b" stroke-width="2"/>
+          <text x="102" y="130" text-anchor="middle" font-size="11.5" fill="#0f9d6b">0.92 m</text>
+          <!-- backoff -->
+          <g transform="translate(400,140)">
+            <rect x="-30" y="-22" width="60" height="44" fill="#fff" stroke="#c0392b" stroke-width="2.4" stroke-dasharray="5 4"/>
+            <text x="0" y="5" text-anchor="middle" font-size="11" fill="#c0392b">재정렬</text>
+          </g>
+          <path d="M224 118 C 300 90, 340 96, 372 120" fill="none" stroke="#c0392b" stroke-width="2.6" marker-end="url(#t2)"/>
+          <path d="M372 166 C 330 196, 280 190, 224 166" fill="none" stroke="#0b6fb8" stroke-width="2.6" marker-end="url(#t1)"/>
+          <text x="300" y="84" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="700">① 0.90 m 물러남</text>
+          <text x="300" y="212" text-anchor="middle" font-size="12" fill="#0b6fb8" font-weight="700">② 다시 후진 (최대 2회)</text>
+          <g>
+            <circle cx="530" cy="120" r="56" fill="#f2f6fa" stroke="#d8e0e8"/>
+            <circle cx="530" cy="120" r="36" fill="#e3eef7" stroke="#bcd4e8"/>
+            <circle cx="530" cy="120" r="16" fill="#cfe6f6" stroke="#8fc0e3"/>
+            <circle cx="528" cy="118" r="5" fill="#0f9d6b"/>
+            <text x="530" y="196" text-anchor="middle" font-size="12" fill="#16202b" font-weight="700">도착 판정 3항목</text>
+            <text x="530" y="214" text-anchor="middle" font-size="11.5" fill="#54657a">직각 3° · 좌우 0.06 m · 거리 0.03 m</text>
+          </g>
+        </svg>
+      </div>
+      <div class="col c45">
+        <span class="kicker warn">왜 회전이 아니라 후퇴인가</span>
+        <ul>
+          <li>도킹 지점에서 제자리 회전을 하면 <b>적재 팔레트가 구조물에 걸림</b>(실측 발생)</li>
+          <li>자기 반사 제거 때문에 <b>라이다로도 미리 보이지 않음</b></li>
+          <li>그래서 거리를 확보해 다시 정렬하는 것이 유일하게 안전한 복구임</li>
+        </ul>
+        <table class="tight" style="margin-top:12px">
+          <tr><th style="width:44%">후퇴 거리</th><th>재시도 효과(모의)</th></tr>
+          <tr><td class="num">0.6 m</td><td>시도마다 좌우 오차 <b>15%</b> 만 감소 → 0.07 m 잔존</td></tr>
+          <tr><td class="num">0.90 m <span class="g">채택</span></td><td>전 케이스가 0.06 m 안으로 수렴</td></tr>
+        </table>
+        <div class="box" style="margin-top:12px;font-size:13.5px">
+          재시도 후진 거리가 곧 <b>좌우 오차를 갚을 거리</b>임.<br>
+          재시도를 다 쓰면 <b>직각만 맞추고 진행</b>하되, 실제 좌우 오차를 결과에 그대로 실어 보내 다음 단계가 판단하게 함
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 18 -->
+<section class="slide" data-no="18 / 25" data-tag="주요 모션">
+  <h1>주요 모션 — 이 동작이 나오게 된 이유</h1>
+  <h2>눈에 보이는 동작마다 검토했다가 폐기한 대안이 있음</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="grid4" style="gap:12px">
+      <figure><img src="img/isaac_02_drive.jpg" alt="통로 후진 탈출"><figcaption><b>① 통로 후진 탈출</b><br>제자리 회전 시 0.66 m 를 휩쓸어 랙에 닿음 → 스크립트 후진 대신 <b>경로 계획기가 후진 경로를 직접 생성</b></figcaption></figure>
+      <figure><img src="img/isaac_03_approach.jpg" alt="접근 지점 도착"><figcaption><b>② 뒤를 보이며 진입</b><br>팔이 차체 뒤쪽에 있음. 앞으로 들어가면 팔이 대상 반대쪽을 향함</figcaption></figure>
+      <figure><img src="img/isaac_04_reverse.jpg" alt="도킹 후진"><figcaption><b>③ 살금살금 후진</b><br>0.10 → 0.05 m/s. 응답이 느린 차체가 조향할 시간 + 적재물 밀림 방지</figcaption></figure>
+      <figure><img src="img/isaac_06_place.jpg" alt="Place 동작"><figcaption><b>④ 정지 확인 후 팔 동작</b><br>차체가 <b>0.5초 이상 실제 정지</b>한 것을 확인한 뒤에만 짐을 내림</figcaption></figure>
+    </div>
+    <div class="cols" style="height:250px;margin-top:16px">
+      <div class="col c60">
+        <table class="tight">
+          <tr><th style="width:26%">모션</th><th>폐기한 대안과 그 이유</th></tr>
+          <tr><td>진입 전 잠깐 멈춤</td><td>바로 도킹 시작 → Nav2 감속 명령과 <code>/cmd_vel</code> 이 겹치고, 돌고 있는 상태에서 잰 방향이 틀림. <b>2초 조용 + 차체 정지</b>를 명시적으로 기다림</td></tr>
+          <tr><td>틀어지면 물러나 다시</td><td>도킹 지점 제자리 회전 → 팔레트가 컨베이어에 걸림(실측). <b>회전 금지</b>가 규칙</td></tr>
+          <tr><td>속도 상한 0.3 m/s</td><td>더 빠르게 → 팔레트가 30 mm 이상 밀려 Place 안전 검사에 걸림</td></tr>
+        </table>
+      </div>
+      <div class="col c40">
+        <figure>
+          <img src="img/isaac_09_after_place.jpg" alt="Place 완료 후 도킹 자세 유지">
+          <figcaption>Place 완료 직후. 포크 인출이 끝나고 카터는 도킹 자세를 유지한 채 정지해 있음</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 19 -->
+<section class="slide" data-no="19 / 25" data-tag="파라미터">
+  <h1>파라미터 튜닝 근거</h1>
+  <h2>전부 실측 로그에 근거가 있는 값. 짝으로 움직이는 값 3개에 주의</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c60">
+        <table class="tight">
+          <tr><th style="width:30%">파라미터</th><th style="width:16%">값</th><th>근거</th></tr>
+          <tr style="background:#fff8e8"><td><code>standoff_m</code> 도킹 거리</td><td class="num">0.92 m</td><td>팀이 Place 를 끝까지 돌려 확인. 0.85 에서는 관절 20.7°(한계 20°)로 실패. <b>단독 변경 금지</b></td></tr>
+          <tr><td><code>lat_tol_m</code> 좌우 허용</td><td class="num">0.06 m</td><td>재시도 2회로 도달 가능한 한계. 팔 쪽 허용치 확정 시 재조정</td></tr>
+          <tr><td><code>square_tol_deg</code></td><td class="num">3.0°</td><td>실측 도착 오차 1° 내외 → 여유 3배</td></tr>
+          <tr><td><code>reverse_speed_mps</code></td><td class="num">0.10 m/s</td><td>0.15 에서 조향이 뒤늦게 들어와 정렬을 지나침</td></tr>
+          <tr><td><code>reverse_w_max</code></td><td class="num">0.12 rad/s</td><td>0.20 을 5초 유지하다 반대쪽 +20.7° 로 넘어감</td></tr>
+          <tr><td><code>backoff_extra_m</code></td><td class="num">0.90 m</td><td>0.6 m 는 재시도마다 15% 만 감소</td></tr>
+          <tr><td>측정 지연 / 감속률</td><td class="num">0.5 s / 0.08</td><td>실측 bag 계측값. 차체가 바뀌면 다시 측정</td></tr>
+          <tr><td><code>fresh_s</code> 면 신선도</td><td class="num">2.5 s</td><td>배율 0.33 에서 스캔 간격 0.9 s. 벽시계 기준으로는 6초 만에 오검출 실패</td></tr>
+          <tr style="background:#fff8e8"><td><code>self_box_x[0]</code></td><td class="num">−0.65 m</td><td>차체 뒤끝 −0.607 은 덮고 대상 면은 남기는 경계</td></tr>
+          <tr><td><code>desired_linear_vel</code></td><td class="num">0.30 m/s</td><td>적재물 유지 기준</td></tr>
+          <tr><td><code>max_angular_accel</code></td><td class="num">20.0</td><td>2.0 이면 회전이 0.1 rad/s 로 기어감</td></tr>
+          <tr style="background:#fff8e8"><td><code>FEEDER_DOCK</code> 좌표</td><td class="num">−2.19, −2.73</td><td>어림값. 실제 정지 위치는 <code>standoff_m</code> 이 정함</td></tr>
+        </table>
+      </div>
+      <div class="col c40">
+        <div class="box warn">
+          <b>짝으로 움직이는 값 3개</b> (표의 음영)<br>
+          <code>standoff_m</code> ↔ <code>self_box_x[0]</code> ↔ <code>FEEDER_DOCK</code> 좌표<br>
+          <small>하나만 바꾸면 대상 면이 지워지거나 마커가 어긋남</small>
+        </div>
+        <svg width="440" height="180" viewBox="0 0 440 180" style="margin-top:14px">
+          <rect x="0" y="0" width="440" height="180" fill="#f7fafc" rx="4"/>
+          <circle cx="110" cy="70" r="46" fill="#cfe6f6" stroke="#8fc0e3" stroke-width="2"/>
+          <text x="110" y="66" text-anchor="middle" font-size="12" font-weight="700" fill="#0b3c63">도킹 거리</text>
+          <text x="110" y="84" text-anchor="middle" font-size="12" fill="#0b3c63">0.92</text>
+          <circle cx="250" cy="70" r="46" fill="#cfe6f6" stroke="#8fc0e3" stroke-width="2"/>
+          <text x="250" y="66" text-anchor="middle" font-size="12" font-weight="700" fill="#0b3c63">필터 상자</text>
+          <text x="250" y="84" text-anchor="middle" font-size="12" fill="#0b3c63">−0.65</text>
+          <circle cx="180" cy="142" r="30" fill="#e3eef7" stroke="#8fc0e3" stroke-width="2"/>
+          <text x="180" y="146" text-anchor="middle" font-size="11.5" fill="#0b3c63">마커 좌표</text>
+          <line x1="156" y1="70" x2="204" y2="70" stroke="#0b6fb8" stroke-width="2.4"/>
+          <line x1="128" y1="110" x2="160" y2="124" stroke="#0b6fb8" stroke-width="2.4"/>
+          <line x1="232" y1="110" x2="200" y2="124" stroke="#0b6fb8" stroke-width="2.4"/>
+          <text x="360" y="60" font-size="12.5" fill="#c0392b" font-weight="700">변경 후</text>
+          <text x="360" y="80" font-size="12.5" fill="#c0392b" font-weight="700">colcon build</text>
+          <text x="360" y="100" font-size="11.5" fill="#54657a">필수</text>
+        </svg>
+        <div class="box" style="margin-top:10px;font-size:13.5px">
+          실행 묶음은 <b>빌드된 복사본</b>을 읽음. 수치만 바꾸고 빌드를 빠뜨리면 이전 값으로 동작함
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 -->
+<section class="slide" data-no="20 / 25" data-tag="화면 정의서">
+  <h1>UI · 화면 정의서</h1>
+  <h2>웹 UI 가 없는 구간이므로 운용자가 실제로 보는 화면을 정의함</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="grid4" style="gap:12px">
+      <figure><img src="img/rviz_03_full.jpg" alt="RViz2 전체 화면">
+        <figcaption><b>① RViz2 운용 화면</b><br>지도 · <code>/scan</code> · 경로 · 발자국 · 지역 costmap · 작업점 마커</figcaption></figure>
+      <figure><img src="img/isaac_08_conveyor.jpg" alt="Isaac Sim 뷰포트">
+        <figcaption><b>② Isaac Sim 뷰포트</b><br>환경변수 한 줄로 카메라 시점을 지정. 미지정 시 기존 동작 그대로</figcaption></figure>
+      <figure><img src="img/term_01_cmd.jpg" alt="명령 터미널">
+        <figcaption><b>③ 명령 · 판독 터미널</b><br>명령 발행과 결과 구독을 한 화면에서</figcaption></figure>
+      <figure><img src="img/term_03_font.jpg" alt="터미널 글꼴 수정 결과">
+        <figcaption><b>④ 녹화용 화면</b><br>3화면을 분리 기동해 동시 녹화(가상 디스플레이 99 · 98 · 97, 초당 10장)</figcaption></figure>
+    </div>
+    <div class="cols" style="height:236px;margin-top:16px">
+      <div class="col c60">
+        <span class="kicker">상태 판독에 쓰는 세 줄</span>
+        <table class="tight">
+          <tr><th style="width:22%">줄</th><th>읽는 법</th></tr>
+          <tr><td>도킹 대기</td><td><code>idle: ... nav2 idle True, face NOT FOUND (...)</code> — <b>왜 시작하지 않는지가 그대로 적힘</b></td></tr>
+          <tr><td>도킹 진행</td><td><code>[REVERSE] ... face d=1.82 yaw=+5.2 lat=-0.15</code> — 단계 · 거리 · 방향 · 좌우 동시 확인</td></tr>
+          <tr><td>결과</td><td><code>[DONE] {"status":"SUCCEEDED", ...}</code> — <b>최종 판정은 이 줄과 world 좌표로만</b></td></tr>
+        </table>
+      </div>
+      <div class="col c40">
+        <span class="kicker warn">화면 설계에서 정한 것</span>
+        <ul>
+          <li><b>3D 점군과 카메라는 RViz2 에서 제외</b> — 표시 부하로 실시간 배율이 더 떨어짐</li>
+          <li><b>&ldquo;가만히 있다&rdquo; 는 관찰은 정지가 아님</b> — <code>idle:</code> 줄과 <code>/cmd_vel</code> 값을 먼저 확인
+            <small>0.1 rad/s 로 회전 중이던 사례, 면 미검출 대기였던 사례가 있었음</small></li>
+          <li>녹화 터미널의 한글이 빈칸으로 찍히던 문제는 <b>영문 · 한글 글꼴을 분리 지정</b>해 해결(④)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 21 -->
+<section class="slide" data-no="21 / 25" data-tag="검증">
+  <h1>검증 체계 — 비용이 낮은 시험부터 걸러 올림</h1>
+  <h2>실측 기회가 제한적이고 실패를 반복 재현할 수 없어서 3단으로 구성함</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <svg width="620" height="330" viewBox="0 0 620 330">
+          <rect x="0" y="0" width="620" height="330" fill="#f7fafc" rx="4"/>
+          <polygon points="310,20 420,110 200,110" fill="#0f9d6b"/>
+          <text x="310" y="72" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">3단 · 실측</text>
+          <text x="310" y="94" text-anchor="middle" font-size="12" fill="#d3f2e3">1회 · 10분 9초</text>
+          <polygon points="196,116 424,116 486,212 134,212" fill="#0b6fb8"/>
+          <text x="310" y="156" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">2단 · ROS 회귀</text>
+          <text x="310" y="180" text-anchor="middle" font-size="12" fill="#cfe6f6">10 시나리오 · 20~30분 · 실제 실행 묶음</text>
+          <text x="310" y="200" text-anchor="middle" font-size="12" fill="#cfe6f6">10 / 10 통과</text>
+          <polygon points="130,218 490,218 560,314 60,314" fill="#264b63"/>
+          <text x="310" y="256" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">1단 · 오프라인 격자</text>
+          <text x="310" y="280" text-anchor="middle" font-size="12" fill="#c8d8e5">시작 자세 45종 × 차체 5종 = 225 케이스 · 2분</text>
+          <text x="310" y="300" text-anchor="middle" font-size="12" fill="#c8d8e5">방향 · 거리 · 충돌 225/225 · 좌우 224/225</text>
+        </svg>
+      </div>
+      <div class="col c45">
+        <ul>
+          <li><b>구조적 보장</b> — 상태기계를 ROS 없이 돌 수 있게 분리했기 때문에
+            <b>모의와 실제 노드가 같은 제어 코드</b>를 씀. 둘이 갈라질 수 없음</li>
+          <li><b>합성 로봇이 쉬워지지 않게</b> — 지도에서 만든 점군 + <b>bag 에서 읽은 실제 차체의 느린 응답</b>을 모사</li>
+          <li><b>실패해야 정답인 시나리오 2개</b> — 후진 중 끼임은 3초 내 중단, 면이 안 보이는 위치는 미검출로 끝나야 통과</li>
+        </ul>
+        <table class="tight" style="margin-top:8px">
+          <tr><th style="width:46%">회귀 10 시나리오</th><th>결과</th></tr>
+          <tr><td>정상 / 방향 +20° / −30°</td><td class="g">통과</td></tr>
+          <tr><td>좌 · 우 치우침</td><td class="g">통과 (재시도 1회)</td></tr>
+          <tr><td>접근 지점 0.4 m 뒤</td><td class="g">통과</td></tr>
+          <tr><td>제자리 회전이 거의 안 되는 차체</td><td class="g">통과</td></tr>
+          <tr><td>이상적 차체</td><td class="g">통과</td></tr>
+          <tr><td>후진 중 끼임</td><td class="g">STALLED_REVERSE</td></tr>
+          <tr><td>면이 안 보이는 위치</td><td class="g">FACE_NOT_FOUND</td></tr>
+        </table>
+        <div class="box" style="margin-top:10px;font-size:13.5px">
+          <b>원인 분리 도구</b> — 실측 bag 의 <code>/scan</code> 을 <b>노드와 같은 검출기</b>에 다시 넣어
+          &ldquo;센서 탓 / 제어 탓&rdquo; 을 가름. 9월 23일 실패의 원인 규명이 이 도구로 이루어짐
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 22 -->
+<section class="slide" data-no="22 / 25" data-tag="전후 비교">
+  <h1>개선 전 / 후 (정량)</h1>
+  <h2>같은 225 케이스 · 같은 차체 모델로 <b>이득만</b> 바꿔 비교함 (도킹 거리 0.90 고정)</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <span class="kicker">비교 ① 조향 법칙 — 좌우 오차</span>
+        <svg width="620" height="250" viewBox="0 0 620 250">
+          <rect x="0" y="0" width="620" height="250" fill="#f7fafc" rx="4"/>
+          <text x="20" y="30" font-size="13" fill="#54657a">좌우 오차 합격 케이스 (225 중)</text>
+          <rect x="20" y="44" width="380" height="34" fill="#e6ebf0"/>
+          <rect x="20" y="44" width="348" height="34" fill="#c0392b"/>
+          <text x="34" y="67" font-size="13" fill="#fff" font-weight="700">이전 206</text>
+          <rect x="20" y="88" width="380" height="34" fill="#e6ebf0"/>
+          <rect x="20" y="88" width="380" height="34" fill="#0f9d6b"/>
+          <text x="34" y="111" font-size="13" fill="#fff" font-weight="700">현재 225</text>
+          <text x="410" y="67" font-size="13" fill="#c0392b" font-weight="700">91.6%</text>
+          <text x="410" y="111" font-size="13" fill="#0f9d6b" font-weight="700">100%</text>
+
+          <text x="20" y="160" font-size="13" fill="#54657a">최대 좌우 오차 (허용 0.06 m)</text>
+          <rect x="20" y="174" width="380" height="34" fill="#e6ebf0"/>
+          <rect x="20" y="174" width="380" height="34" fill="#c0392b"/>
+          <text x="34" y="197" font-size="13" fill="#fff" font-weight="700">이전 0.127 m</text>
+          <rect x="20" y="212" width="380" height="26" fill="#e6ebf0"/>
+          <rect x="20" y="212" width="176" height="26" fill="#0f9d6b"/>
+          <text x="34" y="231" font-size="12.5" fill="#fff" font-weight="700">현재 0.059 m</text>
+          <line x1="199" y1="168" x2="199" y2="244" stroke="#16202b" stroke-width="2" stroke-dasharray="4 3"/>
+          <text x="206" y="166" font-size="11.5" fill="#16202b">허용선 0.06</text>
+        </svg>
+        <div class="box" style="margin-top:8px;font-size:13.5px">
+          방향과 거리는 <b>이전에도 225/225 로 맞았음</b>. 문제는 좌우 오차였고 그것이 Place 실패로 이어졌음.
+          개선은 좌우에 집중되어 최대값이 절반 이하로 줄었음<br>
+          <small>이 비교는 <b>이득의 차이만</b> 보기 위해 도킹 거리 0.90 에서 수행함. 현행 0.92 에서는 224/225(최대 0.063 m)이며 그 3 mm 초과가 남은 과제임(24쪽)</small>
+        </div>
+      </div>
+      <div class="col c45">
+        <span class="kicker alt">비교 ② 실측 도착 자세</span>
+        <table class="tight">
+          <tr><th>시점</th><th>방향 오차</th><th>결과</th></tr>
+          <tr><td>2026-09-23 (이전 조향)</td><td class="num r">+20.7°</td><td>실패 · 이어서 앱 종료</td></tr>
+          <tr><td><b>2026-09-26 (현재)</b></td><td class="num g">+1.08°</td><td class="g">성공 · 좌우 0.000 m</td></tr>
+        </table>
+        <span class="kicker alt" style="margin-top:14px">비교 ③ 도킹 거리와 Place 성공</span>
+        <table class="tight">
+          <tr><th>도킹 거리</th><th>팔 ~ 놓을 자리</th><th>Place</th></tr>
+          <tr><td class="num">0.85 m</td><td class="num">0.72 m</td><td class="r">실패 (관절 20.7° &gt; 20°)</td></tr>
+          <tr><td class="num"><b>0.92 m</b></td><td class="num"><b>0.809 m</b></td><td class="g">성공</td></tr>
+        </table>
+        <div class="grid2" style="margin-top:16px">
+          <div class="kpi"><div class="v">10분 9초</div><div class="l">전 구간 소요(벽시계)<br><small>Isaac 로딩 4분 포함</small></div></div>
+          <div class="kpi"><div class="v">로그 6종</div><div class="l">bag 1건 · 영상 3편 보관</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 23 -->
+<section class="slide" data-no="23 / 25" data-tag="트러블슈팅">
+  <h1>주요 트러블슈팅</h1>
+  <h2>증상 → 원인 → 조치. 담당하지 않은 팀원이 읽어도 이해되게 정리함</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <table class="tight mini">
+      <tr><th style="width:4%">#</th><th style="width:28%">증상 (눈에 보인 것)</th><th style="width:34%">원인</th><th>조치</th></tr>
+      <tr><td>1</td><td>로봇이 2~3분 멈춘 듯 서 있다가 출발</td><td>회전 가속 한계에 걸려 0.1 rad/s 로 회전. 진행 판정기가 회전을 진행으로 인정하지 않음</td><td>회전 가속 한계 20, 진행 판정기 교체</td></tr>
+      <tr><td>2</td><td>통로 안에서 제자리 회전 → 랙 접촉</td><td>기본 경로 계획기가 자세를 무시</td><td>Hybrid-A*(Reeds-Shepp) + 후진 허용 추종</td></tr>
+      <tr><td>3</td><td>위치 추정이 흔들리고 도킹이 시작되지 않음</td><td>3D 라이다가 프레임마다 60° 조각만 발행(약 6,900점)</td><td>장면에 <code>fullScan</code> + 최근 0.25초 점군 합침</td></tr>
+      <tr><td>4</td><td>출발 직후 충돌 경고, 위치 0.5 m 오차</td><td>팔 관절 드라이브를 잡지 않아 팔이 처져 라이다에 잡힘</td><td>관절 드라이브 고정 + 자기 반사 상자 조정</td></tr>
+      <tr><td>5</td><td>도킹 시작 6초 만에 <code>FACE_NOT_FOUND</code></td><td>신선도를 벽시계로 판단. 배율 0.33 에서 스캔 간격 0.9초</td><td><b>모든 시간 판단을 시뮬 시계로</b>, 신선도 2.5초</td></tr>
+      <tr style="background:#fff8e8"><td>6</td><td>후진 시작 0.6초 만에 &ldquo;멈춤&rdquo; 으로 실패</td><td>멈춤 판정이 위치만 봤음. 앞 단계인 회전 동안 타이머가 계속 흘렀음</td><td>회전도 이동으로 인정, 단계 전환 시 기준점 재설정</td></tr>
+      <tr style="background:#fff8e8"><td>7</td><td>도킹 도착 방향이 +20.7° 틀어짐</td><td>목표점을 겨누는 조향 + 차체 응답 지연</td><td>도킹 선 추종으로 변경 + 관성 · 측정 지연 보정</td></tr>
+      <tr><td>8</td><td>도킹 지점 회전 중 걸려 30초간 명령만 나감</td><td>적재 팔레트가 구조물에 걸림. 자기 반사 제거로 라이다에도 안 보임</td><td>회전 금지 + 물러나 재시도 + 3초 끼임 감지</td></tr>
+      <tr><td>9</td><td>도킹 재시도 중 <b>Isaac 전체가 종료</b></td><td>운반 중 팔레트 30 mm 밀림 예외가 앱 최상위까지 전달</td><td>예외를 받아 기록만 남기고 계속 진행. <b>안전 검사는 유지</b>하고 다음 명령에서 결과로 정상 보고</td></tr>
+      <tr style="background:#fff8e8"><td>10</td><td>Place 실패 (관절 20.7°, 한계 20°)</td><td>도킹 거리 0.85 에서 팔 ~ 놓을 자리가 0.72 m 로 너무 가까움</td><td>도킹 거리 <b>0.92</b>. 팀 Place 수정과 한 쌍으로 관리</td></tr>
+    </table>
+    <div class="box" style="margin-top:14px;font-size:13.5px">
+      <b>판정 원칙으로 남긴 것</b> — &ldquo;잘 동작했다&rdquo; 는 관찰과 bag 결과가 다를 수 있음.
+      판정은 <b>결과 토픽과 최종 좌표</b>로만 함. 개발 환경에서 걸린 것 3건(브리지 라이브러리 혼입, 두 경로 빌드 충돌, 래치된 과거 결과 오인)은 문서에 별도 정리함
+    </div>
+  </div>
+</section>
+
+<!-- 24 -->
+<section class="slide" data-no="24 / 25" data-tag="한계 · 인계">
+  <h1>한계와 다음 구간 인계</h1>
+  <h2>숨기지 않고 남은 것을 적음. 인계 지점은 두 곳</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <span class="kicker warn">한계 · 미해결</span>
+        <table class="tight">
+          <tr><th style="width:30%">항목</th><th>내용 · 다음 조치</th></tr>
+          <tr><td>교육장 실측 미실시</td><td>전 구간 통과는 <b>임시 기기(GCP VM)</b> 결과임. 교육장 PC 는 성능이 달라 같은 수치를 보장하지 못함 → 복귀 후 같은 절차로 재확인</td></tr>
+          <tr><td>좌우 오차 여유 부족</td><td>도킹 거리 0.92 에서 225 중 1건이 <b>0.063 m</b>(허용 0.06) → <b>팔 쪽 실제 허용치를 받아야 함</b></td></tr>
+          <tr><td>재시도의 시간 비용</td><td>최악 시뮬 75초. 근본 해결은 시뮬레이터 각가속 제한 완화(에셋 영역)</td></tr>
+          <tr><td>2D 라이다 미사용</td><td>채널은 있으나 발행되지 않음(실측 4회). 3D 변환으로 대체</td></tr>
+          <tr><td>단일 로봇</td><td>다중 AMR 경로 조율은 범위 밖. 확장 시 Task Manager 쪽 설계가 먼저</td></tr>
+          <tr><td>장면 파일 누락</td><td>공유 zip 에 <code>env_dressing.usd</code> 미포함. 지도와 불일치는 없으나 확인 필요</td></tr>
+        </table>
+      </div>
+      <div class="col c45">
+        <span class="kicker alt">구간 종료 시점의 상태</span>
+        <svg width="500" height="150" viewBox="0 0 500 150">
+          <defs><marker id="u1" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#54657a"/></marker></defs>
+          <rect x="0" y="0" width="500" height="150" fill="#f7fafc" rx="4"/>
+          <rect x="16" y="46" width="130" height="58" rx="4" fill="#0f9d6b"/>
+          <text x="81" y="72" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">벨트에 안착</text>
+          <text x="81" y="92" text-anchor="middle" font-size="11.5" fill="#d3f2e3">카터는 도킹 자세 유지</text>
+          <line x1="150" y1="75" x2="196" y2="75" stroke="#54657a" stroke-width="2.4" marker-end="url(#u1)"/>
+          <rect x="200" y="46" width="140" height="58" rx="4" fill="#fff" stroke="#b9c8d6"/>
+          <text x="270" y="70" text-anchor="middle" font-size="12.5" fill="#16202b">컨베이어 반송</text>
+          <text x="270" y="90" text-anchor="middle" font-size="11.5" fill="#54657a">자동 재가동</text>
+          <line x1="344" y1="75" x2="390" y2="75" stroke="#54657a" stroke-width="2.4" marker-end="url(#u1)"/>
+          <rect x="394" y="46" width="94" height="58" rx="4" fill="#fff" stroke="#0b6fb8" stroke-width="2"/>
+          <text x="441" y="70" text-anchor="middle" font-size="12" fill="#0b6fb8" font-weight="700">카메라 앞</text>
+          <text x="441" y="88" text-anchor="middle" font-size="11" fill="#0b6fb8">정지</text>
+          <text x="250" y="132" text-anchor="middle" font-size="12" fill="#54657a">팔레트 정지 위치 world x −0.496, y −6.728 · 벨트 윗면 z 0.769 m</text>
+          <text x="250" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="#16202b">PLACE_INSPECT SUCCEEDED 이후</text>
+        </svg>
+        <span class="kicker" style="margin-top:12px">인계 지점 2</span>
+        <ul>
+          <li><b>① 컨베이어 재가동 신호</b> — 검사 종료를 알릴 주체를 정해야 함. 현재는 검사 미연결이라 10초 후 자동 배출</li>
+          <li><b>② 명령 순서</b> — <code>INSPECT</code> → <code>CULL</code> → <code>CONVEYOR_OUT</code>. 불량이 없으면 <code>CULL</code> 생략</li>
+        </ul>
+        <div class="box" style="font-size:13.5px">
+          <b>A안</b> 팀 스테이션이 시뮬 내부에서 자체 진행(인자 하나만 제거, Task Manager 통제 밖) ·
+          <b>B안</b> Task Manager 단계 지휘(검사 노드 구현 필요)
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 25 -->
+<section class="slide" data-no="25 / 25" data-tag="정리">
+  <h1>정리 — 이 구간이 남긴 것</h1>
+  <h2>그리고 팀에 요청할 결정 네 가지</h2>
+  <div class="rule"></div>
+  <div class="body">
+    <div class="cols">
+      <div class="col c55">
+        <span class="kicker">기술적으로 남긴 것</span>
+        <ul>
+          <li><b>응답이 느린 차체의 관성 · 측정 지연 보상</b> — bag 으로 차체 특성을 계측해 제어 오차 정의 자체를 바꿈. 좌우 합격 206/225 → 225/225 <small>(이득 비교, 도킹 거리 0.90 기준)</small></li>
+          <li><b>점 추종 → 선 추종 조향 재설계</b> — 도착 방향 오차 20.7° → 1.08°</li>
+          <li><b>3단 검증 체계</b> — 오프라인 225 케이스(2분) → ROS 회귀 10(30분) → 실측 1회</li>
+          <li><b>bag 재생 기반 원인 분리</b> — 기록된 센서를 실제 노드의 검출기에 재입력</li>
+          <li><b>USD → 점유 격자 지도 자동 생성</b> — 장면이 바뀌면 시뮬레이터를 켜지 않고 지도를 다시 만듦</li>
+        </ul>
+        <div class="box ok" style="font-size:13.5px">
+          문서화 — 아키텍처 · 트러블슈팅 전건 · 자립형 실행 절차서 · 완료 보고를 저장소에 남겨,
+          담당자가 아니어도 같은 절차로 재현하고 수치를 고칠 수 있게 함
+        </div>
+      </div>
+      <div class="col c45">
+        <span class="kicker warn">팀 결정 요청 4</span>
+        <table class="tight">
+          <tr><th style="width:8%">#</th><th>내용</th></tr>
+          <tr><td>1</td><td><b>다음 구간 연결 방식</b> — A안(팀 스테이션 자동 진행) / B안(Task Manager 지휘)</td></tr>
+          <tr><td>2</td><td><b>팔 쪽 좌우 허용 오차</b> — 확정되면 도킹 허용치와 재시도 횟수를 그 기준으로 조정하겠음</td></tr>
+          <tr><td>3</td><td><b><code>env_dressing.usd</code> 누락</b> — 공유 zip 에서 제외된 것이 의도된 것인지</td></tr>
+          <tr><td>4</td><td><b>교육장 복귀 후 실측 일정</b> — 현재 결과는 임시 기기 기준</td></tr>
+        </table>
+        <figure class="port" style="margin-top:10px">
+          <img src="img/rviz_02_docked.jpg" alt="도킹 완료 시점 RViz2">
+          <figcaption>도킹 완료 시점의 RViz2. 차체 발자국이 <code>FEEDER_DOCK</code> 마커 위에 정렬되어 있음</figcaption>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div id="bar">
+  <button onclick="go(-1)">◀ 이전</button>
+  <button onclick="go(1)">다음 ▶</button>
+  <span id="pos">1 / 25</span>
+  <span class="sp"></span>
+  <span>← → 키로 이동 · Ctrl+P 로 PDF 저장(가로, 배율 100%, 배경 그래픽 켜기)</span>
+  <button onclick="window.print()">PDF 저장</button>
+</div>
+
+<script>
+  var slides = document.querySelectorAll('.slide');
+  var cur = 0;
+  function show(i){
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides[cur].scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('pos').textContent = (cur + 1) + ' / ' + slides.length;
+  }
+  function go(d){ show(cur + d); }
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'PageUp') { e.preventDefault(); go(-1); }
+    if (e.key === 'Home') { e.preventDefault(); show(0); }
+    if (e.key === 'End')  { e.preventDefault(); show(slides.length - 1); }
+  });
+  // 내용이 슬라이드 높이를 넘으면 그 슬라이드만 자동으로 줄여 잘리지 않게 한다
+  function fit(){
+    var bodies = document.querySelectorAll('.slide .body');
+    for (var i = 0; i < bodies.length; i++){
+      var b = bodies[i];
+      b.style.transform = ''; b.style.width = '';
+      var need = b.scrollHeight, have = b.clientHeight;
+      if (need > have + 1){
+        var k = have / need;
+        b.style.transformOrigin = 'top left';
+        b.style.transform = 'scale(' + k.toFixed(4) + ')';
+        b.style.width = (100 / k).toFixed(2) + '%';
+      }
+    }
+  }
+  window.addEventListener('load', fit);
+  window.addEventListener('resize', fit);
+  window.addEventListener('beforeprint', fit);
+
+  // 스크롤로 움직였을 때 현재 번호를 맞춰 둔다
+  window.addEventListener('scroll', function(){
+    var mid = window.innerHeight / 2;
+    for (var i = 0; i < slides.length; i++){
+      var r = slides[i].getBoundingClientRect();
+      if (r.top <= mid && r.bottom >= mid){
+        cur = i;
+        document.getElementById('pos').textContent = (i + 1) + ' / ' + slides.length;
+        break;
+      }
+    }
+  }, {passive:true});
+</script>
+</body>
+</html>

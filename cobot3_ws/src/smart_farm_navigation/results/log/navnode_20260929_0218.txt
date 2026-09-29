@@ -1,0 +1,5 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-29-02-19-54-687345-gc-isaacsim-lwh-346947
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [navigation_node-1]: process started with pid [346957]
+[navigation_node-1] [0m[INFO] [1790648396.457378427] [navigation_node]: navigation_node ready; destinations: ['FEEDER_DOCK', 'RACK_DOCK', 'CORRIDOR_EXIT'][0m
+[INFO] [navigation_node-1]: process has finished cleanly [pid 346957]

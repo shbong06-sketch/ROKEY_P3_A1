@@ -1,0 +1,1 @@
+Package 'smart_farm_navigation' not found: "package 'smart_farm_navigation' not found, searching: ['/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_manager', '/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_interfaces', '/opt/ros/jazzy']"

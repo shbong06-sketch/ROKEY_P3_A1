@@ -1,0 +1,75 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정6차]
+=================================================================================
+
+1. [캡처 이미지(image.png) 정밀 분석 결과]
+---------------------------------------------------------------------------------
+1) 메뉴 위치 차이:
+   - Isaac Sim 5.1.0에서는 구버전의 'Isaac Utils' 최상위 메뉴가 폐지되었음.
+   - 현재 클릭하신 'Utilities'는 프로파일러/디버거 전용 메뉴임.
+   - Action Graph 에디터 창은 상단 메뉴 `Window` -> `Visual Scripting` -> `Action Graph` 로 여는 구조임.
+
+2) 핵심 사실:
+   - 캡처 우측 Stage 패널 트리를 확인한 결과, `/World` 하위에 `ActionGraph` (OmniGraph)가 이미 생성되어 있음.
+   - 단, 상단 타이틀바 파일명 끝에 `*` 표시가 붙어 있어 수정 후 '저장(Save)'되지 않은 상태임.
+
+
+=================================================================================
+2. [즉각 조치 사항 (아이작 심 화면에서 수행)]
+=================================================================================
+
+1단계: ActionGraph 에디터 열기
+   - 상단 메뉴: `Window` -> `Visual Scripting` -> `Action Graph` 클릭.
+   - 또는 우측 Stage 패널의 `ActionGraph` 프림을 마우스로 더블 클릭함.
+   - 화면 하단에 노드 배선 창이 열림.
+
+2단계: 노드 유무 확인
+   - [노드가 이미 존재하는 경우]:
+     1) `ROS2 Context` 노드 클릭 후 우측 Property에서 `domain_id`가 현재 터미널의 ID(101 또는 103)와 일치하는지 확인.
+     2) 키보드 `Ctrl + S` 를 눌러 스테이지를 저장함 (타이틀바 `*` 제거 확인).
+   - [창이 완전히 비어있는 경우]:
+     1) 좌측 Node Library 검색창을 통해 필수 7개 노드를 드래그하여 배치함:
+        - `On Playback Tick`
+        - `ROS2 Context` (domain_id: 101 또는 103)
+        - `ROS2 Publish Clock` (topic: /clock)
+        - `ROS2 Subscribe Twist` (topic: /cmd_vel)
+        - `Differential Controller` (wheelDistance: 0.4452, wheelRadius: 0.0625)
+        - `Articulation Controller` (targetPrim: /World/mir100)
+        - `ROS2 Publish Odometry` (topic: /odom, chassisFrameId: base_footprint)
+     2) Tick 실행선 및 Twist -> Diff -> Artic 연결 후 `Ctrl + S` 로 저장함.
+
+
+=================================================================================
+3. [고성능 PC 진단 정보 자동 추출법]
+=================================================================================
+고성능 PC에서 아이작 심 Play(▶)를 누른 상태에서 새 터미널을 열고 아래 1줄 명령어를 실행하면,
+현재 토픽, 도메인 ID, 노드 상태가 `errored/diag_info.txt` 로 자동 추출됨:
+
+    bash -c "
+    echo '=== ENV ==='
+    echo ROS_DISTRO=\$ROS_DISTRO
+    echo ROS_DOMAIN_ID=\$ROS_DOMAIN_ID
+    echo RMW_IMPLEMENTATION=\$RMW_IMPLEMENTATION
+    echo '=== TOPIC LIST ==='
+    ros2 topic list
+    echo '=== CLOCK HZ ==='
+    timeout 2 ros2 topic hz /clock || echo 'No /clock'
+    echo '=== ODOM INFO ==='
+    ros2 topic info /odom || echo 'No /odom'
+    " > ~/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/errored/diag_info.txt
+
+
+=================================================================================
+4. [정석 실행 순서]
+=================================================================================
+1) 아이작 심에서 Collected_260916_AMR_test.usd 오픈 상태에서 Play(▶) 클릭.
+2) 터미널 2 (Nav2 & RViz2 실행):
+   ros_set
+   source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+   ros2 launch mir100_navigation mir_navigation.launch.py \
+       map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+3) 터미널 3 (랙 통로 정밀 진입 주행):
+   ros_set
+   source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+   ros2 run nav_to_goal nav_to_pose
+=================================================================================

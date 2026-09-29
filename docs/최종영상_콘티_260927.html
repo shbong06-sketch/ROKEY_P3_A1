@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>최종 시연 영상 콘티 — 스마트팜 디지털 트윈</title>
+<style>
+  :root{--ink:#16202b;--sub:#5a6b7d;--line:#d9e1e9;--accent:#0b6fb8;--accent2:#0f9d6b;--warn:#c0392b;--soft:#f3f7fa;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#eef2f6;color:var(--ink);font-family:"Noto Sans KR","Noto Sans CJK KR","Malgun Gothic",system-ui,sans-serif;}
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 20px 80px;}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.6px;}
+  .lead{color:var(--sub);font-size:14.5px;line-height:1.7;margin-bottom:22px;}
+  h2{font-size:21px;margin:34px 0 4px;padding-top:16px;border-top:3px solid var(--accent);letter-spacing:-.3px;}
+  h2 .sub{font-size:14px;color:var(--sub);font-weight:500;margin-left:10px;}
+  .chapline{font-size:13.5px;color:var(--sub);margin:0 0 14px;line-height:1.6;}
+  .notice{background:#fff;border:1px solid var(--line);border-left:7px solid var(--warn);border-radius:6px;padding:20px 24px;margin-bottom:22px;}
+  .notice h3{margin:0 0 14px;font-size:20px;}
+  .notice ol{margin:0;padding-left:24px;} .notice li{font-size:16.5px;line-height:1.8;margin-bottom:10px;}
+  .notice li b{font-size:17px;}
+  .hl{background:#ffe9a8;color:#7a4a00;padding:1px 6px;border-radius:3px;font-weight:700;}
+  .hl2{background:#ffd9cf;color:#8e2b1a;padding:1px 6px;border-radius:3px;font-weight:700;}
+  .hl3{background:#cfe9dc;color:#0a5c40;padding:1px 6px;border-radius:3px;font-weight:700;}
+  .notice .tail{margin-top:16px;font-size:15.5px;line-height:1.9;background:#f3f7fa;border-radius:5px;padding:12px 16px;}
+  .notice .tail a{color:#0b6fb8;}
+  table.ask{border-collapse:collapse;width:100%;font-size:14px;background:#fff;}
+  table.ask th,table.ask td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top;line-height:1.6;}
+  table.ask th{background:#f3f7fa;font-size:13.5px;}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;}
+  .frame{position:relative;background:#101820;aspect-ratio:16/9;}
+  .frame img{width:100%;height:100%;object-fit:cover;display:block;}
+  .frame svg{width:100%;height:100%;display:block;}
+  .tag{position:absolute;left:8px;top:8px;background:rgba(11,111,184,.94);color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:3px;letter-spacing:.3px;}
+  .view{position:absolute;right:8px;top:8px;background:rgba(255,255,255,.93);color:#16202b;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:3px;}
+  .kind{position:absolute;right:8px;bottom:8px;font-size:11px;padding:2px 7px;border-radius:3px;}
+  .kind.real{background:rgba(15,157,107,.95);color:#fff;}
+  .kind.draw{background:rgba(90,107,125,.9);color:#fff;}
+  .body{padding:11px 13px 13px;flex:1;display:flex;flex-direction:column;gap:7px;}
+  .title{font-size:14.5px;font-weight:700;line-height:1.45;}
+  .meta{display:flex;flex-wrap:wrap;gap:5px;}
+  .chip{font-size:11.5px;border:1px solid var(--line);background:var(--soft);border-radius:3px;padding:2px 7px;color:#33475c;}
+  .chip.sp{background:#fff4e6;border-color:#f0cfa0;color:#8a5a12;}
+  .chip.rt{background:#eafaf2;border-color:#a9dfc4;color:#0b6b4a;font-weight:700;}
+  .ov{font-family:"DejaVu Sans Mono",Consolas,monospace;font-size:11.5px;background:#1f2933;color:#d7e3ee;padding:6px 8px;border-radius:3px;line-height:1.5;word-break:break-all;}
+  .who{font-size:11.5px;color:var(--sub);}
+  .note{background:#fff;border:1px solid var(--line);border-left:5px solid var(--accent2);border-radius:5px;padding:12px 16px;margin:14px 0 0;font-size:13.5px;line-height:1.65;}
+  .note.warn{border-left-color:var(--warn);}
+  .sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;}
+  .sum div{background:#fff;border:1px solid var(--line);border-radius:4px;padding:6px 11px;font-size:12.5px;}
+  .sum b{color:var(--accent);}
+  @media print{body{background:#fff;} .wrap{max-width:none;padding:0;} .panel{break-inside:avoid;} h2{break-before:page;}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>최종 시연 영상 콘티 (v2)</h1>
+<p class="lead">
+  디지털 트윈 기반 공장형 스마트팜 생육·물류 자동화 · 2026-09-27<br>
+  <b>본편 3분 55초 + EX.(개발 중) 50초</b><br>
+  이 파일 <code>docs/최종영상_콘티_260927.html</code> · 글 스토리보드 <code>docs/최종영상_스토리보드_260927.md</code>
+  — 둘 다 브랜치 <b><code>feature/lwh</code></b> 에 있음<br>
+  초록 라벨 <span class="chip" style="background:#0f9d6b;color:#fff;border:0">실제 기록</span> 은 2026-09-26 실행에서 뽑은 실제 화면이고,
+  회색 라벨 <span class="chip" style="background:#5a6b7d;color:#fff;border:0">구도 스케치</span> 는 아직 녹화가 없어 <b>구도만 그린 것</b>임. 그대로 찍으면 됨.
+</p>
+
+<div class="notice">
+  <h3>⚑ 녹화 전 필독 7가지</h3>
+  <ol>
+    <li><b><span class="hl2">30 fps 이상으로 녹화할 것.</span></b> 지금 <code>record_rig.sh</code> 기본값인 10 fps 로 찍으면,
+        본편에서 4~10배속을 걸었을 때 <span class="hl">1초에 1~2장</span>밖에 안 남아 화면이 뚝뚝 끊깁니다. 이 한 줄만 바꾸면 됩니다 — <code>FPS=30</code></li>
+    <li><b>해상도는 <span class="hl">1920×1080 을 권장</span>합니다.</b> 지금 설정(Isaac 1440×900 · RViz 1680×1050)으로 찍어도 쓸 수는 있지만,
+        편집에서 화면을 키우면 흐려집니다. 바꾸기 어려우면 그대로 두고 <b>확대 편집만 피하면</b> 됩니다</li>
+    <li><b>Isaac 뷰포트만 나오게.</b> 좌우 패널·툴바·마우스 커서가 같이 찍히면 본편에 못 씁니다(EX. 챕터에는 써도 됩니다)</li>
+    <li><b>시점은 <span class="hl3">네 가지만</span></b> — 행위자뷰(포크·그리퍼·카터 뒤) / 대상뷰(팔레트·트레이) / 풀샷 / 롱샷.
+        각 컷에 어느 시점인지 이 콘티에 적어 두었습니다</li>
+    <li><b><span class="hl2">같은 동작을 시점만 바꿔 3~4번 다시 찍어 주세요.</span></b>
+        편집은 <b>한 동작을 여러 각도로 이어 붙이는 식</b>으로 합니다. 예를 들어 팔레트를 드는 장면을 포크 시점 2초 → 풀샷 2초로 잇는데,
+        <b>테이크마다 로봇이나 팔레트가 있던 자리가 다르면</b> 컷이 바뀌는 순간 물건이 <span class="hl">순간이동한 것처럼</span> 보여서 쓸 수 없습니다.
+        그래서 <b>장면을 리셋하고 똑같은 명령 순서로 다시 돌린 다음</b>, 카메라만 바꿔서 찍어 주시면 됩니다</li>
+    <li><b>실패한 것도 지우지 말고 같이 올려 주세요.</b> 도킹을 다시 시도하는 장면, 사람 때문에 멈추는 장면은 성공 영상보다 쓸모가 큽니다</li>
+    <li><b>같은 실행의 로그와 bag, 그리고 <span class="hl">그 영상이 실제로 몇 초짜리인지</span>를 함께 적어 주세요.</b>
+        화면에 띄울 수치의 출처가 되고, 몇 배속을 걸지 계산하는 데 필요합니다</li>
+  </ol>
+  <div class="tail">
+    <b>녹화본 업로드</b> : ROKEY_P3_A1 구글드라이브
+    <a href="https://drive.google.com/drive/u/0/folders/170kS-TB7f--0VtKsSchjKI1dh41qldFn">https://drive.google.com/drive/u/0/folders/170kS-TB7f--0VtKsSchjKI1dh41qldFn</a><br>
+    <b>권장 파일 명</b> : <code>{컷번호}_{모듈}_{시점}_{테이크}.mp4</code> &nbsp;→&nbsp; 예) <code>E-07_dock_행위자뷰_t2.mp4</code><br>
+    <b>모아 주시는 날</b> : 2026-09-28(월)
+  </div>
+</div>
+
+<div class="sum">
+  <div>A 도입·문제 <b>0:15</b></div><div>B 맛보기 <b>0:15</b></div><div>C 시스템 <b>0:15</b></div>
+  <div>D TRANSFER+PICK <b>0:25</b></div><div>E NAVIGATION <b>0:42</b></div><div>F PLACE <b>0:18</b></div>
+  <div>G CONVEY·PREPARE <b>0:18</b></div><div>H INSPECT+CULL <b>0:40</b></div><div>I CONVEYOR_OUT <b>0:15</b></div>
+  <div>J 완주·수치 <b>0:12</b></div><div>K 엔딩 <b>0:20</b></div><div>본편 <b>3:55</b> + EX. <b>0:50</b></div>
+</div>
+
+<h2>A. 도입 — 문제 <span class="sub">0:15 · AI 생성 · 담당 이원호(편집)</span></h2>
+<p class="chapline">BRD 3.1 의 문제 ①인력 의존 ②고소·중량물 위험 을 사람 장면으로 보여 줌. 실제 농장 촬영본이 없고 남의 사진은 영상에 못 쓰므로 <b>AI 생성</b>으로 만듦(프롬프트는 스토리보드 8절).</p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2">
+        <path d="M30 200 H370"/>
+        <path d="M250 40 V200 M320 40 V200 M250 40 H320 M250 80 H320 M250 120 H320 M250 160 H320"/>
+        <rect x="120" y="170" width="60" height="30"/>
+      </g>
+      <g fill="#cbd8e3"><rect x="256" y="52" width="26" height="14" rx="2"/><rect x="290" y="92" width="26" height="14" rx="2"/></g>
+      <g stroke="#e8b04b" stroke-width="2.5" fill="none">
+        <circle cx="150" cy="128" r="10"/><path d="M150 138 V163 M150 145 L176 132 M150 145 L128 140 M150 163 L138 188 M150 163 L163 188"/>
+      </g>
+      <g transform="rotate(-18 190 122)"><rect x="168" y="112" width="48" height="16" fill="none" stroke="#e8b04b" stroke-width="2.5"/></g>
+      <path d="M205 100 q14 -14 4 -26" stroke="#ff8f7a" stroke-width="2.5" fill="none"/>
+      <text x="212" y="70" fill="#ff8f7a" font-size="12" font-family="sans-serif">기울어짐</text>
+      <text x="30" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">4단 랙 · 발판 위 작업자</text>
+    </svg>
+    <span class="tag">A-01</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">작업자가 발판 위에서 젖은 트레이를 내리다 휘청인다</div>
+    <div class="meta"><span class="chip">0:07</span><span class="chip">AI 생성</span><span class="chip">문제 ②</span></div>
+    <div class="ov">자막: 고단 랙의 트레이를 사람이 직접 내린다</div>
+    <div class="who">담당 이원호 · 외부 생성형 AI</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2">
+        <path d="M0 195 H400"/>
+        <path d="M40 45 V195 M110 45 V195 M40 45 H110 M40 85 H110 M40 125 H110 M40 165 H110"/>
+        <path d="M290 45 V195 M360 45 V195 M290 45 H360 M290 85 H360 M290 125 H360 M290 165 H360"/>
+      </g>
+      <g stroke="#e8b04b" stroke-width="2.5" fill="none">
+        <circle cx="200" cy="105" r="11"/><path d="M200 116 V150 M200 150 L186 190 M200 150 L214 190"/>
+        <rect x="172" y="122" width="56" height="18"/>
+      </g>
+      <path d="M200 205 H262" stroke="#4aa3e0" stroke-width="2.5" fill="none" marker-end="url(#aA2)"/>
+      <defs><marker id="aA2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="150" y="30" fill="#9fb2c4" font-size="12" font-family="sans-serif">통로 폭 = 사람 한 명</text>
+      <rect x="0" y="150" width="400" height="75" fill="#101820" opacity=".72"/>
+      <text x="200" y="186" text-anchor="middle" fill="#fff" font-size="15" font-weight="700" font-family="sans-serif">중량물 · 인력 의존 · 추적 불가</text>
+    </svg>
+    <span class="tag">A-02</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">트레이를 안고 좁은 통로를 걸어 옮긴다(반복) → 뒤 3초에 문구 세 개가 박힌다</div>
+    <div class="meta"><span class="chip">0:08</span><span class="chip">AI 생성 + 그래픽</span><span class="chip">문제 ①</span></div>
+    <div class="ov">자막: 같은 이송이 하루에도 수십 번 → 중량물 · 인력 의존 · 추적 불가</div>
+    <div class="who">담당 이원호 · 외부 생성형 AI + 문구는 편집에서 얹음</div>
+  </div></div>
+</div>
+
+<h2>B. 도입 — 해결 맛보기 <span class="sub">0:15 · AI 생성 + 그래픽 · 담당 이원호(편집)</span></h2>
+<p class="chapline">문제 태그(0.8초 흑백) → 해결 장면(2.2초)을 네 번. <b>여기서는 우리 녹화본을 쓰지 않습니다.</b>
+시뮬레이션 화면은 본론(C~J)에서 처음 나오게 두고, 도입부는 <b>AI 생성 영상</b>으로 &ldquo;이런 게 가능해진다&rdquo; 는 느낌만 줍니다.<br>
+<b>생성 요령</b> — 엔딩 K-03 과 같은 세계관이므로, <b>K-03 을 만들 때 같은 프롬프트로 짧은 클립 3개를 더 뽑아</b> B-01~B-03 에 쓰면 톤이 자동으로 맞습니다.</p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <defs><linearGradient id="gB1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef5fb"/><stop offset="1" stop-color="#d3e2ee"/></linearGradient></defs>
+      <rect width="400" height="225" fill="url(#gB1)"/>
+      <g stroke="#5a7d96" fill="none" stroke-width="2">
+        <path d="M0 186 H400"/>
+        <path d="M60 36 V186 M180 36 V186 M60 36 H180 M60 74 H180 M60 112 H180 M60 150 H180"/>
+      </g>
+      <g fill="#7ba05b"><rect x="70" y="44" width="26" height="10"/><rect x="120" y="82" width="26" height="10"/><rect x="82" y="120" width="26" height="10"/></g>
+      <g stroke="#2f4a5e" stroke-width="2" fill="none">
+        <rect x="246" y="142" width="62" height="22" rx="3"/><circle cx="298" cy="172" r="9"/><circle cx="256" cy="172" r="8"/>
+        <path d="M252 142 V100 M252 100 H206"/>
+      </g>
+      <rect x="188" y="92" width="26" height="10" fill="#7ba05b"/>
+      <path d="M214 62 V92" stroke="#2f4a5e" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#aB1)"/>
+      <defs><marker id="aB1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2f4a5e"/></marker></defs>
+      <text x="228" y="46" fill="#2f4a5e" font-size="12" font-family="sans-serif" font-weight="700">로봇이 층 사이로 옮긴다</text>
+      <text x="16" y="214" fill="#2f4a5e" font-size="11.5" font-family="sans-serif">AI 생성 클립</text>
+    </svg>
+    <span class="tag">B-01</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">문제 ② 고소·중량물 → 매니퓰레이터가 얹힌 AMR 이 랙에서 트레이를 꺼낸다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip">AI 생성</span><span class="chip">태그 0.8s + 장면 2.2s</span></div>
+    <div class="ov">문제 ② 고소·중량물</div>
+    <div class="who">담당 이원호 · K-03 과 같은 프롬프트에서 뽑음</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <defs><linearGradient id="gB2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef5fb"/><stop offset="1" stop-color="#d3e2ee"/></linearGradient></defs>
+      <rect width="400" height="225" fill="url(#gB2)"/>
+      <g stroke="#5a7d96" fill="none" stroke-width="2">
+        <path d="M0 190 H400"/>
+        <path d="M30 40 V190 M104 40 V190 M30 40 H104 M30 80 H104 M30 120 H104 M30 160 H104"/>
+        <path d="M296 40 V190 M370 40 V190 M296 40 H370 M296 80 H370 M296 120 H370 M296 160 H370"/>
+      </g>
+      <g stroke="#2f4a5e" stroke-width="2" fill="none">
+        <rect x="166" y="130" width="72" height="26" rx="3"/><circle cx="228" cy="164" r="9"/><circle cx="176" cy="164" r="8"/>
+        <rect x="172" y="108" width="60" height="16"/>
+      </g>
+      <rect x="176" y="112" width="52" height="8" fill="#7ba05b"/>
+      <path d="M156 178 H110" stroke="#2f4a5e" stroke-width="2.2" fill="none" marker-end="url(#aB2)"/>
+      <defs><marker id="aB2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2f4a5e"/></marker></defs>
+      <text x="120" y="32" fill="#2f4a5e" font-size="12" font-family="sans-serif" font-weight="700">사람 없이 통로를 지난다</text>
+      <text x="16" y="214" fill="#2f4a5e" font-size="11.5" font-family="sans-serif">AI 생성 클립</text>
+    </svg>
+    <span class="tag">B-02</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">문제 ① 인력 의존 → 트레이를 실은 AMR 이 통로를 스스로 지나간다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip">AI 생성</span></div>
+    <div class="ov">문제 ① 인력 의존</div>
+    <div class="who">담당 이원호 · K-03 과 같은 프롬프트에서 뽑음</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <defs><linearGradient id="gB3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef5fb"/><stop offset="1" stop-color="#d3e2ee"/></linearGradient></defs>
+      <rect width="400" height="225" fill="url(#gB3)"/>
+      <path d="M0 182 H400" stroke="#5a7d96" stroke-width="2"/>
+      <g stroke="#5a7d96" stroke-width="2" fill="none"><path d="M40 150 H300 M40 172 H300"/></g>
+      <rect x="120" y="140" width="110" height="26" fill="none" stroke="#7ba05b" stroke-width="2.4"/>
+      <g fill="#7ba05b"><circle cx="146" cy="153" r="7"/><circle cx="176" cy="153" r="7"/><circle cx="206" cy="153" r="7"/></g>
+      <g stroke="#2f4a5e" stroke-width="2" fill="none">
+        <rect x="318" y="164" width="52" height="18"/><path d="M344 164 V96 M344 96 L262 70"/>
+        <path d="M258 62 L244 92 L278 96 Z"/>
+      </g>
+      <g stroke="#2f4a5e" stroke-width="1.6" fill="none" stroke-dasharray="4 3"><rect x="134" y="132" width="34" height="30"/><rect x="176" y="132" width="34" height="30"/></g>
+      <text x="40" y="44" fill="#2f4a5e" font-size="12" font-family="sans-serif" font-weight="700">카메라가 한 포기씩 확인한다</text>
+      <text x="16" y="214" fill="#2f4a5e" font-size="11.5" font-family="sans-serif">AI 생성 클립</text>
+    </svg>
+    <span class="tag">B-03</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">문제 ③ 작업 누락 → 검사 구역의 로봇팔이 작물을 한 포기씩 내려다본다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip">AI 생성</span></div>
+    <div class="ov">문제 ③ 작업 누락</div>
+    <div class="who">담당 이원호 · K-03 과 같은 프롬프트에서 뽑음</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g font-family="monospace" font-size="11" fill="#9fb2c4"><text x="24" y="40">한 사이클이 끊기지 않고 이어진다</text></g>
+      <g stroke="#4aa3e0" stroke-width="2" fill="none"><path d="M30 120 H370"/></g>
+      <g font-family="sans-serif" font-size="9.5" text-anchor="middle">
+        <circle cx="45" cy="120" r="7" fill="#4ad07f"/><text x="45" y="145" fill="#cbd8e3">PRE</text>
+        <circle cx="90" cy="120" r="7" fill="#4ad07f"/><text x="90" y="145" fill="#cbd8e3">TRANS</text>
+        <circle cx="135" cy="120" r="7" fill="#4ad07f"/><text x="135" y="145" fill="#cbd8e3">PICK</text>
+        <circle cx="180" cy="120" r="7" fill="#4ad07f"/><text x="180" y="145" fill="#cbd8e3">NAV</text>
+        <circle cx="225" cy="120" r="7" fill="#4ad07f"/><text x="225" y="145" fill="#cbd8e3">PLACE</text>
+        <circle cx="270" cy="120" r="7" fill="#4aa3e0"/><text x="270" y="145" fill="#cbd8e3">CONVEY</text>
+        <circle cx="315" cy="120" r="7" fill="#5a6b7d"/><text x="315" y="145" fill="#8fa2b4">INSPECT</text>
+        <circle cx="360" cy="120" r="7" fill="#5a6b7d"/><text x="360" y="145" fill="#8fa2b4">CULL</text>
+      </g>
+      <text x="24" y="190" fill="#9fb2c4" font-size="12" font-family="sans-serif">설비가 따로 놀지 않는다</text>
+    </svg>
+    <span class="tag">B-04</span><span class="view">그래픽</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">문제 ④⑤ 설비 단절·도입 리스크 → 공정 상태가 한 줄로 이어지는 그래픽</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip">그래픽</span></div>
+    <div class="ov">문제 ④ 설비 단절 · ⑤ 도입 리스크</div>
+    <div class="who">담당 이원호(편집) · <b>녹화본이 아니라 그래픽</b>이므로 도입부에 써도 됨</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <defs><linearGradient id="gB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b3c63"/><stop offset="1" stop-color="#12a0a0"/></linearGradient></defs>
+      <rect width="400" height="225" fill="url(#gB)"/>
+      <text x="200" y="100" text-anchor="middle" fill="#fff" font-size="17" font-weight="700" font-family="sans-serif">디지털 트윈 기반 공장형 스마트팜</text>
+      <text x="200" y="128" text-anchor="middle" fill="#fff" font-size="17" font-weight="700" font-family="sans-serif">생육 · 물류 자동화</text>
+      <path d="M140 145 H260" stroke="#fff" stroke-width="2" opacity=".7"/>
+    </svg>
+    <span class="tag">B-05</span><span class="view">타이틀</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">제목 카드 — 여기서 음악이 올라가고 도입부가 끝난다. <b>시뮬레이션 화면은 그 다음부터</b></div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip">그래픽</span></div>
+    <div class="ov">디지털 트윈 기반 공장형 스마트팜 생육·물류 자동화</div>
+    <div class="who">담당 이원호(편집)</div>
+  </div></div>
+</div>
+
+<h2>C. 본문 0 — 시스템과 모델링 <span class="sub">0:15 · 담당 백승주 · 봉승현</span></h2>
+<p class="chapline">"3D 모델이 아니라 <b>물리 기반 검증 환경</b>" 이라는 주장을 그림으로 증명하는 장(9/27 회의 2.4). 물리 값이 화면에 실제로 보여야 함.</p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/rviz_03_full.jpg" alt="장면 전체 지도">
+    <span class="tag">C-01</span><span class="view">롱샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">장면 전체가 보이고 구역 라벨이 하나씩 켜진다</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×2</span><span class="chip">원본 0:10</span></div>
+    <div class="ov">랙 · 통로 · 인계(턴테이블) · 비전룸 · 배출</div>
+    <div class="who">담당 백승주 · 참고 스틸은 지도 화면. 실제는 Isaac 조감으로 촬영</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2">
+        <rect x="120" y="168" width="150" height="26" rx="4"/><circle cx="250" cy="200" r="11"/><circle cx="140" cy="200" r="8"/>
+        <rect x="132" y="112" width="18" height="56"/>
+        <path d="M150 118 H196 M196 118 V92 M196 92 H236"/>
+        <rect x="232" y="76" width="54" height="12"/>
+      </g>
+      <g stroke="#4aa3e0" stroke-width="1.6" stroke-dasharray="5 4" fill="none">
+        <path d="M195 182 H330"/><path d="M141 140 H330"/><path d="M200 105 H330"/><path d="M259 82 H330"/>
+      </g>
+      <g font-family="sans-serif" font-size="11" fill="#4aa3e0">
+        <text x="334" y="186">Nova Carter</text><text x="334" y="144">Lift</text><text x="334" y="109">M0609</text><text x="334" y="86">Fork</text>
+      </g>
+      <g stroke="#e8b04b" stroke-width="2" fill="none"><path d="M270 206 H330"/><path d="M120 206 H60"/></g>
+      <text x="60" y="222" fill="#e8b04b" font-size="11" font-family="sans-serif">뒤 −x (팔 쪽)</text>
+      <text x="276" y="222" fill="#e8b04b" font-size="11" font-family="sans-serif">앞 +x</text>
+    </svg>
+    <span class="tag">C-02</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">LiftRig 가 분해되었다가 합쳐진다 — 네 부품과 앞뒤 정의</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×2</span><span class="chip">원본 0:10</span></div>
+    <div class="ov">Nova Carter + Lift + M0609 + Fork · footprint 0.75 × 0.50 m</div>
+    <div class="who">담당 백승주</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M40 190 H360" stroke="#cbd8e3" stroke-width="2"/>
+      <g stroke="#e8b04b" stroke-width="2" fill="none">
+        <rect x="150" y="50" width="70" height="22"/><rect x="150" y="104" width="70" height="22" opacity=".55"/><rect x="150" y="158" width="70" height="22"/>
+      </g>
+      <path d="M185 78 V150" stroke="#4aa3e0" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#aC3)"/>
+      <defs><marker id="aC3" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <g font-family="monospace" font-size="11" fill="#7fe0aa">
+        <text x="244" y="60">RigidBody ✓</text><text x="244" y="82">Mass  8.0 kg</text>
+        <text x="244" y="104">Friction 0.7</text><text x="244" y="126">Collider ✓</text>
+      </g>
+      <text x="40" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">팔레트를 떨어뜨려 물리 거동을 보여 준다</text>
+    </svg>
+    <span class="tag">C-03</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">팔레트를 떨어뜨려 마찰·충돌이 실제로 계산됨을 보여 준다</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×4</span><span class="chip">원본 0:20</span></div>
+    <div class="ov">RigidBody · Mass · Friction · Collider</div>
+    <div class="who">담당 백승주 — <b>수치는 실제 에셋 설정값을 표시</b>(스케치의 8.0 kg / 0.7 은 예시)</div>
+  </div></div>
+</div>
+
+<h2>D. 본문 1 — TRANSFER + PICK_HARVEST <span class="sub">0:25 · 담당 봉승현</span></h2>
+<p class="chapline">랙 층계 재배치 2회 + 수확 대상 파지. 원본이 약 6분 30초라 <b>장 전체 평균 ×15</b> 로 줄이지만, 한 컷 안의 배속은 최대 ×10 이고 나머지는 <b>컷 사이 생략</b>으로 줄임.
+자막 한 줄: 「자란 작물은 무거워져 아래 단으로 — 구조 안정성과 출고 동선」<br><b>컷 합 0:24 + 인서트(A-01 흑백) 0.8초 = 0:25</b></p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_00_rack.jpg" alt="랙 앞에 선 카터">
+    <span class="tag">D-01</span><span class="view">롱샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">랙 앞으로 접근하고 리프트가 3단 높이까지 올라간다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×6</span><span class="chip">원본 0:24</span></div>
+    <div class="ov">TRANSFER · 리프트 적재 시 0.02 m/s</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2"><path d="M0 40 H400 M0 196 H400"/><path d="M60 40 V196 M340 40 V196"/></g>
+      <g stroke="#e8b04b" stroke-width="2.5" fill="none"><rect x="120" y="86" width="164" height="42"/></g>
+      <g fill="#e8b04b"><circle cx="150" cy="107" r="5"/><circle cx="190" cy="107" r="5"/><circle cx="230" cy="107" r="5"/><circle cx="262" cy="107" r="5"/></g>
+      <g stroke="#4aa3e0" stroke-width="3" fill="none"><path d="M96 150 H308"/><path d="M118 150 V128 M286 150 V128"/></g>
+      <path d="M202 176 V150" stroke="#4aa3e0" stroke-width="2.5" marker-end="url(#aD2)"/>
+      <defs><marker id="aD2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="16" y="32" fill="#9fb2c4" font-size="12" font-family="sans-serif">포크 끝에서 본 화면 — 팔레트 밑으로 진입</text>
+      <text x="212" y="192" fill="#4aa3e0" font-size="11.5" font-family="sans-serif">들어올림</text>
+    </svg>
+    <span class="tag">D-02</span><span class="view">행위자뷰(포크)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">포크가 팔레트 밑으로 들어가 들어올린다</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×4</span><span class="chip">원본 0:20</span></div>
+    <div class="ov">RACK_L3 → RACK_L2</div>
+    <div class="who">담당 봉승현 · <b>카메라 <code>Cam_Fork</code> 신규</b></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2"><path d="M40 20 H360 M40 74 H360 M40 128 H360 M40 182 H360 M40 20 V182 M360 20 V182"/></g>
+      <g stroke="#e8b04b" stroke-width="2.5" fill="none"><rect x="150" y="96" width="100" height="26"/></g>
+      <path d="M200 126 V172" stroke="#4aa3e0" stroke-width="3" marker-end="url(#aD3)"/>
+      <defs><marker id="aD3" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="264" y="60" fill="#8fa2b4" font-size="11.5" font-family="sans-serif">RACK_L3 (출발)</text>
+      <text x="264" y="168" fill="#4aa3e0" font-size="11.5" font-family="sans-serif">RACK_L2 (도착)</text>
+      <text x="40" y="212" fill="#9fb2c4" font-size="12" font-family="sans-serif">팔레트에 붙인 카메라 — 랙이 위로 흘러간다</text>
+    </svg>
+    <span class="tag">D-03</span><span class="view">대상뷰(팔레트)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">팔레트 입장에서 — 아래 단으로 내려가 안착한다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×6</span><span class="chip">원본 0:24</span></div>
+    <div class="ov">PALLET_002</div>
+    <div class="who">담당 봉승현 · <b>카메라 <code>Cam_Pallet</code> 신규</b></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2">
+        <path d="M60 30 V196 M210 30 V196 M60 30 H210 M60 72 H210 M60 114 H210 M60 156 H210"/><path d="M0 196 H400"/>
+      </g>
+      <g stroke="#e8b04b" stroke-width="2" fill="none"><rect x="96" y="80" width="74" height="18"/><rect x="96" y="122" width="74" height="18"/></g>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2"><rect x="266" y="150" width="86" height="22" rx="3"/><circle cx="340" cy="180" r="9"/><circle cx="278" cy="180" r="7"/><rect x="274" y="104" width="14" height="46"/><path d="M288 110 H322 V86"/></g>
+      <path d="M232 100 C 250 100 250 130 236 132" stroke="#4aa3e0" stroke-width="2.5" fill="none" marker-end="url(#aD4)"/>
+      <defs><marker id="aD4" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="16" y="24" fill="#9fb2c4" font-size="12" font-family="sans-serif">두 번째 팔레트 재배치를 통째로 압축 (×10)</text>
+    </svg>
+    <span class="tag">D-04</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">두 번째 팔레트 재배치 — 한 컷으로 압축</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×10 (상한)</span><span class="chip">원본 0:40</span></div>
+    <div class="ov">RACK_L4 → RACK_L3</div>
+    <div class="who">담당 봉승현 · 인서트(A-01 흑백 0.8초)가 이 뒤에 붙음</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2"><path d="M0 38 H400 M0 200 H400"/><path d="M50 38 V200 M350 38 V200"/></g>
+      <g stroke="#7fe0aa" stroke-width="2.5" fill="none"><rect x="116" y="84" width="170" height="44"/></g>
+      <g fill="#7fe0aa"><circle cx="146" cy="106" r="5"/><circle cx="186" cy="106" r="5"/><circle cx="226" cy="106" r="5"/><circle cx="264" cy="106" r="5"/></g>
+      <g stroke="#4aa3e0" stroke-width="3" fill="none"><path d="M92 152 H312"/><path d="M114 152 V130 M290 152 V130"/></g>
+      <text x="16" y="30" fill="#9fb2c4" font-size="12" font-family="sans-serif">수확 대상 PALLET_001 파지</text>
+      <text x="124" y="188" fill="#7fe0aa" font-size="12" font-family="monospace">safe_to_navigate = true</text>
+    </svg>
+    <span class="tag">D-05</span><span class="view">행위자뷰(포크)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">수확 대상 팔레트를 집는다 — 주행 허가가 나오는 순간</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×8</span><span class="chip">원본 0:32 (실측 186초 중)</span></div>
+    <div class="ov">PICK_HARVEST · safe_to_navigate = true</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_10_corridor.jpg" alt="팔레트를 싣고 방향을 잡는 카터">
+    <span class="tag">D-06</span><span class="view">롱샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">팔레트를 얹고 운반 자세로 바꿔 통로 쪽으로 방향을 잡는다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip sp">×6</span><span class="chip">원본 0:18</span></div>
+    <div class="ov">joint_1 180° → 270°</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+</div>
+
+<h2>E. 본문 2 — NAVIGATION <span class="sub">0:42 · 담당 이원호</span></h2>
+<p class="chapline">본문에서 가장 긴 장. <b>판단이 일어나는 세 순간(E-03 사람 정지 · E-06 면 검출 · E-08 도킹 정지)은 배속하지 않음.</b> 실측 원본 94초.<br><b>컷 합 0:41 + 인서트(A-02 흑백) 0.8초 = 0:42</b></p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_02_drive.jpg" alt="통로를 빠져나오는 카터">
+    <span class="tag">E-01</span><span class="view">롱샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">좁은 통로를 <b>후진</b>으로 빠져나온다 (제자리 회전 불가)</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×4</span><span class="chip">원본 0:20</span></div>
+    <div class="ov">NAVIGATION · Smac Hybrid-A* · Reeds-Shepp</div>
+    <div class="who">담당 이원호</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/rviz_01_drive.jpg" alt="RViz2 경로 화면">
+    <span class="tag">E-02</span><span class="view">화면 캡처</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">같은 순간의 RViz2 — 경로 · 팽창 영역 · 라이다 스캔</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×4</span><span class="chip">원본 0:16</span></div>
+    <div class="ov">global plan · /scan</div>
+    <div class="who">담당 이원호 · Isaac 화면과 같은 시각으로 맞춰 편집</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M0 186 H400" stroke="#cbd8e3" stroke-width="2"/>
+      <g stroke="#e8c04b" stroke-width="2" stroke-dasharray="14 10" fill="none"><path d="M0 150 H400"/></g>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2"><rect x="246" y="118" width="96" height="30" rx="3"/><circle cx="332" cy="156" r="10"/><circle cx="262" cy="156" r="8"/><rect x="252" y="82" width="14" height="36"/></g>
+      <g stroke="#ff8f7a" stroke-width="2.5" fill="none"><circle cx="146" cy="108" r="11"/><path d="M146 119 V150 M146 128 L128 140 M146 128 L164 140 M146 150 L134 182 M146 150 L158 182"/></g>
+      <circle cx="146" cy="150" r="58" fill="none" stroke="#ff8f7a" stroke-width="2" stroke-dasharray="6 5"/>
+      <text x="80" y="66" fill="#ff8f7a" font-size="12" font-family="sans-serif">HumanStop 정지 영역</text>
+      <g stroke="#ff8f7a" stroke-width="3"><path d="M212 168 H236 M224 156 V180"/></g>
+      <text x="246" y="210" fill="#9fb2c4" font-size="12" font-family="sans-serif">카터 정지 · /cmd_vel = 0</text>
+    </svg>
+    <span class="tag">E-03</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">작업자가 차선 위로 걸어 들어오고 카터가 스스로 멈춘다</div>
+    <div class="meta"><span class="chip">0:06</span><span class="chip rt">×1 실시간</span><span class="chip">원본 0:06</span></div>
+    <div class="ov">collision_monitor · HumanStop</div>
+    <div class="who">담당 이원호 · <code>--human-crossing</code> 으로 실행. <b>멈추는 테이크가 나올 때까지 반복</b></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M0 186 H400" stroke="#cbd8e3" stroke-width="2"/>
+      <g stroke="#e8c04b" stroke-width="2" stroke-dasharray="14 10" fill="none"><path d="M0 150 H400"/></g>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2"><rect x="230" y="118" width="96" height="30" rx="3"/><circle cx="316" cy="156" r="10"/><circle cx="246" cy="156" r="8"/><rect x="236" y="82" width="14" height="36"/></g>
+      <g stroke="#7fe0aa" stroke-width="2.5" fill="none"><circle cx="112" cy="96" r="11"/><path d="M112 107 V138 M112 116 L94 128 M112 116 L130 128 M112 138 L98 170 M112 138 L126 170"/></g>
+      <path d="M96 190 H44" stroke="#7fe0aa" stroke-width="2.5" fill="none" marker-end="url(#aE4)"/>
+      <path d="M212 168 H150" stroke="#4aa3e0" stroke-width="3" fill="none" marker-end="url(#aE4b)"/>
+      <defs><marker id="aE4" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7fe0aa"/></marker>
+      <marker id="aE4b" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="150" y="212" fill="#4aa3e0" font-size="12" font-family="sans-serif">스스로 재출발</text>
+      <text x="40" y="212" fill="#7fe0aa" font-size="12" font-family="sans-serif">작업자 비킴</text>
+    </svg>
+    <span class="tag">E-04</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">작업자가 비켜나고 카터가 스스로 다시 출발한다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×2</span><span class="chip">원본 0:08</span></div>
+    <div class="ov">/cmd_vel 재개</div>
+    <div class="who">담당 이원호</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_03_approach.jpg" alt="접근 지점 도착">
+    <span class="tag">E-05</span><span class="view">풀샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">접근 지점에 도착해 잠깐 멈춘다 (도킹 시작 전 대기)</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip sp">×2</span><span class="chip">원본 0:06</span></div>
+    <div class="ov">FEEDER_APPROACH (world x −2.19, y −1.55)</div>
+    <div class="who">담당 이원호</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/rviz_02_docked.jpg" alt="RViz2 도킹 화면">
+    <span class="tag">E-06</span><span class="view">화면 캡처</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">라이다가 턴테이블 앞면을 잡는 순간 — 점군 위에 직선과 목표점</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip rt">×1 실시간</span><span class="chip">원본 0:05</span></div>
+    <div class="ov">RANSAC face 1.15 m</div>
+    <div class="who">담당 이원호 · <b>RViz2 를 따로 녹화</b>. Isaac 화면만으로는 "센서로 본다" 가 전달되지 않음</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_04_reverse.jpg" alt="후진 도킹">
+    <span class="tag">E-07</span><span class="view">행위자뷰(카터 뒤)</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">뒤(팔 쪽)를 보이며 후진으로 들어간다</div>
+    <div class="meta"><span class="chip">0:07</span><span class="chip sp">×2</span><span class="chip">원본 0:14</span></div>
+    <div class="ov">SETTLE → ALIGN → REVERSE · face_dist 1.82 m</div>
+    <div class="who">담당 이원호 · <b>카메라 <code>Cam_Carter_Rear</code> 신규</b>(참고 스틸은 풀샷)</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_05_docked.jpg" alt="도킹 완료">
+    <span class="tag">E-08</span><span class="view">풀샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">정지 직전 — 수치가 목표로 수렴한다 (슬로우)</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip rt">×0.5 슬로우</span><span class="chip">원본 0:02</span></div>
+    <div class="ov">0.937 m · +1.08° · 0.000 m</div>
+    <div class="who">담당 이원호 · 인서트(A-02 흑백 0.8초)가 이 뒤에 붙음</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_09_after_place.jpg" alt="도킹 완료 전경">
+    <span class="tag">E-09</span><span class="view">롱샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">도킹 완료 전경 — 벨트 앞에 직각으로 서 있다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip sp">×2</span><span class="chip">원본 0:06</span></div>
+    <div class="ov">reached_station = FEEDER_DOCK</div>
+    <div class="who">담당 이원호</div>
+  </div></div>
+</div>
+
+<h2>F. 본문 3 — PLACE_INSPECT <span class="sub">0:18 · 담당 봉승현</span></h2>
+<p class="chapline">실측 원본 73초. 차체가 실제로 멈춘 것을 확인한 뒤에만 팔이 움직이는 것이 이 장의 요지임.</p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_06_place.jpg" alt="팔이 벨트 위로 움직임">
+    <span class="tag">F-01</span><span class="view">풀샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">차체 정지를 확인한 뒤에야 팔이 움직이기 시작한다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×4</span><span class="chip">원본 0:16</span></div>
+    <div class="ov">PLACE_INSPECT · 차체 정지 확인 0.5 s</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2"><path d="M0 170 H400"/><path d="M40 170 V200 M360 170 V200"/></g>
+      <g fill="none" stroke="#7fe0aa" stroke-width="2"><circle cx="80" cy="185" r="9"/><circle cx="140" cy="185" r="9"/><circle cx="200" cy="185" r="9"/><circle cx="260" cy="185" r="9"/><circle cx="320" cy="185" r="9"/></g>
+      <g stroke="#e8b04b" stroke-width="2.5" fill="none"><rect x="128" y="96" width="150" height="34"/></g>
+      <path d="M203 138 V162" stroke="#4aa3e0" stroke-width="3" marker-end="url(#aF2)"/>
+      <defs><marker id="aF2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="20" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">팔레트 입장 — 벨트가 아래에서 다가온다</text>
+      <text x="228" y="156" fill="#4aa3e0" font-size="11.5" font-family="monospace">0.809 m</text>
+    </svg>
+    <span class="tag">F-02</span><span class="view">대상뷰(팔레트)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">팔레트 입장에서 — 벨트 위로 내려앉는다</div>
+    <div class="meta"><span class="chip">0:06</span><span class="chip sp">×4</span><span class="chip">원본 0:24</span></div>
+    <div class="ov">팔 베이스 ~ 놓을 자리 0.809 m</div>
+    <div class="who">담당 봉승현 · <code>Cam_Pallet</code></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" fill="none" stroke-width="2"><path d="M0 60 H400 M0 176 H400"/></g>
+      <g stroke="#e8b04b" stroke-width="2.5" fill="none"><rect x="30" y="86" width="230" height="52"/></g>
+      <g stroke="#4aa3e0" stroke-width="3" fill="none"><path d="M120 150 H330 M120 162 H330"/></g>
+      <g stroke="#4aa3e0" stroke-width="2" fill="none" stroke-dasharray="4 4">
+        <path d="M150 150 V138 M190 150 V138 M230 150 V138 M270 150 V138 M310 150 V138"/>
+      </g>
+      <path d="M254 196 H346" stroke="#4aa3e0" stroke-width="2.5" marker-end="url(#aF3)"/>
+      <defs><marker id="aF3" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="20" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">포크 시점 — 여섯 단계로 뒤로 빠진다</text>
+      <text x="256" y="214" fill="#4aa3e0" font-size="11.5" font-family="monospace">FORK_OUT 1 → 6</text>
+    </svg>
+    <span class="tag">F-03</span><span class="view">행위자뷰(포크)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">포크가 여섯 단계로 나뉘어 빠져나온다</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×5</span><span class="chip">원본 0:25</span></div>
+    <div class="ov">FORK_OUT 1 → 6</div>
+    <div class="who">담당 봉승현 · <code>Cam_Fork</code></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_07_placed.jpg" alt="안착 완료">
+    <span class="tag">F-04</span><span class="view">롱샷</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">카터는 그대로 서 있고 팔레트만 벨트에 남는다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip sp">×4</span><span class="chip">원본 0:12</span></div>
+    <div class="ov">SUCCEEDED</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+</div>
+
+<h2>G. 본문 4 — CONVEY · PREPARE <span class="sub">0:18 · 담당 봉승현</span></h2>
+<p class="chapline">컨베이어가 팔레트를 비전룸 앞까지 옮기고, 이송 프레임이 트레이를 팔 작업 반경 안으로 밀어 줌.
+자막 한 줄: 「벨트 줄은 팔이 닿지 않는다 — 0.27 m 를 밀어 작업 반경 안으로」</p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <img src="reference/03_pt/lwh_pt/img/isaac_08_conveyor.jpg" alt="컨베이어 반송">
+    <span class="tag">G-01</span><span class="view">대상뷰(팔레트)</span><span class="kind real">실제 기록</span>
+  </div><div class="body">
+    <div class="title">줄기 벨트가 팔레트를 물고 이송한다</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×6</span><span class="chip">원본 0:30</span></div>
+    <div class="ov">CONVEY_TO_INSPECT · 벨트 0.30 m/s</div>
+    <div class="who">담당 봉승현 · 참고 스틸은 풀샷. 실제는 <code>Cam_Pallet</code></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#4aa3e0" stroke-width="10" fill="none" opacity=".5"><path d="M196 30 V120 H370"/></g>
+      <g stroke="#cbd8e3" stroke-width="2" fill="none"><path d="M182 30 V134 H370 M210 30 V106 H370"/></g>
+      <rect x="182" y="54" width="28" height="22" fill="#e8b04b"/>
+      <path d="M196 92 V116 M196 116 H250" stroke="#7fe0aa" stroke-width="2.5" fill="none" marker-end="url(#aG2)"/>
+      <defs><marker id="aG2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7fe0aa"/></marker></defs>
+      <rect x="298" y="150" width="84" height="46" fill="none" stroke="#9fb2c4" stroke-width="2"/>
+      <text x="300" y="214" fill="#9fb2c4" font-size="11.5" font-family="sans-serif">비전룸</text>
+      <text x="20" y="40" fill="#9fb2c4" font-size="12" font-family="sans-serif">교차점에서 +x 로 전환</text>
+      <text x="20" y="62" fill="#4aa3e0" font-size="11.5" font-family="sans-serif">TurnTable = 공정 간 Buffer</text>
+    </svg>
+    <span class="tag">G-02</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">교차점에서 방향을 바꿔 비전룸 쪽으로 간다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×6</span><span class="chip">원본 0:24</span></div>
+    <div class="ov">TurnTable = 공정 간 Buffer</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" stroke-width="2" fill="none"><path d="M0 150 H400 M0 178 H400"/></g>
+      <rect x="150" y="124" width="100" height="28" fill="none" stroke="#e8b04b" stroke-width="2.5"/>
+      <g stroke="#7fe0aa" stroke-width="2" fill="none"><path d="M200 60 L172 104 H228 Z"/></g>
+      <circle cx="200" cy="64" r="6" fill="#7fe0aa"/>
+      <text x="216" y="58" fill="#7fe0aa" font-size="11.5" font-family="sans-serif">검사 카메라</text>
+      <g stroke="#ff8f7a" stroke-width="3"><path d="M268 158 H296 M282 144 V172"/></g>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">카메라 앞 정지</text>
+      <text x="150" y="208" fill="#4aa3e0" font-size="11.5" font-family="monospace">reached_station = INSPECT_STOP</text>
+    </svg>
+    <span class="tag">G-03</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">비전룸 카메라 앞에서 정확히 멈춘다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip sp">×4</span><span class="chip">원본 0:12</span></div>
+    <div class="ov">reached_station = INSPECT_STOP</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" stroke-width="2" fill="none"><path d="M0 168 H400"/></g>
+      <rect x="150" y="140" width="110" height="28" fill="none" stroke="#e8b04b" stroke-width="2.5"/>
+      <g stroke="#9fb2c4" stroke-width="2.5" fill="none"><path d="M120 58 H290 M120 58 V116 M290 58 V116"/></g>
+      <path d="M205 66 V104" stroke="#7fe0aa" stroke-width="3" marker-end="url(#aG4)"/>
+      <rect x="136" y="126" width="12" height="40" fill="#ff8f7a"/>
+      <path d="M156 182 H232" stroke="#ff8f7a" stroke-width="3" marker-end="url(#aG4b)"/>
+      <defs><marker id="aG4" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7fe0aa"/></marker>
+      <marker id="aG4b" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#ff8f7a"/></marker></defs>
+      <text x="212" y="96" fill="#7fe0aa" font-size="11.5" font-family="sans-serif">프레임 하강</text>
+      <text x="240" y="200" fill="#ff8f7a" font-size="11.5" font-family="sans-serif">PlateN 이 0.27 m 밀기</text>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">이송 프레임 시점</text>
+    </svg>
+    <span class="tag">G-04</span><span class="view">행위자뷰(프레임)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">이송 프레임이 내려앉고 PlateN 이 트레이를 로봇 쪽으로 민다</div>
+    <div class="meta"><span class="chip">0:06</span><span class="chip sp">×4</span><span class="chip">원본 0:24</span></div>
+    <div class="ov">PREPARE_INSPECT · 포기 자리 오차 ≤ 20 mm</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+</div>
+
+<h2>H. 본문 5 — INSPECT + CULL <span class="sub">0:40 · 담당 백승주</span></h2>
+<p class="chapline">검사 결과가 실제 솎아내기로 이어지는 것을 보여 주는 장. <b>판정(H-02)과 집기(H-04)는 실시간</b>으로 둠.<br><b>컷 합 0:39 + 문구 인서트 0.8초 = 0:40</b> — A-03 을 뺐으므로 이 장의 인서트는 영상이 아니라 <b>검은 화면에 「작업 누락 · 추적 불가」 한 줄</b>로 처리함</p>
+<div class="note warn">
+  <b>⚠ H-05 / H-06 은 지금 코드 그대로는 찍히지 않음.</b>
+  <code>inspection_cull_station.py</code> 는 불량 포기를 <code>SortBin_1</code> / <code>SortBin_2</code> 에
+  <b>클래스와 무관하게 번갈아</b> 버림(파일 머리말 · <code>SORT_BOX_PATHS</code>).
+  9/27 회의 결정 6(노랑·갈색을 각각 지정된 위치로)에 맞추려면 <b>클래스별로 통을 고르는 수정이 9/28 전에</b> 필요함.
+  어려우면 두 컷을 합쳐 <b>「불량 포기 제거」 0:08</b> 로 줄이고 결정 6 을 조정해야 함 — <b>백승주 회신 요청</b>
+</div>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M0 176 H400" stroke="#cbd8e3" stroke-width="2"/>
+      <rect x="128" y="146" width="130" height="30" fill="none" stroke="#e8b04b" stroke-width="2.5"/>
+      <g stroke="#cbd8e3" stroke-width="2.5" fill="none"><path d="M330 176 V116 M330 116 L266 80 M266 80 L214 96"/><rect x="316" y="176" width="28" height="14"/></g>
+      <g stroke="#7fe0aa" stroke-width="2" fill="none"><path d="M206 100 L190 126 L226 132 Z"/></g>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">검사 자세 — 카메라가 트레이를 내려다본다</text>
+      <text x="200" y="210" fill="#4aa3e0" font-size="11.5" font-family="monospace">INSPECT</text>
+    </svg>
+    <span class="tag">H-01</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">팔이 검사 자세로 이동한다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×4</span><span class="chip">원본 0:16</span></div>
+    <div class="ov">INSPECT</div>
+    <div class="who">담당 백승주</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <rect x="26" y="22" width="348" height="180" rx="3" fill="none" stroke="#5a6b7d" stroke-width="1.6"/>
+      <g fill="none" stroke-width="2.6">
+        <rect x="44" y="42" width="98" height="68" stroke="#4ad07f"/><rect x="152" y="42" width="98" height="68" stroke="#4ad07f"/><rect x="260" y="42" width="98" height="68" stroke="#e8c04b"/>
+        <rect x="44" y="120" width="98" height="68" stroke="#4ad07f"/><rect x="152" y="120" width="98" height="68" stroke="#c07a4b"/><rect x="260" y="120" width="98" height="68" stroke="#4ad07f"/>
+      </g>
+      <g font-family="monospace" font-size="10.5">
+        <text x="48" y="56" fill="#4ad07f">SLOT_01 green .93</text><text x="156" y="56" fill="#4ad07f">SLOT_02 green .91</text>
+        <text x="264" y="56" fill="#e8c04b">SLOT_03 yellow .88</text><text x="48" y="134" fill="#4ad07f">SLOT_04 green .95</text>
+        <text x="156" y="134" fill="#c07a4b">SLOT_05 brown .84</text><text x="264" y="134" fill="#4ad07f">SLOT_06 green .90</text>
+      </g>
+      <text x="26" y="216" fill="#9fb2c4" font-size="11.5" font-family="sans-serif">손목 RealSense 원본 화면 그대로 + 판정 박스</text>
+    </svg>
+    <span class="tag">H-02</span><span class="view">행위자뷰(손목)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">손목 카메라 화면 그대로 — 여섯 칸에 판정 박스가 뜬다</div>
+    <div class="meta"><span class="chip">0:07</span><span class="chip rt">×1 실시간</span><span class="chip">원본 0:07</span></div>
+    <div class="ov">YOLO best.pt · dark_green / yellow / brown</div>
+    <div class="who">담당 백승주 · <b>스테이션이 저장하는 annotated 프레임을 그대로 쓰면 됨</b></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g font-family="monospace" font-size="12" fill="#cbd8e3">
+        <text x="30" y="44">SLOT_01   green    정상</text>
+        <text x="30" y="70">SLOT_02   green    정상</text>
+        <text x="30" y="96" fill="#e8c04b">SLOT_03   yellow   불량 →  CULL</text>
+        <text x="30" y="122">SLOT_04   green    정상</text>
+        <text x="30" y="148" fill="#c07a4b">SLOT_05   brown    불량 →  CULL</text>
+        <text x="30" y="174">SLOT_06   green    정상</text>
+      </g>
+      <rect x="22" y="82" width="356" height="24" fill="#e8c04b" opacity=".13"/>
+      <rect x="22" y="134" width="356" height="24" fill="#c07a4b" opacity=".16"/>
+      <text x="30" y="204" fill="#4aa3e0" font-size="11.5" font-family="monospace">defect_slots = [SLOT_03, SLOT_05]</text>
+    </svg>
+    <span class="tag">H-03</span><span class="view">그래픽</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">슬롯 표가 채워지고 불량 칸이 붉어진다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip">그래픽</span></div>
+    <div class="ov">defect_slots = [...]</div>
+    <div class="who">담당 이원호(편집) · 값은 백승주의 실제 결과를 받아 씀. 이 뒤에 문구 인서트 0.8초(「작업 누락 · 추적 불가」)</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M0 182 H400" stroke="#cbd8e3" stroke-width="2"/>
+      <rect x="60" y="150" width="280" height="32" fill="none" stroke="#e8b04b" stroke-width="2"/>
+      <g stroke="#cbd8e3" stroke-width="2.5" fill="none"><path d="M200 26 V96"/><path d="M182 96 H218 M182 96 L176 126 M218 96 L224 126"/></g>
+      <circle cx="200" cy="140" r="17" fill="none" stroke="#e8c04b" stroke-width="2.5"/>
+      <path d="M200 120 V104" stroke="#7fe0aa" stroke-width="2.5" marker-end="url(#aH4)"/>
+      <defs><marker id="aH4" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7fe0aa"/></marker></defs>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">그리퍼 시점 — 불량 포기를 집어 올림</text>
+      <text x="228" y="140" fill="#e8c04b" font-size="11.5" font-family="sans-serif">SLOT_03 yellow</text>
+      <text x="300" y="212" fill="#4aa3e0" font-size="11.5" font-family="monospace">CULL · RMPflow</text>
+    </svg>
+    <span class="tag">H-04</span><span class="view">행위자뷰(그리퍼)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">불량 포기를 집어 올린다</div>
+    <div class="meta"><span class="chip">0:06</span><span class="chip rt">×1 실시간</span><span class="chip">원본 0:06</span></div>
+    <div class="ov">CULL · RMPflow</div>
+    <div class="who">담당 백승주 · <code>Cam_Wrist</code></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M0 186 H400" stroke="#cbd8e3" stroke-width="2"/>
+      <rect x="40" y="152" width="150" height="34" fill="none" stroke="#e8b04b" stroke-width="2"/>
+      <g stroke="#cbd8e3" stroke-width="2.5" fill="none"><path d="M120 40 L200 74 L262 120"/></g>
+      <g stroke="#9fb2c4" stroke-width="2.5" fill="none"><rect x="234" y="140" width="58" height="46"/><rect x="310" y="140" width="58" height="46"/></g>
+      <text x="238" y="206" fill="#e8c04b" font-size="11.5" font-family="sans-serif">SortBin_1</text>
+      <text x="314" y="206" fill="#c07a4b" font-size="11.5" font-family="sans-serif">SortBin_2</text>
+      <circle cx="263" cy="128" r="12" fill="none" stroke="#e8c04b" stroke-width="2.5"/>
+      <path d="M263 142 V158" stroke="#e8c04b" stroke-width="2.5" stroke-dasharray="4 3" marker-end="url(#aH5)"/>
+      <defs><marker id="aH5" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#e8c04b"/></marker></defs>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">노란 포기 → 1번 통</text>
+    </svg>
+    <span class="tag">H-05</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">노란 포기를 SortBin_1 로 투하한다</div>
+    <div class="meta"><span class="chip">0:06</span><span class="chip sp">×2</span><span class="chip">원본 0:12</span></div>
+    <div class="ov">yellow → BIN_1</div>
+    <div class="who">담당 백승주 · <b>코드 수정 필요</b>(위 경고 참고)</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M0 186 H400" stroke="#cbd8e3" stroke-width="2"/>
+      <rect x="40" y="152" width="150" height="34" fill="none" stroke="#e8b04b" stroke-width="2"/>
+      <g stroke="#cbd8e3" stroke-width="2.5" fill="none"><path d="M120 40 L214 80 L338 120"/></g>
+      <g stroke="#9fb2c4" stroke-width="2.5" fill="none"><rect x="234" y="140" width="58" height="46"/><rect x="310" y="140" width="58" height="46"/></g>
+      <text x="238" y="206" fill="#e8c04b" font-size="11.5" font-family="sans-serif">SortBin_1</text>
+      <text x="314" y="206" fill="#c07a4b" font-size="11.5" font-family="sans-serif">SortBin_2</text>
+      <circle cx="339" cy="128" r="12" fill="none" stroke="#c07a4b" stroke-width="2.5"/>
+      <path d="M339 142 V158" stroke="#c07a4b" stroke-width="2.5" stroke-dasharray="4 3" marker-end="url(#aH6)"/>
+      <defs><marker id="aH6" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#c07a4b"/></marker></defs>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">갈색 포기 → 2번 통 (다른 자리)</text>
+    </svg>
+    <span class="tag">H-06</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">갈색 포기를 SortBin_2 로 투하한다 — <b>분류</b>임을 보여 주는 컷</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×2</span><span class="chip">원본 0:10</span></div>
+    <div class="ov">brown → BIN_2</div>
+    <div class="who">담당 백승주 · <b>코드 수정 필요</b></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <rect x="26" y="22" width="348" height="180" rx="3" fill="none" stroke="#5a6b7d" stroke-width="1.6"/>
+      <g fill="none" stroke-width="2.6">
+        <rect x="44" y="42" width="98" height="68" stroke="#4ad07f"/><rect x="152" y="42" width="98" height="68" stroke="#4ad07f"/>
+        <rect x="260" y="42" width="98" height="68" stroke="#5a6b7d" stroke-dasharray="5 4"/>
+        <rect x="44" y="120" width="98" height="68" stroke="#4ad07f"/>
+        <rect x="152" y="120" width="98" height="68" stroke="#5a6b7d" stroke-dasharray="5 4"/>
+        <rect x="260" y="120" width="98" height="68" stroke="#4ad07f"/>
+      </g>
+      <g font-family="monospace" font-size="10.5" fill="#8fa2b4"><text x="272" y="80">비어 있음</text><text x="164" y="158">비어 있음</text></g>
+      <text x="26" y="216" fill="#9fb2c4" font-size="11.5" font-family="sans-serif">재검사 — 불량 칸이 실제로 비었는지 다시 찍는다</text>
+    </svg>
+    <span class="tag">H-07</span><span class="view">행위자뷰(손목)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">재검사 — 같은 칸이 비어 있음을 다시 확인한다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×4</span><span class="chip">원본 0:16</span></div>
+    <div class="ov">RECHECK</div>
+    <div class="who">담당 백승주</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M0 176 H400" stroke="#cbd8e3" stroke-width="2"/>
+      <rect x="110" y="144" width="170" height="32" fill="none" stroke="#7fe0aa" stroke-width="2.5"/>
+      <g fill="none" stroke="#7fe0aa" stroke-width="2"><circle cx="140" cy="160" r="7"/><circle cx="180" cy="160" r="7"/><circle cx="252" cy="160" r="7"/></g>
+      <g stroke="#cbd8e3" stroke-width="2.5" fill="none"><path d="M330 176 V112 M330 112 L276 82"/></g>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">검사·솎아내기가 끝난 트레이</text>
+      <text x="110" y="208" fill="#7fe0aa" font-size="11.5" font-family="monospace">completed_units = target_slots</text>
+    </svg>
+    <span class="tag">H-08</span><span class="view">풀샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">검사와 솎아내기가 끝난 트레이</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip sp">×4</span><span class="chip">원본 0:12</span></div>
+    <div class="ov">completed_units = target_slots</div>
+    <div class="who">담당 백승주</div>
+  </div></div>
+</div>
+
+<h2>I. 본문 6 — CONVEYOR_OUT <span class="sub">0:15 · 담당 봉승현</span></h2>
+<p class="chapline">검사가 끝나야 벨트가 다시 도는 구조(시간이 아니라 <code>inspection_done()</code> 신호)와, 뒤 팔레트가 버퍼에서 대기하는 모습을 보여 줌.</p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" stroke-width="2" fill="none"><path d="M0 166 H400"/></g>
+      <rect x="160" y="136" width="110" height="30" fill="none" stroke="#e8b04b" stroke-width="2.5"/>
+      <rect x="286" y="118" width="12" height="44" fill="#ff8f7a"/>
+      <path d="M278 190 H180" stroke="#ff8f7a" stroke-width="3" marker-end="url(#aI1)"/>
+      <g stroke="#9fb2c4" stroke-width="2.5" fill="none"><path d="M120 58 H300 M120 58 V104 M300 58 V104"/></g>
+      <path d="M210 100 V64" stroke="#7fe0aa" stroke-width="2.5" marker-end="url(#aI1b)"/>
+      <defs><marker id="aI1" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#ff8f7a"/></marker>
+      <marker id="aI1b" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#7fe0aa"/></marker></defs>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">PlateS 가 되밀고 프레임이 올라간다</text>
+      <text x="300" y="206" fill="#4aa3e0" font-size="11.5" font-family="monospace">PUSH_OUT</text>
+    </svg>
+    <span class="tag">I-01</span><span class="view">행위자뷰(프레임)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">PlateS 가 트레이를 벨트 줄로 되밀고 프레임이 올라간다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip sp">×5</span><span class="chip">원본 0:15</span></div>
+    <div class="ov">PUSH_OUT · inspection_done()</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" stroke-width="2" fill="none"><path d="M0 146 H400 M0 186 H400"/></g>
+      <g fill="none" stroke="#7fe0aa" stroke-width="2"><circle cx="60" cy="166" r="9"/><circle cx="130" cy="166" r="9"/><circle cx="200" cy="166" r="9"/><circle cx="270" cy="166" r="9"/><circle cx="340" cy="166" r="9"/></g>
+      <rect x="140" y="82" width="120" height="44" fill="none" stroke="#e8b04b" stroke-width="2.5"/>
+      <path d="M272 104 H360" stroke="#4aa3e0" stroke-width="3" marker-end="url(#aI2)"/>
+      <defs><marker id="aI2" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">팔레트 입장 — 벽 쪽 배출구로</text>
+      <text x="276" y="208" fill="#4aa3e0" font-size="11.5" font-family="monospace">CONVEYOR_OUT</text>
+    </svg>
+    <span class="tag">I-02</span><span class="view">대상뷰(팔레트)</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">벨트가 다시 돌고 팔레트가 배출 방향으로 나간다</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip sp">×6</span><span class="chip">원본 0:30</span></div>
+    <div class="ov">CONVEYOR_OUT</div>
+    <div class="who">담당 봉승현 · <code>Cam_Pallet</code></div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" stroke-width="2" fill="none"><path d="M180 26 V120 H380 M212 26 V92 H380"/></g>
+      <rect x="180" y="46" width="32" height="24" fill="#8fa2b4"/>
+      <rect x="300" y="94" width="34" height="24" fill="#e8b04b"/>
+      <rect x="290" y="150" width="90" height="48" fill="none" stroke="#9fb2c4" stroke-width="2"/>
+      <text x="292" y="214" fill="#9fb2c4" font-size="11.5" font-family="sans-serif">비전룸 (점유 중)</text>
+      <path d="M196 84 V110" stroke="#ff8f7a" stroke-width="2.5" stroke-dasharray="5 4"/>
+      <g stroke="#ff8f7a" stroke-width="3"><path d="M184 122 H208 M196 110 V134"/></g>
+      <text x="20" y="44" fill="#ff8f7a" font-size="12" font-family="sans-serif">뒤 팔레트 대기</text>
+      <text x="20" y="66" fill="#4aa3e0" font-size="11.5" font-family="sans-serif">앞 팔레트가 나가면 진입</text>
+    </svg>
+    <span class="tag">I-03</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">뒤 팔레트가 턴테이블에서 대기하다 이어서 진입한다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×8</span><span class="chip">원본 0:32</span></div>
+    <div class="ov">비전룸 점유 중 → 대기</div>
+    <div class="who">담당 봉승현 · 버퍼 동작을 보여 주는 유일한 컷</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" stroke-width="2" fill="none"><path d="M0 120 H300 M0 160 H300"/><path d="M300 30 V200"/></g>
+      <rect x="300" y="108" width="20" height="64" fill="#101820" stroke="#9fb2c4" stroke-width="2"/>
+      <rect x="230" y="122" width="56" height="36" fill="none" stroke="#e8b04b" stroke-width="2.5"/>
+      <path d="M292 140 H346" stroke="#4aa3e0" stroke-width="3" marker-end="url(#aI4)"/>
+      <defs><marker id="aI4" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="16" y="34" fill="#9fb2c4" font-size="12" font-family="sans-serif">배출구 통과 — 공정 종료</text>
+      <text x="300" y="206" fill="#4aa3e0" font-size="11.5" font-family="monospace">EJECT</text>
+    </svg>
+    <span class="tag">I-04</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">배출구를 통과한다 — 엔딩 카메라가 여기서 물러나기 시작</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip sp">×4</span><span class="chip">원본 0:12</span></div>
+    <div class="ov">EJECT</div>
+    <div class="who">담당 봉승현 · <b>K-01 과 끊기지 않게 같은 테이크로 이어 촬영</b></div>
+  </div></div>
+</div>
+
+<h2>J. 본문 7 — 한 사이클 완주와 수치 <span class="sub">0:12 · 담당 봉승현 · 백승주</span></h2>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <text x="24" y="36" fill="#9fb2c4" font-size="12" font-family="monospace">/cycle/status</text>
+      <path d="M30 112 H370" stroke="#4aa3e0" stroke-width="2"/>
+      <g font-family="sans-serif" font-size="9" text-anchor="middle" fill="#cbd8e3">
+        <circle cx="40" cy="112" r="7" fill="#4ad07f"/><text x="40" y="136">PRE</text>
+        <circle cx="81" cy="112" r="7" fill="#4ad07f"/><text x="81" y="136">TRANS</text>
+        <circle cx="122" cy="112" r="7" fill="#4ad07f"/><text x="122" y="136">PICK</text>
+        <circle cx="163" cy="112" r="7" fill="#4ad07f"/><text x="163" y="136">NAV</text>
+        <circle cx="204" cy="112" r="7" fill="#4ad07f"/><text x="204" y="136">PLACE</text>
+        <circle cx="245" cy="112" r="7" fill="#4ad07f"/><text x="245" y="136">CONVEY</text>
+        <circle cx="286" cy="112" r="7" fill="#4ad07f"/><text x="286" y="136">INSPECT</text>
+        <circle cx="327" cy="112" r="7" fill="#4ad07f"/><text x="327" y="136">CULL</text>
+        <circle cx="366" cy="112" r="8" fill="#7fe0aa"/><text x="366" y="136">OUT</text>
+      </g>
+      <text x="24" y="190" fill="#7fe0aa" font-size="13" font-family="monospace">COMPLETE</text>
+    </svg>
+    <span class="tag">J-01</span><span class="view">그래픽</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">아홉 단계가 한 줄로 이어져 COMPLETE 로 끝난다</div>
+    <div class="meta"><span class="chip">0:05</span><span class="chip">그래픽 + 실제 토픽 화면</span></div>
+    <div class="ov">/cycle/status PREFLIGHT → COMPLETE</div>
+    <div class="who">담당 봉승현(토픽 화면) · 이원호(그래픽)</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#4aa3e0" stroke-width="3" fill="none">
+        <path d="M200 60 A 62 62 0 1 1 138 122" />
+        <path d="M138 104 L138 124 L158 124" />
+      </g>
+      <text x="200" y="128" text-anchor="middle" fill="#cbd8e3" font-size="14" font-family="sans-serif">재실행</text>
+      <text x="200" y="152" text-anchor="middle" fill="#8fa2b4" font-size="11.5" font-family="sans-serif">같은 시나리오를 처음부터</text>
+      <text x="340" y="208" fill="#e8c04b" font-size="12" font-family="sans-serif">×10</text>
+    </svg>
+    <span class="tag">J-02</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">같은 사이클을 처음부터 다시 — 반복 가능함을 보여 준다</div>
+    <div class="meta"><span class="chip">0:04</span><span class="chip sp">×10 (상한)</span><span class="chip">원본 0:40</span></div>
+    <div class="ov">작업 완료 후 재실행 가능 (평가 5)</div>
+    <div class="who">담당 봉승현</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g fill="none" stroke="#5a6b7d" stroke-width="1.6">
+        <rect x="24" y="56" width="110" height="112" rx="4"/><rect x="145" y="56" width="110" height="112" rx="4"/><rect x="266" y="56" width="110" height="112" rx="4"/>
+      </g>
+      <g text-anchor="middle" font-family="sans-serif">
+        <text x="79" y="106" fill="#8fa2b4" font-size="20" font-weight="700">— %</text>
+        <text x="79" y="132" fill="#8fa2b4" font-size="11">공정 완료율</text>
+        <text x="200" y="106" fill="#8fa2b4" font-size="20" font-weight="700">— 초</text>
+        <text x="200" y="132" fill="#8fa2b4" font-size="11">사이클 시간</text>
+        <text x="321" y="100" fill="#7fe0aa" font-size="17" font-weight="700">0.937 m</text>
+        <text x="321" y="122" fill="#7fe0aa" font-size="14" font-weight="700">+1.08°</text>
+        <text x="321" y="142" fill="#8fa2b4" font-size="11">도킹 정확도</text>
+      </g>
+      <text x="24" y="196" fill="#ff8f7a" font-size="11.5" font-family="sans-serif">앞 두 장은 측정 전 — 값이 없으면 카드를 빼고 두 장으로</text>
+    </svg>
+    <span class="tag">J-03</span><span class="view">그래픽</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">지표 카드 — 측정된 값만 올린다</div>
+    <div class="meta"><span class="chip">0:03</span><span class="chip">그래픽</span></div>
+    <div class="ov">공정 완료율 / 사이클 시간 / 도킹 0.937 m · +1.08°</div>
+    <div class="who">담당 백승주(측정) · <b>만들어 낸 숫자는 넣지 않음</b></div>
+  </div></div>
+</div>
+
+<h2>K. 엔딩 <span class="sub">0:20 · 담당 이원호</span></h2>
+<p class="chapline">I-04 에서 끊기지 않고 이어짐. 시뮬레이션에서 물러나 실제 농장으로 넘어감.</p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g stroke="#cbd8e3" stroke-width="2" fill="none"><path d="M0 130 H320 M0 168 H320"/></g>
+      <rect x="196" y="132" width="56" height="34" fill="none" stroke="#e8b04b" stroke-width="2.5"/>
+      <g stroke="#4aa3e0" stroke-width="2" fill="none" stroke-dasharray="6 5"><rect x="60" y="60" width="280" height="140"/><rect x="110" y="86" width="180" height="90"/></g>
+      <path d="M150 210 H100" stroke="#4aa3e0" stroke-width="2.5" marker-end="url(#aK1)"/>
+      <defs><marker id="aK1" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <text x="158" y="214" fill="#4aa3e0" font-size="11.5" font-family="sans-serif">카메라가 뒤로 물러남 (달리 아웃)</text>
+    </svg>
+    <span class="tag">K-01 · K-02</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">배출 팔레트를 따라가던 카메라가 뒤로 물러나 장면 전체를 담고 하얗게 날아간다</div>
+    <div class="meta"><span class="chip">0:06 + 0:04</span><span class="chip sp">×2</span><span class="chip">원본 0:20</span></div>
+    <div class="ov">마지막 프레임을 캡처해 K-03 의 참조 이미지로 씀</div>
+    <div class="who">담당 이원호 · I-04 와 같은 테이크</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <defs><linearGradient id="gK" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef5fb"/><stop offset="1" stop-color="#cfe0ee"/></linearGradient></defs>
+      <rect width="400" height="225" fill="url(#gK)"/>
+      <g stroke="#5a7d96" fill="none" stroke-width="2">
+        <path d="M0 176 H400"/>
+        <path d="M30 60 V176 M96 60 V176 M30 60 H96 M30 96 H96 M30 132 H96"/>
+        <path d="M120 70 V176 M186 70 V176 M120 70 H186 M120 104 H186 M120 140 H186"/>
+      </g>
+      <g fill="#7ba05b"><rect x="36" y="66" width="20" height="8"/><rect x="66" y="102" width="20" height="8"/><rect x="126" y="76" width="20" height="8"/><rect x="152" y="110" width="20" height="8"/></g>
+      <g stroke="#2f4a5e" stroke-width="2" fill="none">
+        <rect x="196" y="134" width="46" height="18" rx="3"/><circle cx="234" cy="158" r="7"/><circle cx="204" cy="158" r="6"/>
+        <path d="M200 134 V108 M200 108 H176"/>
+        <rect x="162" y="100" width="18" height="8" fill="#7ba05b"/>
+      </g>
+      <g stroke="#2f4a5e" stroke-width="2" fill="none">
+        <rect x="270" y="140" width="44" height="16" rx="3"/><circle cx="306" cy="160" r="6"/><circle cx="278" cy="160" r="6"/>
+        <path d="M292 140 V118 M292 118 H316"/>
+      </g>
+      <path d="M262 174 H210" stroke="#2f4a5e" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#aK3)"/>
+      <defs><marker id="aK3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2f4a5e"/></marker></defs>
+      <g stroke="#2f4a5e" stroke-width="2" fill="none">
+        <rect x="330" y="150" width="60" height="12"/><path d="M360 150 V112 M360 112 L336 96"/>
+        <path d="M330 92 L322 112 L346 114 Z"/>
+      </g>
+      <text x="196" y="200" fill="#2f4a5e" font-size="10.5" font-family="sans-serif">① 랙 층간 P&amp;P</text>
+      <text x="264" y="200" fill="#2f4a5e" font-size="10.5" font-family="sans-serif">② 자율주행</text>
+      <text x="326" y="200" fill="#2f4a5e" font-size="10.5" font-family="sans-serif">③ 로봇팔 검사</text>
+      <text x="24" y="36" fill="#2f4a5e" font-size="12.5" font-family="sans-serif" font-weight="700">AI 생성 — 실제 스마트팜 전경</text>
+    </svg>
+    <span class="tag">K-03</span><span class="view">롱샷</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">실제 스마트팜 전경 — 세 가지가 한 화면에 있어야 함</div>
+    <div class="meta"><span class="chip">0:08</span><span class="chip">AI 생성</span></div>
+    <div class="ov">① AMR + 매니퓰레이터 랙 층간 P&amp;P  ② AMR 자율주행  ③ 로봇팔 엽채류 검사</div>
+    <div class="who">담당 이원호 · <b>프롬프트는 스토리보드 8절.</b> 한 컷에 다 안 들어가면 2~3컷으로 나눠 생성</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <defs><linearGradient id="gK2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b3c63"/><stop offset="1" stop-color="#12a0a0"/></linearGradient></defs>
+      <rect width="400" height="225" fill="url(#gK2)"/>
+      <text x="200" y="104" text-anchor="middle" fill="#fff" font-size="14.5" font-family="sans-serif" font-weight="700">검증은 시뮬레이션에서 먼저,</text>
+      <text x="200" y="128" text-anchor="middle" fill="#fff" font-size="14.5" font-family="sans-serif" font-weight="700">구축은 그 다음에</text>
+      <text x="200" y="172" text-anchor="middle" fill="#cfe6f6" font-size="11.5" font-family="sans-serif">ROKEY P3 · A1</text>
+    </svg>
+    <span class="tag">K-04</span><span class="view">타이틀</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">타이틀과 팀명</div>
+    <div class="meta"><span class="chip">0:02</span><span class="chip">그래픽</span></div>
+    <div class="ov">검증은 시뮬레이션에서 먼저, 구축은 그 다음에</div>
+    <div class="who">담당 이원호(편집)</div>
+  </div></div>
+</div>
+
+<h2>X. EX. 개발 중 <span class="sub">0:50 · 엔딩 뒤 별도 챕터 (9/27 승인)</span></h2>
+<p class="chapline">검은 화면 2초로 본편과 확실히 끊음. <b>각 컷 하단에 진행 상태를 그대로 표기</b>하고, 되는 것처럼 보이게 만들지 않음. 분량이 없는 항목은 정지 화면 1장 + 한 줄 설명 5초로 처리함. <b>이 챕터는 음악을 뺌.</b></p>
+<div class="grid">
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225"><rect width="400" height="225" fill="#000"/>
+      <text x="200" y="106" text-anchor="middle" fill="#fff" font-size="19" font-family="sans-serif" font-weight="700">EX. 개발 중</text>
+      <text x="200" y="134" text-anchor="middle" fill="#8fa2b4" font-size="12" font-family="sans-serif">발표 시점의 진행분</text>
+    </svg>
+    <span class="tag">X-00</span><span class="view">타이틀</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">챕터 표지 — 여기서부터 본편이 아님을 분명히 한다</div>
+    <div class="meta"><span class="chip">0:02</span></div>
+    <div class="ov">EX. 개발 중 — 발표 시점의 진행분</div>
+    <div class="who">담당 이원호(편집)</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <rect x="20" y="28" width="236" height="168" rx="4" fill="#f7fafc" stroke="#9fb2c4"/>
+      <rect x="20" y="28" width="236" height="22" fill="#dfe8f0"/>
+      <g fill="#8fa2b4"><circle cx="32" cy="39" r="4"/><circle cx="46" cy="39" r="4"/><circle cx="60" cy="39" r="4"/></g>
+      <g fill="none" stroke="#b9c8d6" stroke-width="1.6"><rect x="32" y="62" width="100" height="44"/><rect x="144" y="62" width="100" height="44"/><rect x="32" y="118" width="212" height="66"/></g>
+      <g font-family="sans-serif" font-size="9" fill="#33475c"><text x="38" y="80">사이클 상태</text><text x="150" y="80">트레이 이력</text><text x="38" y="136">PALLET_001  INSPECT_STOP  12:04</text><text x="38" y="152">PALLET_002  RACK_L2       11:58</text></g>
+      <rect x="268" y="72" width="112" height="80" fill="#1b2430" stroke="#5a6b7d"/>
+      <text x="270" y="166" fill="#8fa2b4" font-size="10.5" font-family="sans-serif">같은 시각 Isaac 화면</text>
+      <text x="20" y="216" fill="#e8c04b" font-size="11" font-family="sans-serif">개발 중</text>
+    </svg>
+    <span class="tag">X-01</span><span class="view">화면 캡처</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">웹 서비스 · DB — 사이클 상태와 트레이 이력이 갱신된다</div>
+    <div class="meta"><span class="chip">0:14</span><span class="chip">화면 녹화</span></div>
+    <div class="ov">진행 상태 표기: 개발 중</div>
+    <div class="who">담당 이원호</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <path d="M40 30 V180 H370" stroke="#5a6b7d" stroke-width="1.6" fill="none"/>
+      <path d="M40 140 C 90 132, 120 148, 150 138 C 180 128, 200 60, 224 70 C 250 80, 270 136, 300 132 C 330 128, 350 142, 366 136"
+            fill="none" stroke="#4aa3e0" stroke-width="2.4"/>
+      <rect x="200" y="46" width="52" height="120" fill="#ff8f7a" opacity=".18"/>
+      <circle cx="224" cy="70" r="6" fill="#ff8f7a"/>
+      <text x="256" y="62" fill="#ff8f7a" font-size="11" font-family="sans-serif">이상 구간</text>
+      <text x="40" y="206" fill="#8fa2b4" font-size="10.5" font-family="sans-serif">공정 소요 시간 · 실행 데이터</text>
+      <text x="300" y="206" fill="#e8c04b" font-size="11" font-family="sans-serif">검토 단계</text>
+    </svg>
+    <span class="tag">X-02</span><span class="view">그래픽</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">ML 기반 이상 탐지 — 공정 데이터에서 이상 구간을 표시한다</div>
+    <div class="meta"><span class="chip">0:12</span><span class="chip">그래픽</span></div>
+    <div class="ov">진행 상태 표기: 검토 단계</div>
+    <div class="who">담당 봉승현 · 발표 가능 수준이면 <b>본문 H 뒤 15초 인서트로 승격</b>(그때 본편 4:15)</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g font-family="sans-serif" font-size="10" fill="#8fa2b4">
+        <text x="24" y="56">TRANSFER</text><text x="24" y="92">NAVIGATION</text><text x="24" y="128">INSPECT</text><text x="24" y="164">CULL</text>
+      </g>
+      <g><rect x="120" y="44" width="200" height="14" fill="#5a6b7d"/><rect x="120" y="62" width="140" height="14" fill="#4ad07f"/>
+         <rect x="120" y="80" width="150" height="14" fill="#5a6b7d"/><rect x="120" y="98" width="118" height="14" fill="#4ad07f"/>
+         <rect x="120" y="116" width="96" height="14" fill="#5a6b7d"/><rect x="120" y="134" width="84" height="14" fill="#4ad07f"/>
+         <rect x="120" y="152" width="170" height="14" fill="#5a6b7d"/><rect x="120" y="170" width="120" height="14" fill="#4ad07f"/></g>
+      <g font-family="sans-serif" font-size="9.5"><text x="328" y="55" fill="#8fa2b4">개선 전</text><text x="268" y="73" fill="#4ad07f">개선 후</text></g>
+      <text x="300" y="210" fill="#e8c04b" font-size="11" font-family="sans-serif">개발 중</text>
+    </svg>
+    <span class="tag">X-03</span><span class="view">그래픽</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">공정 사이클 시간 최적화 — 단계별 소요가 개선 전/후로 줄어든다</div>
+    <div class="meta"><span class="chip">0:12</span><span class="chip">그래픽</span></div>
+    <div class="ov">진행 상태 표기: 개발 중 · 측정값만 사용</div>
+    <div class="who">담당 백승주 · 이 그래프 값이 J-03 의 「사이클 시간」 카드와 같아야 함</div>
+  </div></div>
+
+  <div class="panel"><div class="frame">
+    <svg viewBox="0 0 400 225">
+      <rect width="400" height="225" fill="#101820"/>
+      <g fill="none" stroke="#5a6b7d" stroke-width="1.6">
+        <rect x="22" y="60" width="46" height="34"/><rect x="74" y="60" width="46" height="34"/><rect x="22" y="100" width="46" height="34"/><rect x="74" y="100" width="46" height="34"/>
+      </g>
+      <g fill="#4ad07f" opacity=".7"><rect x="30" y="70" width="14" height="10"/><rect x="86" y="74" width="14" height="10"/><rect x="34" y="112" width="14" height="10"/><rect x="90" y="110" width="14" height="10"/></g>
+      <text x="22" y="52" fill="#8fa2b4" font-size="10.5" font-family="sans-serif">Isaac 합성 이미지</text>
+      <path d="M132 100 H176" stroke="#4aa3e0" stroke-width="2.5" marker-end="url(#aX4)"/>
+      <defs><marker id="aX4" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#4aa3e0"/></marker></defs>
+      <rect x="182" y="72" width="76" height="56" rx="4" fill="none" stroke="#4aa3e0" stroke-width="2"/>
+      <text x="220" y="106" text-anchor="middle" fill="#4aa3e0" font-size="11" font-family="sans-serif">학습</text>
+      <path d="M266 100 H310" stroke="#4aa3e0" stroke-width="2.5" marker-end="url(#aX4)"/>
+      <rect x="316" y="66" width="64" height="68" rx="3" fill="none" stroke="#5a6b7d" stroke-width="1.6"/>
+      <rect x="324" y="78" width="48" height="26" fill="none" stroke="#4ad07f" stroke-width="2.2"/>
+      <text x="326" y="122" fill="#4ad07f" font-size="9.5" font-family="monospace">new class .91</text>
+      <text x="22" y="206" fill="#8fa2b4" font-size="10.5" font-family="sans-serif">현실 데이터 수집 없이 새 대상에 대응</text>
+      <text x="300" y="206" fill="#4ad07f" font-size="11" font-family="sans-serif">모듈 시험 완료</text>
+    </svg>
+    <span class="tag">X-04</span><span class="view">그래픽</span><span class="kind draw">구도 스케치</span>
+  </div><div class="body">
+    <div class="title">합성 데이터로 모델 교체 — 생성 → 학습 → 새 대상 판정</div>
+    <div class="meta"><span class="chip">0:10</span><span class="chip">그래픽 + 화면</span></div>
+    <div class="ov">진행 상태 표기: 모듈 시험 완료</div>
+    <div class="who">담당 백승주 · <code>tools/vision/cabbage_inspect_dataset.py</code> · <code>train_eval_yolo.py</code></div>
+  </div></div>
+</div>
+
+<h2>확정이 필요한 것 <span class="sub">팀 회신 요청</span></h2>
+<p class="chapline">아래 다섯 가지가 정해져야 편집을 시작할 수 있습니다. <b>답만 주시면 나머지는 제가 맞추겠습니다.</b></p>
+<table class="ask">
+  <tr><th style="width:5%">#</th><th style="width:22%">무엇을 정해야 하나</th><th style="width:38%">왜 필요한가</th><th style="width:20%">이렇게 답해 주시면 됩니다</th><th style="width:15%">답할 사람</th></tr>
+  <tr>
+    <td>1</td>
+    <td><b>노란 것과 갈색 것을<br>다른 통에 버릴 수 있나요?</b></td>
+    <td>회의에서는 색깔별로 다른 자리에 버리기로 했는데, 지금 코드는 통 두 개를 <b>색깔과 상관없이 번갈아</b> 씁니다. 지금 그대로 찍으면 &ldquo;분류&rdquo;가 아니라 그냥 &ldquo;버리기&rdquo;로 보입니다</td>
+    <td>① 28일 전에 고칠 수 있다 → 콘티대로 두 컷(H-05/06)<br>② 못 고친다 → 한 컷 8초로 합침</td>
+    <td>백승주</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><b>말(내레이션)을 넣나요,<br>자막만 쓰나요?</b></td>
+    <td>말을 넣으면 같은 내용이라도 영상이 <b>10~15% 길어집니다</b>. 지금 콘티는 자막만 쓰는 기준으로 3분 55초에 맞춰 놨습니다</td>
+    <td>① 자막만 (추천)<br>② 내레이션도 넣자 → 누가 녹음할지도 함께</td>
+    <td>전체</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><b>마지막에 띄울 숫자<br>두 개를 알려 주세요</b></td>
+    <td>끝에 성적표처럼 카드 세 장을 띄웁니다. 도킹 정확도는 이미 있는데, <b>공정 완료율</b>과 <b>한 사이클에 걸리는 시간</b>이 아직 없습니다. <b>없으면 그 카드는 빼겠습니다</b> — 없는 숫자를 지어내지 않습니다</td>
+    <td>① 측정값 두 개<br>② 아직 없다 → 카드 2장으로 축소</td>
+    <td>백승주</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><b>ML 이상 탐지를<br>본편에 넣을까요?</b></td>
+    <td>발표에서 쓸 만한 수준이 되면 <b>본론 뒤쪽에 15초</b>로 넣는 게 더 잘 보입니다. 아직이면 마지막 EX. 챕터에 &ldquo;개발 중&rdquo;으로만 넣습니다</td>
+    <td>① 본편에 넣자 (영상 4:10)<br>② EX. 에만 넣자 (영상 3:55)</td>
+    <td>봉승현</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><b>AI 영상은 누가 만드나요?</b></td>
+    <td>도입 2컷과 엔딩 1컷은 실제 농장 장면이라 <b>우리가 찍을 수 없어</b> AI로 만들어야 합니다. 넣을 문장(프롬프트)은 다 써 두었습니다</td>
+    <td>① 제가 하겠다<br>② 도구·계정이 있는 사람이 맡는다</td>
+    <td>전체</td>
+  </tr>
+</table>
+<p class="chapline" style="margin-top:12px">자세한 배경은 <code>docs/최종영상_스토리보드_260927.md</code> 9절에 있습니다. (브랜치 <code>feature/lwh</code>)</p>
+
+</div></body></html>

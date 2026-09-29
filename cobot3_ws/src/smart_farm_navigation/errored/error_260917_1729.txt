@@ -1,0 +1,72 @@
+1. 
+    bash ~/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/run_all.sh
+    ---
+    위 코드 실행 후, 아이작심 및 nav2, rviz2 켜졌으나 아이작심에 아무것도 open되어있지 않았고, rviz2에 이전에 발생하던 error상황이 그대로 나타남.
+
+2. 
+---------------------------------------------------------------------------------
+[방법 B] ROS 2 통합 런치 방식
+---------------------------------------------------------------------------------
+터미널 1:
+    export ROS_DISTRO=jazzy
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
+    ros_set
+    source ~/cobot3_ws/install/setup.bash
+
+    ros2 launch mir100_navigation smart_farm_all.launch.py
+    ---
+    위 코드 실행 후 나타난 오류를 제미나이에게 물어봄:
+Q.
+rokey@IsaacSim03:~/ROKEY_P3_A1/cobot3_ws$     export ROS_DISTRO=jazzy
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
+    ros_set
+    source ~/cobot3_ws/install/setup.bash
+
+    ros2 launch mir100_navigation smart_farm_all.launch.py
+Package 'mir100_navigation' not found: "package 'mir100_navigation' not found, searching: ['/home/rokey/cobot3_ws/install/nav_to_goal', '/home/rokey/cobot3_ws/install/color_vision', '/home/rokey/cobot3_ws/install/carter_navigation', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/iw_hub_navigation', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/isaacsim', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/isaac_tutorials', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/isaac_ros_navigation_goal', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/isaac_ros2_messages', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/isaac_moveit', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/h1_fullbody_controller', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/custom_message', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/cmdvel_to_ackermann', '/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/install/carter_navigation', '/opt/ros/jazzy']"
+---
+아이작심+nav2+rviz2 동시 실행 코드인데 오류 발생함. 파악할 것.
+
+A.
+현재 터미널 세션이 `~/cobot3_ws` 워크스페이스만 소싱하고 있어, `mir100_navigation` 패키지가 존재하는 올바른 워크스페이스(`~/ROKEY_P3_A1/cobot3_ws`)의 환경 설정 파일이 누락되어 발생한 에러입니다. 또한, `source ~/cobot3_ws/install/setup.bash` 경로 역시 올바른 프로젝트 경로와 일치하지 않습니다.
+
+1. **올바른 워크스페이스로 이동:**
+`mir100_navigation` 패키지가 포함된 프로젝트 워크스페이스 디렉터리로 이동합니다.
+
+```bash
+cd ~/ROKEY_P3_A1/cobot3_ws
+
+```
+
+*검증:* 현재 경로가 `/home/rokey/ROKEY_P3_A1/cobot3_ws`로 변경되었는지 확인합니다.
+
+
+2. **환경 변수 재설정 및 올바른 워크스페이스 소싱:**
+환경 변수를 설정하고, `~/ROKEY_P3_A1/cobot3_ws` 워크스페이스의 `setup.bash`를 소싱합니다.
+
+```bash
+export ROS_DISTRO=jazzy
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
+ros_set
+source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+```
+
+*검증:* `ros2 pkg prefix mir100_navigation` 명령을 입력했을 때 `/home/rokey/ROKEY_P3_A1/cobot3_ws/install/mir100_navigation` 경로가 정상 출력되는지 확인합니다.
+
+
+3. **통합 런치 파일 재실행:**
+환경 변수가 올바르게 적용된 상태에서 통합 런치 파일을 실행합니다.
+
+```bash
+ros2 launch mir100_navigation smart_farm_all.launch.py
+
+```
+
+*검증:* 패키지 탐색 에러 없이 Nav2, RViz2 및 관련 노드들이 정상적으로 구동되는지 확인합니다.
+
+---
+이후 해결책대로 했는데 1번 오류 상황과 똑같이 실행됨.

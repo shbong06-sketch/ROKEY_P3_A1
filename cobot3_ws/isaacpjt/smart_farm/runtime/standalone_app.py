@@ -1450,16 +1450,46 @@ def fail_operation(
         )
 
 
-def select_view_camera():
-    """[navigation 2026-09-26] 화면에 보여 줄 카메라를 환경변수로 고른다.
+# [navigation 2026-09-28] 녹화용 시점 연출은 scripts/view_director.py 가 맡는다.
+# 카메라 목록·자리·전환 규칙은 그 파일에 있고, 여기서는 뷰포트를 바꾸는 함수만 넘긴다.
+_VIEW_DIRECTOR = None
 
-    씬에 저장된 기본 Perspective(/OmniverseKit_Persp)가 비전룸을 비추고 있어
-    녹화할 때 카터가 보이지 않는다. SMARTFARM_VIEW_CAMERA 에 카메라 prim 경로를
-    주면 그 카메라로 바꾼다. 예) /World/ProcessCameras/Cam2_Nav2Place
-    환경변수가 없으면 아무것도 하지 않으므로 기존 실행에는 영향이 없다.
+
+def get_view_director():
+    """녹화용 시점 연출기를 한 번만 만든다. 꺼져 있으면 None."""
+
+    global _VIEW_DIRECTOR
+    if _VIEW_DIRECTOR is None:
+        try:
+            from view_director import ViewDirector
+
+            _VIEW_DIRECTOR = ViewDirector(set_view_camera)
+        except Exception as error:  # 녹화 편의 기능이라 실패해도 실행을 막지 않는다
+            print(f"[화면] 시점 연출기 준비 실패 (무시): {error}", flush=True)
+            _VIEW_DIRECTOR = False
+    return _VIEW_DIRECTOR or None
+
+
+def update_view_director(node) -> None:
+    """[navigation 2026-09-28] 매 프레임 호출. 공정과 대상 위치로 카메라를 고른다."""
+
+    director = get_view_director()
+    if director is None:
+        return
+    command = node.active_command
+    operation = command.operation if command is not None else ""
+    try:
+        director.update(omni.usd.get_context().get_stage(), operation)
+    except Exception as error:
+        print(f"[화면] 시점 갱신 실패 (무시): {error}", flush=True)
+
+
+def set_view_camera(camera: str) -> None:
+    """[navigation 2026-09-26] 뷰포트 카메라를 주어진 prim 경로로 바꾼다.
+
+    녹화 편의 기능이므로 실패해도 실행을 막지 않는다.
     headless 로 띄우면 뷰포트가 없어 조용히 넘어간다.
     """
-    camera = os.environ.get("SMARTFARM_VIEW_CAMERA", "").strip()
     if not camera:
         return
     try:
@@ -1471,8 +1501,19 @@ def select_view_camera():
             return
         viewport.camera_path = camera
         print(f"[화면] 뷰포트 카메라를 {camera} 로 바꿨습니다.", flush=True)
-    except Exception as error:  # 녹화 편의 기능이므로 실패해도 실행을 막지 않는다
+    except Exception as error:
         print(f"[화면] 카메라 전환 실패 (무시): {error}", flush=True)
+
+
+def select_view_camera():
+    """[navigation 2026-09-26] 시작 시 보여 줄 카메라를 환경변수로 고른다.
+
+    씬에 저장된 기본 Perspective(/OmniverseKit_Persp)가 비전룸을 비추고 있어
+    녹화할 때 카터가 보이지 않는다. SMARTFARM_VIEW_CAMERA 에 카메라 prim 경로를
+    주면 그 카메라로 바꾼다. 예) /World/ProcessCameras/Cam2_Nav2Place
+    환경변수가 없으면 아무것도 하지 않으므로 기존 실행에는 영향이 없다.
+    """
+    set_view_camera(os.environ.get("SMARTFARM_VIEW_CAMERA", "").strip())
 
 
 def run():
@@ -1581,6 +1622,9 @@ def run():
             if not runtime.world.is_playing():
                 app.update()
                 continue
+
+            # [navigation 2026-09-28] 녹화용 시점 연출 (SMARTFARM_VIEW_FOLLOW=1 일 때만)
+            update_view_director(node)
 
             stopped_handled = False
 

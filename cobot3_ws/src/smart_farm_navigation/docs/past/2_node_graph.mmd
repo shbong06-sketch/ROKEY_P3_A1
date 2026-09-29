@@ -1,0 +1,34 @@
+flowchart LR
+    subgraph ISAAC["Isaac Sim  smart_farm_nav2_01.usd  (ROS2 Bridge)"]
+        SUB(["_World_nova_carter_ROS_differential_drive_ros2_subscribe_twist"])
+        DC["DifferentialController<br>wheelRadius 0.14 · wheelDistance 0.413<br>max 1.0 m/s · 1.2 rad/s"]
+        ODOMN(["ros2_publish_odometry<br>(IsaacComputeOdometry)"])
+        TFN(["ros2_publish_transform_tree ×3"])
+        LID(["ros2 RTX lidar / camera / imu helpers"])
+    end
+
+    CMD["/cmd_vel<br>geometry_msgs/Twist"]
+    ODOM["/chassis/odom<br>nav_msgs/Odometry<br>odom → base_link, 60 Hz"]
+    TF["/tf<br>tf2_msgs/TFMessage"]
+    PC["/front_3d_lidar/lidar_points<br>sensor_msgs/PointCloud2"]
+    IMG["/front_stereo_camera/*/image_raw<br>/…/imu"]
+
+    ESC(["/escape_controller<br>(escape_controller.py)"])
+    CHK(["/scene_check<br>(scene_check.py)"])
+    CLI(["ros2 topic / rviz2<br>(관측용)"])
+
+    ESC -->|"20 Hz"| CMD
+    CMD --> SUB --> DC
+    ODOMN --> ODOM
+    TFN --> TF
+    LID --> PC
+    LID --> IMG
+    ODOM --> ESC
+    ODOM --> CHK
+    TF --> CHK
+    PC --> CLI
+    ODOM --> CLI
+
+    classDef topic fill:#fff7d6,stroke:#b8860b,color:#000;
+    class CMD,ODOM,TF,PC,IMG topic;
+

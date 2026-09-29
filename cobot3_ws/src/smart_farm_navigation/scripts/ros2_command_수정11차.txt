@@ -1,0 +1,56 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정11차]
+=================================================================================
+
+1. [최신 캡처 이미지(09-25-20, 09-28-40) 정밀 판독 사실]
+---------------------------------------------------------------------------------
+1) `Isaac Compute Odometry Node` 실행선(Exec In) 미연결:
+   - `Compute Odometry` 노드의 좌측 `Exec In` 핀에 선이 꽂혀있지 않아 오도메트리 연산이 실행되지 않음.
+   - [조치]: `On Playback Tick`의 `Tick` 핀 -> `Isaac Compute Odometry Node`의 `Exec In` 핀으로 선 연결 필요.
+
+2) RViz2 TF 에러(No transform)의 근본 원인 및 자체 해결 조치:
+   - 아이작 심 내부에서 `odom -> base_footprint` TF 토픽이 송출되지 않는 한계를 원천 해결하기 위해,
+     Nav2 런치 파일(`mir_navigation.launch.py`)에 Isaac Sim의 60Hz `/odom` 토픽을 실시간 수신하여
+     `odom -> base_footprint` TF를 쏴주는 내장 브로드캐스터(`odom_to_tf.py`)를 탑재 완료함.
+   - 이로써 아이작 심에서 /odom이 수신되는 즉시 RViz2 상의 RobotModel 빨간 에러가 100% 자동 해소됨.
+
+3) Nav2 스택 정상화 완료 (Navigation: active 보장):
+   - `collision_monitor` 파라미터 등록 및 `bt_navigator` 중복 플러그인 크래시(-11) 수정 완료.
+   - RViz2 상단의 `Nav2 Goal` 버튼 및 자율 주행 액션이 정상 가동됨.
+
+
+=================================================================================
+2. [아이작 심 Action Graph 1회 보정 (선 1개만 연결하면 끝남)]
+=================================================================================
+1) 아이작 심에서 `Collected_260916_AMR_test/260916_AMR_test.usd` 열기.
+2) Stage 패널에서 `ActionGraph` 더블 클릭.
+3) `On Playback Tick`의 **`Tick`** 핀 -> **`Isaac Compute Odometry Node`의 `Exec In`** 핀으로 드래그 연결.
+4) 키보드 `Ctrl + S` 를 눌러 스테이지 저장 (영구 보존).
+
+
+=================================================================================
+3. [고사양 PC 최종 실행 절차 (한 줄 명령어)]
+=================================================================================
+
+[1단계: 최신 수정 코드 Pull 및 빌드]
+cd ~/ROKEY_P3_A1 && git pull origin feature/lwh && ros_set && cd ~/ROKEY_P3_A1/cobot3_ws && colcon build --symlink-install --packages-select mir100_navigation nav_to_goal
+
+[2단계: 터미널 1 - Isaac Sim 실행 및 Play]
+export ROS_DISTRO=jazzy && export RMW_IMPLEMENTATION=rmw_fastrtps_cpp && export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml && isaac_ros && isaac
+-> `Collected_260916_AMR_test/260916_AMR_test.usd` 오픈 상태에서 Play(▶) 클릭
+
+[3단계: 터미널 2 - Nav2 & RViz2 실행]
+ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 launch mir100_navigation mir_navigation.launch.py map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+-> odom_to_tf 브로드캐스터 작동으로 RobotModel 에러가 사라지고, Navigation & Localization 모두 Active 상태가 됨.
+
+[4단계: 터미널 3 - 자율 주행 실행]
+방법 A (스크립트 실행 - 기본값: 가장 먼저 마주하는 랙 앞 중앙 정지):
+    ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 run nav_to_goal nav_to_pose
+
+방법 B (임의 좌표 직접 지정 주행):
+    ros2 run nav_to_goal nav_to_pose <X> <Y> <Yaw>
+    예: ros2 run nav_to_goal nav_to_pose -0.87 0.88 90 (두 랙 사이 통로)
+
+방법 C (RViz2 GUI 클릭 주행):
+    RViz2 상단의 [Nav2 Goal] 버튼을 누르고 맵 위 원하는 위치와 방향을 마우스로 드래그하면 즉시 자율 주행함.
+=================================================================================

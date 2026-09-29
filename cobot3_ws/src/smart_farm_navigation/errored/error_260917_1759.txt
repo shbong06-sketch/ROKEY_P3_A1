@@ -1,0 +1,256 @@
+1. 
+    bash ~/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/run_all.sh
+    ---
+    위 코드 실행 후, 아이작심은 즉시 종료됨. 이후 /clock 활성여부를 재려고 45초를 기다린것 같은데 반응 없어서 그냥 꺼짐. 이하 오류 로그(너무 길어서 앞 부분은 잘려버린듯함):
+    | XServer Vendor: The X.Org Foundation, XServer Version: 12101011 (1.21.1.11)
+| Processor: Intel(R) Core(TM) Ultra 9 275HX
+| Cores: 24 | Logical Cores: 24
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 63706 | Free Memory: 55507
+| Total Page/Swap (MB): 8191 | Free Page/Swap: 8191
+|---------------------------------------------------------------------------------------------|
+'
+2026-09-17T08:56:25Z [101ms] [Warning] [carb.crashreporter-breakpad.plugin] [crash]  telemetrySessionId = '8101035920294235067'
+2026-09-17T08:56:25Z [102ms] [Warning] [carb.crashreporter-breakpad.plugin] [crash]  terminatedByAbort = '0'
+2026-09-17T08:56:25Z [103ms] [Warning] [carb.crashreporter-breakpad.plugin] [crash]  totalRamBareMetalMB = '63706'
+2026-09-17T08:56:25Z [103ms] [Warning] [carb.crashreporter-breakpad.plugin] [crash]  totalRamLimitedMB = '63706'
+2026-09-17T08:56:25Z [104ms] [Warning] [carb.crashreporter-breakpad.plugin] [crash]  totalSwapBareMetalMB = '8191'
+2026-09-17T08:56:25Z [105ms] [Warning] [carb.crashreporter-breakpad.plugin] [crash]  totalSwapLimitedMB = '8191'
+2026-09-17T08:56:25Z [106ms] [Warning] [carb.crashreporter-breakpad.plugin] [crash]  userId = 'default'
+2026-09-17T08:56:25Z [106ms] [Warning] [carb.crashreporter-breakpad.plugin] [crash]  workingDirectory = '/home/<username>/ROKEY_P3_A1/cobot3_ws'
+2026-09-17T08:56:25Z [107ms] [Fatal] [carb.crashreporter-breakpad.plugin] [crash] Thread 153902 backtrace follows:
+2026-09-17T08:56:25Z [204ms] [Fatal] [carb.crashreporter-breakpad.plugin] 000: libc.so.6!__sigaction+0x50 (libc_sigaction.c:?)
+2026-09-17T08:56:25Z [260ms] [Fatal] [carb.crashreporter-breakpad.plugin] 001: libc.so.6!pthread_kill+0x11c (./nptl/./nptl/pthread_kill.c:44 (discriminator 1))
+2026-09-17T08:56:25Z [298ms] [Fatal] [carb.crashreporter-breakpad.plugin] 002: libc.so.6!gsignal+0x1e (./signal/../sysdeps/posix/raise.c:27)
+2026-09-17T08:56:25Z [335ms] [Fatal] [carb.crashreporter-breakpad.plugin] 003: libc.so.6!abort+0xdf (./stdlib/./stdlib/abort.c:81)
+2026-09-17T08:56:25Z [342ms] [Fatal] [carb.crashreporter-breakpad.plugin] 004: libstdc++.so.6!std::unexpected()+0x5a0 (??:?)
+2026-09-17T08:56:25Z [347ms] [Fatal] [carb.crashreporter-breakpad.plugin] 005: libstdc++.so.6!std::rethrow_exception(std::__exception_ptr::exception_ptr)+0x8a (??:?)
+2026-09-17T08:56:25Z [351ms] [Fatal] [carb.crashreporter-breakpad.plugin] 006: libstdc++.so.6!std::terminate()+0x15 (??:?)
+2026-09-17T08:56:25Z [355ms] [Fatal] [carb.crashreporter-breakpad.plugin] 007: libstdc++.so.6!__cxa_pure_virtual+0x23 (??:?)
+  - 대기 중... (14s / 45s)
+2026-09-17T08:56:25Z [360ms] [Fatal] [carb.crashreporter-breakpad.plugin] 008: libusd_hd.so!pxrInternal_v0_24__pxrReserved__::Hd_PrimTypeIndex<pxrInternal_v0_24__pxrReserved__::HdSprim>::InsertPrim(pxrInternal_v0_24__pxrReserved__::TfToken const&, pxrInternal_v0_24__pxrReserved__::HdSceneDelegate*, pxrInternal_v0_24__pxrReserved__::SdfPath const&, pxrInternal_v0_24__pxrReserved__::HdChangeTracker&, pxrInternal_v0_24__pxrReserved__::HdRenderDelegate*)+0x10c (??:?)
+2026-09-17T08:56:25Z [365ms] [Fatal] [carb.crashreporter-breakpad.plugin] 009: libusd_hd.so!pxrInternal_v0_24__pxrReserved__::HdRenderIndex::_InsertSprim(pxrInternal_v0_24__pxrReserved__::TfToken const&, pxrInternal_v0_24__pxrReserved__::HdSceneDelegate*, pxrInternal_v0_24__pxrReserved__::SdfPath const&)+0xb2 (??:?)
+2026-09-17T08:56:25Z [370ms] [Fatal] [carb.crashreporter-breakpad.plugin] 010: libusd_hd.so!pxrInternal_v0_24__pxrReserved__::HdRenderIndex::InsertSprim(pxrInternal_v0_24__pxrReserved__::TfToken const&, pxrInternal_v0_24__pxrReserved__::HdSceneDelegate*, pxrInternal_v0_24__pxrReserved__::SdfPath const&)+0x133 (??:?)
+2026-09-17T08:56:25Z [374ms] [Fatal] [carb.crashreporter-breakpad.plugin] 011: libusd_hdx.so!pxrInternal_v0_24__pxrReserved__::HdxFreeCameraSceneDelegate::HdxFreeCameraSceneDelegate(pxrInternal_v0_24__pxrReserved__::HdRenderIndex*, pxrInternal_v0_24__pxrReserved__::SdfPath const&)+0x19e (??:?)
+2026-09-17T08:56:25Z [378ms] [Fatal] [carb.crashreporter-breakpad.plugin] 012: libusd_hdx.so!pxrInternal_v0_24__pxrReserved__::HdxTaskController::HdxTaskController(pxrInternal_v0_24__pxrReserved__::HdRenderIndex*, pxrInternal_v0_24__pxrReserved__::SdfPath const&, bool)+0x13e (??:?)
+2026-09-17T08:56:25Z [381ms] [Fatal] [carb.crashreporter-breakpad.plugin] 013: librtx.hydra.so!std::unique_lock<std::shared_mutex>::unlock()+0x8690 (??:?)
+2026-09-17T08:56:25Z [384ms] [Fatal] [carb.crashreporter-breakpad.plugin] 014: librtx.hydra.so!std::unique_lock<std::shared_mutex>::unlock()+0xd38d (??:?)
+2026-09-17T08:56:25Z [388ms] [Fatal] [carb.crashreporter-breakpad.plugin] 015: libomni.usd.so!std::_Hashtable<unsigned int, std::pair<unsigned int const, std::unordered_set<unsigned int, std::hash<unsigned int>, std::equal_to<unsigned int>, std::allocator<unsigned int> > >, std::allocator<std::pair<unsigned int const, std::unordered_set<unsigned int, std::hash<unsigned int>, std::equal_to<unsigned int>, std::allocator<unsigned int> > > >, std::__detail::_Select1st, std::equal_to<unsigned int>, std::hash<unsigned int>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, false, true> >::~_Hashtable()+0x4a79 (??:?)
+2026-09-17T08:56:25Z [391ms] [Fatal] [carb.crashreporter-breakpad.plugin] 016: libomni.usd.so!std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<void>, std::__future_base::_Result_base::_Deleter>, std::thread::_Invoker<std::tuple<omni::usd::UsdContext::Impl::spawnLoaderThread<omni::usd::UsdContext::Impl::closeUsd(bool)::{lambda()#1}>(omni::usd::UsdContext::Impl::closeUsd(bool)::{lambda()#1}&&, bool)::{lambda()#1}> >, void> >::_M_invoke(std::_Any_data const&)+0x1292 (??:?)
+2026-09-17T08:56:25Z [395ms] [Fatal] [carb.crashreporter-breakpad.plugin] 017: libcarb.eventdispatcher.plugin.so!carbOnPluginRegisterEx+0x3441 (??:?)
+2026-09-17T08:56:25Z [399ms] [Fatal] [carb.crashreporter-breakpad.plugin] 018: libcarb.eventdispatcher.plugin.so!carbOnPluginShutdown+0xc7b (??:?)
+2026-09-17T08:56:25Z [402ms] [Fatal] [carb.crashreporter-breakpad.plugin] 019: libomni.usd.so!std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<void>, std::__future_base::_Result_base::_Deleter>, std::thread::_Invoker<std::tuple<omni::usd::UsdContext::Impl::spawnLoaderThread<omni::usd::UsdContext::Impl::reopenUsd(bool, bool, omni::fabric::SampleIndex)::{lambda()#1}>(omni::usd::UsdContext::Impl::reopenUsd(bool, bool, omni::fabric::SampleIndex)::{lambda()#1}&&, bool)::{lambda()#1}> >, void> >::_M_invoke(std::_Any_data const&)+0x2d6d (??:?)
+2026-09-17T08:56:25Z [405ms] [Fatal] [carb.crashreporter-breakpad.plugin] 020: libomni.usd.so!std::_Function_handler<std::unique_ptr<std::__future_base::_Result_base, std::__future_base::_Result_base::_Deleter> (), std::__future_base::_Task_setter<std::unique_ptr<std::__future_base::_Result<void>, std::__future_base::_Result_base::_Deleter>, std::thread::_Invoker<std::tuple<omni::usd::UsdContext::Impl::spawnLoaderThread<omni::usd::UsdContext::Impl::reopenUsd(bool, bool, omni::fabric::SampleIndex)::{lambda()#1}>(omni::usd::UsdContext::Impl::reopenUsd(bool, bool, omni::fabric::SampleIndex)::{lambda()#1}&&, bool)::{lambda()#1}> >, void> >::_M_invoke(std::_Any_data const&)+0x4080 (??:?)
+2026-09-17T08:56:25Z [408ms] [Fatal] [carb.crashreporter-breakpad.plugin] 021: libomni.usd.so!std::__detail::_Compiler<std::__cxx11::regex_traits<char> >::_M_assertion()+0x1260 (??:?)
+2026-09-17T08:56:25Z [412ms] [Fatal] [carb.crashreporter-breakpad.plugin] 022: libcarb.events.plugin.so!std::_Sp_counted_base<(__gnu_cxx::_Lock_policy)2>::_M_release()+0x6f6f (??:?)
+2026-09-17T08:56:25Z [415ms] [Fatal] [carb.crashreporter-breakpad.plugin] 023: libcarb.events.plugin.so!std::_Sp_counted_base<(__gnu_cxx::_Lock_policy)2>::_M_release()+0x7504 (??:?)
+2026-09-17T08:56:25Z [418ms] [Fatal] [carb.crashreporter-breakpad.plugin] 024: libomni.timeline.plugin.so!std::_Sp_counted_base<(__gnu_cxx::_Lock_policy)2>::_M_release()+0x2c69 (??:?)
+2026-09-17T08:56:25Z [421ms] [Fatal] [carb.crashreporter-breakpad.plugin] 025: libomni.timeline.plugin.so!std::_Sp_counted_base<(__gnu_cxx::_Lock_policy)2>::_M_release()+0x41a9 (??:?)
+2026-09-17T08:56:25Z [425ms] [Fatal] [carb.crashreporter-breakpad.plugin] 026: libcarb.eventdispatcher.plugin.so!carbOnPluginRegisterEx+0x3441 (??:?)
+2026-09-17T08:56:25Z [428ms] [Fatal] [carb.crashreporter-breakpad.plugin] 027: libomni.kit.loop-isaac.plugin.so!void std::__detail::__to_chars_10_impl<unsigned int>(char*, unsigned int, unsigned int)+0x1a48d (??:?)
+2026-09-17T08:56:25Z [430ms] [Fatal] [carb.crashreporter-breakpad.plugin] 028: libomni.kit.app.plugin.so!+0x235e1
+2026-09-17T08:56:25Z [434ms] [Fatal] [carb.crashreporter-breakpad.plugin] 029: libomni.kit.app.plugin.so!carbOnPluginPreStartup+0x1fa0 (??:?)
+2026-09-17T08:56:25Z [435ms] [Fatal] [carb.crashreporter-breakpad.plugin] 030: kit!+0x3cd3
+2026-09-17T08:56:25Z [466ms] [Fatal] [carb.crashreporter-breakpad.plugin] 031: libc.so.6!__libc_init_first+0x8a (./csu/../sysdeps/x86/libc-start.c:74)
+2026-09-17T08:56:25Z [501ms] [Fatal] [carb.crashreporter-breakpad.plugin] 032: libc.so.6!__libc_start_main+0x8b (./csu/../csu/libc-start.c:128)
+2026-09-17T08:56:25Z [504ms] [Fatal] [carb.crashreporter-breakpad.plugin] 033: kit!_start+0x25 (??:?)
+/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/run_all.sh: line 122: 153902 Aborted                 (core dumped) "$ISAAC_SH" --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge --exec "$STAGE_LOADER --path $USD_PATH --start-on-play"
+  - 대기 중... (16s / 45s)
+  - 대기 중... (18s / 45s)
+  - 대기 중... (20s / 45s)
+  - 대기 중... (22s / 45s)
+  - 대기 중... (24s / 45s)
+  - 대기 중... (26s / 45s)
+  - 대기 중... (28s / 45s)
+  - 대기 중... (30s / 45s)
+  - 대기 중... (32s / 45s)
+  - 대기 중... (34s / 45s)
+  - 대기 중... (36s / 45s)
+  - 대기 중... (38s / 45s)
+  - 대기 중... (40s / 45s)
+  - 대기 중... (42s / 45s)
+  - 대기 중... (44s / 45s)
+  - 대기 중... (46s / 45s)
+⚠️ [주의] /clock 토픽 대기 시간이 초과되었으나, Nav2 기동을 계속 진행합니다.
+==================================================================
+🧭 [4/4] Nav2 Navigation 및 RViz2 자동 실행...
+==================================================================
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-17-17-57-01-260048-IsaacSim03-154530
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [robot_state_publisher-1]: process started with pid [154534]
+[INFO] [rviz2-2]: process started with pid [154535]
+[INFO] [map_server-3]: process started with pid [154536]
+[INFO] [amcl-4]: process started with pid [154537]
+[INFO] [lifecycle_manager-5]: process started with pid [154538]
+[INFO] [controller_server-6]: process started with pid [154539]
+[INFO] [smoother_server-7]: process started with pid [154540]
+[INFO] [planner_server-8]: process started with pid [154541]
+[INFO] [route_server-9]: process started with pid [154542]
+[INFO] [behavior_server-10]: process started with pid [154543]
+[INFO] [bt_navigator-11]: process started with pid [154544]
+[INFO] [waypoint_follower-12]: process started with pid [154545]
+[INFO] [velocity_smoother-13]: process started with pid [154546]
+[INFO] [collision_monitor-14]: process started with pid [154547]
+[INFO] [opennav_docking-15]: process started with pid [154548]
+[INFO] [lifecycle_manager-16]: process started with pid [154549]
+[velocity_smoother-13] [INFO] [1789635421.428148497] [velocity_smoother]: 
+[velocity_smoother-13] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-13] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-13] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[robot_state_publisher-1] [WARN] [1789635421.428543130] [kdl_parser]: The root link base_footprint has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-1] [INFO] [1789635421.428675697] [robot_state_publisher]: Robot initialized
+[lifecycle_manager-16] [INFO] [1789635421.429244706] [lifecycle_manager_navigation]: Creating
+[lifecycle_manager-16] [INFO] [1789635421.434126122] [lifecycle_manager_navigation]: Creating and initializing lifecycle service clients
+[amcl-4] [INFO] [1789635421.439004878] [amcl]: 
+[amcl-4] 	amcl lifecycle node launched. 
+[amcl-4] 	Waiting on external lifecycle transitions to activate
+[amcl-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-12] [INFO] [1789635421.438119201] [waypoint_follower]: 
+[waypoint_follower-12] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-12] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-12] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-4] [INFO] [1789635421.439518092] [amcl]: Creating
+[waypoint_follower-12] [INFO] [1789635421.439843581] [waypoint_follower]: Creating
+[lifecycle_manager-5] [INFO] [1789635421.440017492] [lifecycle_manager_localization]: Creating
+[opennav_docking-15] [INFO] [1789635421.440865599] [docking_server]: 
+[opennav_docking-15] 	docking_server lifecycle node launched. 
+[opennav_docking-15] 	Waiting on external lifecycle transitions to activate
+[opennav_docking-15] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[opennav_docking-15] [INFO] [1789635421.440943439] [docking_server]: Creating docking_server
+[controller_server-6] [INFO] [1789635421.441887579] [controller_server]: 
+[controller_server-6] 	controller_server lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1789635421.441941764] [planner_server]: 
+[planner_server-8] 	planner_server lifecycle node launched. 
+[planner_server-8] 	Waiting on external lifecycle transitions to activate
+[planner_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1789635421.443382157] [planner_server]: Creating
+[bt_navigator-11] [INFO] [1789635421.443712103] [bt_navigator]: 
+[bt_navigator-11] 	bt_navigator lifecycle node launched. 
+[bt_navigator-11] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-11] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[route_server-9] [INFO] [1789635421.444216180] [route_server]: 
+[route_server-9] 	route_server lifecycle node launched. 
+[route_server-9] 	Waiting on external lifecycle transitions to activate
+[route_server-9] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[collision_monitor-14] [INFO] [1789635421.444299349] [collision_monitor]: 
+[collision_monitor-14] 	collision_monitor lifecycle node launched. 
+[collision_monitor-14] 	Waiting on external lifecycle transitions to activate
+[collision_monitor-14] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-7] [INFO] [1789635421.444737813] [smoother_server]: 
+[smoother_server-7] 	smoother_server lifecycle node launched. 
+[smoother_server-7] 	Waiting on external lifecycle transitions to activate
+[smoother_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-11] [INFO] [1789635421.444766722] [bt_navigator]: Creating
+[lifecycle_manager-5] [INFO] [1789635421.445433095] [lifecycle_manager_localization]: Creating and initializing lifecycle service clients
+[controller_server-6] [INFO] [1789635421.445524764] [controller_server]: Creating controller server
+[behavior_server-10] [INFO] [1789635421.445756700] [behavior_server]: 
+[behavior_server-10] 	behavior_server lifecycle node launched. 
+[behavior_server-10] 	Waiting on external lifecycle transitions to activate
+[behavior_server-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-7] [INFO] [1789635421.446024919] [smoother_server]: Creating smoother server
+[map_server-3] [INFO] [1789635421.447063813] [map_server]: 
+[map_server-3] 	map_server lifecycle node launched. 
+[map_server-3] 	Waiting on external lifecycle transitions to activate
+[map_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-3] [INFO] [1789635421.447157465] [map_server]: Creating
+[planner_server-8] [INFO] [1789635421.452582497] [global_costmap.global_costmap]: 
+[planner_server-8] 	global_costmap lifecycle node launched. 
+[planner_server-8] 	Waiting on external lifecycle transitions to activate
+[planner_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1789635421.452945664] [global_costmap.global_costmap]: Creating Costmap
+[controller_server-6] [INFO] [1789635421.453871891] [local_costmap.local_costmap]: 
+[controller_server-6] 	local_costmap lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1789635421.454177419] [local_costmap.local_costmap]: Creating Costmap
+[lifecycle_manager-5] [INFO] [1789635421.544655690] [lifecycle_manager_localization]: Starting managed nodes bringup...
+[lifecycle_manager-5] [INFO] [1789635421.544697723] [lifecycle_manager_localization]: Configuring map_server
+[map_server-3] [INFO] [1789635421.544938437] [map_server]: Configuring
+[map_server-3] [INFO] [1789635421.544965706] [map_server]: yaml-filename parameter is empty, set map through 'load_map'-service
+[lifecycle_manager-5] [INFO] [1789635421.549479574] [lifecycle_manager_localization]: Configuring amcl
+[amcl-4] [INFO] [1789635421.549631757] [amcl]: Configuring
+[amcl-4] [INFO] [1789635421.549697001] [amcl]: initTransforms
+[lifecycle_manager-16] [INFO] [1789635421.551426924] [lifecycle_manager_navigation]: Starting managed nodes bringup...
+[lifecycle_manager-16] [INFO] [1789635421.551458409] [lifecycle_manager_navigation]: Configuring controller_server
+[controller_server-6] [INFO] [1789635421.551642365] [controller_server]: Configuring controller interface
+[controller_server-6] [INFO] [1789635421.551659706] [controller_server]: getting progress checker plugins..
+[controller_server-6] [INFO] [1789635421.551800235] [controller_server]: getting goal checker plugins..
+[controller_server-6] [INFO] [1789635421.551891719] [controller_server]: Controller frequency set to 20.0000Hz
+[controller_server-6] [INFO] [1789635421.551914128] [local_costmap.local_costmap]: Configuring
+[amcl-4] [INFO] [1789635421.555436332] [amcl]: initPubSub
+[controller_server-6] [INFO] [1789635421.557150474] [local_costmap.local_costmap]: Using plugin "obstacle_layer"
+[controller_server-6] [INFO] [1789635421.559687066] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[amcl-4] [INFO] [1789635421.561245512] [amcl]: Subscribed to map topic.
+[controller_server-6] [INFO] [1789635421.562153819] [local_costmap.local_costmap]: Initialized plugin "obstacle_layer"
+[controller_server-6] [INFO] [1789635421.562174349] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-6] [INFO] [1789635421.562593776] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[lifecycle_manager-5] [INFO] [1789635421.563592540] [lifecycle_manager_localization]: Activating map_server
+[map_server-3] [INFO] [1789635421.563700502] [map_server]: Activating
+[map_server-3] [INFO] [1789635421.563724936] [map_server]: Creating bond (map_server) to lifecycle manager.
+[controller_server-6] [INFO] [1789635421.574926049] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-6] [INFO] [1789635421.575136477] [controller_server]: Controller Server has progress_checker  progress checkers available.
+[controller_server-6] [INFO] [1789635421.575543104] [controller_server]: Created goal checker : stopped_goal_checker of type nav2_controller::StoppedGoalChecker
+[controller_server-6] [INFO] [1789635421.575960871] [controller_server]: Controller Server has stopped_goal_checker  goal checkers available.
+[controller_server-6] [INFO] [1789635421.577557735] [controller_server]: Created controller : FollowPath of type dwb_core::DWBLocalPlanner
+[controller_server-6] [INFO] [1789635421.578279706] [controller_server]: Setting transform_tolerance to 0.300000
+[controller_server-6] [INFO] [1789635421.584685891] [controller_server]: Using critic "RotateToGoal" (dwb_critics::RotateToGoalCritic)
+[controller_server-6] [INFO] [1789635421.585006317] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789635421.585082282] [controller_server]: Using critic "Oscillation" (dwb_critics::OscillationCritic)
+[controller_server-6] [INFO] [1789635421.585377876] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789635421.585443631] [controller_server]: Using critic "BaseObstacle" (dwb_critics::BaseObstacleCritic)
+[controller_server-6] [INFO] [1789635421.585559683] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789635421.585623885] [controller_server]: Using critic "GoalAlign" (dwb_critics::GoalAlignCritic)
+[controller_server-6] [INFO] [1789635421.585853461] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789635421.585918159] [controller_server]: Using critic "PathAlign" (dwb_critics::PathAlignCritic)
+[controller_server-6] [INFO] [1789635421.586131066] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789635421.586199952] [controller_server]: Using critic "PathDist" (dwb_critics::PathDistCritic)
+[controller_server-6] [INFO] [1789635421.586363476] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789635421.586429872] [controller_server]: Using critic "GoalDist" (dwb_critics::GoalDistCritic)
+[controller_server-6] [INFO] [1789635421.586589644] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789635421.586596440] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-16] [INFO] [1789635421.591289349] [lifecycle_manager_navigation]: Configuring smoother_server
+[smoother_server-7] [INFO] [1789635421.591485986] [smoother_server]: Configuring smoother server
+[smoother_server-7] [INFO] [1789635421.600156496] [smoother_server]: Created smoother : simple_smoother of type nav2_smoother::SimpleSmoother
+[smoother_server-7] [INFO] [1789635421.600633425] [smoother_server]: Smoother Server has simple_smoother  smoothers available.
+[lifecycle_manager-16] [INFO] [1789635421.604571701] [lifecycle_manager_navigation]: Configuring planner_server
+[planner_server-8] [INFO] [1789635421.604709110] [planner_server]: Configuring
+[planner_server-8] [INFO] [1789635421.604732570] [global_costmap.global_costmap]: Configuring
+[planner_server-8] [INFO] [1789635421.609142016] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-8] [INFO] [1789635421.611129946] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-8] [INFO] [1789635421.611982706] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-8] [INFO] [1789635421.611994262] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-8] [INFO] [1789635421.612355164] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-8] [INFO] [1789635421.614203413] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-8] [INFO] [1789635421.614212384] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-8] [INFO] [1789635421.614541262] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-8] [FATAL] [1789635421.627319159] [planner_server]: Failed to create global planner. Exception: According to the loaded plugin descriptions the class nav2_navfn_planner/NavfnPlanner with base class type nav2_core::GlobalPlanner does not exist. Declared types are  nav2_navfn_planner::NavfnPlanner nav2_smac_planner::SmacPlanner2D nav2_smac_planner::SmacPlannerHybrid nav2_smac_planner::SmacPlannerLattice nav2_theta_star_planner::ThetaStarPlanner
+[planner_server-8] [INFO] [1789635421.627378367] [planner_server]: Cleaning up
+[planner_server-8] [INFO] [1789635421.627390527] [global_costmap.global_costmap]: Cleaning up
+[lifecycle_manager-16] [ERROR] [1789635421.636994148] [lifecycle_manager_navigation]: Failed to change state for node: planner_server
+[lifecycle_manager-16] [ERROR] [1789635421.637039537] [lifecycle_manager_navigation]: Failed to bring up all requested nodes. Aborting bringup.
+[lifecycle_manager-5] [INFO] [1789635421.666753162] [lifecycle_manager_localization]: Server map_server connected with bond.
+[lifecycle_manager-5] [INFO] [1789635421.666781960] [lifecycle_manager_localization]: Activating amcl
+[amcl-4] [INFO] [1789635421.666992314] [amcl]: Activating
+[amcl-4] [INFO] [1789635421.667018041] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789635421.667072518] [amcl]: Setting pose (0.000000): -2.000 -1.000 0.000
+[amcl-4] [INFO] [1789635421.667318530] [amcl]: Creating bond (amcl) to lifecycle manager.
+[lifecycle_manager-5] [INFO] [1789635421.770565602] [lifecycle_manager_localization]: Server amcl connected with bond.
+[lifecycle_manager-5] [INFO] [1789635421.770609437] [lifecycle_manager_localization]: Managed nodes are active
+[lifecycle_manager-5] [INFO] [1789635421.770617184] [lifecycle_manager_localization]: Creating bond timer...
+[rviz2-2] [INFO] [1789635421.970930684] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-2] [INFO] [1789635421.970997784] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-2] [INFO] [1789635422.020225857] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-2] [INFO] [1789635422.059632243] [rviz]: Subscribing to: /front_3d_lidar/lidar_points
+[rviz2-2] 
+[rviz2-2] [INFO] [1789635422.060476462] [rviz]: Subscribing to: /mobile_base/sensors/bumper_pointcloud
+[rviz2-2] 
+[rviz2-2] [INFO] [1789635422.060937382] [rviz]: Subscribing to: /mobile_base/sensors/bumper_pointcloud
+[rviz2-2] 
+[rviz2-2] [INFO] [1789635422.095738535] [rviz]: Subscribing to: /front_3d_lidar/lidar_points
+[rviz2-2] 
+[rviz2-2] [INFO] [1789635422.096220070] [rviz]: Subscribing to: /mobile_base/sensors/bumper_pointcloud
+[rviz2-2] 
+[rviz2-2] [INFO] [1789635422.156927119] [rviz2]: Stereo is NOT SUPPORTED
+---

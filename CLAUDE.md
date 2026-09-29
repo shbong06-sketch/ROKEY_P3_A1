@@ -9,7 +9,8 @@
 1. `docs/ADR/ADR_basic.md` 를 읽음 (역할·기기·쓰기 권한·답변 규칙).
 2. Nav2·도킹·주행과 조금이라도 관련되면 `docs/ADR/ADR_navigation2.md` 를 이어서 읽음.
    - 브랜치 `feature/navigation2`, `feature/Inspection-Place-nav2` 에서 적용되며, 브랜치 이름과 무관하게 **Nav2 가 얽힌 모든 작업**에 적용함.
-3. 충돌 시 **ADR_basic 이 ADR_navigation2 보다 우선**함.
+2-1. 관제 웹·DB(브랜치 `feature/monitor`, 패키지 `smart_farm_monitor`)와 조금이라도 관련되면 `docs/ADR/ADR_web-monitor.md` 를 이어서 읽음.
+3. 충돌 시 **ADR_basic 이 ADR_navigation2·ADR_web-monitor 보다 우선**함.
 4. **ADR 을 임의로 수정하지 않음.** 사용자가 직접 지시했거나, 수정 없이는 업무가 불가능함을 보고하고 승인받은 경우만 수정함.
 5. **2026-09-25 사용자 지시: 이제 ADR 은 거의 수정하지 않는 방향으로 감.** 낡은 항목이 보이면 고치지 말고 답변의 "미해결" 항에 적어 알리기만 함. 현행값의 출처는 코드와 최신 가이던스임.
 
@@ -92,13 +93,17 @@ Isaac Sim 실측은 사용자의 물리적 작업 시간이고 **영상 녹화 �
 - 위 경로 안이라도 **팀원 소유 파일**(`isaacpjt/smart_farm/runtime/`, `scripts/robot_motion*.py`, `scripts/pallet_transfer.py`, `scripts/lift.py`, `smart_farm_navigation/navigation_node.py`, `src/smart_farm_interfaces/`)은 수정 전 보고하고, 수정하면 주석 `[navigation YYYY-MM-DD]` 를 남김.
 - `docs/reference/` 는 해당 주제를 다루는 중이 아니면 열람을 자제함(토큰).
 - 저장소 트리 재구성 금지. 미사용 파일은 각 모듈의 `past/` 로 이동함.
-- 병합 충돌은 **pull 된 쪽(development)이 이김**. 병합 뒤 ADR_nav2 §2.4 점검표로 내 추가분이 사라졌는지 확인함.
+- 병합 충돌은 **마지막 수정일이 최신인 쪽이 이김**(대개 pull 된 쪽). 단 **삭제는 우리 기록을 이기지 못함** — `results/`·`errored/`·`docs/ADR`·`docs/prompt`·`docs/reference`·`guidance/`·각 모듈 `docs/`·`past/` 는 되살림 (ADR_basic §6-8).
+- **병합 직후 `git diff --cached --name-status --diff-filter=D` 로 조용히 지워진 파일을 확인함.** 우리가 손대지 않은 파일의 삭제는 충돌로 드러나지 않음. 그 다음 ADR_nav2 §2.4 점검표를 봄.
+- **git 운용 범위** (ADR_basic §6-7): 내 작업 브랜치의 생성·전환·커밋·푸시·병합과 원격 조회까지만 함. 팀원 브랜치 push, `development`·`main` push·merge, PR 조작, 브랜치·태그 삭제, `--force`, 히스토리 재작성은 **승인 없이 하지 않음.** 팀원 브랜치·파일은 열람만. 브랜치를 파거나 병합하면 답변에 반드시 보고함.
 
 ---
 
 ## 4. 가이던스 문서 규칙 (ADR_basic §6.1, ADR_nav2 §2.5)
 
-- 경로 `cobot3_ws/src/smart_farm_navigation/guidance/`, 파일명 `guidance2_<n>차.md` (답변마다 차수 +1, 지난 차수는 `guidance/past/` 로).
+- **가이던스는 그 작업이 속한 패키지의 `guidance/` 에 둠** (ADR_basic §6-1, 2026-09-28 갱신). 주행은 `smart_farm_navigation/guidance/` 의 `guidance2_<n>차.md`, 관제는 `smart_farm_monitor/guidance/` 의 `guidance3_<n>차.md`(27차부터).
+- **가이던스는 사용자의 직접 실측 메뉴얼임. 사용자가 당장 할 일 목록이 아니면 보관 폴더로 보내고 그곳에서 열람함** (주행 `guidance/past/`, 관제 `guidance/past_monitor_guidance/`). 실측을 내가 대행하는 판의 가이던스는 작성 직후 보관함.
+- **실측·녹화는 내가 대행함** (ADR_basic §5-8). 가상 디스플레이로 Isaac 을 띄우고 로그·미디어를 남김. **단 상의해 합의된 범위까지만.** 보고하지 않은 절차를 실측하지 않음.
 - **자립형**: 위에서 아래로 실행만 하면 되게 씀. 이전 차수를 열어볼 필요가 없어야 함.
 - 몇 번째 터미널인지 명시. **터미널 블록마다 환경 5줄을 매번 반복**함. "위와 같은 5줄" 식 참조 금지.
 - 절대경로만 씀. `PROJECT_ROOT` 같은 셸 변수 금지. 어느 cwd 에서도 동작해야 함.
@@ -112,7 +117,9 @@ Isaac Sim 실측은 사용자의 물리적 작업 시간이고 **영상 녹화 �
 ## 5. 절대 어기지 않을 것 (ADR_nav2 §2.7)
 
 - **내피 모의 결과를 실측 결과로 보고하지 않음.** 실측 여부는 `results/`·`errored/`·bag 으로만 판단함. 모의는 반드시 "내피 모의" 로 표기함.
-- **시간 판단은 `/clock`(`use_sim_time: true`) 기준으로만.** `time.time()`·`time.monotonic()` 으로 타임아웃·신선도를 판단하지 않음 (실시간 배율 0.3 → 벽시계는 3배 빨리 걸림).
+- **시간 판단은 무엇을 재는지로 갈림** (ADR_basic §5-6, 2026-09-28 분리 명시).
+  - **Isaac 안에서 로봇이 움직이는 시간**(공정 제한시간, 목표 자세 stamp, 센서·도킹 신선도) → `/clock`(`use_sim_time: true`) 기준으로만. `time.time()`·`time.monotonic()` 금지 (실시간 배율 0.3 → 벽시계는 3배 빨리 걸림).
+  - **상대 노드가 살아 있는가**(heartbeat 신선도, 준비 대기 timeout, 관리자 노드 주기 타이머) → **벽시계**. `/clock` 에 걸면 Isaac 이 죽는 순간 시각이 멈춰 영원히 대기하고, Isaac 없이 도는 시험 런치가 안 돎.
 - `feeder_dock` 은 Nav2 `/cmd_vel` 이 **2초 이상 조용할 때만** 시작함. `/cmd_vel` 발행자는 Nav2 와 `feeder_dock` 둘뿐이며 세 번째를 추가하지 않음.
 - 카터 **앞 = `base_link` +x = 구동륜 쪽**, 뒤 = −x = 캐스터·리프트·M0609. 초기 yaw 90°. 이 배치는 팀 P&P 때문에 바꾸지 않음. 랙 통로 안에서 제자리 회전 금지, 후진으로 빠져나감.
 - 장면·지도 버전은 ADR 또는 `scenes/` 최신 경로만 신뢰함. 메모리 속 v004/v008 수치는 과거 값임.
@@ -130,6 +137,8 @@ Isaac Sim 실측은 사용자의 물리적 작업 시간이고 **영상 녹화 �
   기기 간 대화 기록 이전은 git 이 아니라 `scp`/`gcloud compute scp` 로 `~/.claude/projects/<경로>/` 에 직접 복사함.
 - `results/bags/`, `media_log/`, 대용량 USD 에셋은 git 제외.
 - 커밋 접두어: `feat/fix/test/refactor/docs/ci/chore`. 브랜치는 `feature/*` → `development` → `main` (PR).
+- **디렉터리 이름 변경·대량 이동을 보면 `.gitignore` 규칙이 여전히 유효한지 즉시 확인함** (ADR_basic §6-6). 실측 기록은 범용 무시 패턴에 걸리면 `!` 예외로 되살려 추적을 유지함. 대용량 파일·자격증명이 추적 대상으로 노출된 것을 발견하면 질문을 기다리지 않고 먼저 막고 보고함. 그 밖의 정리·삭제·이동은 사용자 확인을 받음.
+- **산출물을 추적 디렉터리에 평면으로 흘리지 않고 하위 폴더로 접음.** 사용자는 VSCode 탐색기를 주 작업 인터페이스로 씀. 기록·로그·DB 파일은 git 제외되는 하위 폴더에 둠.
 - 작업 후 현재 원격 브랜치로 커밋·푸시까지 하고, **무엇이 들어갔는지 답변이나 가이던스에 반드시 보고**함.
 
 ---

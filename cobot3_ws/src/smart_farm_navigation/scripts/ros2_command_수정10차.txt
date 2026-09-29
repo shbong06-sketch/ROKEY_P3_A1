@@ -1,0 +1,61 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정10차]
+=================================================================================
+
+1. [최신 캡처 이미지(21-28-50, 21-28-55) 정밀 분석 사실]
+---------------------------------------------------------------------------------
+보내주신 Action Graph 캡처 화면을 판독한 결과, 다음 3가지 핵심 연결/속성 누락을 확인하였음:
+
+1) 속도 제어선 완전 단절 (로봇이 안 움직이는 원인):
+   - `ROS2 Subscribe Twist`의 `Linear Velocity`, `Angular Velocity` 출력 핀이 비어있음.
+   - `Differential Controller`의 `Desired Linear Velocity`, `Desired Angular Velocity` 및 `Exec In`이 비어있음.
+   - 즉, Nav2가 보낸 속도 명령이 바퀴 제어기로 전달되지 않고 있었음.
+
+2) `Articulation Controller` 노란색 경고 [!] 발생 원인:
+   - 로봇 타겟 경로(`targetPrim` 또는 `robotPath`)가 미지정되어 경고가 뜸.
+
+3) `No transform from [base_footprint] to [map]` 원인 (가장 중요):
+   - `ROS2 Publish Transform Tree` 노드의 `Parent Prim` 및 `Target Prims` 항목이 비어있어,
+     아이작 심에서 `/tf` 토픽(odom -> base_footprint 변환)을 일체 송출하지 못하고 있었음.
+
+
+=================================================================================
+2. [아이작 심 Action Graph 3분 보정 절차 (사진 기준 정확한 핀 연결)]
+=================================================================================
+
+[조치 1: 마우스 드래그로 선 3개 연결하기]
+1. `On Playback Tick`의 [Tick] 핀 -> `Differential Controller`의 [Exec In] 핀으로 연결.
+2. `ROS2 Subscribe Twist`의 [Linear Velocity] 핀 -> `Differential Controller`의 [Desired Linear Velocity] 핀으로 연결.
+3. `ROS2 Subscribe Twist`의 [Angular Velocity] 핀 -> `Differential Controller`의 [Desired Angular Velocity] 핀으로 연결.
+
+[조치 2: Property 패널 속성 2개 입력하기]
+1. `Articulation Controller` 노드 클릭:
+   -> 우측 Property 패널의 `targetPrim` (또는 `Robot Path`) 입력창에 `/World/mir100` 입력.
+   (노드 우측 상단 노란색 경고 [!] 가 사라짐을 확인)
+
+2. `ROS2 Publish Transform Tree` 노드 클릭:
+   -> 우측 Property 패널의 `parentPrim` 에 `/World/mir100/base_footprint` 입력.
+   -> `targetPrims` 에 `/World/mir100` 입력 (또는 Add Target으로 mir100 선택).
+
+3. 키보드 `Ctrl + S` 를 눌러 스테이지 저장 (영구 보존 완료).
+
+
+=================================================================================
+3. [고사양 PC 최종 실행 절차]
+=================================================================================
+
+[1단계: 최신 수정 코드 Pull 및 빌드 (bt_navigator 크래시 해결본 반영)]
+cd ~/ROKEY_P3_A1 && git pull origin feature/lwh && ros_set && cd ~/ROKEY_P3_A1/cobot3_ws && colcon build --symlink-install --packages-select mir100_navigation nav_to_goal
+
+[2단계: 터미널 1 - Isaac Sim 실행 및 Play]
+export ROS_DISTRO=jazzy && export RMW_IMPLEMENTATION=rmw_fastrtps_cpp && export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml && isaac_ros && isaac
+-> Collected_260916_AMR_test.usd 오픈 후 Play(▶) 클릭
+
+[3단계: 터미널 2 - Nav2 & RViz2 실행]
+ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 launch mir100_navigation mir_navigation.launch.py map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+-> /tf 발행으로 RViz2 상의 RobotModel 빨간 에러가 사라지고, Navigation & Localization 모두 Active 활성화됨.
+
+[4단계: 터미널 3 - 자율 주행 실행]
+ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 run nav_to_goal nav_to_pose
+(또는 RViz2 상단 메뉴의 [Nav2 Goal] 버튼을 클릭하고 맵 위 원하는 지점을 마우스로 드래그하면 즉시 자율 주행함)
+=================================================================================

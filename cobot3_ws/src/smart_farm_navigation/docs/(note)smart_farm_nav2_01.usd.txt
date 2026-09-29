@@ -1,0 +1,116 @@
+로컬 파일은 변경하지 않았음. 두 질문에 답함.
+
+## 1) 파라미터를 ros2 명령으로 바꾸는 방법
+
+**기본 개념**
+
+- 파라미터는 노드 하나에 속한 "이름 = 값" 저장소임. escape_controller.py의 `declare_parameter`가 이름·기본값·자료형을 등록함. 등록되지 않은 이름은 명령으로 설정할 수 없음.
+- 값이 들어오는 경로는 세 가지이며 뒤에 오는 것이 앞의 것을 덮어씀. 코드 기본값 → YAML 파일(`--params-file`) → 명령줄 단일 지정(`-p 이름:=값`).
+- YAML의 구조는 "노드 이름 → ros__parameters → 항목"임. 노드 이름은 코드에서 `escape_controller`로 정했으므로 실행 중에는 `/escape_controller`로 보임.
+- 자료형이 맞아야 함. double로 등록된 항목에 `1`을 주면 정수로 해석되어 거부되므로 `1.0`으로 씀. bool은 `true`/`false`로 씀.
+
+**실행 시점에 값을 바꾸는 방법 (가장 확실함)**
+
+launch에서는 YAML 경로와 auto_start만 인자로 받음.
+
+```bash
+ros2 launch smart_farm_navigation escape.launch.py auto_start:=true params_file:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/config/escape_controller.yaml
+```
+
+개별 항목을 바꾸려면 ros2 run으로 직접 실행하며 `-p`를 붙임. 여러 개를 붙여도 됨.
+
+```bash
+ros2 run smart_farm_navigation escape_controller --ros-args --params-file /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/config/escape_controller.yaml -p auto_start:=true -p forward_speed_mps:=0.3 -p turn_angle_rad:=-1.5708
+```
+
+**실행 중인 노드의 값을 조회·변경하는 명령**
+
+```bash
+ros2 param list /escape_controller
+```
+
+```bash
+ros2 param get /escape_controller forward_speed_mps
+```
+
+```bash
+ros2 param describe /escape_controller turn_angle_rad
+```
+
+```bash
+ros2 param set /escape_controller forward_speed_mps 0.3
+```
+
+```bash
+ros2 param dump /escape_controller > /tmp/escape_now.yaml
+```
+
+```bash
+ros2 param load /escape_controller /tmp/escape_now.yaml
+```
+
+**주의할 점**
+
+- 현재 escape_controller는 시작 시 파라미터를 한 번 읽어 내부 변수에 복사함. 따라서 실행 중 `ros2 param set`으로 바꾸면 노드의 파라미터 저장소만 바뀌고 실제 동작에는 반영되지 않음. 실행 중 반영이 필요하면 코드에 `add_on_set_parameters_callback`을 등록하여 변경 시 내부 변수를 갱신하는 처리가 추가되어야 함. 지금은 값을 바꾸려면 노드를 다시 띄우는 방식이 맞음.
+- YAML을 고쳐 영구 반영하려면 src의 파일을 수정한 뒤 colcon build를 다시 해야 함. launch가 읽는 파일은 install 아래 복사본이기 때문임. 빌드 없이 쓰려면 위 launch 명령처럼 params_file로 src 경로를 직접 지정하면 됨.
+- `ros2 param set`으로 바꾼 값은 노드가 종료되면 사라짐. 남기려면 `ros2 param dump`로 파일에 저장함.
+
+## 2) 파일별 역할과 내부 구조
+
+**smart_farm_navigation/escape_controller.py** (탈출 동작 노드)
+
+- **Phase 열거형**: 상태 이름 목록임. WAITING, ARC_REVERSE, ARC_STOP, FORWARD, COMPLETE, ABORTED. 노드는 항상 이 중 하나의 상태에 있음.
+- **wrap_angle**: 각도를 -180도에서 +180도 사이로 접음. 90도와 450도를 같은 방향으로 다루기 위함임.
+- **yaw_from_odom**: Odometry 메시지의 쿼터니언에서 z축 회전각(yaw)만 뽑음.
+- **__init__**: 파라미터 등록과 읽기, /cmd_vel 발행자, /chassis/odom 구독자, 0.05 s 주기 타이머를 만듦. 상태 변수(현재 위치, yaw, 누적 회전각, 단계 시작 시각 등)를 초기화함. drive_direction_sign은 "보이는 정면"이 chassis의 어느 축인지 부호로 적용함.
+- **_odom_callback**: odom이 올 때마다 위치와 yaw를 갱신함. ARC_REVERSE 중에는 yaw 변화량을 누적하여 "얼마나 돌았는지"를 셈. 마지막 수신 시각도 기록함.
+- **_odom_is_fresh**: 마지막 odom이 odom_timeout_s 안에 들어왔는지 판정함. 오래되면 시뮬레이터가 멈춘 것으로 보고 중단함.
+- **_distance_from_phase_start**: 현재 단계 시작점에서 지금까지의 직선 거리임. 원호 후진의 안전 상한 판정에 씀.
+- **_hold_heading**: 목표 yaw와 현재 yaw의 차이에 비례한 각속도를 냄. 상한은 heading_hold_max_radps임.
+- **_travel_heading**: 로봇이 실제로 진행하는 방향임. drive_direction_sign이 음수이면 yaw에 180도를 더함.
+- **_cross_track_error**: 중앙선에서 좌우로 얼마나 벗어났는지의 부호 있는 거리임. 중앙선은 시작 위치를 지나 회전 후 진행 방향으로 뻗는 직선으로 정의함.
+- **_along_track**: 중앙선 방향으로 얼마나 전진했는지임. FORWARD 종료 판정에 씀.
+- **_follow_line**: 횡오차에 따라 접근각을 정하고(cross_track_gain, 상한 cross_track_max_angle_rad), 그 방향과 실제 진행 방향의 차이로 각속도를 냄. 중앙에서 멀면 비스듬히 붙고 가까우면 방향만 유지함.
+- **_publish**: linear.x와 angular.z만 채운 Twist를 발행함. 인자가 없으면 정지 명령임.
+- **_parameters_valid**: 속도·거리·각도가 양수인지 등 값이 갖춰졌는지 확인함. 미설정이면 명령을 보내지 않음.
+- **_enter**: 단계를 바꾸며 시작 시각·시작 위치·제한시간을 기록하고 로그를 남김. 제한시간은 공칭 소요시간의 phase_timeout_factor배와 phase_timeout_min_s 중 큰 값임.
+- **_stalled**: 진행량(각도 또는 거리)이 stall_timeout_s 동안 stall_min_progress만큼도 늘지 않으면 참을 돌려줌.
+- **_abort**: 상태를 ABORTED로 바꾸고 정지 명령을 보내며 종료 코드를 2로 정함.
+- **_tick**: 0.05 s마다 도는 본체임. 순서는 완료·중단 상태 처리 → auto_start 확인 → 파라미터 확인 → odom 신선도 확인 → WAITING이면 시작 자세와 중앙선 기록 후 ARC_REVERSE 진입 → 각 단계별로 명령 발행과 종료·중단 조건 판정임. ARC_REVERSE는 후진과 회전을 동시에 내고 누적 회전각이 turn_angle_rad에 닿으면 ARC_STOP으로 감. ARC_STOP은 settle_duration_s만큼 정지함. FORWARD는 _follow_line으로 조향하며 _along_track이 forward_distance_m에 닿으면 COMPLETE임. COMPLETE와 ABORTED에서는 stop_hold_duration_s 동안 정지 명령을 반복한 뒤 finished를 참으로 만들어 프로세스가 끝나게 함.
+- **publish_stop_burst**: Ctrl+C 시 정지 명령을 여러 번 보내 Isaac Sim 쪽 구독자가 마지막 값으로 0을 갖게 함.
+- **destroy_node**: 종료 직전 정지 명령을 한 번 더 보냄. 통신이 이미 닫혔으면 조용히 넘어감.
+- **main**: rclpy 초기화(신호 처리는 Python이 맡도록 지정), spin_once 반복, 종료 코드 반환임. 완료 0, 중단 2임.
+
+**smart_farm_navigation/scene_check.py** (장면 통신 점검 노드)
+
+- **__init__**: /chassis/odom과 /tf 구독자를 만들고 드리프트 측정 시간 파라미터를 읽음.
+- **_on_odom, _on_tf**: 최신 odom과 TF의 부모·자식 쌍을 모아 둠.
+- **spin_for**: 지정 시간 동안 메시지를 받으며 기다림.
+- **run**: 3 s 대기 후 /cmd_vel 구독자·발행자 수 → odom 프레임과 자세 → odom→base_link TF 존재 → 지정 시간 동안 무명령 이동량과 odom 주기 순으로 검사하고 RESULT: OK 또는 FAIL로 끝냄. 종료 코드는 0 또는 1임.
+
+**launch/escape.launch.py**
+
+- auto_start와 params_file 두 인자를 선언하고 escape_controller 노드를 하나 띄움. 파라미터는 YAML을 먼저, 그 뒤 auto_start 인자를 적용하므로 인자가 YAML을 덮어씀. output=screen과 emulate_tty는 로그를 터미널에 색과 함께 그대로 보이게 하는 설정임.
+
+**config/escape_controller.yaml**
+
+- 위 노드의 값 모음임. 주석에 장면 실측 근거를 적어 두었음. auto_start는 안전을 위해 false로 두고 실행 시 인자로 켬.
+
+**scripts/launch_scene.py** (Isaac Sim 자동 실행)
+
+- Isaac Sim 창을 띄우고(SimulationApp), ROS 2 bridge 확장을 켜고, 장면을 열어 로딩이 끝날 때까지 기다린 뒤 Play를 누름. 이후 SIGINT 또는 SIGTERM을 받을 때까지 매 프레임 갱신함. 종료 시 Stop 후 앱을 닫음. Isaac Sim 내장 Python(isaac_python)으로만 실행됨.
+
+**scripts/env_check.sh**
+
+- 다섯 구역으로 나뉨. 셸 변수(ROS_DISTRO, 도메인, RMW, FastDDS 프로파일) → 시스템 ROS(설치·소싱된 배포판, rclpy import) → Isaac Sim(버전, 내장 bridge 배포판) → LD_LIBRARY_PATH에 섞인 bridge·ROS lib의 배포판 일치 여부 → 보이는 topic 수임. 마지막에 OK, WARN, CONFLICT를 출력하고 종료 코드 0, 1, 2를 돌려줌.
+
+**scripts/gopi_run.sh** (선택 사항, 일괄 실행)
+
+- 환경 설정 → 패키지 산출물 삭제 후 빌드 → odom이 없으면 launch_scene.py 실행 후 대기 → topic·드리프트 기록 → escape_controller 실행(옵션에 따라 대기 또는 탈출) → Isaac Sim 종료 → results 커밋·푸시 순임. finish 함수가 어느 지점에서 끝나든 정리와 기록을 맡음.
+
+**패키지 뼈대**
+
+- package.xml은 패키지 이름·의존성(rclpy, geometry_msgs, nav_msgs, tf2_msgs, ros2launch)과 빌드 방식(ament_python)을 선언함.
+- setup.py는 설치 목록임. resource 표식, package.xml, config의 YAML, launch 파일을 share 아래에 복사하고, console_scripts로 escape_controller와 scene_check 실행 파일을 만듦. ros2 run이 찾는 이름이 여기서 정해짐.
+- setup.cfg는 실행 파일을 lib/smart_farm_navigation 아래에 두라는 지정임. ros2 run이 그 위치를 찾음.
+- resource/smart_farm_navigation은 빈 표식 파일로, ros2가 패키지 존재를 인식하는 데 씀.

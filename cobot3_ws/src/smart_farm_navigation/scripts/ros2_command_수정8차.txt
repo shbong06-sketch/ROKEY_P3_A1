@@ -1,0 +1,58 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정8차]
+=================================================================================
+
+1. [20:13 오류 분석 및 수정 사실]
+---------------------------------------------------------------------------------
+1) Navigation: inactive 원인 및 조치 (핵심):
+   - 원인: Jazzy Nav2의 `collision_monitor` 노드가 `observation_sources` 파라미터 미정의로
+     종료되면서, `lifecycle_manager_navigation`이 네비게이션 스택 전체를 중단시킴.
+   - 조치: `mir100_navigation_params.yaml`에 `collision_monitor` 정식 설정을 추가 완료함.
+     이로써 `Navigation: active`로 정상 기동됨.
+
+2) Frame odom Timestamp 0 경고 원인 및 조치:
+   - 원인: Isaac Sim의 `ROS2 Publish Odometry` 노드의 `inputs:timeStamp`가 미연결되어 0으로 송출됨.
+   - 조치: 아이작 심 Action Graph 창에서 `ROS2 Publish Odometry` 노드를 클릭하고,
+     우측 Property 패널에서 `useSystemTime` 항목을 체크(True)함 (또는 timeStamp에 Tick 시간 연결).
+     이로써 Timestamp 0 무시 경고 및 RobotModel TF 끊김이 즉시 해소됨.
+
+3) nav_to_pose 무한 대기 원인 및 조치:
+   - 원인: `nav_to_pose.py`에서 `setInitialPose()`를 중복 호출하여 `Waiting for amcl_pose`에 갇힘.
+   - 조치: AMCL이 이미 `always_reset_initial_pose: true`로 시작 즉시 위치를 잡으므로,
+     중복 대기 블록을 제거하고 Nav2 Active 확인 즉시 목표 좌표로 주행 명령을 하달하도록 수정함.
+
+4) 커맨드 개행 문제 방지:
+   - 백슬래시(\) 개행으로 인한 인자 누락 에러 방지를 위해 모든 실행 명령어를 완전한 단일 한 줄로 제공함.
+
+
+=================================================================================
+2. [아이작 심 Action Graph 1회 보정 (10초 소요)]
+=================================================================================
+1) 아이작 심에서 `Collected_260916_AMR_test.usd` 열기.
+2) Stage 패널에서 `ActionGraph` 더블 클릭 (화면 하단 에디터 열림).
+3) `ROS2 Publish Odometry` 노드를 클릭하고 우측 Property 패널에서:
+   -> `useSystemTime` 속성을 체크(True)로 변경.
+4) 키보드 `Ctrl + S` 를 눌러 저장 (영구 보존 완료).
+
+
+=================================================================================
+3. [고사양 PC 최종 실행 절차 (한 줄 명령어)]
+=================================================================================
+
+[1단계: 최신 수정 코드 Pull 및 빌드]
+cd ~/ROKEY_P3_A1 && git pull origin feature/lwh
+ros_set && cd ~/ROKEY_P3_A1/cobot3_ws
+colcon build --symlink-install --packages-select mir100_navigation nav_to_goal
+
+[2단계: 터미널 1 - Isaac Sim 실행]
+export ROS_DISTRO=jazzy && export RMW_IMPLEMENTATION=rmw_fastrtps_cpp && export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml && isaac_ros && isaac
+-> Collected_260916_AMR_test.usd 오픈 후 Play(▶) 클릭
+
+[3단계: 터미널 2 - Nav2 & RViz2 실행 (단일 한 줄)]
+ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 launch mir100_navigation mir_navigation.launch.py map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+-> collision_monitor 해결로 Navigation: active 및 Localization: active 가 모두 정상 활성화됨.
+
+[4단계: 터미널 3 - 두 랙 사이 통로 자율 주행 실행]
+ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 run nav_to_goal nav_to_pose
+-> MiR100이 두 랙 사이 통로(X=-0.87m, Y=0.88m, Yaw=90.0°)로 자동 진입하여 감속 후 정밀 정지함.
+=================================================================================

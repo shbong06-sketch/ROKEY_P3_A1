@@ -1,0 +1,178 @@
+1. 최신 코드 수신, ROS 환경 설정, 빌드를 순서대로 실행한다.
+
+PROJECT_ROOT=/home/rokey/ROKEY_P3_A1
+cd "$PROJECT_ROOT"
+git pull --ff-only origin feature/navigation
+source /opt/ros/jazzy/setup.bash
+export ROS_DOMAIN_ID=101
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/rokey/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib"
+cd "$PROJECT_ROOT/cobot3_ws"
+colcon build --packages-select smart_farm_navigation --symlink-install
+source "$PROJECT_ROOT/cobot3_ws/install/setup.bash"
+
+2. 실행 전에 패키지와 장면 Topic을 확인한다.
+
+ros2 pkg prefix smart_farm_navigation
+ros2 topic info /cmd_vel -v
+ros2 topic echo /chassis/odom --once
+
+기대 결과
+- ros2 pkg prefix가 /home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation 또는 동등한 설치 경로를 출력한다.
+- /cmd_vel Subscription count가 1 이상이다.
+- /chassis/odom 메시지에서 frame_id는 odom이고 child_frame_id는 base_link다.
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ source /opt/ros/jazzy/setup.bash
+export ROS_DOMAIN_ID=101
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/rokey/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib"
+cd "$PROJECT_ROOT/cobot3_ws"
+colcon build --packages-select smart_farm_navigation --symlink-install
+source "$PROJECT_ROOT/cobot3_ws/install/setup.bash"
+bash: cd: /cobot3_ws: No such file or directory
+Starting >>> smart_farm_navigation
+Finished <<< smart_farm_navigation [0.91s]
+
+Summary: 1 package finished [1.07s]
+bash: /cobot3_ws/install/setup.bash: No such file or directory
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 pkg prefix smart_farm_navigation
+Package not found
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 topic info /cmd_vel -v
+Type: geometry_msgs/msg/Twist
+
+Publisher count: 0
+
+Subscription count: 1
+
+Node name: _World_nova_carter_ROS_differential_drive_ros2_subscribe_twist
+Node namespace: /
+Topic type: geometry_msgs/msg/Twist
+Topic type hash: RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.2a.82.e0.e7.fa.7f.05.00.00.00.00.00.03.04
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros2 topic echo /chassis/odom --once
+header:
+  stamp:
+    sec: 92
+    nanosec: 316671481
+  frame_id: odom
+child_frame_id: base_link
+pose:
+  pose:
+    position:
+      x: 0.10210994038825437
+      y: -5.573886826114968e-05
+      z: -0.00012212757809280573
+    orientation:
+      x: -8.191210406001833e-07
+      y: -0.00013151242376423144
+      z: -0.0005492573588969921
+      w: 0.9999998405100698
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+twist:
+  twist:
+    linear:
+      x: 0.0007276064134202898
+      y: -0.00015231635188683867
+      z: -9.519993000139948e-06
+    angular:
+      x: -2.886393849621527e-05
+      y: -0.00015772954793646932
+      z: 0.0009787973249331117
+  covariance:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+---
+rokey@IsaacSim03:~/ROKEY_P3_A1$ 
+
+
+---
+3. 대기 제어 노드를 실행한다.
+
+ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/escape_controller.yaml"
+
+기대 결과
+- "Prepared for /cmd_vel; waiting for /chassis/odom" 로그가 출력된다.
+- 로봇은 움직이지 않는다.
+- Ctrl+C를 누르면 zero Twist를 발행하고 Python traceback 없이 종료한다.
+---
+rokey@IsaacSim03:~/cobot3_ws$ ros2 run smart_farm_navigation escape_controller --ros-args --params-file "$(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/escape_controller.yaml"
+[INFO] [1789734466.448651358] [escape_controller]: Prepared for /cmd_vel; waiting for /chassis/odom. Set auto_start:=true and all six motion parameters to run.
+

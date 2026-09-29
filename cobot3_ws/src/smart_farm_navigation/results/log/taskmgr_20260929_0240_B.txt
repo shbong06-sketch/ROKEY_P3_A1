@@ -1,0 +1,27 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-29-02-41-18-476063-gc-isaacsim-lwh-360302
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [task_manager-1]: process started with pid [360323]
+[task_manager-1] [INFO] [1790649679.350227949] [task_manager]: Task Manager ready: scenario=DEMO_HARVEST_01
+[task_manager-1] [INFO] [1790649679.758984252] [task_manager]: Executor status changed: executor=sim_task, state=READY, detail=Collected_smartfarm_v014_room_core_cabbage scene ready; TRANSFER/PICK_HARVEST/PLACE_INSPECT/CONVEY_TO_INSPECT/PREPARE_INSPECT/MOVE_TO_INSPECT/CULL/RELEASE_INSPECT/CONVEYOR_OUT physical profiles loaded
+[task_manager-1] [INFO] [1790649680.899674061] [task_manager]: Executor status changed: executor=inspection, state=READY, detail=mock ready
+[task_manager-1] [INFO] [1790649682.556215379] [task_manager]: Executor status changed: executor=navigation, state=READY, detail=waiting for /navigation/command
+[task_manager-1] Traceback (most recent call last):
+[task_manager-1]   File "/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_manager/lib/smart_farm_manager/task_manager", line 33, in <module>
+[task_manager-1]     sys.exit(load_entry_point('smart-farm-manager', 'console_scripts', 'task_manager')())
+[task_manager-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[task_manager-1]   File "/home/rokey/ROKEY_p3_a1/cobot3_ws/build/smart_farm_manager/smart_farm_manager/task_manager_node.py", line 862, in main
+[task_manager-1]     rclpy.spin(node)
+[task_manager-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+[task_manager-1]     executor.spin_once()
+[task_manager-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+[task_manager-1]     self._spin_once_impl(timeout_sec)
+[task_manager-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 907, in _spin_once_impl
+[task_manager-1]     handler, entity, node = self.wait_for_ready_callbacks(
+[task_manager-1]                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[task_manager-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 877, in wait_for_ready_callbacks
+[task_manager-1]     return next(self._cb_iter)
+[task_manager-1]            ^^^^^^^^^^^^^^^^^^^
+[task_manager-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 785, in _wait_for_ready_callbacks
+[task_manager-1]     raise ExternalShutdownException()
+[task_manager-1] rclpy.executors.ExternalShutdownException
+[ERROR] [task_manager-1]: process has died [pid 360323, exit code 1, cmd '/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_manager/lib/smart_farm_manager/task_manager --ros-args -r __node:=task_manager --params-file /home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_manager/share/smart_farm_manager/config/demo_harvest.yaml'].

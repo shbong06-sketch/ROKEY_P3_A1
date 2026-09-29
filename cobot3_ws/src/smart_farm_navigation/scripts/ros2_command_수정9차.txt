@@ -1,0 +1,67 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정9차]
+=================================================================================
+
+1. [20:48 오류 정밀 분석 및 해결 사실]
+---------------------------------------------------------------------------------
+1) bt_navigator 크래시(-11) 해결 (핵심 원인):
+   - 로그: `[bt_navigator]: Failed to create navigator... ID [ComputePathToPose] already registered`
+   - 사실: Jazzy 버전의 Nav2는 내부 플러그인을 자동 로드하므로, YAML에 `plugin_lib_names`를
+     명시하면 중복 등록 예외(SIGSEGV exit -11)로 bt_navigator 프로세스가 즉시 사망함.
+   - 조치: `mir100_navigation_params.yaml`에서 `plugin_lib_names` 블록을 완전히 제거함.
+     이로써 bt_navigator가 정상 가동되어 `Navigation: active`로 올라가며,
+     RViz2 상단의 `Nav2 Goal` 버튼 및 파이썬 자율 주행 액션이 정상 작동함.
+
+2) RViz2 No transform from [base_footprint] to [map] 해결 (아이작 심 1회 조치):
+   - 원인: diag_info.txt 확인 결과, 아이작 심에서 /odom은 나오나 /tf 토픽이 결측되어
+     `odom -> base_footprint` TF가 ROS 2로 전달되지 않음.
+   - 조치: 아이작 심 Action Graph에서 `publish_odom` (`ROS2 Publish Odometry`) 노드 클릭 후,
+     우측 Property 패널의 `Publish Transform` (또는 `publishTransform`) 항목을 체크(True)함.
+     또는 `publish_tf` (`ROS2 Publish Transform Tree`) 노드의 실행 핀(Exec In)이 연결되어 있는지 확인함.
+     (이후 Ctrl + S 로 저장)
+
+3) 사용자 요구 반영 (가장 가까운 랙 정지 및 파라미터화):
+   - 기본 목표값: 로봇 기준 가장 먼저 마주하는 랙의 중앙 앞 (X=0.30m, Y=-0.50m, Yaw=-90.0°)으로 변경 완료.
+   - 파라미터화 완료:
+     * 인자 없이 실행: 기본 랙 앞으로 이동 (`ros2 run nav_to_goal nav_to_pose`)
+     * 좌표 지정 실행: `ros2 run nav_to_goal nav_to_pose <X> <Y> <Yaw(deg)>`
+       예: `ros2 run nav_to_goal nav_to_pose -0.87 0.88 90` (두 랙 사이 통로)
+     * RViz2 상단 `Nav2 Goal` 툴을 마우스로 클릭하여 맵 위 아무 곳이나 찍어도 즉시 자율 주행함.
+
+
+=================================================================================
+2. [아이작 심 Action Graph 1회 확인 및 저장]
+=================================================================================
+1) 아이작 심에서 `Collected_260916_AMR_test.usd` 열기.
+2) Stage 패널에서 `ActionGraph` 더블 클릭.
+3) `publish_odom` (`ROS2 Publish Odometry`) 노드 클릭 -> 우측 Property에서 `Publish Transform` 체크 확인.
+   (또는 `publish_tf` 노드의 `Exec In`이 `on_tick`의 `Tick`에 연결되어 있는지 확인)
+4) 키보드 `Ctrl + S` 를 눌러 스테이지 저장 후 아이작 심 종료 (영구 보존).
+
+
+=================================================================================
+3. [고사양 PC 최종 실행 절차 (한 줄 명령어)]
+=================================================================================
+
+[1단계: 최신 코드 Pull 및 빌드]
+cd ~/ROKEY_P3_A1 && git pull origin feature/lwh && ros_set && cd ~/ROKEY_P3_A1/cobot3_ws && colcon build --symlink-install --packages-select mir100_navigation nav_to_goal
+
+[2단계: 터미널 1 - Isaac Sim 실행 및 Play]
+export ROS_DISTRO=jazzy && export RMW_IMPLEMENTATION=rmw_fastrtps_cpp && export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml && isaac_ros && isaac
+-> Collected_260916_AMR_test.usd 오픈 후 Play(▶) 클릭
+
+[3단계: 터미널 2 - Nav2 & RViz2 실행]
+ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 launch mir100_navigation mir_navigation.launch.py map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+-> bt_navigator가 정상 기동하여 Navigation: active 및 Localization: active 가 모두 활성화됨.
+
+[4단계: 터미널 3 - 자율 주행 실행 (2가지 방법 중 택1)]
+방법 A (스크립트 실행 - 기본값: 가장 먼저 보이는 랙 앞 정지):
+    ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 run nav_to_goal nav_to_pose
+
+방법 B (임의 좌표 지정 주행):
+    ros2 run nav_to_goal nav_to_pose <X> <Y> <Yaw>
+    예: ros2 run nav_to_goal nav_to_pose -0.87 0.88 90
+
+방법 C (RViz2 GUI 클릭 주행):
+    RViz2 상단 메뉴바의 [Nav2 Goal] 버튼을 클릭하고 맵 위의 원하는 위치와 방향을 드래그하면 즉시 자율 주행함.
+=================================================================================

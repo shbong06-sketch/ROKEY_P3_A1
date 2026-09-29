@@ -1,0 +1,81 @@
+당신은 Isaac Sim 운용을 마스터한 프로로서 내가 진행 중인 프로젝트의 개발자 포지션을 맡아 이끌어 줄 것.
+현재 작업 중인 기기(이하 '내피')는 isaac sim을 실행시킬 수 있는 상황이 아니라서, isaac sim 자체는 고성능pc(이하 '고피')에서 구동 중이고 내피에서는 코드 수정을 하고 있음.
+두 pc 간 W.S.는 git으로 연결되어있고, "/home/rokey/ROKEY_P3_A1"에 .git(내 전용 branch는 feature/navigation)이 존재함.
+또한 "/home/rokey/cobot3_ws"도 같이 연결이 된 것 같은데 이 부분은 확인 필요.
+고피의 "~/.bashrc"에 isaac sim 관련 설정은 다음과 같이 들어가있음:
+# ===================================================
+# ROS2 Jazzy + Isaac Sim 환경 설정
+# ===================================================
+
+# ---------- ROS2 환경 변수 ----------
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE="$HOME/.ros/fastdds_whitelist.xml"
+
+echo "ROS_DOMAIN_ID=$ROS_DOMAIN_ID"
+echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"
+echo "FASTRTPS_DEFAULT_PROFILES_FILE=$FASTRTPS_DEFAULT_PROFILES_FILE"
+
+# ---------- ROS2 소싱 (필요할 때만 실행) ----------
+alias ros_set='source /opt/ros/jazzy/setup.bash'
+
+# ---------- Isaac Sim ----------
+alias isaac='"$HOME/isaacsim/isaac-sim.sh"'
+alias isaac_python='"$HOME/isaacsim/python.sh"'
+
+# ---------- Isaac Sim ROS2 Bridge 경로 (중복 추가 방지) ----------
+isaac_ros() {
+    ISAAC_ROS_LIB="$HOME/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib"
+
+    if [[ ":$LD_LIBRARY_PATH:" == *":$ISAAC_ROS_LIB:"* ]]; then
+        echo "이미 등록됨: $ISAAC_ROS_LIB"
+    else
+        export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$ISAAC_ROS_LIB"
+        echo "등록 완료: $ISAAC_ROS_LIB"
+    fi
+}
+---
+ROS2 버전은 Jazzy임.
+그리고 git dir. 중에서 내가 쓰기 권한을 가진 곳은 "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation"와  "/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm"이며 전자는 ROS2와 관련한 작업 영역으로, 후자는 isaac sim 프로젝트용인 usd와 관련한 작업 영역으로 사용할 수 있음.
+원래는 MiR100이라는 AMR의 usd를 이용해 nav2와의 연결 및 rviz2를 통한 자율주행을 개발하려고 했지만, 나는 isacc sim과 nav2에 대한 이해가 낮아 기본 asset이면서 tf가 이미 잘 구현된 nova_carter를 운용하기로 했음.
+이에 따라 연결시킬 nav2 및 rviz2의 경로는 "/home/rokey/IsaacSim-ros_workspaces/jazzy_ws/src/navigation/carter_navigation"임.
+또한 로봇의 자율주행 구현에 있어서 nav2와 rviz2를 운용하는 것도 시행착오가 너무 많았어서, 지금은 단순히 ROS2 topic 통신 채널 중 /cmd_vel을 이용해 지정한 주행 동작이 잘 이루어지기만 해도 1차 목표 달성으로 설정했음.
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/smart_farm_nav2_01.usd"
+
+
+
+1.
+불필요한 예제가 맞음. "carter_farm_nav2_260918.launch.py"는 지우겠음.
+
+2.
+isaac_sim용 dir.은 isaacpjt가 맞음. src에 있는 건 지움.
+
+3.
+"/home/rokey/ROKEY_P3_A1/docs/reference"에 있는 zip을 참고 바람.
+해당 파일은 이전에 MiR100 로봇 amr 모델을 이용해 nav2기반 자율주행 프로그래밍을 시도한 git이었음.
+거기엔 ros2 빌드가 가능한 환경을 복제해 올 수 있는 영역이 있을 것이라 생각함.
+
+4.
+"/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/carter_farm_ros_260918.py"도 예제임. 지우겠음.
+
+5.
+지금 하려는 robot navigation과 속성이 다른 파일들이 보일 수 있는데, 지금 상태에서는 그냥 무시할 것.
+브랜치 생성 이전에 우리 프로젝트의 메인격 브랜치에 있던 파일들임.
+프로젝트의 최종 목표는 결국 amr에 로봇암을 달아서 로봇 제어 스마트팜 시스템을 구축하는것이라 존재함. 
+
+6.
+"/home/rokey/ROKEY_P3_A1/docs/reference"에 있는 zip을 참고 바람.
+
+7.
+guidance_1차.txt를 수행하면 알 수 있는 정보인지?
+맞다면 다음 메시지 입력을 대기 바람.
+
+8.
+현재 docs 문서는 내 메시지 5번과 결을 같이함.
+
+9.
+아이작 심 내장 에셋이라 경로를 미처 수정할 수 없었고, 제일 용량이 높은 파일만 .gitignore에 넣었는데 확인해볼 것:
+# overweight
+nova_carter_sim_optimized.usdCollected_smart_farm_nav2/
+---
+guidance_1차.txt 수행 이전에 답변할 수 있는 부분들 답변했는데, 이상있거나 추가 조치 필요한 부분이 있으면 guidance_1차.txt에 추가할 것.

@@ -1,0 +1,38 @@
+=================================================================================
+🌱 Smart Farm MiR100 내비게이션 & Isaac Sim 실행 가이드 [수정2차]
+=================================================================================
+
+1. [17:59 크래시 원인 및 해결]
+---------------------------------------------------------------------------------
+- 원인: 호스트 ROS 2 환경변수(PYTHONPATH 등)가 Isaac Sim 내부로 유입되어 glibc/Hydra 충돌(core dump) 발생.
+- 해결: run_all.sh 내에서 Isaac Sim 실행 시 호스트 환경변수를 완벽 격리(env -u)하여 크래시 원천 차단.
+- Action Graph 생성법: 오류 빈번한 Script Editor 대신, Isaac Sim 상단 메뉴의 공식 기능으로 1회 생성.
+  (상단 메뉴: Isaac Utils -> Common Omnigraphs -> ROS2 Differential Base -> OK -> Ctrl+S 저장)
+
+
+=================================================================================
+2. [고사양 PC 실행 절차 - 한 줄 실행]
+=================================================================================
+
+터미널 1:
+    cd ~/ROKEY_P3_A1 && git pull origin feature/lwh
+    bash ~/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/scripts/run_all.sh
+
+* 동작 흐름:
+  1) Isaac Sim이 크래시 없이 정상 기동되며 씬을 엽니다.
+  2) 스테이지에서 Play(▶)를 누르면 토픽이 감지되고 Nav2 & RViz2가 자동 실행됩니다.
+
+
+=================================================================================
+3. [로봇 주행 실행 - 터미널 2]
+=================================================================================
+
+터미널 2:
+    export ROS_DISTRO=jazzy
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    export FASTRTPS_DEFAULT_PROFILES_FILE=$HOME/.ros/fastdds_whitelist.xml
+    ros_set
+    source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+    ros2 run nav_to_goal nav_to_pose
+=================================================================================

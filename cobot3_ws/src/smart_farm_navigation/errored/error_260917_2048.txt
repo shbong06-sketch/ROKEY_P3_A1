@@ -1,0 +1,309 @@
+1.
+터미널 3:
+rokey@IsaacSim03:~/ROKEY_P3_A1/cobot3_ws$ ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 run nav_to_goal nav_to_pose
+⏳ Nav2 스택 활성화 대기 중...
+[INFO] [1789645660.068886561] [basic_navigator]: Setting initial pose
+[INFO] [1789645660.069301083] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645660.069539568] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645660.069760838] [basic_navigator]: Setting initial pose
+[INFO] [1789645660.069873456] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645660.069995686] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645660.070104514] [basic_navigator]: Setting initial pose
+[INFO] [1789645660.070207294] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645660.070317821] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645661.071394391] [basic_navigator]: Setting initial pose
+[INFO] [1789645661.071655043] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645661.071856016] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645662.072490349] [basic_navigator]: Setting initial pose
+[INFO] [1789645662.072681688] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645662.072852149] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645663.073572241] [basic_navigator]: Setting initial pose
+[INFO] [1789645663.073829113] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645663.074041490] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645664.074663838] [basic_navigator]: Setting initial pose
+[INFO] [1789645664.074860981] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645664.075026603] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645665.075578991] [basic_navigator]: Setting initial pose
+[INFO] [1789645665.075782670] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645665.075977526] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645666.076562445] [basic_navigator]: Setting initial pose
+[INFO] [1789645666.076784876] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645666.076987104] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645667.077569291] [basic_navigator]: Setting initial pose
+[INFO] [1789645667.077786444] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645667.077986720] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645668.078566849] [basic_navigator]: Setting initial pose
+[INFO] [1789645668.078838557] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645668.079047466] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645669.079697813] [basic_navigator]: Setting initial pose
+[INFO] [1789645669.079922718] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645669.080131595] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645670.080699169] [basic_navigator]: Setting initial pose
+[INFO] [1789645670.080917231] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645670.081128966] [basic_navigator]: Waiting for amcl_pose to be received
+[INFO] [1789645671.082145853] [basic_navigator]: Setting initial pose
+[INFO] [1789645671.082370769] [basic_navigator]: Publishing Initial Pose
+[INFO] [1789645671.082572865] [basic_navigator]: Waiting for amcl_pose to be received
+
+---
+터미널 2:
+rokey@IsaacSim03:~/ROKEY_P3_A1$ ros_set && source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash && ros2 launch mir100_navigation mir_navigation.launch.py map:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+[INFO] [launch]: All log files can be found below /home/rokey/.ros/log/2026-09-17-20-45-29-486475-IsaacSim03-175344
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [robot_state_publisher-1]: process started with pid [175348]
+[INFO] [rviz2-2]: process started with pid [175349]
+[INFO] [map_server-3]: process started with pid [175350]
+[INFO] [amcl-4]: process started with pid [175351]
+[INFO] [lifecycle_manager-5]: process started with pid [175352]
+[INFO] [controller_server-6]: process started with pid [175353]
+[INFO] [smoother_server-7]: process started with pid [175354]
+[INFO] [planner_server-8]: process started with pid [175355]
+[INFO] [route_server-9]: process started with pid [175356]
+[INFO] [behavior_server-10]: process started with pid [175357]
+[INFO] [bt_navigator-11]: process started with pid [175358]
+[INFO] [waypoint_follower-12]: process started with pid [175359]
+[INFO] [velocity_smoother-13]: process started with pid [175360]
+[INFO] [collision_monitor-14]: process started with pid [175361]
+[INFO] [opennav_docking-15]: process started with pid [175362]
+[INFO] [lifecycle_manager-16]: process started with pid [175363]
+[robot_state_publisher-1] [WARN] [1789645529.679092466] [kdl_parser]: The root link base_footprint has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-1] [INFO] [1789645529.679229973] [robot_state_publisher]: Robot initialized
+[lifecycle_manager-16] [INFO] [1789645529.682164041] [lifecycle_manager_navigation]: Creating
+[velocity_smoother-13] [INFO] [1789645529.683139600] [velocity_smoother]: 
+[velocity_smoother-13] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-13] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-13] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[lifecycle_manager-16] [INFO] [1789645529.686186469] [lifecycle_manager_navigation]: Creating and initializing lifecycle service clients
+[opennav_docking-15] [INFO] [1789645529.686663590] [docking_server]: 
+[opennav_docking-15] 	docking_server lifecycle node launched. 
+[opennav_docking-15] 	Waiting on external lifecycle transitions to activate
+[opennav_docking-15] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[opennav_docking-15] [INFO] [1789645529.686737003] [docking_server]: Creating docking_server
+[planner_server-8] [INFO] [1789645529.689358770] [planner_server]: 
+[planner_server-8] 	planner_server lifecycle node launched. 
+[planner_server-8] 	Waiting on external lifecycle transitions to activate
+[planner_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-4] [INFO] [1789645529.690155460] [amcl]: 
+[amcl-4] 	amcl lifecycle node launched. 
+[amcl-4] 	Waiting on external lifecycle transitions to activate
+[amcl-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1789645529.690325531] [planner_server]: Creating
+[amcl-4] [INFO] [1789645529.690493662] [amcl]: Creating
+[controller_server-6] [INFO] [1789645529.690663675] [controller_server]: 
+[controller_server-6] 	controller_server lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-11] [INFO] [1789645529.690747374] [bt_navigator]: 
+[bt_navigator-11] 	bt_navigator lifecycle node launched. 
+[bt_navigator-11] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-11] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-11] [INFO] [1789645529.691464364] [bt_navigator]: Creating
+[controller_server-6] [INFO] [1789645529.692829917] [controller_server]: Creating controller server
+[waypoint_follower-12] [INFO] [1789645529.694692955] [waypoint_follower]: 
+[waypoint_follower-12] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-12] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-12] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-12] [INFO] [1789645529.695105252] [waypoint_follower]: Creating
+[lifecycle_manager-5] [INFO] [1789645529.695504329] [lifecycle_manager_localization]: Creating
+[behavior_server-10] [INFO] [1789645529.695953458] [behavior_server]: 
+[behavior_server-10] 	behavior_server lifecycle node launched. 
+[behavior_server-10] 	Waiting on external lifecycle transitions to activate
+[behavior_server-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[route_server-9] [INFO] [1789645529.696506722] [route_server]: 
+[route_server-9] 	route_server lifecycle node launched. 
+[route_server-9] 	Waiting on external lifecycle transitions to activate
+[route_server-9] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-3] [INFO] [1789645529.698093793] [map_server]: 
+[map_server-3] 	map_server lifecycle node launched. 
+[map_server-3] 	Waiting on external lifecycle transitions to activate
+[map_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-3] [INFO] [1789645529.698353439] [map_server]: Creating
+[collision_monitor-14] [INFO] [1789645529.698468729] [collision_monitor]: 
+[collision_monitor-14] 	collision_monitor lifecycle node launched. 
+[collision_monitor-14] 	Waiting on external lifecycle transitions to activate
+[collision_monitor-14] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[lifecycle_manager-5] [INFO] [1789645529.699284522] [lifecycle_manager_localization]: Creating and initializing lifecycle service clients
+[planner_server-8] [INFO] [1789645529.701041645] [global_costmap.global_costmap]: 
+[planner_server-8] 	global_costmap lifecycle node launched. 
+[planner_server-8] 	Waiting on external lifecycle transitions to activate
+[planner_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1789645529.701415145] [global_costmap.global_costmap]: Creating Costmap
+[smoother_server-7] [INFO] [1789645529.702377660] [smoother_server]: 
+[smoother_server-7] 	smoother_server lifecycle node launched. 
+[smoother_server-7] 	Waiting on external lifecycle transitions to activate
+[smoother_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1789645529.702878841] [local_costmap.local_costmap]: 
+[controller_server-6] 	local_costmap lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1789645529.703134870] [local_costmap.local_costmap]: Creating Costmap
+[smoother_server-7] [INFO] [1789645529.703242634] [smoother_server]: Creating smoother server
+[lifecycle_manager-16] [INFO] [1789645529.904259791] [lifecycle_manager_navigation]: Starting managed nodes bringup...
+[lifecycle_manager-16] [INFO] [1789645529.904304034] [lifecycle_manager_navigation]: Configuring controller_server
+[controller_server-6] [INFO] [1789645529.904653078] [controller_server]: Configuring controller interface
+[controller_server-6] [INFO] [1789645529.904672314] [controller_server]: getting progress checker plugins..
+[controller_server-6] [INFO] [1789645529.904864944] [controller_server]: getting goal checker plugins..
+[controller_server-6] [INFO] [1789645529.905004328] [controller_server]: Controller frequency set to 20.0000Hz
+[controller_server-6] [INFO] [1789645529.905032597] [local_costmap.local_costmap]: Configuring
+[controller_server-6] [INFO] [1789645529.910852784] [local_costmap.local_costmap]: Using plugin "obstacle_layer"
+[controller_server-6] [INFO] [1789645529.913681808] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[controller_server-6] [INFO] [1789645529.916727246] [local_costmap.local_costmap]: Initialized plugin "obstacle_layer"
+[controller_server-6] [INFO] [1789645529.916744010] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-6] [INFO] [1789645529.917251670] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[controller_server-6] [INFO] [1789645529.931139420] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-6] [INFO] [1789645529.931423251] [controller_server]: Controller Server has progress_checker  progress checkers available.
+[controller_server-6] [INFO] [1789645529.931845492] [controller_server]: Created goal checker : stopped_goal_checker of type nav2_controller::StoppedGoalChecker
+[controller_server-6] [INFO] [1789645529.932342386] [controller_server]: Controller Server has stopped_goal_checker  goal checkers available.
+[controller_server-6] [INFO] [1789645529.933719784] [controller_server]: Created controller : FollowPath of type dwb_core::DWBLocalPlanner
+[controller_server-6] [INFO] [1789645529.934612605] [controller_server]: Setting transform_tolerance to 0.300000
+[controller_server-6] [INFO] [1789645529.943074149] [controller_server]: Using critic "RotateToGoal" (dwb_critics::RotateToGoalCritic)
+[controller_server-6] [INFO] [1789645529.943665792] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789645529.943809107] [controller_server]: Using critic "Oscillation" (dwb_critics::OscillationCritic)
+[controller_server-6] [INFO] [1789645529.944418200] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789645529.944542595] [controller_server]: Using critic "BaseObstacle" (dwb_critics::BaseObstacleCritic)
+[controller_server-6] [INFO] [1789645529.944732296] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789645529.944842478] [controller_server]: Using critic "GoalAlign" (dwb_critics::GoalAlignCritic)
+[controller_server-6] [INFO] [1789645529.945205121] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789645529.945311786] [controller_server]: Using critic "PathAlign" (dwb_critics::PathAlignCritic)
+[controller_server-6] [INFO] [1789645529.945637098] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789645529.945732061] [controller_server]: Using critic "PathDist" (dwb_critics::PathDistCritic)
+[controller_server-6] [INFO] [1789645529.946023919] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789645529.946129299] [controller_server]: Using critic "GoalDist" (dwb_critics::GoalDistCritic)
+[controller_server-6] [INFO] [1789645529.946359842] [controller_server]: Critic plugin initialized
+[controller_server-6] [INFO] [1789645529.946371275] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-16] [INFO] [1789645529.952445024] [lifecycle_manager_navigation]: Configuring smoother_server
+[smoother_server-7] [INFO] [1789645529.952633265] [smoother_server]: Configuring smoother server
+[smoother_server-7] [INFO] [1789645529.962386318] [smoother_server]: Created smoother : simple_smoother of type nav2_smoother::SimpleSmoother
+[smoother_server-7] [INFO] [1789645529.963128727] [smoother_server]: Smoother Server has simple_smoother  smoothers available.
+[lifecycle_manager-16] [INFO] [1789645529.967957905] [lifecycle_manager_navigation]: Configuring planner_server
+[planner_server-8] [INFO] [1789645529.968172120] [planner_server]: Configuring
+[planner_server-8] [INFO] [1789645529.968202181] [global_costmap.global_costmap]: Configuring
+[planner_server-8] [INFO] [1789645529.974439482] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-8] [INFO] [1789645529.978213121] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-8] [INFO] [1789645529.979649577] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-8] [INFO] [1789645529.979668816] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-8] [INFO] [1789645529.980378106] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-8] [INFO] [1789645529.983728927] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-8] [INFO] [1789645529.983745321] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-8] [INFO] [1789645529.984258748] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-8] [INFO] [1789645529.999183169] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner::NavfnPlanner
+[planner_server-8] [INFO] [1789645529.999217091] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[planner_server-8] [INFO] [1789645529.999732910] [planner_server]: Planner Server has GridBased  planners available.
+[lifecycle_manager-16] [INFO] [1789645530.006290220] [lifecycle_manager_navigation]: Configuring route_server
+[route_server-9] [INFO] [1789645530.006453612] [route_server]: Configuring
+[route_server-9] [INFO] [1789645530.025701133] [route_server]: Created GraphFileLoader GeoJsonGraphFileLoader of type nav2_route::GeoJsonGraphFileLoader
+[route_server-9] [INFO] [1789645530.025729297] [route_server]: Configuring geojson graph file loader
+[route_server-9] [INFO] [1789645530.025734722] [route_server]: No graph file provided to load yet.
+[route_server-9] [INFO] [1789645530.027530791] [route_server]: Created edge cost function plugin DistanceScorer of type nav2_route::DistanceScorer
+[route_server-9] [INFO] [1789645530.027551756] [route_server]: Configuring distance scorer.
+[route_server-9] [INFO] [1789645530.027766670] [route_server]: Created edge cost function plugin DynamicEdgesScorer of type nav2_route::DynamicEdgesScorer
+[route_server-9] [INFO] [1789645530.027775911] [route_server]: Configuring adjust edges scorer.
+[route_server-9] [INFO] [1789645530.030186675] [route_server]: Created route operation AdjustSpeedLimit of type nav2_route::AdjustSpeedLimit
+[route_server-9] [INFO] [1789645530.030205932] [route_server]: Configuring Adjust speed limit operation.
+[route_server-9] [INFO] [1789645530.030979133] [route_server]: Created route operation ReroutingService of type nav2_route::ReroutingService
+[route_server-9] [INFO] [1789645530.030991722] [route_server]: Configuring Rerouting service operation.
+[lifecycle_manager-16] [INFO] [1789645530.032967107] [lifecycle_manager_navigation]: Configuring behavior_server
+[behavior_server-10] [INFO] [1789645530.033108018] [behavior_server]: Configuring
+[behavior_server-10] [INFO] [1789645530.035882361] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors::Spin
+[behavior_server-10] [INFO] [1789645530.036400875] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors::BackUp
+[behavior_server-10] [INFO] [1789645530.036813226] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors::DriveOnHeading
+[behavior_server-10] [INFO] [1789645530.037251524] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors::Wait
+[behavior_server-10] [INFO] [1789645530.041979321] [behavior_server]: Configuring spin
+[behavior_server-10] [INFO] [1789645530.046423009] [behavior_server]: Configuring backup
+[behavior_server-10] [INFO] [1789645530.049025113] [behavior_server]: Configuring drive_on_heading
+[behavior_server-10] [INFO] [1789645530.051339101] [behavior_server]: Configuring wait
+[lifecycle_manager-16] [INFO] [1789645530.054528937] [lifecycle_manager_navigation]: Configuring velocity_smoother
+[velocity_smoother-13] [INFO] [1789645530.054710072] [velocity_smoother]: Configuring velocity smoother
+[lifecycle_manager-16] [INFO] [1789645530.058145540] [lifecycle_manager_navigation]: Configuring collision_monitor
+[collision_monitor-14] [INFO] [1789645530.058288429] [collision_monitor]: Configuring
+[collision_monitor-14] [INFO] [1789645530.062319955] [collision_monitor]: [scan]: Creating Scan
+[collision_monitor-14] [INFO] [1789645530.063706974] [collision_monitor]: [FootprintApproach]: Creating Polygon
+[lifecycle_manager-16] [INFO] [1789645530.069003672] [lifecycle_manager_navigation]: Configuring bt_navigator
+[bt_navigator-11] [INFO] [1789645530.069203092] [bt_navigator]: Configuring
+[lifecycle_manager-5] [INFO] [1789645530.069714616] [lifecycle_manager_localization]: Starting managed nodes bringup...
+[lifecycle_manager-5] [INFO] [1789645530.069742042] [lifecycle_manager_localization]: Configuring map_server
+[map_server-3] [INFO] [1789645530.069988491] [map_server]: Configuring
+[map_server-3] [INFO] [1789645530.070039878] [map_io]: Loading yaml file: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test_yaml.yaml
+[map_server-3] [INFO] [1789645530.070266552] [map_io]: resolution: 0.05
+[map_server-3] [INFO] [1789645530.070273394] [map_io]: origin[0]: -4.325
+[map_server-3] [INFO] [1789645530.070276596] [map_io]: origin[1]: -2.975
+[map_server-3] [INFO] [1789645530.070278637] [map_io]: origin[2]: 0
+[map_server-3] [INFO] [1789645530.070280691] [map_io]: free_thresh: 0.196
+[map_server-3] [INFO] [1789645530.070282501] [map_io]: occupied_thresh: 0.65
+[map_server-3] [INFO] [1789645530.070286175] [map_io]: mode: trinary
+[map_server-3] [INFO] [1789645530.070288619] [map_io]: negate: 0
+[map_server-3] [INFO] [1789645530.070422375] [map_io]: Loading image_file: /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test.png
+[map_server-3] [INFO] [1789645530.072619848] [map_io]: Read map /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/maps/260916_AMR_test.png: 139 X 220 map @ 0.05 m/cell
+[bt_navigator-11] [INFO] [1789645530.075067008] [bt_navigator]: Creating navigator id navigate_to_pose of type nav2_bt_navigator::NavigateToPoseNavigator
+[lifecycle_manager-5] [INFO] [1789645530.078316885] [lifecycle_manager_localization]: Configuring amcl
+[amcl-4] [INFO] [1789645530.078528948] [amcl]: Configuring
+[amcl-4] [INFO] [1789645530.078597059] [amcl]: initTransforms
+[bt_navigator-11] [WARN] [1789645530.078726833] [bt_navigator]: Error_code parameters were not set. Using default values of: follow_path_error_code compute_path_error_code
+[bt_navigator-11] Make sure these match your BT and there are not other sources of error codes youreported to your application
+[amcl-4] [INFO] [1789645530.085233886] [amcl]: initPubSub
+[amcl-4] [INFO] [1789645530.092316318] [amcl]: Subscribed to map topic.
+[lifecycle_manager-5] [INFO] [1789645530.095062877] [lifecycle_manager_localization]: Activating map_server
+[map_server-3] [INFO] [1789645530.095175809] [map_server]: Activating
+[map_server-3] [INFO] [1789645530.095342721] [map_server]: Creating bond (map_server) to lifecycle manager.
+[amcl-4] [INFO] [1789645530.095431183] [amcl]: Received a 139 X 220 map @ 0.050 m/pix
+[planner_server-8] [INFO] [1789645530.095471920] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 139 X 220 at 0.050000 m/pix
+[bt_navigator-11] [FATAL] [1789645530.119160411] [bt_navigator]: Failed to create navigator id navigate_to_pose. Exception: ID [ComputePathToPose] already registered
+[bt_navigator-11] [INFO] [1789645530.119223945] [bt_navigator]: Cleaning up
+[lifecycle_manager-5] [INFO] [1789645530.198466755] [lifecycle_manager_localization]: Server map_server connected with bond.
+[lifecycle_manager-5] [INFO] [1789645530.198497696] [lifecycle_manager_localization]: Activating amcl
+[amcl-4] [INFO] [1789645530.198717021] [amcl]: Activating
+[amcl-4] [INFO] [1789645530.198746526] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645530.198800808] [amcl]: Setting pose (0.000000): -2.000 -1.000 0.000
+[amcl-4] [INFO] [1789645530.199070882] [amcl]: Creating bond (amcl) to lifecycle manager.
+[rviz2-2] [INFO] [1789645530.223537763] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-2] [INFO] [1789645530.223592507] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-2] [INFO] [1789645530.286647209] [rviz2]: Stereo is NOT SUPPORTED
+[lifecycle_manager-5] [INFO] [1789645530.301706219] [lifecycle_manager_localization]: Server amcl connected with bond.
+[lifecycle_manager-5] [INFO] [1789645530.301737273] [lifecycle_manager_localization]: Managed nodes are active
+[lifecycle_manager-5] [INFO] [1789645530.301743468] [lifecycle_manager_localization]: Creating bond timer...
+[rviz2-2] [INFO] [1789645530.341316964] [rviz]: Subscribing to: /mobile_base/sensors/bumper_pointcloud
+[rviz2-2] 
+[rviz2-2] [INFO] [1789645530.342060124] [rviz]: Subscribing to: /mobile_base/sensors/bumper_pointcloud
+[rviz2-2] 
+[rviz2-2] [INFO] [1789645530.342618035] [rviz]: Subscribing to: /front_3d_lidar/lidar_points
+[rviz2-2] 
+[rviz2-2] [INFO] [1789645530.386260022] [rviz]: Subscribing to: /mobile_base/sensors/bumper_pointcloud
+[rviz2-2] 
+[rviz2-2] [INFO] [1789645530.386825939] [rviz]: Subscribing to: /front_3d_lidar/lidar_points
+[rviz2-2] 
+[rviz2-2] [INFO] [1789645530.458179024] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-2] [INFO] [1789645530.471685634] [rviz2]: Trying to create a map of size 139 x 220 using 1 swatches
+[ERROR] [bt_navigator-11]: process has died [pid 175358, exit code -11, cmd '/opt/ros/jazzy/lib/nav2_bt_navigator/bt_navigator --ros-args --log-level info --ros-args -r __node:=bt_navigator -p use_sim_time:=True --params-file /tmp/launch_params_rdim9405 -r /tf:=tf -r /tf_static:=tf_static'].
+[amcl-4] [INFO] [1789645660.069710626] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645660.069769981] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645660.070049799] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645660.070061097] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645660.070293223] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645660.070300441] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645661.072087004] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645661.072177084] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645662.073053572] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645662.073113366] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645663.074212858] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645663.074281451] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645664.075693404] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645664.075742006] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645665.075938813] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645665.075984765] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645666.076905275] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645666.076952274] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645667.078027521] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645667.078079615] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645668.078979500] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645668.079025666] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645669.080045619] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645669.080093230] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645670.081073096] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645670.081120336] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1789645671.082601966] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1789645671.082650179] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+
+3.
+다시 확인해보니 mir100이 바라보는 방향은 rack 객체가 마주보고있는 부분이 먼저가 아닌 것으로 보임.
+그러니 그냥 가장 먼저 보이는 rack 객체의 가운데 위치에서 멈추는 것으로 동작을 살짝 바꾸겠음.
+그러나 가장 필요한 것은 우리가 입력한대로 움직이게 파라미터화 하는 것임. 그리고 rviz2에서 Nav2 Goal로 움직이게 하는것. 후자는 아마 모든게 제대로 동작하면 알아서 될테니 원하는 위치로 움직이게 하는 방법이 간편하게 되는 것이 가장 좋음.
