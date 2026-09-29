@@ -1,47 +1,48 @@
-# guidance2_27차 — `NAVIGATION` 단계 `NAV_FAILED` 원인 가르기 (2026-09-29, 교육장 고피1·고피2)
+# guidance2_27차 — `NAVIGATION` 단계 `NAV_FAILED` 원인 확정 (2026-09-29 갱신, 고피1 + 고피2 2대 구성)
 
 이 문서만 위에서 아래로 따라 하면 됨. 이전 차수를 열 필요 없음.
 
-**목적은 고치는 것이 아니라 가르는 것임.** `NAV_FAILED` 는 서로 다른 네 가지 실패가 같은 이름으로 나오는 값이라, 어느 것인지부터 확정해야 함. 2절까지가 그 판별이고, 3절이 그 결과에 따른 재시도임.
+**목적**: 통합 중에 나온 `NAV_FAILED` 가 (가) 라이다 프레임 간격 때문인지, (나) 두 PC 사이 네트워크 때문인지, (다) 빌드·경로 때문인지를 **한 번의 실행으로 가름.**
 
 ---
 
-## 0. 먼저 알아 둘 것 (읽기만, 명령 없음)
+## 0. 기기 배치와 읽는 법
 
-### 0-1. `NAV_FAILED` 는 네 군데에서 나옴
-
-`navigation_node.py` 가 이 값을 내는 지점은 넷이며, **결과의 `phase` 값과 그 직전 로그 한 줄로 구분됨.**
-
-| # | `phase` | 그때 찍히는 로그 | 실제 뜻 |
+| 기기 | 호스트 | 이 문서에서 맡는 일 | 터미널 수 |
 |---|---|---|---|
-| ① | `LAUNCH` | `navigate_to_pose 액션 서버가 없습니다.` | Nav2 가 안 떠 있거나 두 PC 가 서로를 못 봄. 명령 후 **5초** 만에 실패 |
-| ② | `DRIVING` | `Nav2 가 목표를 거부했습니다.` | Nav2 가 목표 자체를 거부. 명령 후 **1초 안쪽** |
-| ③ | `DRIVING` | (전용 문구 없음. 직전에 `goToPose …` 만 있음) | 목표는 받았는데 결과가 `SUCCEEDED` 가 아님 = **주행 실패(ABORTED) 또는 선점당해 취소(CANCELED)** |
-| ④ | `DOCKING` | `도킹 결과 FAILED: face_dist=… yaw_err=… lat=…` | 주행은 됐고 **정밀 도킹**이 실패 |
+| **고피1** | `IsaacSim03` / 10.10.0.2 | **Isaac Sim 만** 돌림 | 3개 |
+| **고피2** | 10.10.0.1 | **Nav2 · navigation_node · Task Manager · 결과 구독** | 9개 |
 
-**따라서 보고할 때 "nav_failed 났다" 만으로는 원인을 못 정함.** ①~④ 중 무엇인지, 그리고 **명령 발행 후 몇 초 만에 실패했는지**가 핵심임.
+- 각 절 제목에 **어느 PC 의 몇 번째 터미널**인지 적혀 있음. 그대로 따라가면 됨.
+- **`ROS_DOMAIN_ID` 는 두 PC 모두 `101`** 로 맞춤. 고피2 의 평소 값이 102 라도 이번에는 101 을 씀. 한 대라도 다르면 서로를 못 봄.
+- 두 PC 모두 `/home/rokey/.ros/fastdds_whitelist.xml` 안에 `127.0.0.1` 과 `10.10.0.1~4` 가 있어야 함.
+- 명령은 전부 절대경로임. 어느 디렉터리에서 실행해도 됨.
 
-### 0-2. 스캔모드를 바꿔 본 시도는 사실상 같은 설정이었음
+### 0-1. `NAV_FAILED` 는 서로 다른 네 실패의 공통 이름임
 
-`nav2.launch.py` 의 `scan_mode` 기본값이 **`auto`** 임(`launch/nav2.launch.py:188`). 즉 **`scan_mode:=auto` 로 준 것과 아무것도 안 준 "디폴트" 는 완전히 같은 설정임.** 세 번의 시도가 모두 같은 조건이었으므로, 스캔모드는 아직 한 번도 바꿔 본 적이 없는 상태임.
+`navigation_node.py` 가 이 값을 내는 지점은 넷이며, **결과의 `phase` 값과 직전 로그 한 줄로 구분됨.**
 
-`auto` 가 하는 일은 이것임(`launch/nav2.launch.py:62~80`).
+| # | `phase` | 그때 찍히는 로그 | 실제 뜻 | 실패까지 |
+|---|---|---|---|---|
+| ① | `LAUNCH` | `navigate_to_pose 액션 서버가 없습니다.` | Nav2 미기동·두 PC 가 서로를 못 봄 | 약 5초 |
+| ② | `DRIVING` | `Nav2 가 목표를 거부했습니다.` | Nav2 가 목표 자체를 거부 | 1초 안쪽 |
+| ③ | `DRIVING` | 전용 문구 없음(`goToPose …` 만) | 주행 실패(ABORTED) 또는 선점당해 취소(CANCELED) | 즉시~수십 초 |
+| ④ | `DOCKING` | `도킹 결과 FAILED: face_dist=… yaw_err=… lat=…` | 주행은 성공, 정밀 도킹이 실패 | 수십 초 |
 
-- 런치 시작 때 `/front_2d_lidar/scan` 을 **6초 동안** 들어 봄.
-- 한 장이라도 오면 → `scan2d` (2D 라이다 + `scan_sanitizer`)
-- 안 오면 → `cloud` (3D 점군 → `cloud_self_filter` → `pointcloud_to_laserscan`)
+**"nav_failed 가 났다" 만으로는 원인을 정할 수 없음.** 8절 터미널이 `phase` 를 자동으로 파일에 남김.
 
-지금까지 우리 실측에서 2D 라이다는 채널만 있고 발행이 안 됐으므로 `auto` 는 늘 `cloud` 를 골랐음. **그런데 고피1·고피2 두 대를 DDS 로 묶은 지금은 사정이 다를 수 있음.** 2D 라이다가 발행되면 `auto` 가 `scan2d` 를 고르는데, 이 경로는 검증량이 적어 AMCL 이 틀어지면 위 ③ 이 남. 반대로 두 PC 사이 디스커버리가 6초 안에 안 끝나면 `cloud` 를 고르고도 점군이 늦게 와서 초반에 흔들릴 수 있음.
+### 0-2. 지금까지 확인된 것 (읽기만)
 
-**어느 쪽을 골랐는지는 런치 로그 한 줄에 그대로 찍힘**(2절에서 확인).
+- **스캔모드는 범인이 아님.** `nav2.launch.py:188` 의 `scan_mode` 기본값이 `auto` 라, `scan_mode:=auto` 로 준 것과 아무것도 안 준 "디폴트" 가 **같은 설정**임. 고피1·고피3 모두 `auto` 는 `cloud` 를 골랐음.
+- **전처리는 범인이 아님.** 고피3 계측에서 `cloud_self_filter` → `pointcloud_to_laserscan` 이 더하는 지연은 평균 0.001초, 최대 0.05초였음. 느린 것은 **점군이 만들어지는 주기 자체**임.
+- **라이다와 `/clock` 은 렌더 루프에 묶여 있음.** 렌더를 끄면 라이다 publisher 가 0개가 되고 `/clock` 이 한 건도 발행되지 않음. 그래서 렌더가 느려지면 둘이 같이 느려짐.
+- **고피1 은 고피3 보다 라이다가 느리고 흔들림** (2026-09-29 12:09·12:10 실측: 0.2~3.0 Hz, 고피3 은 3.2~3.4 Hz 일정). 11절 판정표가 그 비교임.
 
 ---
 
-## 1. 터미널 1 — 중복 노드 확인 (고피1·고피2 **양쪽에서 각각** 실행)
+## 1. 고피1 · 터미널 1 — 빌드 경로 확인 (제일 먼저. 여기가 어긋나면 나머지가 무의미함)
 
-지난 09-28 실측에서 같은 `NAV_FAILED` 가 났을 때의 원인이 **`navigation_node` 가 두 개 떠 있어 두 번째 목표가 첫 번째를 선점한 것**이었음. 두 PC 를 같은 도메인으로 묶으면 **PC 마다 하나씩 = 두 개**가 되기 쉬우므로 이것부터 봄.
-
-> 아래 `101` 은 **Isaac 을 띄운 고피의 도메인 값**임. 고피1이면 101, 고피2면 102. **양쪽 PC 와 비전 컨테이너가 모두 같은 값**이어야 함.
+2026-09-29 12:04 로그에서 고피1 에 install 트리가 **둘** 있는 것이 확인됐음. 실제로 실행된 것은 `cobot3_ws` 가 빠진 저장소 루트 쪽이었음. 어느 쪽 코드가 도는지부터 확정함.
 
 ```bash
 export ROS_DOMAIN_ID=101
@@ -51,36 +52,56 @@ source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
 
-ros2 node list | sort | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/nodelist_$(hostname)_$(date +%Y%m%d_%H%M).txt
-echo "--- /navigation/command 구독자 ---"
-ros2 topic info /navigation/command --verbose | grep -c "Node name" 
-echo "--- navigate_to_pose 액션 서버 ---"
-ros2 action info /navigate_to_pose
+ls -ld /home/rokey/ROKEY_P3_A1/install /home/rokey/ROKEY_P3_A1/cobot3_ws/install
+ros2 pkg prefix smart_farm_navigation
+grep -n "source_timeout" $(ros2 pkg prefix smart_farm_navigation)/share/smart_farm_navigation/config/nav2_params.yaml
 ```
 
 **판정**
 
-- `ros2 node list` 에 `/navigation_node` 가 **정확히 1개**여야 함. 2개면 그것이 원인임 → 2-1 로.
-- `/navigation/command` 구독자 수가 **1** 이어야 함. 2 이상이면 같은 원인임.
-- `ros2 action info /navigate_to_pose` 에 서버가 **1개** 보여야 함. 0개면 위 ① 이고, 2개면 Nav2 가 두 벌 떠 있는 것임.
-
-### 1-1. 2개 이상이면 (양쪽 PC 에서 각각 실행)
+- `ros2 pkg prefix` 가 **`/home/rokey/ROKEY_P3_A1/cobot3_ws/install/smart_farm_navigation`** 으로 나와야 정상임.
+- **`/home/rokey/ROKEY_P3_A1/install/...` 로 나오면 옛 트리를 보고 있는 것임.** 아래로 정리한 뒤 이 절을 다시 실행함.
 
 ```bash
-pkill -f navigation_node
-pkill -f nav2.launch
-pkill -f 'ros2 bag record'
-sleep 2
-ros2 node list | grep -c navigation_node   # 0 이 나와야 함
+mv /home/rokey/ROKEY_P3_A1/install /home/rokey/ROKEY_P3_A1/install_OLD_20260929
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install 2>&1 | tail -5
 ```
 
-그 뒤 **Nav2 와 `navigation_node` 는 오직 한 대(Isaac 을 안 띄운 쪽)에서만** 다시 띄움.
+- `grep` 결과가 `source_timeout: 1.0` 이면 최신 판임. 다른 값이면 옛 코드로 돌고 있었다는 뜻이므로 위 정리 후 다시 빌드함.
 
 ---
 
-## 2. 터미널 2 — Nav2 를 다시 띄우고 `scan_mode` 선택 결과를 눈으로 확인
+## 2. 고피1 · 터미널 2 — Isaac Sim 실행
 
-**Isaac 을 띄우지 않은 쪽 고피**에서 실행함. Isaac 은 이미 떠 있는 상태여야 함(`/clock` 이 나와야 `auto` 판정이 정상적으로 돎).
+**이 터미널만은 시스템 ROS 를 `source` 하지 않음.** Isaac 이 자체 ROS 2 Jazzy 를 씀. 그래서 환경 줄이 3줄임.
+
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm
+
+/home/rokey/isaacsim/python.sh runtime/standalone_app.py --autoplay \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/isaac_$(date +%Y%m%d_%H%M).txt
+```
+
+아래 두 줄이 나오면 다음 절로 감. **이 줄이 나오기 전에는 고피2 를 시작하지 않음.**
+
+```text
+[READY] Collected_smartfarm_v014_room_core_cabbage scene ready; ...
+[대기] /sim_task/command의 String/JSON 명령을 기다립니다.
+```
+
+> **중요**: Isaac 을 다시 띄우면 시뮬 시각이 0 으로 돌아감. 그때는 **고피2 의 5·6·7·9절을 전부 다시 실행**해야 함.
+
+---
+
+## 3. 고피1 · 터미널 3 — 라이다 "발행 측" 주기
+
+Isaac 이 만들어 내는 주기를 **고피1 에서** 잼. 뒤에 고피2 가 받는 주기(10-1절)와 비교하면 느려지는 곳이 Isaac 인지 네트워크인지 갈림. 2절이 `[대기]` 를 찍은 뒤에 실행함.
 
 ```bash
 export ROS_DOMAIN_ID=101
@@ -90,26 +111,47 @@ source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
 
-ros2 launch smart_farm_navigation nav2.launch.py scan_mode:=auto use_rviz:=false \
-  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/nav2_$(date +%Y%m%d_%H%M).txt
+timeout 60 ros2 topic hz /front_3d_lidar/lidar_points \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/hz_gopi1_lidar_$(date +%Y%m%d_%H%M).txt
 ```
 
-뜨자마자 아래 한 줄이 반드시 찍힘. **이 줄을 그대로 알려 줄 것.**
-
-```
-[nav2.launch] scan_mode auto -> cloud; AMCL initial pose (…, …, … deg) …
-```
-
-- `auto -> cloud` 면 지금까지와 같은 경로임 → 3절로.
-- `auto -> scan2d` 면 **이번 실패의 유력 원인임**(이 경로는 검증량이 적음) → 3-1 로.
+60초 뒤 저절로 끝남. `average rate:` 값을 11-2 표와 대조함. **이 값은 벽시계 기준임.**
 
 ---
 
-## 3. 터미널 3 — 스캔 경로를 `cloud` 로 못 박고 재시도 (선택이지만 권함)
+## 4. 고피2 · 터미널 1 — 빌드와 노드 중복 확인
 
-2절이 `auto -> scan2d` 로 나왔거나, 어느 쪽인지 확실히 고정하고 싶을 때 씀. **`cloud` 는 지금까지 12단계 완주를 낸 경로임.**
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws
+colcon build --symlink-install 2>&1 | tail -5
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 
-터미널 2 를 Ctrl-C 로 끄고, 같은 터미널에서 아래를 실행함.
+ros2 node list | sort \
+  | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/nodelist_gopi2_$(date +%Y%m%d_%H%M).txt
+```
+
+**판정**: `/sim_task_executor` 하나만 보여야 함(고피1 의 Isaac). 그 밖의 노드가 보이면 **지난 실행이 살아 있는 것**이므로 아래로 정리함.
+
+```bash
+pkill -f "install/smart_farm_navigation/lib"
+pkill -f "install/smart_farm_manager/lib"
+pkill -f "nav2_"
+pkill -f "pointcloud_to_laserscan"
+sleep 3
+ros2 node list | sort
+```
+
+> 런치 창을 Ctrl-C 로 닫아도 **자식 노드는 살아남음.** 위처럼 실행파일 경로로 지워야 완전히 정리됨. 09-28 `NAV_FAILED` 의 원인이 이것이었음.
+
+---
+
+## 5. 고피2 · 터미널 2 — Nav2
 
 ```bash
 export ROS_DOMAIN_ID=101
@@ -120,24 +162,80 @@ source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
 
 ros2 launch smart_farm_navigation nav2.launch.py scan_mode:=cloud use_rviz:=false \
-  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/nav2_cloud_$(date +%Y%m%d_%H%M).txt
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/nav2_$(date +%Y%m%d_%H%M).txt
 ```
 
-### 3-1. 실행 순서를 지킬 것
+`scan_mode:=cloud` 를 **명시**함. 지금까지 한 번도 명시해 본 적이 없고, `auto` 가 6초 동안 2D 라이다를 듣는 판정 자체를 건너뛰기 위함임.
 
-**Isaac 을 다시 띄웠으면 Nav2 도 반드시 다시 띄움.** 시뮬레이션 시각이 0 으로 돌아가 TF·센서 시각이 어긋나고, 그 상태로 목표를 주면 Nav2 가 목표를 실패로 끝내 위 ③ 이 남. 순서는 이것임.
+이 창에 5초마다 아래 줄이 계속 올라옴. **이것이 이번 실측의 핵심 수치임.**
 
-1. 고피(Isaac 쪽): `standalone_app.py --autoplay …`
-2. 고피(Nav2 쪽): `nav2.launch.py scan_mode:=cloud use_rviz:=false`
-3. 고피(Nav2 쪽): `navigation_node.launch.py`  ← **딱 한 대에서만**
-4. 비전 컨테이너
-5. Task Manager: `task_manager.launch.py`
+```text
+[cloud_self_filter-1] ... : 3.2 Hz, 41276 points/scan, merged 2 msgs, 0 self points removed/scan
+```
 
 ---
 
-## 4. 터미널 4 — 실패했을 때 남길 것 (이게 있어야 원인을 확정할 수 있음)
+## 6. 고피2 · 터미널 3 — navigation_node
 
-사이클을 시작하기 **전에** 먼저 띄워 두고, 실패한 뒤 Ctrl-C 로 끔.
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
+
+ros2 launch smart_farm_navigation navigation_node.launch.py \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/navnode_$(date +%Y%m%d_%H%M).txt
+```
+
+`navigation_node ready; destinations: [...]` 가 나오면 됨. **고피1 에서는 이것을 띄우지 않음.** 두 대에서 띄우면 목표 선점으로 `NAV_FAILED` 가 남.
+
+---
+
+## 7. 고피2 · 터미널 4 — Inspection (둘 중 하나만)
+
+`PREFLIGHT` 를 통과하려면 sim_task · navigation · inspection 셋이 모두 READY 여야 함. 이번 실측은 주행이 목적이라 **가짜 노드로 충분함.**
+
+### 7-A. 가짜 노드 (권함. 도커 필요 없음)
+
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
+
+ros2 run smart_farm_manager mock_executor --ros-args \
+  -r __node:=mock_inspection_executor -p executor:=inspection \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/mockinsp_$(date +%Y%m%d_%H%M).txt
+```
+
+### 7-B. 진짜 비전 컨테이너 (선택. 검사 결과까지 보고 싶을 때만)
+
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
+cd /home/rokey/ROKEY_P3_A1
+
+sudo docker compose -f compose.vision.yaml up -d vision
+sudo docker compose -f compose.vision.yaml exec vision \
+  /entrypoint.sh ros2 launch smart_farm_vision object_detection.launch.py \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/vision_$(date +%Y%m%d_%H%M).txt
+```
+
+저장소 루트 `.env` 의 `ROS_DOMAIN_ID` 도 101 이어야 함.
+
+---
+
+## 8. 고피2 · 터미널 5 — 결과 구독 (**사이클 시작보다 반드시 먼저**)
+
+명령보다 늦게 띄우면 결과를 놓침. `phase` 가 여기 찍히고, 그것이 0-1 절의 ①~④ 를 가름.
 
 ```bash
 export ROS_DOMAIN_ID=101
@@ -151,91 +249,188 @@ ros2 topic echo /navigation/result \
   2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/navresult_$(date +%Y%m%d_%H%M).txt
 ```
 
-그리고 **`navigation_node` 터미널의 출력도 파일로 남김.** 3절 5단계에서 `navigation_node` 를 띄울 때 아래처럼 `tee` 를 붙임.
+---
+
+## 9. 고피2 · 터미널 6 — `collision_monitor` 상태 구독 (이번 판의 핵심 증거)
+
+`/scan` 이 늦어 카터가 멈춰 세워지는지를 직접 봄. `collision_monitor` 는 `cmd_vel_smoothed` → `cmd_vel` 사이에 있어 여기서 막히면 카터가 그대로 섬.
 
 ```bash
-ros2 launch smart_farm_navigation navigation_node.launch.py \
-  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/navnode_$(date +%Y%m%d_%H%M).txt
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
+
+ros2 topic echo /collision_monitor_state \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/colmon_$(date +%Y%m%d_%H%M).txt
 ```
 
-**넘겨줄 것 3개**
-
-1. `navnode_*.txt` — 0-1 표의 ①~④ 를 가르는 로그가 여기 있음
-2. `nav2_*.txt` 또는 `nav2_cloud_*.txt` — `scan_mode auto -> ?` 줄과 AMCL 초기 자세
-3. `nodelist_*.txt` (양쪽 PC) — 중복 노드 여부
-
-bag 은 `nav2.launch.py` 가 `record:=true`(기본값)로 `~/.ros/smart_farm_navigation/bags/nav2_<날짜>/` 에 자동으로 남기므로 따로 할 것이 없음.
+`action_type: 0` 이면 통과임. **주행 중에 `1`(STOP) 이나 `2`(SLOWDOWN) 가 뜨면 그것이 `NAV_FAILED` 의 직접 원인임.**
 
 ---
 
-## 5. 파일명 - 역할 - 요약
+## 10. 고피2 · 터미널 7 — Task Manager
 
-| 파일 | 역할 | 요약 |
-|---|---|---|
-| `cobot3_ws/src/smart_farm_navigation/smart_farm_navigation/navigation_node.py` | 주행 실행기 | `NAV_FAILED` 를 내는 네 지점(309·324·381·417줄). 이번 판에서 **고치지 않았음** |
-| `cobot3_ws/src/smart_farm_navigation/launch/nav2.launch.py` | Nav2 런치 | `scan_mode` 기본값 `auto`(188줄), `auto` 판정 로직(62~80줄), 선택 결과를 로그로 출력(156줄) |
-| `cobot3_ws/src/smart_farm_navigation/launch/navigation_node.launch.py` | 주행 실행기 런치 | **한 대에서만** 띄워야 함. 중복이 09-28 `NAV_FAILED` 의 원인이었음 |
-| `results/log/navnode_*.txt` | 이번 판 산출물 | `phase` 와 실패까지 걸린 시간 |
-| `results/log/nav2_*.txt` | 이번 판 산출물 | `scan_mode` 선택 결과, AMCL 초기 자세 |
-| `results/log/nodelist_*.txt` | 이번 판 산출물 | PC 별 노드 목록(중복 확인) |
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
+
+ros2 launch smart_farm_manager task_manager.launch.py \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/taskmgr_$(date +%Y%m%d_%H%M).txt
+```
+
+아래 세 줄이 **모두** 나온 뒤에 11절로 감.
+
+```text
+Executor status changed: executor=sim_task, state=READY, ...
+Executor status changed: executor=navigation, state=READY, ...
+Executor status changed: executor=inspection, state=READY, ...
+```
+
+> `PREFLIGHT failed: NAV_NOT_READY` 가 뜨면 **`/clock` 이 멈췄다는 신호임**(`navigation_node` 의 상태 타이머가 시뮬 시각으로 돌기 때문). 고피1 의 Isaac 터미널이 살아 있는지부터 봄.
 
 ---
 
-## 6. 고피3 실측으로 잡은 기준값 (2026-09-29 02:14~02:42, 에이전트 대행)
+## 11. 고피2 · 터미널 8 — 사이클 시작
 
-팀장님 진단(3D 라이다 생성 ~ 점군 전처리 구간 지연)에 맞춰 그 구간만 따로 계측했음. **팀장님 브랜치(`fix/navigation_fail_error`) 코드 그대로**, 고피3 한 대, `scan_mode auto -> cloud` 조건임.
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
 
-### 6-1. 정상일 때의 값 (이 값에서 벗어나면 그 구간이 범인임)
+ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_id: 'DEMO_HARVEST_01'}" \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/startcycle_$(date +%Y%m%d_%H%M).txt
+```
 
-| 항목 | 기준값 | 비고 |
+`accepted=True, task_id='TASK-...'` 가 나오면 시작된 것임.
+
+**이후 진행과 대략의 소요 시간** (고피3 기준. `NAVIGATION` 까지 약 9분)
+
+| 순서 | 단계 | 누적 |
 |---|---|---|
-| 실시간 배율 | **0.32** | 벽시계 40초에 시뮬 13초 |
-| `/front_3d_lidar/lidar_points` | **시뮬 3.2~3.4 Hz / 벽시계 1.0 Hz** | 41,270점, 495 kB/장 |
-| `cloud_self_filter` 자체 로그 | **`3.2~3.4 Hz, 41,27x points/scan, merged 2 msgs`** | 5초마다 자동 출력 |
-| `/scan` | 시뮬 3.1 Hz | |
-| 전처리가 더하는 지연 | **평균 0.001초, 최대 0.05초** | stamp 대비 `/clock` |
-| `/scan` 최대 공백 | 벽시계 1.85~2.22초 = **시뮬 0.59~0.71초** | |
+| 1 | TRANSFER | 0 ~ 5분 |
+| 2 | PICK_HARVEST | 5 ~ 8분 |
+| 3 | **NAVIGATION** ← 보려는 구간 | 8 ~ 10분 |
+| 4 | PLACE_INSPECT 이후 | 10분 ~ |
 
-**핵심**: 전처리(`cloud_self_filter` → `pointcloud_to_laserscan`)가 더하는 지연은 **1 ms 수준으로 병목이 아님.** 지연의 실체는 **라이다 프레임이 만들어지는 주기 그 자체**임.
+`NAVIGATION` 이 지나가면 목적을 달성한 것임. 뒤 단계는 끝까지 둬도 되고 중간에 멈춰도 됨.
 
-### 6-2. 왜 그런가 — 라이다와 `/clock` 은 렌더 루프에 묶여 있음
+### 11-1. 고피2 · 터미널 9 — 라이다 "수신 측" 주기 (선택이지만 권함)
 
-`--headless` 로 띄우면(`standalone_app.py:1514`, `render=(not args.headless ...)`) 다음이 동시에 일어남을 실측으로 확인했음.
+고피2 터미널 7 에 `Command published: ... operation=NAVIGATION` 이 뜬 **직후** 실행함. 3절(고피1 발행 측)과 짝임.
 
-- `/front_3d_lidar/lidar_points` 의 **publisher 가 0개**가 됨 (RTX 라이다는 렌더 결과물임)
-- `/clock` 이 토픽만 있고 **한 건도 발행되지 않음**
-- 그 결과 `navigation_node` 의 상태 타이머(시뮬 시각 기준)가 영영 안 돌아 Task Manager 가 **`PREFLIGHT failed: NAV_NOT_READY`** 를 냄
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
 
-즉 **렌더가 느려지면 라이다 주기와 `/clock` 이 같이 느려짐.** Nav2 는 전 노드가 `use_sim_time: True` 라 `/clock` 이 끊기면 제어 주기·TF 보간·센서 유효성 판정이 한꺼번에 흔들림. 이것이 `NAV_FAILED` 로 이어지는 경로임.
+timeout 60 ros2 topic hz /front_3d_lidar/lidar_points \
+  2>&1 | tee /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/hz_gopi2_lidar_$(date +%Y%m%d_%H%M).txt
+```
 
-### 6-3. 가장 의심스러운 파라미터 — `collision_monitor.source_timeout`
+---
 
-`config/nav2_params.yaml:271` 의 `source_timeout: 1.0` (시뮬초)임. **Nav2 기본값은 5.0 이라 우리 설정이 5배 빡빡함.** `collision_monitor` 는 `cmd_vel_smoothed` → `cmd_vel` 사이에 있어 여기서 막히면 카터가 그대로 섬.
+## 12. 판정표 — 기준값과 대조
 
-고피3 실측의 `/scan` 최대 공백이 시뮬 0.71초이므로 **여유가 0.3초뿐임.** 고피1·고피2 는 Isaac 과 Nav2 가 다른 PC라 495 kB 짜리 점군이 매번 네트워크를 건너오므로(초당 약 0.5 MB) 공백이 더 벌어지기 쉬움.
-
-### 6-4. 고피1·고피2 에서 볼 것 (터미널 추가 없이 지금 로그로 확인됨)
-
-Nav2 를 띄운 터미널에 `cloud_self_filter` 가 5초마다 찍는 줄이 이미 나오고 있음. 그 줄만 보면 됨.
+### 12-1. 라이다 주기 (고피2 터미널 2 의 `cloud_self_filter` 줄, 시뮬 시각 기준)
 
 | 보이는 것 | 뜻 |
 |---|---|
-| `3.2~3.4 Hz ... merged 2 msgs` | 고피3 정상값과 같음. 이 구간은 범인이 아님 |
-| `1.x Hz ... merged 1 msgs` | 렌더가 느려진 상태. `source_timeout` 1.0초에 걸리기 시작함 |
-| `0.x Hz` 또는 `no PointCloud2 received in the last 5 s` | **확정적임.** `/scan` 이 끊겨 `collision_monitor` 가 카터를 세우고 Nav2 가 목표를 실패시킴 |
+| `3.2~3.4 Hz ... merged 2 msgs` | 고피3 정상값과 같음. **라이다는 범인이 아님** |
+| `1.4~2.8 Hz`, `merged 1 msgs` 섞임 | 2026-09-29 고피1 에서 나온 값. `source_timeout` 1.0초에 걸리기 시작하는 구간 |
+| `0.2~0.6 Hz` 또는 `no PointCloud2 received in the last 5 s` | **확정.** `/scan` 이 끊겨 카터가 서고 목표가 실패함 |
 
-`PREFLIGHT failed: NAV_NOT_READY` 가 뜬다면 그것은 **`/clock` 이 멈췄다는 신호**임(6-2 참조). 스캔모드와 무관함.
+### 12-2. 네트워크가 범인인지 (3절 ↔ 11-1절 비교, 둘 다 벽시계 기준)
 
-### 6-5. 아직 손대지 않은 조치 후보 (승인 필요)
+| 고피1 발행 측 | 고피2 수신 측 | 판정 |
+|---|---|---|
+| 약 1.0 Hz | 약 1.0 Hz | 네트워크 아님. **Isaac 렌더 주기가 원인** |
+| 약 1.0 Hz | 뚜렷하게 낮음 | **네트워크가 원인.** 점군이 495 kB/장, 초당 약 0.5 MB 임 |
+| 둘 다 1.0 Hz 보다 크게 낮음 | 〃 | Isaac 쪽 렌더 부하. 고피1 Isaac 설정을 고피3 과 비교해야 함 |
 
-아래는 전부 ADR_nav2 §2.6 의 "keep" 기준선이라 보고만 하고 고치지 않았음.
+### 12-3. `NAV_FAILED` 가 났을 때 볼 순서
 
-1. `collision_monitor.source_timeout` **1.0 → 3.0** (`config/nav2_params.yaml:271`). 라이다 주기가 느린 환경에서 카터가 멈춰 서는 것을 막음. 안전 여유는 줄지만 시뮬에서는 타당함. **가장 작은 수정이고 효과가 직접적임.**
-2. `cloud_self_filter.accumulate_s` **0.25 → 0.5** (`launch/nav2.launch.py`). `merged 1 msgs` 가 이어질 때 유효함.
-3. Isaac 창 크기·렌더 해상도를 줄여 프레임 주기를 당김. 고피3 에서 비전 스테이션 on/off 는 라이다 주기에 **영향이 없었음**(3.15 vs 3.28 Hz)이라 카메라를 끄는 것은 효과가 없음.
+1. 고피2 터미널 5(`navresult_*.txt`)의 **`phase`** → 0-1 절 표의 ①~④ 중 무엇인지 확정됨.
+2. 고피2 터미널 6(`colmon_*.txt`)에 **`action_type: 1`** 이 있는지 → 있으면 `/scan` 지연이 카터를 세운 것이 증명됨.
+3. 고피2 터미널 2 의 그 시각 `cloud_self_filter` Hz → 12-1 표와 대조.
 
-### 6-6. 이번 실측에서 같이 확인된 것
+---
 
-- **비전 스테이션은 라이다 주기와 무관함.** `--no-vision-station` 켠 판 3.15 Hz, 끈 판 3.28 Hz 로 차이 없음.
-- **이미 죽은 Isaac 이 물려 있던 가상 디스플레이를 재사용하면 Isaac 이 기동 직후 segfault 로 죽음**(3회 연속). 디스플레이를 새로 띄우면 같은 인자로 정상 기동함(2회 연속). 코드 문제가 아님.
-- `ros2 node list` 중복은 **런치 래퍼만 죽였을 때** 생김. 자식 노드는 살아남으므로 실행파일 경로로 지워야 함(1-1 절).
+## 13. 끝내기와 결과 수집
+
+### 13-1. 끄는 순서 (고피2 먼저, 고피1 나중)
+
+고피2 의 터미널 8·7·6·5·4·3·2 를 Ctrl-C 로 끈 뒤, **고피2 터미널 1 에서** 아래로 자식 노드까지 정리함.
+
+```bash
+export ROS_DOMAIN_ID=101
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
+source /opt/ros/jazzy/setup.bash
+source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
+
+pkill -f "install/smart_farm_navigation/lib"
+pkill -f "install/smart_farm_manager/lib"
+pkill -f "nav2_"
+pkill -f "pointcloud_to_laserscan"
+sleep 3
+ros2 node list | sort
+```
+
+그 다음 고피1 터미널 2 의 Isaac 을 Ctrl-C 로 끔. **Isaac 창의 Stop 버튼은 누르지 않음**(팀 `lift.py` 의 `stop()` 이 죽음).
+
+### 13-2. 결과 올리기 (두 PC 각각에서 실행)
+
+`results/` 는 `.gitignore` 에 걸려 있으므로 **`-f` 가 반드시 필요함.**
+
+```bash
+cd /home/rokey/ROKEY_P3_A1
+git add -f cobot3_ws/src/smart_farm_navigation/results/log/
+git commit -m "test(navigation): 27차 고피1+고피2 2대 실측"
+git push
+```
+
+bag 은 고피2 의 `nav2.launch.py` 가 `record:=true`(기본값)로 `/home/rokey/.ros/smart_farm_navigation/bags/nav2_<날짜>/` 에 자동으로 남기므로 따로 할 것이 없음.
+
+---
+
+## 14. 파일명 - 역할 - 요약
+
+### 14-1. 이 실측이 만드는 파일 (전부 `/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log/`)
+
+| 파일 | 만든 곳 | 무엇을 판정하나 |
+|---|---|---|
+| `isaac_*.txt` | 고피1 터미널 2 | Isaac 실행 인자·장면 준비·오류 |
+| `hz_gopi1_lidar_*.txt` | 고피1 터미널 3 | 라이다 **발행 측** 주기 |
+| `nodelist_gopi2_*.txt` | 고피2 터미널 1 | 노드 중복 여부 |
+| `nav2_*.txt` | 고피2 터미널 2 | **`cloud_self_filter` Hz**, `scan_mode`, AMCL 초기 자세 |
+| `navnode_*.txt` | 고피2 터미널 3 | `goToPose`, 목표 거부·도킹 결과 |
+| `mockinsp_*.txt` | 고피2 터미널 4 | inspection READY |
+| `navresult_*.txt` | 고피2 터미널 5 | **`phase`** (①~④ 판별) |
+| `colmon_*.txt` | 고피2 터미널 6 | **`action_type`** (카터가 세워졌는지) |
+| `taskmgr_*.txt` | 고피2 터미널 7 | 단계 전환·`PREFLIGHT`·타임아웃 |
+| `startcycle_*.txt` | 고피2 터미널 8 | `task_id` |
+| `hz_gopi2_lidar_*.txt` | 고피2 터미널 9 | 라이다 **수신 측** 주기 |
+
+### 14-2. 이 실측이 들여다보는 코드 (이번 판에서 고친 것은 없음)
+
+| 파일 | 역할 | 이번 판에서의 의미 |
+|---|---|---|
+| `smart_farm_navigation/navigation_node.py` | 주행 실행기 | `NAV_FAILED` 발행 4곳(309·324·381·417줄) |
+| `smart_farm_navigation/cloud_self_filter.py` | 점군 자기몸통 제거·0.25초 합치기 | 5초마다 Hz 를 스스로 찍음(74~80줄) |
+| `launch/nav2.launch.py` | Nav2 런치 | `scan_mode` 기본값 `auto`(188줄), 선택 결과 출력(156줄) |
+| `launch/navigation_node.launch.py` | 주행 실행기 런치 | **한 대에서만** 띄워야 함 |
+| `config/nav2_params.yaml` | Nav2 설정 | `collision_monitor.source_timeout: 1.0`(271줄). Nav2 기본값은 5.0 |
+| `smart_farm_manager/scenario.py` | 시나리오 | 단계별 제한시간(TRANSFER 400초 등) |
