@@ -67,11 +67,15 @@ rosbag2_*
 !/cobot3_ws/src/smart_farm_navigation/results/log_media/*.md
 # results/log 은 실측 기록이라 위의 log/ 패턴에서 되살려 추적한다
 !/cobot3_ws/src/smart_farm_navigation/results/log/
+<<<<<<< HEAD
 # bag 은 실측 판정의 근거이므로 추적한다 (2026-09-29 사용자 지시).
 # 폴더와 그 안쪽을 모두 되살려야 한다. `bags/*` 한 줄만으로는 위 `rosbag2_*` 규칙에
 # 걸린 기본 이름 폴더(`rosbag2_YYYYMMDD_HHMM/`)가 그대로 제외된다.
 !/cobot3_ws/src/smart_farm_navigation/results/bags/
 !/cobot3_ws/src/smart_farm_navigation/results/bags/**
+=======
+!/cobot3_ws/src/smart_farm_navigation/results/bags/*
+>>>>>>> 46c4f3584d029cb585b1f061171552a30cd015d1
 /cobot3_ws/isaacpjt/smart_farm/scripts/lift_stroke.py
 /cobot3_ws/records/*
 # 관제 패키지는 코드를 추적하고 DB 파일만 제외함 (2026-09-28)
