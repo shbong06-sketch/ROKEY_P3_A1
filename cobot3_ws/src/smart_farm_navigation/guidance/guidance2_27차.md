@@ -63,10 +63,25 @@ grep -n "source_timeout" $(ros2 pkg prefix smart_farm_navigation)/share/smart_fa
 - **`/home/rokey/ROKEY_P3_A1/install/...` 로 나오면 옛 트리를 보고 있는 것임.** 아래로 정리한 뒤 이 절을 다시 실행함.
 
 ```bash
-mv /home/rokey/ROKEY_P3_A1/install /home/rokey/ROKEY_P3_A1/install_OLD_20260929
+rm -rf /home/rokey/ROKEY_P3_A1/install /home/rokey/ROKEY_P3_A1/build /home/rokey/ROKEY_P3_A1/log
 cd /home/rokey/ROKEY_P3_A1/cobot3_ws
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install 2>&1 | tail -5
+```
+
+**[2026-09-29 정정] 옛 판은 `mv … install_OLD_20260929` 로 이름만 바꿔 치우라고 적었음.**
+그 폴더가 저장소 루트에 남아 `.gitignore` 의 `install/` 규칙을 빗나가 **colcon 산출물 251개가
+커밋 `e2f1d34` 에 그대로 올라갔음.** 낡은 prefix 는 남길 값이 없으므로 지움.
+
+**빌드가 `error: [Errno 17] File exists: …/install/…` 로 실패하면** (고피3 에서 09-29 재현함)
+`--symlink-install` 이 남긴 낡은 링크와 부딪힌 것임. **install 트리 전체를 치우지 말고**
+그 패키지 것만 지우고 다시 빌드함.
+
+```bash
+cd /home/rokey/ROKEY_P3_A1/cobot3_ws
+rm -rf build/smart_farm_navigation install/smart_farm_navigation
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install --packages-select smart_farm_navigation 2>&1 | tail -5
 ```
 
 - `grep` 결과가 `source_timeout: 1.0` 이면 최신 판임. 다른 값이면 옛 코드로 돌고 있었다는 뜻이므로 위 정리 후 다시 빌드함.
@@ -119,7 +134,7 @@ timeout 60 ros2 topic hz /front_3d_lidar/lidar_points \
 
 ---
 
-## 4. 고피2 · 터미널 1 — 빌드와 노드 중복 확인
+## 4. 고피2(`IsaacSim04`) · 터미널 1 — 빌드와 노드 중복 확인
 
 ```bash
 export ROS_DOMAIN_ID=101
@@ -128,6 +143,7 @@ export FASTRTPS_DEFAULT_PROFILES_FILE=/home/rokey/.ros/fastdds_whitelist.xml
 source /opt/ros/jazzy/setup.bash
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/log
+rm -rf /home/rokey/ROKEY_P3_A1/install /home/rokey/ROKEY_P3_A1/build /home/rokey/ROKEY_P3_A1/log
 cd /home/rokey/ROKEY_P3_A1/cobot3_ws
 colcon build --symlink-install 2>&1 | tail -5
 source /home/rokey/ROKEY_P3_A1/cobot3_ws/install/setup.bash
