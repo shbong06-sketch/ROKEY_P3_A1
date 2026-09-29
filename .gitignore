@@ -103,6 +103,12 @@ rosbag2_*
 .claude.json.backup
 *.jsonl
 
+# 기록은 정본 경로 한 곳에만 쌓는다. 저장소 루트 `results/` 와 `cobot3_ws/results/` 로
+# 흘러들어간 bag 27MB(같은 녹화의 중복본)를 2026-09-29 에 정리했으므로, 그 두 곳은 막는다.
+# bag 은 `cobot3_ws/src/smart_farm_navigation/results/bags/` 에만 기록할 것.
+/results/
+/cobot3_ws/results/
+
 # 빌드 산출물 폴더를 이름만 바꿔 치워 두면 위의 `install/`·`build/`·`log/` 규칙을
 # 빗나간다. 실제로 2026-09-29 커밋 e2f1d34 에 `install_OLD_20260929/` 251개가 들어갔다.
 # `log_media/` 같은 기록 폴더를 건드리지 않도록 `_OLD` 가 붙은 이름만 막는다.

@@ -1,1 +1,0 @@
-/home/rokey/ROKEY_P3_A1/build/smart_farm_interfaces/rosidl_generator_c/smart_farm_interfaces/msg/rosidl_generator_c__visibility_control.h

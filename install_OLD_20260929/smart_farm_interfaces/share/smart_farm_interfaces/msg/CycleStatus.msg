@@ -1,1 +1,0 @@
-/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_interfaces/msg/CycleStatus.msg
