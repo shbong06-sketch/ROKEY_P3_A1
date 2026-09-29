@@ -1,0 +1,1 @@
+error while interpolating services.vision.environment.ROS_DOMAIN_ID: required variable ROS_DOMAIN_ID is missing a value: export ROS_DOMAIN_ID before starting vision

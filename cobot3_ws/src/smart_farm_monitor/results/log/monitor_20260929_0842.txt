@@ -1,0 +1,9 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-29-08-42-11-768251-gc-isaacsim-lwh-444477
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [recorder-1]: process started with pid [444503]
+[INFO] [web-2]: process started with pid [444504]
+[web-2] INFO:     Started server process [444504]
+[web-2] INFO:     Waiting for application startup.
+[web-2] INFO:     Application startup complete.
+[web-2] INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+[recorder-1] [INFO] [1790671332.455831905] [monitor_recorder]: monitor_recorder ready: db=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db

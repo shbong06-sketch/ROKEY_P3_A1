@@ -1,0 +1,5 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-29-08-49-30-394603-gc-isaacsim-lwh-449717
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [task_manager-1]: process started with pid [449733]
+[task_manager-1] [INFO] [1790671771.187350802] [task_manager]: Task Manager ready: scenario=DEMO_HARVEST_01
+[task_manager-1] [INFO] [1790671771.938560739] [task_manager]: Executor status changed: executor=navigation, state=READY, detail=waiting for /navigation/command

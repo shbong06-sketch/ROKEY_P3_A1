@@ -1,0 +1,13 @@
+[INFO] [launch]: All log files can be found below /home/nitrouriah92/.ros/log/2026-09-29-08-30-48-701801-gc-isaacsim-lwh-441836
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [recorder-1]: process started with pid [441845]
+[INFO] [web-2]: process started with pid [441846]
+[web-2] INFO:     Started server process [441846]
+[web-2] INFO:     Waiting for application startup.
+[web-2] INFO:     Application startup complete.
+[web-2] INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+[recorder-1] [INFO] [1790670649.391214316] [monitor_recorder]: monitor_recorder ready: db=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_monitor/data/farm.db
+[recorder-1] [INFO] [1790670792.263490763] [monitor_recorder]: cycle opened: TASK-20260928-900
+[recorder-1] [INFO] [1790670793.066223474] [monitor_recorder]: cycle closed: TASK-20260928-900 state=COMPLETE status=SUCCEEDED reason=NONE
+[recorder-1] [INFO] [1790670802.495403923] [monitor_recorder]: dock recorded: run_id=RUN-1 status=SUCCEEDED lat_m=0.037 retry=2
+[recorder-1] [INFO] [1790670803.296147060] [monitor_recorder]: detections recorded: 1 rows, pass=1, command_id=TASK-20260928-900-CMD-005
