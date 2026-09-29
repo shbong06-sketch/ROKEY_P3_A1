@@ -9,11 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ros-jazzy-cv-bridge \
     && rm -rf /var/lib/apt/lists/*
 
-# CUDA 12.4 PyTorch wheel을 명시적으로 선택한다.
+# RTX 5080 (sm_120)을 지원하는 CUDA 12.8 PyTorch wheel을 사용한다.
 RUN pip install --no-cache-dir --break-system-packages \
-        --index-url https://download.pytorch.org/whl/cu124 \
-        torch==2.4.1 \
-        torchvision==0.19.1
+        --index-url https://download.pytorch.org/whl/cu128 \
+        torch==2.7.1 \
+        torchvision==0.22.1
 
 # cv_bridge와 호환되는 NumPy 1.x를 유지한다.
 RUN pip install --no-cache-dir --break-system-packages \
@@ -21,9 +21,9 @@ RUN pip install --no-cache-dir --break-system-packages \
         opencv-python==4.10.0.84 \
         ultralytics==8.4.26
 
-# CPU 전용 PyTorch가 잘못 설치되면 빌드를 실패시킨다.
+# 빌드 중에는 GPU가 노출되지 않으므로 CUDA wheel 버전만 확인한다.
 RUN python3 -c \
-    "import torch; assert torch.version.cuda == '12.4', torch.__version__"
+    "import torch; assert torch.version.cuda == '12.8', torch.__version__"
 
 WORKDIR /vision_ws
 

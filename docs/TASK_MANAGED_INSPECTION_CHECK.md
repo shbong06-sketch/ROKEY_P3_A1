@@ -32,7 +32,7 @@ sudo docker compose -f compose.vision.yaml exec vision /entrypoint.sh printenv R
 sudo docker compose -f compose.vision.yaml exec vision /entrypoint.sh python3 -c 'import torch; print(torch.__version__, torch.version.cuda, torch.cuda.get_device_name(0)); print((torch.ones(1, device="cuda") + 1).item())'
 ```
 
-`up -d`는 컨테이너의 기본 `sleep infinity`만 시작한다. 아래 Inspection launch를 별도로 실행해야 한다. RTX 5080에서 CUDA 연산이 실패하면 현재 Dockerfile의 PyTorch/CUDA 빌드를 GPU에 맞게 갱신·재빌드한 뒤 다시 확인한다.
+`up -d`는 컨테이너의 기본 `sleep infinity`만 시작한다. 아래 Inspection launch를 별도로 실행해야 한다. RTX 5080에서는 CUDA 12.8 PyTorch가 필요하다. 빌드 중에는 GPU가 노출되지 않아 아키텍처 목록이 비어 있을 수 있다. 컨테이너를 시작한 뒤 위 CUDA 텐서 연산까지 성공해야 동작이 확인된다.
 
 ## 별도 프로세스 기동
 

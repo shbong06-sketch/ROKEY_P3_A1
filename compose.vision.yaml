@@ -4,7 +4,7 @@ services:
       context: ./cobot3_ws/src
       dockerfile: smart_farm_vision/Dockerfile
 
-    image: smart-farm-vision:jazzy-cu124
+    image: smart-farm-vision:jazzy-cu128
     command: ["sleep", "infinity"]
     restart: unless-stopped
 
