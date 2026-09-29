@@ -1,0 +1,69 @@
+#usda 1.0
+(
+    defaultPrim = "m0617_fixed_base"
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "m0617_fixed_base" (
+    doc = "Doosan M0617 + OnRobot RG6 with the arm base fixed to the world at the position where this asset is placed. Origin = bottom of the arm base: drop it directly on a table/floor surface. Robot asset only (no PhysicsScene/ground/lights)."
+    kind = "assembly"
+)
+{
+    quatf xformOp:orient = (1, 0, 0, 0)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (0, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+    def Xform "m0617" (
+        prepend apiSchemas = ["PhysxArticulationAPI"]
+        prepend references = @../assets/m0617_rebuilt.usd@
+    )
+    {
+        int physxArticulation:solverPositionIterationCount = 32
+        int physxArticulation:solverVelocityIterationCount = 1
+        double3 xformOp:translate = (0, 0, 0.0452)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "rg6" (
+        prepend apiSchemas = ["PhysxArticulationAPI"]
+        prepend references = @../assets/rg6_gripper.usd@
+    )
+    {
+        int physxArticulation:solverPositionIterationCount = 16
+        int physxArticulation:solverVelocityIterationCount = 1
+        quatf xformOp:orient = (0.99999994, -2.942729e-8, 0.00024409404, -0.0002441872)
+        double3 xformOp:translate = (0.00017420973481601713, 0.03484625259504538, 1.8981999469987103)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+    }
+
+    def Scope "joints"
+    {
+        def PhysicsFixedJoint "world_to_base" (
+            doc = "Fixes the M0617 base to the world (fixed-base articulation). PhysX anchors it at the spawn pose, so the asset can be placed anywhere. NOTE: unlike m0617_to_rg6 below, this joint intentionally does NOT set physics:excludeFromArticulation=1 -- body0 is left empty (=world), and including this joint IN the articulation is what makes it a fixed-base articulation. Do not add excludeFromArticulation here; it would let the whole arm fall/float."
+        )
+        {
+            rel physics:body1 = </m0617_fixed_base/m0617/base_link>
+            point3f physics:localPos0 = (0, 0, 0.0452)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+
+        def PhysicsFixedJoint "m0617_to_rg6" (
+            doc = "M0617 link_6 (flange) -> RG6 base_link, identity. Replace with CAD value if an adapter plate is used."
+        )
+        {
+            rel physics:body0 = </m0617_fixed_base/m0617/link_6>
+            rel physics:body1 = </m0617_fixed_base/rg6/base_link>
+            uniform bool physics:excludeFromArticulation = 1
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+    }
+}
+
