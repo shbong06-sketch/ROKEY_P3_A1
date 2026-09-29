@@ -8,9 +8,3 @@ data/validation/*
 .venv/
 __pycache__/
 *.py[cod]
-models/
-results/
-*.faiss
-*.pkl
-*.pt
-*.pth
