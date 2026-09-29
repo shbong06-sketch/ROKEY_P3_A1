@@ -177,6 +177,7 @@ class DockLogic:
         self.stall_ref = None; self.stall_since = 0.0
         self.events = []              # (phase, detail) — 노드가 로그·상태 토픽으로 내보낸다
         self.last_face = None
+        self.face_missing_since = None
 
     # ---- 상태 ----
     def _status(self, phase, detail, now):
@@ -189,6 +190,7 @@ class DockLogic:
             return False
         self.result = None; self.t_start = now; self.run_id = run_id; self.retry = 0
         self.stall_ref = None; self.stall_since = now
+        self.face_missing_since = None
         self._status("SETTLE", f"started (run_id={run_id}); Nav2 가 {self.p.quiet_s:.0f} s 조용해지고 차체가 멈추면 정렬", now)
         return True
 
@@ -260,9 +262,12 @@ class DockLogic:
             return self._finish(False, "TIMEOUT", now)
         fresh = face is not None and face_age < p.fresh_s
         if not fresh:
-            if now - self.t_phase > 8.0:
+            if self.face_missing_since is None:
+                self.face_missing_since = now
+            if now - self.face_missing_since > 8.0:
                 return self._finish(False, "FACE_NOT_FOUND", now)
             return 0.0, 0.0
+        self.face_missing_since = None
         dist, yaw_err, lat, cx, cy, _n, _len = face
         # 면 가운데 법선 위 standoff 지점 G (base_link 기준)
         nx, ny = math.cos(yaw_err), math.sin(yaw_err)
