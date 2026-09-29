@@ -124,7 +124,7 @@ ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle \
 
 ## 검증 결과와 제한사항
 
-> **전체 공정 검증 영상 삽입 위치** — 정상·불량 경로 중 실제 녹화된 실행의 영상 링크, 실행 날짜, v015 장면·지도·모델 버전, 최종 `/cycle/status`와 bag 위치를 함께 기록한다. 영상 자체만으로 확인되지 않는 단계는 해당 명령·결과 로그를 연결한다.
+![전체 공정 검증 영상 보기](docs/media/full-cycle.gif)
 
 통합 공정의 성공 판정은 각 단계의 terminal 결과, 불량 슬롯과 CULL 대상·완료 슬롯의 일치, `RECHECK` 결과, 최종 `/cycle/status`의 `COMPLETE/SUCCEEDED`를 기준으로 한다. 단계별 성공 필드는 [인터페이스 계약](docs/02-interfaces.md#공정별-성공-계약)에 정리했다. 전체 사이클의 실행별 통과 횟수와 Cycle Time은 검증 기록을 연결한 뒤 기재한다.
 
