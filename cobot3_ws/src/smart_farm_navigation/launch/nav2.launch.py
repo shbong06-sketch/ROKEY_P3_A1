@@ -1,9 +1,13 @@
 """ros2 launch smart_farm_navigation nav2.launch.py [scan_mode:=auto|scan2d|cloud] [use_rviz:=true] [record:=true] [record_cloud:=false]
 
-record:=true (default) starts `ros2 bag record` alongside Nav2 into
-results/bags/nav2_<YYYYmmdd_HHMM>/ with every topic needed to replay the run
+record:=true starts `ros2 bag record` alongside Nav2 into
+<bag_dir>/nav2_<YYYYmmdd_HHMM>/ with every topic needed to replay the run
 (clock, tf, odom, /scan, cmd_vel chain, AMCL pose, costmaps, plan, BT log, /navigation/*).
 record_cloud:=true adds the raw 3D point cloud (about 1.3 MB/s).
+bag_dir:=<path> chooses where the bag goes.  [navigation 2026-09-29] The default
+~/.ros/smart_farm_navigation/bags is OUTSIDE the repository, so bags recorded there
+never travel through git.  Pass the repository path to keep the bag:
+  bag_dir:=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags
 
 Nav2 (map_server + AMCL + planner/controller/behaviors + RViz2) for the carter in
 Collected_smartfarm_v014.  Runs on the PC that does NOT run Isaac Sim; the only
@@ -144,8 +148,10 @@ def _setup(context):
     actions = []
     if LaunchConfiguration("record").perform(context).lower() in ("true", "1", "yes"):
         topics = BAG_TOPICS + ([CLOUD_TOPIC] if LaunchConfiguration("record_cloud").perform(context).lower() in ("true", "1", "yes") else [])
-        bag = os.path.join(BAG_DIR, time.strftime("nav2_%Y%m%d_%H%M"))
-        os.makedirs(BAG_DIR, exist_ok=True)
+        # [navigation 2026-09-29] 저장 위치를 launch 인자로 받는다. 기본값은 옛 경로 그대로다.
+        bag_dir = LaunchConfiguration("bag_dir").perform(context) or BAG_DIR
+        bag = os.path.join(bag_dir, time.strftime("nav2_%Y%m%d_%H%M"))
+        os.makedirs(bag_dir, exist_ok=True)
         actions.append(LogInfo(msg=f"[nav2.launch] rosbag -> {bag}  ({len(topics)} topics{', with 3D cloud' if CLOUD_TOPIC in topics else ''})"))
         actions.append(ExecuteProcess(
             cmd=["ros2", "bag", "record", "--use-sim-time", "-o", bag] + topics,
@@ -192,6 +198,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("record", default_value="false"),
         DeclareLaunchArgument("dock_auto", default_value="false"),    # 통합은 navigation_node 가 명령으로 시작한다. RViz2 수동 절차만 true
         DeclareLaunchArgument("record_cloud", default_value="false"),
+        DeclareLaunchArgument("bag_dir", default_value=BAG_DIR),   # [navigation 2026-09-29] 기록을 git 으로 옮기려면 저장소 경로를 넘긴다
         DeclareLaunchArgument("initial_x", default_value=""),
         DeclareLaunchArgument("initial_y", default_value=""),
         DeclareLaunchArgument("initial_yaw_deg", default_value=""),

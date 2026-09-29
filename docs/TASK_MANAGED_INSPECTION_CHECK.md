@@ -91,11 +91,11 @@ ros2 lifecycle get /bt_navigator
 
 ## Bag 기록과 자동 실행
 
-별도 ROS 터미널에서 사이클 시작 **전**에 bag을 기록한다. `/tmp`는 재부팅 후 사라질 수 있으므로 저장소 아래 영구 경로를 사용한다. 실행마다 `full_cycle_01`, `full_cycle_02`처럼 새 이름을 준다. `/inspection/debug_image`는 RECHECK의 ROI·잔존 불량을 확인하기 위해 포함한다. `/rgb` 원본 영상은 용량이 크므로 기본 목록에서 제외한다. 원본이 필요한 실행에만 별도 기록한다.
+별도 ROS 터미널에서 사이클 시작 **전**에 bag을 기록한다. `/tmp`는 재부팅 후 사라질 수 있으므로 저장소 아래 영구 경로를 사용한다. [2026-09-29] 저장 위치를 저장소 루트 `results/bags` 에서 주행 패키지 안 `cobot3_ws/src/smart_farm_navigation/results/bags` 로 고쳤다. `.gitignore` 의 bag 추적 규칙이 이 경로만 되살리므로, 루트에 기록하면 git 으로 오가지 않는다. 실행마다 `full_cycle_01`, `full_cycle_02`처럼 새 이름을 준다. `/inspection/debug_image`는 RECHECK의 ROI·잔존 불량을 확인하기 위해 포함한다. `/rgb` 원본 영상은 용량이 크므로 기본 목록에서 제외한다. 원본이 필요한 실행에만 별도 기록한다.
 
 ```bash
-mkdir -p ~/ROKEY_P3_A1/results/bags
-ros2 bag record -o ~/ROKEY_P3_A1/results/bags/full_cycle_01 \
+mkdir -p /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags
+ros2 bag record -o /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags/full_cycle_01 \
   /cycle/status /sim_task/command /sim_task/result /sim_task/status \
   /navigation/command /navigation/result /navigation/status \
   /feeder_dock/status /feeder_dock/result \
@@ -110,7 +110,7 @@ ros2 bag record -o ~/ROKEY_P3_A1/results/bags/full_cycle_01 \
 ros2 service call /start_cycle smart_farm_interfaces/srv/StartCycle "{scenario_id: DEMO_HARVEST_01}"
 ```
 
-`/start_cycle`은 실행당 **한 번만** 호출한다. 실패 후 같은 장면에서 재호출하지 않는다. 기록을 종료한 뒤 `ros2 bag info ~/ROKEY_P3_A1/results/bags/full_cycle_01`로 실제 저장 토픽과 건수를 확인한다. Nav2의 보조 bag은 `~/.ros/smart_farm_navigation/bags/nav2_<시각>/`에 저장된다.
+`/start_cycle`은 실행당 **한 번만** 호출한다. 실패 후 같은 장면에서 재호출하지 않는다. 기록을 종료한 뒤 `ros2 bag info /home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/bags/full_cycle_01`로 실제 저장 토픽과 건수를 확인한다. Nav2의 보조 bag은 `~/.ros/smart_farm_navigation/bags/nav2_<시각>/`에 저장된다.
 
 `task_id`는 `/start_cycle` 응답의 값이며 명령 ID는 보통 그 값에 `-CMD-001`부터 붙는다. 실제 성공 판정에는 같은 `task_id`, 해당 활성 명령과 결과의 `command_id`·`operation`, 요구되는 `pallet_id`와 물리 완료 필드를 대조한다. `/sim_task/command`, `/sim_task/result`, `/sim_task/status`는 `std_msgs/msg/String` JSON이고, Navigation·Inspection의 명령과 결과는 각각 `smart_farm_interfaces/msg/TaskCommand`, `TaskResult`다. 현재 `TaskResult.msg`에는 `pallet_id` 필드가 없으므로 Navigation·Inspection에서는 명령·결과 ID와 결과 내용을 대조한다.
 
