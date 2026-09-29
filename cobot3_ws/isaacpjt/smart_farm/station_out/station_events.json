@@ -1,0 +1,17 @@
+[
+ {
+  "t": 502.95,
+  "event": "ARRIVED_PUSH_START",
+  "pallet": "Pallet_01"
+ },
+ {
+  "t": 508.82,
+  "event": "PUSH_DONE_PREPARED",
+  "pallet": "Pallet_01"
+ },
+ {
+  "t": 513.83,
+  "event": "INSPECT_POSE_READY",
+  "pallet": "Pallet_01"
+ }
+]
