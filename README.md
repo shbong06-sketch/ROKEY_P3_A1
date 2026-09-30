@@ -60,6 +60,10 @@ Isaac Sim PC와 ROS 2 PC는 같은 PC일 수도 있다. 분리 실행할 때는 
 
 ## 주요 기능
 
+### Flow Chart
+
+![Flow Chart](docs/media/flow-chart.png)
+
 ### Task Manager 기반 공정 제어
 
 전역 상태 머신이 활성 명령의 `task_id`·`command_id`·`operation`을 결과와 대조한다. 중복·오래된 결과는 다음 공정의 성공으로 사용하지 않는다. 단계별 제한 시간, Executor의 `READY` heartbeat, 물리 실패 후 재시작 조건을 관리한다.
