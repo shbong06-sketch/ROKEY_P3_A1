@@ -1,4 +1,4 @@
-"""Isaac Sim standalone launcher for the Nav2 test (default scene: Collected_smartfarm_v014 cabbage).
+"""Isaac Sim standalone launcher for the Nav2 test (default scene: Collected_smartfarm_v015).
 
 Opens the scene, enables the ROS 2 bridge, adds a /clock publisher graph when the
 scene has none (Nav2 runs with use_sim_time, so /clock is mandatory), presses Play,
@@ -19,10 +19,13 @@ import faulthandler
 import os
 import signal
 import sys
+from pathlib import Path
 
 # Every print goes to the terminal AND to results/launch_scene_<time>.log; a native crash (segfault inside
 # PhysX/Kit) leaves a Python stack dump in the same file via faulthandler.
-_LOG_DIR = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results"
+_PKG_DIR = Path(__file__).resolve().parents[1]
+_WS_DIR = _PKG_DIR.parent.parent
+_LOG_DIR = _PKG_DIR / "results"
 os.makedirs(_LOG_DIR, exist_ok=True)
 _LOG_PATH = os.path.join(_LOG_DIR, f"launch_scene_{datetime.datetime.now():%Y%m%d_%H%M}.log")
 _log_file = open(_LOG_PATH, "a", buffering=1)
@@ -49,9 +52,7 @@ sys.stdout = _Tee(sys.__stdout__, _log_file)
 sys.stderr = _Tee(sys.__stderr__, _log_file)
 print(f"[launch_scene] log -> {_LOG_PATH}  argv={sys.argv[1:]}", flush=True)
 
-# 폴더 이름과 파일 이름이 다르다(ADR_nav2 1.1.2). 폴더에 딸려 온 README_사용법.md 가 여는 파일을 밝힌다.
-DEFAULT_SCENE = ("/home/rokey/ROKEY_P3_A1/cobot3_ws/isaacpjt/smart_farm/scenes/"
-                 "Collected_smartfarm_v014/Collected_smartfarm_v014_room_core_cabbage.usd")
+DEFAULT_SCENE = str(_WS_DIR / "isaacpjt/smart_farm/scenes/Collected_smartfarm_v015/Collected_smartfarm_v015.usd")
 _ap = argparse.ArgumentParser()
 _ap.add_argument("scene", nargs="?", default=DEFAULT_SCENE)
 _ap.add_argument("--pose", default="", help="preset name in config/arm_poses.yaml (e.g. carry)")
@@ -60,7 +61,7 @@ _ap.add_argument("--lift", type=float, default=None, help="lift_prismatic_joint 
 _ap.add_argument("--cloud-full-scan", default="true", help="true: publish the 3D cloud once per full scan (10 Hz)")
 args, _unknown = _ap.parse_known_args()
 scene = args.scene
-ARM_POSES = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/config/arm_poses.yaml"
+ARM_POSES = _PKG_DIR / "config/arm_poses.yaml"
 RIG_PATH = "/World/SmartFarm/Placed/LiftRig/Asset/nova_carter_ROS"
 ARM_PATH = RIG_PATH + "/m0609_with_fork"
 LIFT_JOINT = RIG_PATH + "/lift_v3_physics/lift_prismatic_joint"
@@ -123,7 +124,7 @@ try:
         if found:
             import datetime as _dt
             path, x, y, z, yaw = found[0]
-            out = "/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation/results/robot_spawn.yaml"
+            out = _LOG_DIR / "robot_spawn.yaml"
             with open(out, "w") as f:
                 f.write(f"# written by launch_scene.py {_dt.datetime.now():%Y-%m-%d %H:%M:%S}\n"
                         f"scene: {scene}\nprim: {path}\nx: {x:.4f}\ny: {y:.4f}\nyaw_deg: {yaw:.2f}\n")

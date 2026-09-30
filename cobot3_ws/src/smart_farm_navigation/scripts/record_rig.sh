@@ -24,7 +24,7 @@
 
 set -u
 
-PROJ=/home/rokey/ROKEY_P3_A1/cobot3_ws/src/smart_farm_navigation
+PROJ=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 MEDIA="$PROJ/results/media_log"        # git 제외 경로
 CURRENT="$MEDIA/current"               # 지금 녹화 중인 폴더를 가리키는 링크
 
