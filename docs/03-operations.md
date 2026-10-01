@@ -47,13 +47,22 @@ source ~/ROKEY_P3_A1/cobot3_ws/install/setup.bash
 
 1. **Isaac Sim / Sim Task** — 저장소 루트에서 v015 장면을 지정한다.
 
-   ```bash
-   cd ~/ROKEY_P3_A1
-   export ROS_DOMAIN_ID=0
-   ~/isaacsim/python.sh cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py \
-     --autoplay \
-     --scene cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v015/Collected_smartfarm_v015.usd
-   ```
+```bash
+cd ~/ROKEY_P3_A1
+export ROS_DOMAIN_ID=0
+
+ISAAC_ROS_LIB="$HOME/isaacsim/exts/isaacsim.ros2.bridge/jazzy/lib"
+if [[ ":$LD_LIBRARY_PATH:" == *":$ISAAC_ROS_LIB:"* ]]; then
+    echo "이미 등록됨: $ISAAC_ROS_LIB"
+else
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$ISAAC_ROS_LIB"
+    echo "등록 완료: $ISAAC_ROS_LIB"
+fi
+
+~/isaacsim/python.sh cobot3_ws/isaacpjt/smart_farm/runtime/standalone_app.py \
+  --autoplay \
+  --scene cobot3_ws/isaacpjt/smart_farm/scenes/Collected_smartfarm_v015/Collected_smartfarm_v015.usd
+```
 
 2. **Nav2와 도킹 노드** — `ros2 launch smart_farm_navigation nav2.launch.py scan_mode:=auto use_rviz:=false`를 실행한다. 이 launch의 기본 지도는 v015다. `record:=true`를 추가하면 Nav2 진단 bag을 별도로 기록한다.
 3. **Navigation Executor** — `ros2 launch smart_farm_navigation navigation_node.launch.py`를 실행한다.
